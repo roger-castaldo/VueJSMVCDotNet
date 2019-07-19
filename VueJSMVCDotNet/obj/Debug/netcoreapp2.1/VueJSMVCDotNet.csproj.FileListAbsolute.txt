@@ -1,0 +1,8 @@
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csproj.CoreCompileInputs.cache
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.AssemblyInfoInputs.cache
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.AssemblyInfo.cs
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.deps.json
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.dll
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.pdb
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.dll
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.pdb
