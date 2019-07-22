@@ -688,11 +688,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet.csproj",
+      "projectUniqueName": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet.csproj",
       "projectName": "VueJSMVCDotNet",
-      "projectPath": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet.csproj",
+      "projectPath": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet.csproj",
       "packagesPath": "C:\\Users\\roger_castaldo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\obj\\",
+      "outputPath": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"

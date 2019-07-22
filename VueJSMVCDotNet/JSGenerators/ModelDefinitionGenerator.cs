@@ -266,20 +266,21 @@ response=ret;", new object[]{
             bool hasOne = false;
             builder.AppendLine(@"   data:function(){
         return {");
+            bool isFirst = true;
             foreach (PropertyInfo pi in props)
             {
                 if (pi.CanRead && pi.CanWrite && pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length == 0)
                 {
-                    builder.AppendLine(string.Format("          {0}:{1},", new object[]
+                    builder.Append(string.Format(@"{2}
+            {0}:{1}", new object[]
                     {
                         pi.Name,
-                        (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0])))
+                        (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0]))),
+                        (isFirst ? "" : ",")
                     }));
-                    hasOne = true;
+                    isFirst = false;
                 }
             }
-            if (hasOne)
-                builder.Length = builder.Length - 3;
             builder.AppendLine(@"
         };
     },");

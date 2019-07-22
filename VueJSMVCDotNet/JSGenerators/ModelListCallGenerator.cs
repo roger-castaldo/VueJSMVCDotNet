@@ -50,52 +50,69 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                         builder.Append((x > 0 ? "," : "") + pars[x].Name);
                     if (mlm.Paged)
-                        builder.Append((pars.Length>3 ? "," : "")+"pageStartIndex,pageSize");
-                    builder.AppendLine(string.Format(@"){{
+                    {
+                        builder.Append((pars.Length > 3 ? "," : "") + "pageStartIndex,pageSize");
+                        builder.AppendLine(@"){
         pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
         pageSize = (pageSize == undefined ? 10 : (pageSize == null ? 10 : pageSize));
-        var ret = $.extend([],{{
-            currentIndex:function(){{return pageStartIndex;}},
-            currentPageSize:function(){{return pageSize;}},
-            currentPage:function(){{return Math.floor(this.currentIndex()/this.currentPageSize());}},
-            totalPages:function(){{return 0;}},
-            url:function(){{ return {0};}},
-            moveToPage:function(pageNumber){{
-                this.currentIndex=function(){{return pageNumber*this.currentPageSize();}};
-                this.reload();
-            }},
-            moveToNextPage:function(){{
-                if(Math.floor(this.currentIndex()/this.currentPageSize())+1<this.totalPages()){{
+        var ret = $.extend([],{
+            currentIndex:function(){return pageStartIndex;},
+            currentPageSize:function(){return pageSize;},
+            currentPage:function(){return Math.floor(this.currentIndex()/this.currentPageSize());},
+            totalPages:function(){return 0;},
+            moveToPage:function(pageNumber){
+                if (pageNumber>=this.totalPages()){
+                    throw 'Unable to move to Page that exceeds current total pages.';
+                }else{
+                    this.currentIndex=function(){return pageNumber*this.currentPageSize();};
+                    this.reload();
+                }
+            },
+            moveToNextPage:function(){
+                if(Math.floor(this.currentIndex()/this.currentPageSize())+1<this.totalPages()){
                     this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())+1);
-                }}
-            }},
-            moveToPreviousPage:function(){{
-                if(Math.floor(this.currentIndex()/this.currentPageSize())-1>=0){{
+                }else{
+                    throw 'Unable to move to next Page as that will excess current total pages.';
+                }
+            },
+            moveToPreviousPage:function(){
+                if(Math.floor(this.currentIndex()/this.currentPageSize())-1>=0){
                     this.MoveToPage(Math.floor(this.currentIndex()/this.currentPageSize())-1);
-                }}
-            }},
-            reload:function(){{
-                var response = $.ajax({{
+                }else{
+                    throw 'Unable to move to previous Page as that will be before the first page.';
+                }
+            },");
+                    }
+                    else
+                    {
+                        builder.AppendLine(@"){
+        var ret = $.extend([],{");
+                    }
+                    builder.AppendLine(@"reload:function(){
+                var response = $.ajax({
                     type:'GET',
                     url:this.url(),
                     dataType:'json',
                     async:false,
                     cache:false
-                }});
-                if (response.status==200){{
+                });
+                if (response.status==200){
                     var response=JSON.parse(response.responseText);
-                    while(this.length>0){{this.pop();}}
-                    this.totalPages=function(){{return response.Pager.TotalPages;}};
-                    for(var x=0;x<response.response.length;x++){{
-                        this.push({2}(response.response[x],new App.Models.{1}()));
+                    while(this.length>0){this.pop();}");
+                    if (mlm.Paged)
+                        builder.AppendLine("this.totalPages=function(){return response.TotalPages;};");
+                    builder.AppendLine(string.Format(@"             for(var x=0;x<response{2}.length;x++){{
+                        this.push({1}['{0}'](response{2}[x],new App.Models.{0}()));
                     }}
                 }}else{{
                     throw response.responseText;
                 }}
-            }}", new object[] { url, modelType.Name,Constants.PARSERS_VARIABLE }));
-                    if (pars.Length > 3)
+            }},
+            url:function(){{ return {3};}}", new object[] { modelType.Name, Constants.PARSERS_VARIABLE,(mlm.Paged ? ".response" : ""),url }));
+                    if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
-                        builder.AppendLine(@"           ,currentParameters:function(){
+                        builder.AppendLine(@",
+            currentParameters:function(){
                 return {");
                         for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                             builder.AppendLine(string.Format("              {0}:{0}{1}",new object[] { pars[x].Name, (x + 1 == (mlm.Paged ? pars.Length - 3 : pars.Length) ? "" : ",") }));

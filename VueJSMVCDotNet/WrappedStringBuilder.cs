@@ -23,34 +23,39 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void AppendLine(string line)
         {
             if (_minimize)
-                _sb.Append(line);
+                _Append(line);
             else
                 _sb.AppendLine(line);
         }
 
         internal void AppendFormat(string format, object arg0)
         {
-            _sb.AppendFormat(format, arg0);
+            _Append(string.Format(format, arg0));
         }
 
         internal void AppendFormat(string format, object arg0, object arg1)
         {
-            _sb.AppendFormat(format, arg0, arg1);
+            _Append(string.Format(format, arg0,arg1));
         }
 
         internal void AppendFormat(string format,object arg0,object arg1,object arg2)
         {
-            _sb.AppendFormat(format, arg0, arg1, arg2);
+            _Append(string.Format(format, arg0,arg1,arg2));
         }
 
         internal void AppendFormat(string format,object[] args)
         {
-            _sb.AppendFormat(format, args);
+            _Append(string.Format(format, args));
         }
 
         internal void Append(string value)
         {
-            _sb.Append(value);
+            _Append(value);
+        }
+
+        private void _Append(string value)
+        {
+            _sb.Append((_minimize ? value.Trim() : value));
         }
 
         public int Length

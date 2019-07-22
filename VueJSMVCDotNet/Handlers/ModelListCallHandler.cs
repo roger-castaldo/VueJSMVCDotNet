@@ -68,7 +68,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             regexs[x] = regexs[x].Substring(0, regexs[x].Length - 1) + (nullable ? "|NULL" : "") + ")";
                         }
                     }
-                    _groupIndexes = new int[pars.Length - 1];
+                    _groupIndexes = new int[(mlm.Paged ? pars.Length - 1 : pars.Length)];
                     MatchCollection matches = _regParameter.Matches(reg);
                     for (int x = 0; x < matches.Count; x++)
                         _groupIndexes[int.Parse(matches[x].Groups[1].Value)] = x;
@@ -101,17 +101,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         for(int x = 0; x < _groupIndexes.Length; x++)
                             opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
                     }
-                    object ret = _method.Invoke(null, pars);
+                    object ret = _method.Invoke(null, opars);
                     if (_isPaged)
                     {
                         return JSON.JsonEncode(new Hashtable()
                         {
                             {"response",ret },
-                            {"Page",new Hashtable()
-                            {
-                                {"TotalPages",pars[pars.Length-1] }
-                            }
-                            }
+                            {"TotalPages",opars[opars.Length-1] }
                         });
                     }
                     else
