@@ -1,10 +1,12 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -25,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _saveMethods.Clear();
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             IModel model = null;
             lock (_constructors)
@@ -34,11 +36,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     model = (IModel)_constructors[url].Invoke(new object[] { });
             }
             if (model == null)
-            {
-                contentType = "text/text";
-                responseStatus = 404;
-                return "Model Not Found";
-            }
+                throw new CallNotFoundException("Model Not Found");
             else
             {
                 MethodInfo mi = null;
@@ -49,25 +47,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                        throw new InsecureAccessException();
                     Utility.SetModelValues(formData, ref model, false);
-                    if ((bool)mi.Invoke(model,new object[] { })) { 
-                        contentType = "text/json";
-                        responseStatus = 200;
-                        return JSON.JsonEncode(new Hashtable() { { "id", model.id } });
-                    }
-                    else
+                    if ((bool)mi.Invoke(model, new object[] { }))
                     {
-                        contentType = "text/text";
-                        responseStatus = 500;
-                        return "Failed";
+                        context.Response.ContentType = "text/json";
+                        context.Response.StatusCode= 200;
+                        return context.Response.WriteAsync(JSON.JsonEncode(new Hashtable() { { "id", model.id } }));
                     }
+                    throw new Exception("Failed");
                 }
-                else
-                {
-                    contentType = "text/text";
-                    responseStatus = 404;
-                    return "Not Found";
-                }
+                throw new CallNotFoundException();
             }
         }
 

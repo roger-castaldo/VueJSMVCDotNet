@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -86,38 +88,32 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public string HandleRequest(string url,out string contentType, out int responseStatus)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
-                contentType = "text/json";
-                responseStatus = 200;
-                try
+                if (!securityCheck.Invoke(_method.DeclaringType, _method, session))
+                    throw new InsecureAccessException();
+                context.Response.ContentType = "text/json";
+                context.Response.StatusCode= 200;
+                ParameterInfo[] pars = _method.GetParameters();
+                object[] opars = new object[] { };
+                if (pars.Length > 0)
                 {
-                    ParameterInfo[] pars = _method.GetParameters();
-                    object[] opars = new object[] { };
-                    if (pars.Length > 0)
-                    {
-                        opars = new object[pars.Length];
-                        Match m = _reg.Match(url);
-                        for(int x = 0; x < _groupIndexes.Length; x++)
-                            opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
-                    }
-                    object ret = _method.Invoke(null, opars);
-                    if (_isPaged)
-                    {
-                        return JSON.JsonEncode(new Hashtable()
+                    opars = new object[pars.Length];
+                    Match m = _reg.Match(url);
+                    for (int x = 0; x < _groupIndexes.Length; x++)
+                        opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
+                }
+                object ret = _method.Invoke(null, opars);
+                if (_isPaged)
+                {
+                    return context.Response.WriteAsync(JSON.JsonEncode(new Hashtable()
                         {
                             {"response",ret },
                             {"TotalPages",opars[opars.Length-1] }
-                        });
-                    }
-                    else
-                        return JSON.JsonEncode(ret);
-                }catch(Exception e)
-                {
-                    contentType = "text/text";
-                    responseStatus = 500;
-                    return "Error";
+                        }));
                 }
+                else
+                    return context.Response.WriteAsync(JSON.JsonEncode(ret));
             }
 
             private object _ConvertParameterValue(string p, Type type)
@@ -170,10 +166,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _calls.Clear();
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
-            contentType = "text/text";
-            responseStatus = 404;
             sModelListCall? mlc = null;
             lock (_calls)
             {
@@ -187,17 +181,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
             }
             if (mlc.HasValue)
-            {
-                try
-                {
-                    return mlc.Value.HandleRequest(url, out contentType, out responseStatus);
-                }catch(Exception e)
-                {
-                    responseStatus = 500;
-                    return "Error";
-                }
-            }
-            return "Not Found";
+                return mlc.Value.HandleRequest(url,method,formData,context,session,securityCheck);
+            throw new CallNotFoundException();
         }
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)

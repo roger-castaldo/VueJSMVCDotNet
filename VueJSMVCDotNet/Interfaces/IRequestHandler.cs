@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
 {
@@ -9,6 +11,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
         void Init(List<Type> types);
         void ClearCache();
         bool HandlesRequest(string url, RequestHandler.RequestMethods method);
-        string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus);
+        Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context,ISecureSession session, IsValidCall securityCheck);
     }
 }

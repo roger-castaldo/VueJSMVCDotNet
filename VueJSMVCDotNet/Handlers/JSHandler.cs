@@ -1,9 +1,11 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -45,23 +47,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             if (method != RequestHandler.RequestMethods.GET)
                 return false;
             bool ret = false;
-            lock (_cache) {
+            lock (_cache)
+            {
                 if (_cache.ContainsKey(url))
                     ret = true;
             }
-            if(!ret && _types!=null)
+            if (!ret && _types != null)
             {
                 foreach (Type t in _types)
                 {
-                    if (RequestHandler.IsTypeAllowed(t))
+                    foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
                     {
-                        foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                        if (mjsfp.IsMatch(url))
                         {
-                            if (mjsfp.IsMatch(url))
-                            {
-                                ret = true;
-                                break;
-                            }
+                            ret = true;
+                            break;
                         }
                     }
                 }
@@ -69,27 +69,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             return ret;
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             if (!HandlesRequest(url, method))
-            {
-                contentType = "text/text";
-                responseStatus = 404;
-                return "Not Found";
-            }
+                throw new CallNotFoundException();
             else
             {
-                string ret = null;
-                contentType = "text/javascript";
-                responseStatus = 200;
-                lock (_cache)
+                Type model = null;
+                if (_types != null)
                 {
-                    if (_cache.ContainsKey(url))
-                        ret = _cache[url];
-                }
-                if (ret == null && _types!=null)
-                {
-                    Type model = null;
                     foreach (Type t in _types)
                     {
                         foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
@@ -101,6 +89,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             }
                         }
                     }
+                    if (model != null)
+                    {
+                        if (!securityCheck.Invoke(model, null, session))
+                            throw new InsecureAccessException();
+                    }
+                }
+                string ret = null;
+                context.Response.ContentType= "text/javascript";
+                context.Response.StatusCode= 200;
+                lock (_cache)
+                {
+                    if (_cache.ContainsKey(url))
+                        ret = _cache[url];
+                }
+                if (ret == null && model != null)
+                {
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
                     foreach (IJSGenerator gen in _generators)
                         gen.GeneratorJS(ref builder, url.ToLower().EndsWith(".min.js"), model);
@@ -111,7 +115,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             _cache.Add(url, ret);
                     }
                 }
-                return ret;
+                return context.Response.WriteAsync(ret);
             }
         }
 

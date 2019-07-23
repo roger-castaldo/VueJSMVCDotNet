@@ -1,10 +1,12 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -25,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _deleteMethods.Clear();
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             IModel model = null;
             lock (_loadMethods)
@@ -34,11 +36,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     model = (IModel)_loadMethods[url.Substring(0, url.LastIndexOf("/"))].Invoke(null, new object[] { url.Substring(url.LastIndexOf("/") + 1) });
             }
             if (model == null)
-            {
-                contentType = "text/text";
-                responseStatus = 404;
-                return "Model Not Found";
-            }
+                throw new CallNotFoundException("Model Not Found");
             else
             {
                 MethodInfo mi = null;
@@ -49,16 +47,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
-                    contentType = "text/json";
-                    responseStatus = 200;
-                    return JSON.JsonEncode(mi.Invoke(model, new object[] { }));
+                    if (!securityCheck(mi.DeclaringType, mi, session))
+                        throw new UnauthorizedAccessException();
+                    else
+                    {
+                        context.Response.ContentType = "text/json";
+                        context.Response.StatusCode = 200;
+                        return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, new object[] { })));
+                    }
                 }
                 else
-                {
-                    contentType = "text/text";
-                    responseStatus = 404;
-                    return "Not Found";
-                }
+                    throw new CallNotFoundException("Method Not Found");
             }
         }
 

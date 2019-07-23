@@ -5,6 +5,28 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
+    internal class CallNotFoundException:Exception{
+        public CallNotFoundException() :
+            this("Not Found")
+        { }
+
+        public CallNotFoundException(string message) :
+            base(message)
+        { }
+    }
+
+    [Serializable]
+    public class InsecureAccessException : Exception
+    {
+        public InsecureAccessException()
+            : this("Not Authorized") { }
+
+        public InsecureAccessException(string message)
+            : base(message) { }
+
+        protected InsecureAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
     //thrown when no routes to a given model were specified by attributes
     [Serializable]
     public class NoRouteException : Exception

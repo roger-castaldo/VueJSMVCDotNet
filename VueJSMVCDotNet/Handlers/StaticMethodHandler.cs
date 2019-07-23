@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -41,38 +43,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public string HandleRequest(string url, string formData, out string contentType, out int responseStatus)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
                 Match m = _reg.Match(url);
-                string method = m.Groups[1].Value;
+                string smethod = m.Groups[1].Value;
                 MethodInfo mi;
                 object[] pars;
-                Utility.LocateMethod(formData, _methods[method], out mi, out pars);
+                Utility.LocateMethod(formData, _methods[smethod], out mi, out pars);
                 if (mi == null)
-                {
-                    contentType = "text/text";
-                    responseStatus = 404;
-                    return "Unable to locate requested method to invoke";
-                }
+                    throw new CallNotFoundException("Unable to locate requested method to invoke");
                 else
                 {
-                    contentType = "text/json";
-                    responseStatus = 200;
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                        throw new InsecureAccessException();
                     try
                     {
+                        context.Response.ContentType = "text/json";
+                        context.Response.StatusCode = 200;
                         if (mi.ReturnType == typeof(void))
                         {
                             mi.Invoke(null,pars);
-                            return "";
+                            return context.Response.WriteAsync("");
                         }
                         else
-                            return JSON.JsonEncode(mi.Invoke(null,pars));
+                            return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null,pars)));
                     }
                     catch (Exception ex)
                     {
-                        contentType = "text/text";
-                        responseStatus = 500;
-                        return "Execution Error";
+                        throw new Exception("Execution Error");
                     }
                 }
             }
@@ -90,19 +88,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
-            contentType = "text/text";
-            responseStatus = 404;
+            sMethodPatterns? patt = null;
             lock (_patterns)
             {
                 foreach (sMethodPatterns smp in _patterns)
                 {
                     if (smp.IsValid(url))
-                        return smp.HandleRequest(url, formData, out contentType, out responseStatus);
+                    {
+                        patt = smp;
+                        break;
+                    }
                 }
             }
-            return "Not Found";
+            if (patt.HasValue)
+                return patt.Value.HandleRequest(url, method, formData, context, session, securityCheck);
+            throw new CallNotFoundException();
         }
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)

@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
@@ -372,9 +373,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static Regex _regNoCache = new Regex("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript);
 
-        internal static string CleanURL(Uri url)
+        public static string CleanURL(Uri url)
         {
             return _regNoCache.Replace(url.PathAndQuery, "");
+        }
+
+        public static Uri BuildURL(HttpContext context)
+        {
+            UriBuilder builder = new UriBuilder(
+                context.Request.Scheme,
+                context.Request.Host.Host,
+                (context.Request.Host.Port.HasValue ? context.Request.Host.Port.Value : (context.Request.IsHttps ? 443 : 80)),
+                context.Request.Path
+            );
+            if (context.Request.QueryString.HasValue)
+                builder.Query = context.Request.QueryString.Value.Substring(1);
+            return builder.Uri;
         }
     }
 }

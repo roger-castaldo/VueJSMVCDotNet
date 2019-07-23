@@ -1,10 +1,12 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Http;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
@@ -22,7 +24,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _methods.Clear();
         }
 
-        public string HandleRequest(string url, RequestHandler.RequestMethods method, string formData, out string contentType, out int responseStatus)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             MethodInfo mi = null;
             lock (_methods)
@@ -32,16 +34,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
             if (mi != null)
             {
-                contentType = "text/json";
-                responseStatus = 200;
-                return JSON.JsonEncode(mi.Invoke(null, new object[] { }));
+                if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                    throw new InsecureAccessException();
+                context.Response.ContentType = "text/json";
+                context.Response.StatusCode = 200;
+                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, new object[] { })));
             }
             else
-            {
-                contentType = "text/text";
-                responseStatus = 404;
-                return "Not Found";
-            }
+                throw new CallNotFoundException();
         }
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
