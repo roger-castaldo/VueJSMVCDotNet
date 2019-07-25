@@ -38,101 +38,155 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"reload:function(){{
-                var response = $.ajax({{
-                    type:'GET',
-                    url:'{1}',
-                    dataType:'json',
-                    async:false,
-                    cache:false
+            builder.AppendLine(string.Format(@"reload:function(options){{
+                options = $.extend((options==undefined || options==null ?{{}}:options),{{
+                    async:true,
+                    success:function(){{}},
+                    failure:function(error){{throw (error==undefined ? 'failed' : error);}}
                 }});
-                if (response.status==200){{
-                    var response=JSON.parse(response.responseText);                 
-                    {2}['{0}'](response,this);
-                }}else{{
-                    throw response.responseText;
-                }}
-            }}",new object[]{
+                var model=this;
+                $.ajax({{
+                    type:'GET',
+                    url:'{1}/'+this.id(),
+                    dataType:'text',
+                    async:options.async,
+                    cache:false
+                }}).fail(function(jqXHR,testStatus,errorThrown){{
+                    options.error(errorThrown);
+                }}).done(function(data,textStatus,jqXHR){{
+                    if (jqXHR.status==200){{                 
+                        {2}['{0}'](JSON.parse(data),model);
+                        model.$emit('{3}',model);
+                        options.success(model);
+                    }}else{{
+                        options.failure(data);
+                    }}
+                }});
+            }}", new object[]{
                 modelType.Name,
                 urlRoot,
-                Constants.PARSERS_VARIABLE
+                Constants.PARSERS_VARIABLE,
+                Constants.Events.MODEL_LOADED
             }));
         }
 
         private void _AppendDelete(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"         destroy:function(){{
-            var response = $.ajax({{
+            builder.AppendLine(string.Format(@"         destroy:function(options){{
+            options = $.extend({{
+                async:true,
+                success:function(){{}},
+                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
+            }},(options==undefined || options==null ?{{}}:options));
+            var model=this;
+            $.ajax({{
                 type:'DELETE',
                 url:'{0}/'+this.id(),
                 content_type:'application/json; charset=utf-8',
-                dataType:'json',
-                async:false,
+                dataType:'text',
+                async:options.async,
                 cache:false
+            }}).fail(function(jqXHR,testStatus,errorThrown){{
+                options.error(errorThrown);
+            }}).done(function(data,textStatus,jqXHR){{
+                if (jqXHR.status==200){{                 
+                    data = JSON.parse(data);
+                    if (data){{
+                        model.$emit('{1}',model);
+                        options.success(model);
+                    }}else{{
+                        options.failure();
+                    }}
+                }}else{{
+                    options.failure(data);
+                }}
             }});
-            if (response.status==200){{
-                return true;
-            }}else{{
-                throw response.responseText;
-            }}
         }},", new object[]{
-                urlRoot
+                urlRoot,
+                Constants.Events.MODEL_DESTROYED
             }));
         }
 
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"         update:function(){{
+            builder.AppendLine(string.Format(@"         update:function(options){{
+            options = $.extend({{
+                async:true,
+                success:function(){{}},
+                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
+            }},(options==undefined || options==null ?{{}}:options));
             if (!this.isValid){{
-                return false;
+                options.failure();
             }}
-            var response = $.ajax({{
+            var model=this;
+            $.ajax({{
                type:'PATCH',
                url:'{0}/'+this.id(),
                content_type:'application/json; charset=utf-8',
                data:JSON.stringify({1}(this)),
-               dataType:'json',
-               async:false,
+               dataType:'text',
+               async:options.async,
                cache:false
+            }}).fail(function(jqXHR,testStatus,errorThrown){{
+                options.error(errorThrown);
+            }}).done(function(data,textStatus,jqXHR){{
+                if (jqXHR.status==200){{                 
+                    data = JSON.parse(data);
+                    if (data){{
+                        model.$emit('{2}',model);
+                        options.success(model);
+                    }}else{{
+                        options.failure();
+                    }}
+                }}else{{
+                    options.failure(data);
+                }}
            }});
-           if (response.status==200){{
-               return JSON.parse(response.responseText);
-           }}else{{
-               throw response.responseText;
-           }}
         }},", new object[]{
                 urlRoot,
-                Constants.TO_JSON_VARIABLE
+                Constants.TO_JSON_VARIABLE,
+                Constants.Events.MODEL_UPDATED
             }));
         }
 
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"             save:function(){{
+            builder.AppendLine(string.Format(@"             save:function(options){{
+            options = $.extend({{
+                async:true,
+                success:function(){{}},
+                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
+            }},(options==undefined || options==null ?{{}}:options));
             if (!this.isValid){{
-                return false;
+                options.failure();
             }}
             var data = {1}(this);
-            var response = $.ajax({{
+            var model=this;
+            $.ajax({{
                 type:'PUT',
                 url:'{0}',
                 content_type:'application/json; charset=utf-8',
                 data:JSON.stringify(data),
-                dataType:'json',
-                async:false,
+                dataType:'text',
+                async:options.async,
                 cache:false
-            }});
-            if (response.status==200){{
-                data.id=JSON.parse(response.responseText).id;
-                this.{2}= function(){{return data;}};
-                return true;
-            }}else{{
-                return false;
-            }}
+            }}).fail(function(jqXHR,testStatus,errorThrown){{
+                options.error(errorThrown);
+            }}).done(function(data,textStatus,jqXHR){{
+                if (jqXHR.status==200){{                 
+                    data=JSON.parse(data).id;
+                    model.{2}= function(){{return data;}};
+                    model.$emit('{3}',model);
+                    options.success(model);
+                }}else{{
+                    options.failure(data);
+                }}
+           }});
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
-                Constants.INITIAL_DATA_KEY
+                Constants.INITIAL_DATA_KEY,
+                Constants.Events.MODEL_SAVED
             }));
         }
 

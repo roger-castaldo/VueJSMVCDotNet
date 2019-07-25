@@ -14,5 +14,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public const string STATICS_VARAIBLE = "staticCalls";
         public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        public static class Events
+        {
+            public const string MODEL_LOADED = "loaded";
+            public const string MODEL_DESTROYED = "destroyed";
+            public const string MODEL_UPDATED = "updated";
+            public const string MODEL_SAVED = "saved";
+        }
     }
 }
