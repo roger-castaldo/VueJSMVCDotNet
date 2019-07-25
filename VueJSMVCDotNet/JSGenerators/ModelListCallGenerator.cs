@@ -92,23 +92,55 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 var response = $.ajax({
                     type:'GET',
                     url:this.url(),
-                    dataType:'json',
+                    dataType:'text',
                     async:false,
                     cache:false
-                });
-                if (response.status==200){
-                    var response=JSON.parse(response.responseText);
-                    while(this.length>0){this.pop();}");
+                }).fail(function(jqXHR,testStatus,errorThrown){
+                    throw errorThrown;
+                }).done(function(data,textStatus,jqXHR){
+                    if (jqXHR.status==200){
+                        data = JSON.parse(data);
+                        while(ret.length>0){ret.pop();}");
                     if (mlm.Paged)
-                        builder.AppendLine("this.totalPages=function(){return response.TotalPages;};");
-                    builder.AppendLine(string.Format(@"             for(var x=0;x<response{2}.length;x++){{
-                        this.push({1}['{0}'](response{2}[x],new App.Models.{0}()));
+                        builder.AppendLine("ret.totalPages=function(){return data.TotalPages;};");
+                    builder.AppendLine(string.Format(@"                 for(var x=0;x<data{2}.length;x++){{
+                            ret.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
+                        }}
+                        for(var x=0;x<ret.length;x++){{
+                            ret[x].$on('{4}',function(model){{
+                                ret.reload();
+                            }});
+                            ret[x].$on('{5}',function(model){{
+                                for(var x=0;x<ret.length;x++){{
+                                    if (ret[x].id()==model.id()){{
+                                        Vue.set(ret,x,model);
+                                        break;
+                                    }}
+                                }}
+                            }});
+                            ret[x].$on('{6}',function(model){{
+                                for(var x=0;x<ret.length;x++){{
+                                    if (ret[x].id()==model.id()){{
+                                        Vue.set(ret,x,model);
+                                        break;
+                                    }}
+                                }}
+                            }});
+                        }}
+                    }}else{{
+                        throw data;
                     }}
-                }}else{{
-                    throw response.responseText;
-                }}
+                }});
             }},
-            url:function(){{ return {3};}}", new object[] { modelType.Name, Constants.PARSERS_VARIABLE,(mlm.Paged ? ".response" : ""),url }));
+            url:function(){{ return {3};}}", new object[] {
+                        modelType.Name,
+                        Constants.PARSERS_VARIABLE,
+                        (mlm.Paged ? ".response" : ""),
+                        url,
+                        Constants.Events.MODEL_DESTROYED,
+                        Constants.Events.MODEL_UPDATED,
+                        Constants.Events.MODEL_LOADED
+                    }));
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
                         builder.AppendLine(@",

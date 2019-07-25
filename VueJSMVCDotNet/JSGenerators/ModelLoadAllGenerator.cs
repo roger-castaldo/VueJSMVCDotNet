@@ -19,28 +19,65 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
         var ret = $.extend([],{{
             reload:function(){{
-                var response = $.ajax({{
+                $.ajax({{
                     type:'GET',
                     url:'{2}',
-                    dataType:'json',
-                    async:false,
+                    dataType:'text',
+                    async:true,
                     cache:false
-                }});
-                if (response.status==200){{
-                    var response=JSON.parse(response.responseText);
-                    while(this.length>0){{this.pop();}}
-                    for(var x=0;x<response.length;x++){{
-                        this.push({3}['{1}'](response[x],new App.Models.{1}()));
+                }}).fail(function(jqXHR,testStatus,errorThrown){{
+                    throw errorThrown;
+                }}).done(function(data,textStatus,jqXHR){{
+                    if (jqXHR.status==200){{                 
+                        data = JSON.parse(data);
+                        while(ret.length>0){{ret.pop();}}
+                        for(var x=0;x<data.length;x++){{
+                            ret.push({3}['{1}'](data[x],new App.Models.{1}()));
+                        }}
+                        for(var x=0;x<ret.length;x++){{
+                            ret[x].$on('{4}',function(model){{
+                                for(var x=0;x<ret.length;x++){{
+                                    if (ret[x].id()==model.id()){{
+                                        ret.splice(x,1);
+                                        break;
+                                    }}
+                                }}
+                            }});
+                            ret[x].$on('{5}',function(model){{
+                                for(var x=0;x<ret.length;x++){{
+                                    if (ret[x].id()==model.id()){{
+                                        Vue.set(ret,x,model);
+                                        break;
+                                    }}
+                                }}
+                            }});
+                            ret[x].$on('{6}',function(model){{
+                                for(var x=0;x<ret.length;x++){{
+                                    if (ret[x].id()==model.id()){{
+                                        Vue.set(ret,x,model);
+                                        break;
+                                    }}
+                                }}
+                            }});
+                        }}
+                    }}else{{
+                        throw data;
                     }}
-                }}else{{
-                    throw response.responseText;
-                }}
+                }});
             }}
         }});
         ret.reload();
         return ret;
     }}
-}});", new object[] { Constants.STATICS_VARAIBLE,modelType.Name,urlRoot,Constants.PARSERS_VARIABLE}));
+}});", new object[] {
+                        Constants.STATICS_VARAIBLE,
+                        modelType.Name,
+                        urlRoot,
+                        Constants.PARSERS_VARIABLE,
+                        Constants.Events.MODEL_DESTROYED,
+                        Constants.Events.MODEL_UPDATED,
+                        Constants.Events.MODEL_LOADED
+                    }));
                     break;
                 }
             }
