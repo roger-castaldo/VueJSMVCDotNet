@@ -17,4 +17,3 @@ C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNe
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\Microsoft.AspNetCore.Http.Abstractions.dll
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\Microsoft.AspNetCore.Http.Abstractions.xml
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csproj.CopyComplete
-C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csprojAssemblyReference.cache

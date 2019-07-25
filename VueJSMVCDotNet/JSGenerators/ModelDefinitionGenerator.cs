@@ -83,6 +83,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         update:function(){{
+            if (!this.isValid){{
+                return false;
+            }}
             var response = $.ajax({{
                type:'PATCH',
                url:'{0}/'+this.id(),
@@ -106,24 +109,27 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"             save:function(){{
-                var data = {1}(this);
-                var response = $.ajax({{
-                    type:'PUT',
-                    url:'{0}',
-                    content_type:'application/json; charset=utf-8',
-                    data:JSON.stringify(data),
-                    dataType:'json',
-                    async:false,
-                    cache:false
-                }});
-                if (response.status==200){{
-                    data.id=JSON.parse(response.responseText).id;
-                    this.{2}= function(){{return data;}};
-                    return true;
-                }}else{{
-                    return false;
-                }}
-            }},", new object[]{
+            if (!this.isValid){{
+                return false;
+            }}
+            var data = {1}(this);
+            var response = $.ajax({{
+                type:'PUT',
+                url:'{0}',
+                content_type:'application/json; charset=utf-8',
+                data:JSON.stringify(data),
+                dataType:'json',
+                async:false,
+                cache:false
+            }});
+            if (response.status==200){{
+                data.id=JSON.parse(response.responseText).id;
+                this.{2}= function(){{return data;}};
+                return true;
+            }}else{{
+                return false;
+            }}
+        }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
                 Constants.INITIAL_DATA_KEY
@@ -263,7 +269,6 @@ response=ret;", new object[]{
 
         private void _AppendData(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
-            bool hasOne = false;
             builder.AppendLine(@"   data:function(){
         return {");
             bool isFirst = true;
@@ -289,12 +294,10 @@ response=ret;", new object[]{
         private void _AppendComputed(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
             builder.AppendLine("    computed:{");
-            bool hasOne = false;
             foreach (PropertyInfo pi in props)
             {
                 if (!pi.CanRead)
                 {
-                    hasOne = true;
                     builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
                     return  (this.{1} == undefined ? undefined : this.{1}().{0});
@@ -306,9 +309,38 @@ response=ret;", new object[]{
                     }));
                 }
             }
-            if (hasOne)
-                builder.Length = builder.Length - 3;
+            _AppendValidations(props, ref builder);
             builder.AppendLine("    },");
+        }
+
+        private void _AppendValidations(List<PropertyInfo> props, ref WrappedStringBuilder builder)
+        {
+            List<PropertyInfo> requiredProps = new List<PropertyInfo>();
+            foreach (PropertyInfo pi in props)
+            {
+                if (pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0)
+                    requiredProps.Add(pi);
+            }
+            if (requiredProps.Count > 0)
+            {
+                builder.AppendLine(@"        isValid:function(){
+            var ret=true;");
+                foreach (PropertyInfo pi in requiredProps)
+                    builder.AppendLine(string.Format("          ret&=(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
+                builder.AppendLine(@"           return ret;
+        },
+        invalidFields:function(){
+            var ret=[];");
+                foreach (PropertyInfo pi in requiredProps)
+                    builder.AppendLine(string.Format(@"          if (this.{0}==undefined||this.{0}==null){{
+                ret.push('{0}');
+            }}", pi.Name));
+                builder.AppendLine(@"            return ret;
+        }");
+            }
+            else
+                builder.AppendLine(@"       isValid:function(){return true;},
+        invalidFields:function(){return [];}");
         }
     }
 }
