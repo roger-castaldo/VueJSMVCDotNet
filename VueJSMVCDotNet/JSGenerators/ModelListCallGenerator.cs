@@ -23,7 +23,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     if (pars[x].ParameterType == typeof(bool))
                         sb.AppendFormat("{0}==undefined ? 'false' : ({0}==null ? 'false' : ({0} ? 'true' : 'false')))+'", pars[x].Name);
                     else if (pars[x].ParameterType == typeof(DateTime))
-                        sb.AppendFormat("{0}==undefined ? 'NULL' : ({0}==null ? 'NULL' : _.extractUTCDate({0})))+'", pars[x].Name);
+                        sb.AppendFormat("{0}==undefined ? 'NULL' : ({0}==null ? 'NULL' : extractUTCDate({0})))+'", pars[x].Name);
                     else
                         sb.AppendFormat("{0}==undefined ? 'NULL' : ({0} == null ? 'NULL' : encodeURI({0})))+'", pars[x].Name);
                     pNames[x] = sb.ToString();

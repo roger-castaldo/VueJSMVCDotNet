@@ -99,7 +99,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendParser(Type modelType, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"    {1}['{0}']=function(data,model){{
-        if (_.isString(data)){{
+        if (isString(data)){{
             data=JSON.parse(data);
         }}", new object[] { modelType.Name, Constants.PARSERS_VARIABLE }));
             builder.AppendLine(string.Format(@"      model.{0}=function(){{ return data; }};
