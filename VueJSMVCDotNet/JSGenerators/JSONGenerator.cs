@@ -60,7 +60,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     if (model.{0}!=undefined){{
             var tmp = model.{0}();
             for(var prop in tmp){{
-                if (_.isEqual(tmp[prop],attrs[prop])){{
+                if (isEqual(tmp[prop],attrs[prop])){{
                     delete attrs[prop];
                 }}
             }}
