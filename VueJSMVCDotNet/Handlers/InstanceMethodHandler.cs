@@ -60,7 +60,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
                 else
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,model,url,(Hashtable)JSON.JsonDecode(formData)))
                         throw new InsecureAccessException();
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;

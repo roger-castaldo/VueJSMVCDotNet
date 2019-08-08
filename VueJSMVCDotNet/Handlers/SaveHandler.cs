@@ -47,7 +47,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
                         throw new InsecureAccessException();
                     Utility.SetModelValues(formData, ref model, false);
                     if ((bool)mi.Invoke(model, new object[] { }))

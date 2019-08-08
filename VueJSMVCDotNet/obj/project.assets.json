@@ -692,7 +692,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
-    "version": "1.0.0",
+    "version": "1.0.2",
     "restore": {
       "projectUniqueName": "C:\\Users\\roger_castaldo\\source\\repos\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet\\VueJSMVCDotNet.csproj",
       "projectName": "Org.Reddragonit.VueJSMVCDotNet",
@@ -712,7 +712,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Users\\roger_castaldo\\source\\repos\\BpmEngine\\BpmEngine\\bin\\Debug": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {

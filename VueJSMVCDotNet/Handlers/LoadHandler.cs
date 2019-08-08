@@ -33,7 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
             if (mi != null)
             {
-                if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,new System.Collections.Hashtable() { { "id", url.Substring(url.LastIndexOf("/") + 1) } }))
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;

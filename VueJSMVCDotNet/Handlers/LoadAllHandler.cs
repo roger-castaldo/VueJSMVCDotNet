@@ -34,7 +34,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
             if (mi != null)
             {
-                if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,null))
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode = 200;

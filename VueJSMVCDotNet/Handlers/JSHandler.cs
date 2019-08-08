@@ -91,7 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     }
                     if (model != null)
                     {
-                        if (!securityCheck.Invoke(model, null, session))
+                        if (!securityCheck.Invoke(model, null, session,null,url,null))
                             throw new InsecureAccessException();
                     }
                 }
