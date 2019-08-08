@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Handlers;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -119,7 +120,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        private bool _ValidCall(Type t, MethodInfo method, ISecureSession session)
+        private bool _ValidCall(Type t, MethodInfo method, ISecureSession session,IModel model,string url, Hashtable parameters)
         {
             List<ASecurityCheck> checks = new List<ASecurityCheck>();
             lock (_typeChecks)
@@ -140,7 +141,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             foreach (ASecurityCheck asc in checks)
             {
-                if (!asc.HasValidAccess(session))
+                if (!asc.HasValidAccess(session,model,url,parameters))
                     return false;
             }
             return true;

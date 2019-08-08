@@ -47,7 +47,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
-                    if (!securityCheck(mi.DeclaringType, mi, session))
+                    if (!securityCheck(mi.DeclaringType, mi, session,model, url, null))
                         throw new UnauthorizedAccessException();
                     else
                     {

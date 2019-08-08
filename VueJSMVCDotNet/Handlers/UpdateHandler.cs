@@ -34,7 +34,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             {
                 if (_loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
                 {
-                    if (!securityCheck.Invoke(_loadMethods[url.Substring(0, url.LastIndexOf("/"))].DeclaringType, _loadMethods[url.Substring(0, url.LastIndexOf("/"))], session))
+                    if (!securityCheck.Invoke(_loadMethods[url.Substring(0, url.LastIndexOf("/"))].DeclaringType, _loadMethods[url.Substring(0, url.LastIndexOf("/"))], session,null,url,new Hashtable() { {"id", url.Substring(0, url.LastIndexOf("/")) } }))
                         throw new InsecureAccessException();
                     model = (IModel)_loadMethods[url.Substring(0, url.LastIndexOf("/"))].Invoke(null, new object[] { url.Substring(url.LastIndexOf("/") + 1) });
                 }
@@ -51,7 +51,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,model,url,(Hashtable)JSON.JsonDecode(formData)))
                         throw new InsecureAccessException();
                     context.Response.ContentType = "text/json";
                     context.Response.StatusCode= 200;

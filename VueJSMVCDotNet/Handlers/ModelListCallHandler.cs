@@ -90,7 +90,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
             public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
-                if (!securityCheck.Invoke(_method.DeclaringType, _method, session))
+                if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
