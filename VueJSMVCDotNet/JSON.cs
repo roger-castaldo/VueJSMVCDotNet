@@ -85,7 +85,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public static string JsonEncode(object json)
         {
             if (json == null)
-                return null;
+                return "null";
             StringBuilder builder = new StringBuilder(BUILDER_CAPACITY);
             bool success = false;
             try
