@@ -18,12 +18,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
         var ret = $.extend([],{{
-            reload:function(){{
+            reload:function(async){{
+                async = (async==undefined ? true : async);
                 $.ajax({{
                     type:'GET',
                     url:'{2}',
                     dataType:'text',
-                    async:true,
+                    async:async,
                     cache:false
                 }}).fail(function(jqXHR,testStatus,errorThrown){{
                     throw errorThrown;
@@ -66,7 +67,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }});
             }}
         }});
-        ret.reload();
+        ret.reload(false);
         return ret;
     }}
 }});", new object[] {
