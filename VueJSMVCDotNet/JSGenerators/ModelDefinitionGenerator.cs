@@ -329,7 +329,7 @@ response=ret;", new object[]{
             bool isFirst = true;
             foreach (PropertyInfo pi in props)
             {
-                if (pi.CanRead && pi.CanWrite && pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length == 0)
+                if (pi.CanRead && pi.CanWrite)
                 {
                     builder.Append(string.Format(@"{2}
             {0}:{1}", new object[]
@@ -351,13 +351,12 @@ response=ret;", new object[]{
             builder.AppendLine("    computed:{");
             foreach (PropertyInfo pi in props)
             {
-                if (!pi.CanRead)
+                if (!pi.CanWrite)
                 {
                     builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
                     return  (this.{1} == undefined ? undefined : this.{1}().{0});
-                }},
-                set:function(value){{}}
+                }}
             }},",new object[]{
                         pi.Name,
                         Constants.INITIAL_DATA_KEY
