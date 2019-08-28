@@ -314,7 +314,8 @@ response=ret;", new object[]{
                       }));
                             }
                         }
-                        builder.AppendLine("}");
+                        builder.AppendLine(@"           return response;
+        }");
                     }
                     builder.AppendLine("},");
                 }
