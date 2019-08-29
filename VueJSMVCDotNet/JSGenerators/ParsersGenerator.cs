@@ -108,7 +108,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             foreach (PropertyInfo pi in props)
             {
-                if (pi.CanRead && pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length == 0)
+                if (pi.CanWrite)
                 {
                     Type t = pi.PropertyType;
                     if (t.IsArray)
