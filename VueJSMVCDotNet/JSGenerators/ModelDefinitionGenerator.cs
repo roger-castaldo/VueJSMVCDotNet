@@ -20,7 +20,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             _AppendData(m, props, ref builder);
             _AppendComputed(m, props, ref builder);
 
-            builder.AppendLine("    methods:{");
+            builder.AppendLine(string.Format(@"    methods:{{
+        isNew:function(){{ return (this.{0}==undefined ? true : (this.id==undefined? true : this.id()==undefined||this.id()==null));}},",Constants.INITIAL_DATA_KEY));
             _AppendInstanceMethods(modelType,urlRoot, ref builder);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
