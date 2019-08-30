@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.6</Version>
-    <PackageReleaseNotes>additional path for readonly properties when calling parse function</PackageReleaseNotes>
+    <Version>1.0.7</Version>
+    <PackageReleaseNotes>added function isNew() to indicate if the model is a new model or has been loaded/saved in the system.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
