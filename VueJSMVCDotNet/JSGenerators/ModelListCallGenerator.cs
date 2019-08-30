@@ -81,6 +81,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }else{
                     throw 'Unable to move to previous Page as that will be before the first page.';
                 }
+            },
+            changePageSize:function(size){
+                this.currentPageSize = function(){ return size;};
+                this.reload();
             },");
                     }
                     else
