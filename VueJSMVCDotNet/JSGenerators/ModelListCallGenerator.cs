@@ -107,8 +107,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         while(ret.length>0){ret.pop();}");
                     if (mlm.Paged)
                         builder.AppendLine("ret.totalPages=function(){return data.TotalPages;};");
-                    builder.AppendLine(string.Format(@"                 for(var x=0;x<data{2}.length;x++){{
-                            ret.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
+                    builder.AppendLine(string.Format(@"                 if (data{2}!=null){{
+                            for(var x=0;x<data{2}.length;x++){{
+                                ret.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
+                            }}
                         }}
                         for(var x=0;x<ret.length;x++){{
                             ret[x].$on('{4}',function(model){{
