@@ -53,7 +53,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     async:options.async,
                     cache:false
                 }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    options.error(errorThrown);
+                    options.failure(errorThrown);
                 }}).done(function(data,textStatus,jqXHR){{
                     if (jqXHR.status==200){{                 
                         {2}['{0}'](JSON.parse(data),model);
@@ -88,7 +88,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 async:options.async,
                 cache:false
             }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.error(errorThrown);
+                options.failure(errorThrown);
             }}).done(function(data,textStatus,jqXHR){{
                 if (jqXHR.status==200){{                 
                     data = JSON.parse(data);
@@ -129,11 +129,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                async:options.async,
                cache:false
             }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.error(errorThrown);
+                options.failure(errorThrown);
             }}).done(function(data,textStatus,jqXHR){{
                 if (jqXHR.status==200){{                 
                     data = JSON.parse(data);
                     if (data){{
+                        data=model.{3}();
+                        for(var prop in data){{
+                            if (prop!='id'){{
+                                data[prop]=model[prop];
+                            }}
+                        }}
+                        model.{3}=function(){{return data;}};
                         model.$emit('{2}',model);
                         options.success(model);
                     }}else{{
@@ -146,7 +153,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
-                Constants.Events.MODEL_UPDATED
+                Constants.Events.MODEL_UPDATED,
+                Constants.INITIAL_DATA_KEY
             }));
         }
 
@@ -172,11 +180,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 async:options.async,
                 cache:false
             }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.error(errorThrown);
-            }}).done(function(data,textStatus,jqXHR){{
+                options.failure(errorThrown);
+            }}).done(function(ret,textStatus,jqXHR){{
                 if (jqXHR.status==200){{                 
-                    data=JSON.parse(data).id;
+                    data.id=JSON.parse(ret).id;
                     model.{2}= function(){{return data;}};
+                    model.id=function(){{return this.{2}().id;}};
                     model.$emit('{3}',model);
                     options.success(model);
                 }}else{{
