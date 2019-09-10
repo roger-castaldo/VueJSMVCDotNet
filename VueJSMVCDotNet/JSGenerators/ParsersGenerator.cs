@@ -142,6 +142,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             }));
                         }
                     }
+                    else if (t == typeof(DateTime) || t == typeof(DateTime?))
+                    {
+                        builder.AppendLine(string.Format("      model.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
+                        {
+                            pi.Name
+                        }));
+                    }
                     else
                     {
                         builder.AppendLine(string.Format("      model.{0}=data.{0};", new object[]

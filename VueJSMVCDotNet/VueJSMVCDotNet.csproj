@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.8</Version>
-    <PackageReleaseNotes>added ability to change page size for model list call returns</PackageReleaseNotes>
+    <Version>1.0.9</Version>
+    <PackageReleaseNotes>added property parsing to include converting DateTime to Date in javascript for models.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
