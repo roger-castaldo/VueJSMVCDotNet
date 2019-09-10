@@ -57,9 +57,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
       // Internal recursive comparison function for `isEqual`.
       deepEq = function(a, b, aStack, bStack) {
-        // Unwrap any wrapped objects.
-        if (a instanceof _) a = a._wrapped;
-        if (b instanceof _) b = b._wrapped;
         // Compare `[[Class]]` names.
         var className = toString.call(a);
         if (className !== toString.call(b)) return false;
