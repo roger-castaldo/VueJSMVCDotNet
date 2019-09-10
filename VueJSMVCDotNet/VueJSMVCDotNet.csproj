@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.11</Version>
-    <PackageReleaseNotes>patches for save and update to update the initialdata properties.</PackageReleaseNotes>
+    <Version>1.0.12</Version>
+    <PackageReleaseNotes>deep eq patch</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
