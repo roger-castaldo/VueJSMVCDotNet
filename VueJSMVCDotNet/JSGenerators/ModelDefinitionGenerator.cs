@@ -354,14 +354,28 @@ response=ret;", new object[]{
             {
                 if (!pi.CanWrite)
                 {
-                    builder.AppendLine(string.Format(@"         {0}:{{
+                    if (pi.PropertyType == typeof(DateTime) || pi.PropertyType == typeof(DateTime?))
+                    {
+                        builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
-                    return  (this.{1} == undefined ? undefined : this.{1}().{0});
+                    return  (this.{1} == undefined ? undefined : (this.{1}().{0}==null ? null : new Date(this.{1}().{0})));
                 }}
-            }},",new object[]{
+            }},", new object[]{
                         pi.Name,
                         Constants.INITIAL_DATA_KEY
                     }));
+                    }
+                    else
+                    {
+                        builder.AppendLine(string.Format(@"         {0}:{{
+                get:function(){{
+                    return  (this.{1} == undefined ? undefined : this.{1}().{0});
+                }}
+            }},", new object[]{
+                        pi.Name,
+                        Constants.INITIAL_DATA_KEY
+                    }));
+                    }
                 }
             }
             _AppendValidations(props, ref builder);
