@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v2.1": {
-      "VueJSMVCDotNet/1.0.9": {
+      "VueJSMVCDotNet/1.0.10": {
         "dependencies": {
           "Microsoft.AspNetCore.Http.Abstractions": "2.1.1.0"
         },
@@ -25,7 +25,7 @@
     }
   },
   "libraries": {
-    "VueJSMVCDotNet/1.0.9": {
+    "VueJSMVCDotNet/1.0.10": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
