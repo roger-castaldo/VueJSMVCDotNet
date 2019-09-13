@@ -11,7 +11,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
         {
-            builder.AppendLine(string.Format("    {0}={{}};",Constants.PARSERS_VARIABLE));
+            builder.AppendLine(string.Format("    var {0}={{}};",Constants.PARSERS_VARIABLE));
             List<Type> types = new List<Type>();
             types.AddRange(_RecurLocateLinkedTypes(modelType));
             foreach (Type t in types)
