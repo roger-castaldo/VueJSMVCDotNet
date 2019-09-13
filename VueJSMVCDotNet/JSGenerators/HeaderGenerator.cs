@@ -143,7 +143,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
       };
 
       // Perform a deep comparison to check if two objects are equal.
-      isEqual = function(a, b) {
+      var isEqual = function(a, b) {
         return eq(a, b);
       };");
         }

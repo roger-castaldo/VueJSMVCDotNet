@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.12</Version>
-    <PackageReleaseNotes>deep eq patch</PackageReleaseNotes>
+    <Version>1.0.13</Version>
+    <PackageReleaseNotes>patch to ensure certain objects remain unique to each model definition</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
