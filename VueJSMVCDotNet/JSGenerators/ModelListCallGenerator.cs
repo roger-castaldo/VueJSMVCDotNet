@@ -77,7 +77,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             },
             moveToPreviousPage:function(){
                 if(Math.floor(this.currentIndex()/this.currentPageSize())-1>=0){
-                    this.MoveToPage(Math.floor(this.currentIndex()/this.currentPageSize())-1);
+                    this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())-1);
                 }else{
                     throw 'Unable to move to previous Page as that will be before the first page.';
                 }
