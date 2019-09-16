@@ -45,24 +45,28 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     success:function(){{}},
                     failure:function(error){{throw (error==undefined ? 'failed' : error);}}
                 }});
-                var model=this;
-                $.ajax({{
-                    type:'GET',
-                    url:'{1}/'+this.id(),
-                    dataType:'text',
-                    async:options.async,
-                    cache:false
-                }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    options.failure(errorThrown);
-                }}).done(function(data,textStatus,jqXHR){{
-                    if (jqXHR.status==200){{                 
-                        {2}['{0}'](JSON.parse(data),model);
-                        model.$emit('{3}',model);
-                        options.success(model);
-                    }}else{{
-                        options.failure(data);
-                    }}
-                }});
+                if (this.isNew()){{
+                    options.failure('Cannot reload unsaved model.');
+                }}else{{
+                    var model=this;
+                    $.ajax({{
+                        type:'GET',
+                        url:'{1}/'+this.id(),
+                        dataType:'text',
+                        async:options.async,
+                        cache:false
+                    }}).fail(function(jqXHR,testStatus,errorThrown){{
+                        options.failure(errorThrown);
+                    }}).done(function(data,textStatus,jqXHR){{
+                        if (jqXHR.status==200){{                 
+                            {2}['{0}'](JSON.parse(data),model);
+                            model.$emit('{3}',model);
+                            options.success(model);
+                        }}else{{
+                            options.failure(data);
+                        }}
+                    }});
+                }}
             }}", new object[]{
                 modelType.Name,
                 urlRoot,
@@ -79,32 +83,37 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
             }},(options==undefined || options==null ?{{}}:options));
-            var model=this;
-            $.ajax({{
-                type:'DELETE',
-                url:'{0}/'+this.id(),
-                content_type:'application/json; charset=utf-8',
-                dataType:'text',
-                async:options.async,
-                cache:false
-            }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.failure(errorThrown);
-            }}).done(function(data,textStatus,jqXHR){{
-                if (jqXHR.status==200){{                 
-                    data = JSON.parse(data);
-                    if (data){{
-                        model.$emit('{1}',model);
-                        options.success(model);
+            if (this.isNew()){{
+                options.failure('Cannot delete unsaved model.');
+            }}else{{
+                var model=this;
+                $.ajax({{
+                    type:'{2}',
+                    url:'{0}/'+this.id(),
+                    content_type:'application/json; charset=utf-8',
+                    dataType:'text',
+                    async:options.async,
+                    cache:false
+                }}).fail(function(jqXHR,testStatus,errorThrown){{
+                    options.failure(errorThrown);
+                }}).done(function(data,textStatus,jqXHR){{
+                    if (jqXHR.status==200){{                 
+                        data = JSON.parse(data);
+                        if (data){{
+                            model.$emit('{1}',model);
+                            options.success(model);
+                        }}else{{
+                            options.failure();
+                        }}
                     }}else{{
-                        options.failure();
+                        options.failure(data);
                     }}
-                }}else{{
-                    options.failure(data);
-                }}
-            }});
+                }});
+            }}
         }},", new object[]{
                 urlRoot,
-                Constants.Events.MODEL_DESTROYED
+                Constants.Events.MODEL_DESTROYED,
+                RequestHandler.RequestMethods.DELETE
             }));
         }
 
@@ -117,44 +126,50 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
             }},(options==undefined || options==null ?{{}}:options));
             if (!this.isValid){{
-                options.failure();
+                options.failure('Invalid model.');
             }}
-            var model=this;
-            $.ajax({{
-               type:'PATCH',
-               url:'{0}/'+this.id(),
-               content_type:'application/json; charset=utf-8',
-               data:JSON.stringify({1}(this)),
-               dataType:'text',
-               async:options.async,
-               cache:false
-            }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.failure(errorThrown);
-            }}).done(function(data,textStatus,jqXHR){{
-                if (jqXHR.status==200){{                 
-                    data = JSON.parse(data);
-                    if (data){{
-                        data=model.{3}();
-                        for(var prop in data){{
-                            if (prop!='id'){{
-                                data[prop]=model[prop];
+            else if (this.isNew()){{
+                options.failure('Cannot updated unsaved model, please call save instead.');
+            }}
+            else {{
+                var model=this;
+                $.ajax({{
+                   type:'{4}',
+                   url:'{0}/'+this.id(),
+                   content_type:'application/json; charset=utf-8',
+                   data:JSON.stringify({1}(this)),
+                   dataType:'text',
+                   async:options.async,
+                   cache:false
+                }}).fail(function(jqXHR,testStatus,errorThrown){{
+                    options.failure(errorThrown);
+                }}).done(function(data,textStatus,jqXHR){{
+                    if (jqXHR.status==200){{                 
+                        data = JSON.parse(data);
+                        if (data){{
+                            data=model.{3}();
+                            for(var prop in data){{
+                                if (prop!='id'){{
+                                    data[prop]=model[prop];
+                                }}
                             }}
+                            model.{3}=function(){{return data;}};
+                            model.$emit('{2}',model);
+                            options.success(model);
+                        }}else{{
+                            options.failure();
                         }}
-                        model.{3}=function(){{return data;}};
-                        model.$emit('{2}',model);
-                        options.success(model);
                     }}else{{
-                        options.failure();
+                        options.failure(data);
                     }}
-                }}else{{
-                    options.failure(data);
-                }}
-           }});
+                }});
+            }}
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
                 Constants.Events.MODEL_UPDATED,
-                Constants.INITIAL_DATA_KEY
+                Constants.INITIAL_DATA_KEY,
+                RequestHandler.RequestMethods.PATCH
             }));
         }
 
@@ -167,36 +182,42 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
             }},(options==undefined || options==null ?{{}}:options));
             if (!this.isValid){{
-                options.failure();
+                options.failure('Invalid model.');
             }}
-            var data = {1}(this);
-            var model=this;
-            $.ajax({{
-                type:'PUT',
-                url:'{0}',
-                content_type:'application/json; charset=utf-8',
-                data:JSON.stringify(data),
-                dataType:'text',
-                async:options.async,
-                cache:false
-            }}).fail(function(jqXHR,testStatus,errorThrown){{
-                options.failure(errorThrown);
-            }}).done(function(ret,textStatus,jqXHR){{
-                if (jqXHR.status==200){{                 
-                    data.id=JSON.parse(ret).id;
-                    model.{2}= function(){{return data;}};
-                    model.id=function(){{return this.{2}().id;}};
-                    model.$emit('{3}',model);
-                    options.success(model);
-                }}else{{
-                    options.failure(data);
-                }}
-           }});
+            else if (!this.isNew()){{
+                options.failure('Cannot save a saved model,please call update instead.');
+            }}
+            else {{
+                var data = {1}(this);
+                var model=this;
+                $.ajax({{
+                    type:'{4}',
+                    url:'{0}',
+                    content_type:'application/json; charset=utf-8',
+                    data:JSON.stringify(data),
+                    dataType:'text',
+                    async:options.async,
+                    cache:false
+                }}).fail(function(jqXHR,testStatus,errorThrown){{
+                    options.failure(errorThrown);
+                }}).done(function(ret,textStatus,jqXHR){{
+                    if (jqXHR.status==200){{                 
+                        data.id=JSON.parse(ret).id;
+                        model.{2}= function(){{return data;}};
+                        model.id=function(){{return this.{2}().id;}};
+                        model.$emit('{3}',model);
+                        options.success(model);
+                    }}else{{
+                        options.failure(data);
+                    }}
+                }});
+            }}
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
                 Constants.INITIAL_DATA_KEY,
-                Constants.Events.MODEL_SAVED
+                Constants.Events.MODEL_SAVED,
+                RequestHandler.RequestMethods.PUT
             }));
         }
 
