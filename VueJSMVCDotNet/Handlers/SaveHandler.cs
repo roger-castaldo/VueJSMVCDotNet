@@ -49,7 +49,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 {
                     if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
                         throw new InsecureAccessException();
-                    Utility.SetModelValues(formData, ref model, false);
+                    Utility.SetModelValues(formData, ref model, true);
                     if ((bool)mi.Invoke(model, new object[] { }))
                     {
                         context.Response.ContentType = "text/json";
