@@ -101,6 +101,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"    {1}['{0}']=function(data,model){{
         if (isString(data)){{
             data=JSON.parse(data);
+        }}
+        if (data==null) {{
+            return null;
         }}", new object[] { modelType.Name, Constants.PARSERS_VARIABLE }));
             builder.AppendLine(string.Format(@"      model.{0}=function(){{ return data; }};
         model.id=function(){{ return data.id; }};", Constants.INITIAL_DATA_KEY));

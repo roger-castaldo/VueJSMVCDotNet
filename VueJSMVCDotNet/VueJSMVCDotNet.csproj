@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.15</Version>
-    <PackageReleaseNotes>patch to block save and update under new and not new models.</PackageReleaseNotes>
+    <Version>1.0.17</Version>
+    <PackageReleaseNotes>minor patch for when the data returned from a model is null</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
