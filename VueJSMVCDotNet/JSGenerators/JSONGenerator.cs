@@ -57,8 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                         else
                             builder.AppendLine(string.Format("      attrs.{0} = {{id:prop.{0}.id()}};", p.Name));
-                        builder.AppendLine(@"           }
-        }");
+                        builder.AppendLine(@"           }");
                     }
                     else
                         builder.AppendLine(string.Format("        attrs.{0}=prop;",p.Name));

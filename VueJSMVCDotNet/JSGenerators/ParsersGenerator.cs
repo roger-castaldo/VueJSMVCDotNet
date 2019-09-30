@@ -23,7 +23,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             List<Type> ret = new List<Type>(new Type[] { modelType });
             foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
             {
-                if (pi.CanRead && pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length == 0)
+                if (pi.CanRead)
                 {
                     Type t = pi.PropertyType;
                     if (t.IsArray)
@@ -104,7 +104,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }}
         if (data==null) {{
             return null;
-        }}", new object[] { modelType.Name, Constants.PARSERS_VARIABLE }));
+        }}
+        var constructorMissing = model==undefined;
+        model = (model == undefined ? {{}} : model);", new object[] { modelType.Name, Constants.PARSERS_VARIABLE }));
             builder.AppendLine(string.Format(@"      model.{0}=function(){{ return data; }};
         model.id=function(){{ return data.id; }};", Constants.INITIAL_DATA_KEY));
 
@@ -125,8 +127,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             builder.AppendLine(string.Format(@"     if (data.{1}!=null){{
             var tmp = [];
             for(var x=0;x<data.{1}.length;x++){{
-                tmp.push(new App.Models.{0}());
-                tmp[x]={2}['{0}'](data.{1}[x],tmp[x]);
+                if (App.Models.{0}!=undefined){{
+                    tmp.push(new App.Models.{0}());
+                    tmp[x]={2}['{0}'](data.{1}[x],tmp[x]);
+                }}else{{
+                    tmp.push({2}['{0}'](data.{1}[x]));
+                }}
             }}
             model.{1}=tmp;
         }}", new object[]{
@@ -137,8 +143,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                         else
                         {
-                            builder.AppendLine(string.Format(@"     var tmp = new App.Models.{0}();
-        model.{1}={2}['{0}'](data.{1},tmp);", new object[]{
+                            builder.AppendLine(string.Format(@"     if (App.Models.{0}!=undefined) {{
+            var tmp = new App.Models.{0}();
+            model.{1}={2}['{0}'](data.{1},tmp);
+        }} else {{
+            model.{1}={2}['{0}'](data.{1});
+        }}", new object[]{
                                 t.Name,
                                 pi.Name,
                                 Constants.PARSERS_VARIABLE
@@ -161,6 +171,36 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                 }
             }
+            builder.AppendLine(string.Format(@"           if (constructorMissing){{
+                var mdl = model;
+                var tmp = {{ 
+                    computed: {{}}, 
+                    methods: {{ 
+                        {0} : function(){{
+                            return mdl;
+                        }},
+                        id : function(){{
+                            return mdl.id();
+                        }}
+                    }}
+                }};
+                for(prop in model){{
+                    switch(prop){{
+                        case '{0}':
+                        case 'id':
+                            break;
+                        default:
+                            tmp.computed[prop] = {{
+                                get: function(){{
+                                    return this.{0}()[prop];
+                                }}
+                            }};
+                            break;
+                    }}
+                }}
+                tmp = Vue.extend(tmp);
+                model = new tmp();
+            }}",Constants.INITIAL_DATA_KEY));
             builder.AppendLine(@"           model.$emit('parsed',model);
             return model;
         };");
