@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.17</Version>
-    <PackageReleaseNotes>minor patch for when the data returned from a model is null</PackageReleaseNotes>
+    <Version>1.0.18</Version>
+    <PackageReleaseNotes>patch for loading when a model is not defined</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

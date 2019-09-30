@@ -93,6 +93,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         var ret = $.extend([],{");
                     }
                     builder.AppendLine(@"reload:function(){
+                var tmp = this;
                 var response = $.ajax({
                     type:'GET',
                     url:this.url(),
@@ -104,30 +105,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }).done(function(data,textStatus,jqXHR){
                     if (jqXHR.status==200){
                         data = JSON.parse(data);
-                        while(ret.length>0){ret.pop();}");
+                        while(tmp.length>0){ret.pop();}");
                     if (mlm.Paged)
-                        builder.AppendLine("ret.totalPages=function(){return data.TotalPages;};");
+                        builder.AppendLine("tmp.totalPages=function(){return data.TotalPages;};");
                     builder.AppendLine(string.Format(@"                 if (data{2}!=null){{
                             for(var x=0;x<data{2}.length;x++){{
-                                ret.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
+                                tmp.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
                             }}
                         }}
-                        for(var x=0;x<ret.length;x++){{
-                            ret[x].$on('{4}',function(model){{
-                                ret.reload();
+                        for(var x=0;x<tmp.length;x++){{
+                            tmp[x].$on('{4}',function(model){{
+                                tmp.reload();
                             }});
-                            ret[x].$on('{5}',function(model){{
-                                for(var x=0;x<ret.length;x++){{
-                                    if (ret[x].id()==model.id()){{
-                                        Vue.set(ret,x,model);
+                            tmp[x].$on('{5}',function(model){{
+                                for(var x=0;x<tmp.length;x++){{
+                                    if (tmp[x].id()==model.id()){{
+                                        Vue.set(tmp,x,model);
                                         break;
                                     }}
                                 }}
                             }});
-                            ret[x].$on('{6}',function(model){{
-                                for(var x=0;x<ret.length;x++){{
-                                    if (ret[x].id()==model.id()){{
-                                        Vue.set(ret,x,model);
+                            tmp[x].$on('{6}',function(model){{
+                                for(var x=0;x<tmp.length;x++){{
+                                    if (tmp[x].id()==model.id()){{
+                                        Vue.set(tmp,x,model);
                                         break;
                                     }}
                                 }}
