@@ -10,8 +10,8 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.18</Version>
-    <PackageReleaseNotes>patch for loading when a model is not defined</PackageReleaseNotes>
+    <Version>1.0.19</Version>
+    <PackageReleaseNotes>patch for parsers to handle missing models.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
