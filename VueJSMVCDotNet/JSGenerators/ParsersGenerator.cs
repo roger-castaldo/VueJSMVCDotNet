@@ -106,10 +106,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             return null;
         }}
         var constructorMissing = model==undefined;
-        model = (model == undefined ? {{}} : model);", new object[] { modelType.Name, Constants.PARSERS_VARIABLE }));
-            builder.AppendLine(string.Format(@"      model.{0}=function(){{ return data; }};
-        model.id=function(){{ return data.id; }};", Constants.INITIAL_DATA_KEY));
-
+        if (!constructorMissing){{
+            model.{2}=function(){{ return data; }};
+            model.id=function(){{ return data.id; }};", new object[] { modelType.Name, Constants.PARSERS_VARIABLE, Constants.INITIAL_DATA_KEY }));
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             foreach (PropertyInfo pi in props)
             {
@@ -124,18 +123,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     {
                         if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
                         {
-                            builder.AppendLine(string.Format(@"     if (data.{1}!=null){{
-            var tmp = [];
-            for(var x=0;x<data.{1}.length;x++){{
-                if (App.Models.{0}!=undefined){{
-                    tmp.push(new App.Models.{0}());
-                    tmp[x]={2}['{0}'](data.{1}[x],tmp[x]);
-                }}else{{
-                    tmp.push({2}['{0}'](data.{1}[x]));
+                            builder.AppendLine(string.Format(@"      if (data.{1}!=null){{
+                var tmp = [];
+                for(var x=0;x<data.{1}.length;x++){{
+                    if (App.Models.{0}!=undefined){{
+                        tmp.push(new App.Models.{0}());
+                        tmp[x]={2}['{0}'](data.{1}[x],tmp[x]);
+                    }}else{{
+                        tmp.push({2}['{0}'](data.{1}[x]));
+                    }}
                 }}
-            }}
-            model.{1}=tmp;
-        }}", new object[]{
+                model.{1}=tmp;
+            }}", new object[]{
                                 t.Name,
                                 pi.Name,
                                 Constants.PARSERS_VARIABLE
@@ -143,12 +142,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                         else
                         {
-                            builder.AppendLine(string.Format(@"     if (App.Models.{0}!=undefined) {{
-            var tmp = new App.Models.{0}();
-            model.{1}={2}['{0}'](data.{1},tmp);
-        }} else {{
-            model.{1}={2}['{0}'](data.{1});
-        }}", new object[]{
+                            builder.AppendLine(string.Format(@"         if (App.Models.{0}!=undefined) {{
+                var tmp = new App.Models.{0}();
+                model.{1}={2}['{0}'](data.{1},tmp);
+            }} else {{
+                model.{1}={2}['{0}'](data.{1});
+            }}", new object[]{
                                 t.Name,
                                 pi.Name,
                                 Constants.PARSERS_VARIABLE
@@ -157,51 +156,90 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     else if (t == typeof(DateTime) || t == typeof(DateTime?))
                     {
-                        builder.AppendLine(string.Format("      model.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
+                        builder.AppendLine(string.Format("          model.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
                         {
                             pi.Name
                         }));
                     }
                     else
                     {
-                        builder.AppendLine(string.Format("      model.{0}=data.{0};", new object[]
+                        builder.AppendLine(string.Format("          model.{0}=data.{0};", new object[]
                         {
                             pi.Name
                         }));
                     }
                 }
             }
-            builder.AppendLine(string.Format(@"           if (constructorMissing){{
-                var mdl = model;
-                var tmp = {{ 
-                    computed: {{}}, 
-                    methods: {{ 
-                        {0} : function(){{
-                            return mdl;
-                        }},
-                        id : function(){{
-                            return mdl.id();
-                        }}
-                    }}
-                }};
-                for(prop in model){{
-                    switch(prop){{
-                        case '{0}':
-                        case 'id':
-                            break;
-                        default:
-                            tmp.computed[prop] = {{
-                                get: function(){{
-                                    return this.{0}()[prop];
-                                }}
-                            }};
-                            break;
+            builder.AppendLine("        }else{");
+            foreach (PropertyInfo pi in props)
+            {
+                Type t = pi.PropertyType;
+                if (t.IsArray)
+                    t = t.GetElementType();
+                else if (t.IsGenericType)
+                    t = t.GetGenericArguments()[0];
+                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                {
+                    if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
+                    {
+                        builder.AppendLine(string.Format(@"      if (data.{1}!=null){{
+                var tmp = [];
+                for(var x=0;x<data.{1}.length;x++){{
+                    if (App.Models.{0}!=undefined){{
+                        tmp.push(new App.Models.{0}());
+                        tmp[x]={2}['{0}'](data.{1}[x],tmp[x]);
+                    }}else{{
+                        tmp.push({2}['{0}'](data.{1}[x]));
                     }}
                 }}
-                tmp = Vue.extend(tmp);
+                data.{1}=tmp;
+            }}", new object[]{
+                                t.Name,
+                                pi.Name,
+                                Constants.PARSERS_VARIABLE
+                            }));
+                    }
+                    else
+                    {
+                        builder.AppendLine(string.Format(@"         if (App.Models.{0}!=undefined) {{
+                var tmp = new App.Models.{0}();
+                data.{1}={2}['{0}'](data.{1},tmp);
+            }} else {{
+                data.{1}={2}['{0}'](data.{1});
+            }}", new object[]{
+                                t.Name,
+                                pi.Name,
+                                Constants.PARSERS_VARIABLE
+                            }));
+                    }
+                }
+                else if (t == typeof(DateTime) || t == typeof(DateTime?))
+                {
+                    builder.AppendLine(string.Format("          data.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
+                    {
+                            pi.Name
+                    }));
+                }
+            }
+            builder.AppendLine(string.Format(@"var tmp = Vue.extend({{
+                methods:{{
+                    {0}:function(){{ return data; }},
+                    id:function(){{ return data.id; }}
+                }},
+                computed:{{",Constants.INITIAL_DATA_KEY));
+            for(int x=0;x<props.Count;x++)
+            {
+                builder.AppendLine(string.Format(@"                  {0}:{{
+                        get:function(){{
+                            return this.{1}().{0};
+                        }}
+                    }}{2}",new object[] { props[x].Name, Constants.INITIAL_DATA_KEY,(x+1==props.Count ? "" : ",") }));
+            }
+            builder.AppendLine(@"           }
+                });
                 model = new tmp();
-            }}",Constants.INITIAL_DATA_KEY));
-            builder.AppendLine(@"           model.$emit('parsed',model);
+            }
+            model.$emit('parsed',model);
             return model;
         };");
 
