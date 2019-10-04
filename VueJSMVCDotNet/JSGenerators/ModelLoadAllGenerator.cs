@@ -18,6 +18,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
         var ret = $.extend([],{{
+            {1}
+            {2}
+        }});
+        ret.reload(false);
+        return ret;
+    }}
+}});", new object[] {
+                        Constants.STATICS_VARAIBLE,
+                        Constants._LIST_EVENTS_CODE,
+                        Constants._LIST_RELOAD_CODE.Replace("$url$", string.Format("'{0}'",urlRoot)).Replace("$type$", modelType.Name)
+                    }));
+                    /*builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
+        var ret = $.extend([],{{
             reload:function(async){{
                 async = (async==undefined ? true : async);
                 $.ajax({{
@@ -78,7 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         Constants.Events.MODEL_DESTROYED,
                         Constants.Events.MODEL_UPDATED,
                         Constants.Events.MODEL_LOADED
-                    }));
+                    }));*/
                     break;
                 }
             }

@@ -92,7 +92,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(@"){
         var ret = $.extend([],{");
                     }
-                    builder.AppendLine(@"reload:function(){
+                    builder.Append(string.Format("url:function(){{ return {0};}},", url));
+                    builder.Append(Constants._LIST_EVENTS_CODE);
+                    builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name));
+                    /*builder.AppendLine(@"reload:function(){
                 var tmp = this;
                 var response = $.ajax({
                     type:'GET',
@@ -147,7 +150,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         Constants.Events.MODEL_DESTROYED,
                         Constants.Events.MODEL_UPDATED,
                         Constants.Events.MODEL_LOADED
-                    }));
+                    }));*/
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
                         builder.AppendLine(@",
