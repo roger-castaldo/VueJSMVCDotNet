@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     };
     var _keys = function(obj) {
         if (!isObject(obj)) return [];
-        if (nativeKeys) return nativeKeys(obj);
+        if (Object.keys) return Object.keys(obj);
         var keys = [];
         for (var key in obj) if (has(obj, key)) keys.push(key);
         if (hasEnumBug) collectNonEnumProps(obj, keys);
@@ -40,6 +40,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
 
     /*borrowed from undescore source*/
+    var has = function(obj, path) {
+        return obj != null && Object.prototype.hasOwnProperty.call(obj, path);
+    }
     var eq, deepEq;
       eq = function(a, b, aStack, bStack) {
         // Identical objects are equal. `0 === -0`, but they aren't identical.
