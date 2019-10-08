@@ -10,8 +10,9 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.20</Version>
-    <PackageReleaseNotes>patch to better imrpove performance when loading listed models by not calling multiple push and splice calls causing vue updates to get triggered.</PackageReleaseNotes>
+    <Version>1.0.21</Version>
+    <PackageReleaseNotes>patch to correct equal comparison function</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
