@@ -10,9 +10,10 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.21</Version>
-    <PackageReleaseNotes>patch to correct equal comparison function</PackageReleaseNotes>
+    <Version>1.0.22</Version>
+    <PackageReleaseNotes>patch to load list methods non-asynchronous when creating</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>1.0.22.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,7 +9,6 @@ C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\net
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.deps.json
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.dll
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\VueJSMVCDotNet.pdb
-C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csproj.CoreCompileInputs.cache
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.AssemblyInfoInputs.cache
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.AssemblyInfo.cs
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.dll
@@ -17,3 +16,4 @@ C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNe
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\Microsoft.AspNetCore.Http.Abstractions.dll
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\bin\Debug\netcoreapp2.1\Microsoft.AspNetCore.Http.Abstractions.xml
 C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csproj.CopyComplete
+C:\Users\roger_castaldo\source\repos\VueJSMVCDotNet\VueJSMVCDotNet\VueJSMVCDotNet\obj\Debug\netcoreapp2.1\VueJSMVCDotNet.csprojAssemblyReference.cache
