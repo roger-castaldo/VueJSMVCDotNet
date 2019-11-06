@@ -1,12 +1,12 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.1",
-    "signature": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    "signature": ""
   },
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v2.1": {
-      "VueJSMVCDotNet/1.0.21": {
+      "VueJSMVCDotNet/1.0.22": {
         "dependencies": {
           "Microsoft.AspNetCore.Http.Abstractions": "2.1.1.0"
         },
@@ -25,7 +25,7 @@
     }
   },
   "libraries": {
-    "VueJSMVCDotNet/1.0.21": {
+    "VueJSMVCDotNet/1.0.22": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

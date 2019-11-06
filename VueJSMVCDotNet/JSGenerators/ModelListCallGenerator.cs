@@ -175,7 +175,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }");
                     }
                     builder.AppendLine(@"        });
-        ret.reload();
+        ret.reload(false);
         return ret;
     }
 });");
