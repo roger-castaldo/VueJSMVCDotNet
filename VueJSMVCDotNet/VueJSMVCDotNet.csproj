@@ -10,10 +10,10 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.22</Version>
-    <PackageReleaseNotes>patch to load list methods non-asynchronous when creating</PackageReleaseNotes>
+    <Version>1.0.23</Version>
+    <PackageReleaseNotes>patch to include random data on url for all method and static method calls to ensure no caching occurs.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.0.22.0</AssemblyVersion>
+    <AssemblyVersion>1.0.23.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
