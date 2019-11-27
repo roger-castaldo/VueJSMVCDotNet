@@ -77,7 +77,7 @@ for(var x=0;x<{0}.length;x++){{
                     }
                     builder.AppendLine(string.Format(@"             var response = $.ajax({{
                     type:'SMETHOD',
-                    url:'{0}/{1}',
+                    url:'{0}/{1}?_='+parseInt((new Date().getTime() / 1000).toFixed(0)).toString(),
                     data:JSON.stringify(function_data),
                     content_type:'application/json; charset=utf-8',
                     dataType:'json',
