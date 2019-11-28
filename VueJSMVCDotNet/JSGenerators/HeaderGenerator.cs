@@ -147,6 +147,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
       // Perform a deep comparison to check if two objects are equal.
       var isEqual = function(a, b) {
+        if (Array.isArray(a)||Array.isArray(b)){
+            return deepEq(a,b);
+        }
         return eq(a, b);
       };");
         }

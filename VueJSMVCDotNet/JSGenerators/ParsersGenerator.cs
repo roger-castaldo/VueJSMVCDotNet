@@ -134,6 +134,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }}
                 }}
                 model.{1}=tmp;
+            }}else{{
+                model.{1}=null;
             }}", new object[]{
                                 t.Name,
                                 pi.Name,
@@ -156,17 +158,51 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     else if (t == typeof(DateTime) || t == typeof(DateTime?))
                     {
-                        builder.AppendLine(string.Format("          model.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
+                        if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
                         {
-                            pi.Name
-                        }));
+                            builder.AppendLine(string.Format(@"           if (data.{0}!=null){{
+                var tmp = [];
+                for(var x=0;x<data.{0}.length;x++){{
+                    tmp.push(new Date(data.{0}[x]));
+                }}
+                model.{0}=tmp;
+            }}else{{
+                model.{0}=null;
+            }}", new object[]{
+                                pi.Name
+                            }));
+                        }
+                        else
+                        {
+                            builder.AppendLine(string.Format("          model.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
+                            {
+                                pi.Name
+                            }));
+                        }
                     }
                     else
                     {
-                        builder.AppendLine(string.Format("          model.{0}=data.{0};", new object[]
+                        if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
                         {
-                            pi.Name
-                        }));
+                            builder.AppendLine(string.Format(@"           if (data.{0}!=null){{
+                var tmp = [];
+                for(var x=0;x<data.{0}.length;x++){{
+                    tmp.push(data.{0}[x]);
+                }}
+                model.{0}=tmp;
+            }}else{{
+                model.{0}=null;
+            }}", new object[]{
+                                pi.Name
+                            }));
+                        }
+                        else
+                        {
+                            builder.AppendLine(string.Format("          model.{0}=data.{0};", new object[]
+                            {
+                                pi.Name
+                            }));
+                        }
                     }
                 }
             }
