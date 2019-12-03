@@ -390,5 +390,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 builder.Query = context.Request.QueryString.Value.Substring(1);
             return builder.Uri;
         }
+
+        public static bool IsArrayType(Type type)
+        {
+            return type.IsArray ||
+                (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
+        }
     }
 }

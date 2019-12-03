@@ -242,7 +242,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             {
                                 if (pi.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
                                 {
-                                    if (pi.ParameterType.GetGenericArguments()[0].IsGenericType || pi.ParameterType.GetGenericArguments()[0].IsArray)
+                                    if (Utility.IsArrayType(pi.ParameterType.GetGenericArguments()[0]))
                                     {
                                         if (!invalidModels.Contains(t))
                                             invalidModels.Add(t);

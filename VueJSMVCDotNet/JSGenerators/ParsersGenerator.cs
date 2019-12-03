@@ -1,6 +1,7 @@
 ﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -121,7 +122,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         t = t.GetGenericArguments()[0];
                     if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                     {
-                        if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
+                        if (Utility.IsArrayType(pi.PropertyType))
                         {
                             builder.AppendLine(string.Format(@"      if (data.{1}!=null){{
                 var tmp = [];
@@ -158,7 +159,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     else if (t == typeof(DateTime) || t == typeof(DateTime?))
                     {
-                        if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
+                        if (Utility.IsArrayType(pi.PropertyType))
                         {
                             builder.AppendLine(string.Format(@"           if (data.{0}!=null){{
                 var tmp = [];
@@ -182,7 +183,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     else
                     {
-                        if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
+                        if (Utility.IsArrayType(pi.PropertyType))
                         {
                             builder.AppendLine(string.Format(@"           if (data.{0}!=null){{
                 var tmp = [];
@@ -216,7 +217,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     t = t.GetGenericArguments()[0];
                 if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                 {
-                    if (pi.PropertyType.IsArray || pi.PropertyType.IsGenericType)
+                    if (Utility.IsArrayType(pi.PropertyType))
                     {
                         builder.AppendLine(string.Format(@"      if (data.{1}!=null){{
                 var tmp = [];
