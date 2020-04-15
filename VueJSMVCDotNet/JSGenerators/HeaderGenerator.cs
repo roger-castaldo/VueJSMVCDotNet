@@ -37,7 +37,64 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         var type = typeof obj;
         return type === 'function' || type === 'object' && !!obj;
     };
-
+    var extend = function(obj1,obj2){
+      for(prop in obj2){
+        if (obj1[prop]==undefined){
+          obj1[prop] =obj2[prop];
+        }
+      }
+      return obj1;
+    }
+    var ajax = function(options){
+      options = extend(options,{
+        type:'GET',
+        async:false,
+        credentials:false,
+        body:null,
+        headers:{},
+        data:null,
+        url:null,
+        fail:function(response){throw response.text();},
+        done:undefined
+      });
+      if (options.url==null){ throw 'Unable to call empty url';}
+      options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
+      var xmlhttp = new XMLHttpRequest();
+      if (options.credentials){
+        xmlhttp.withCredentials=true;
+      }
+      if (options.async){
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+            if (xmlhttp.status == 200){
+              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}});
+            }else{
+              options.fail({ok:false,text:function(){return xmlhttp.responseText;}});
+            }
+          }
+        };
+      }
+      xmlhttp.open(options.type,options.url,options.async);
+      for(var header in options.headers){
+        xmlhttp.setRequestHeader(header,options.headers[header]);
+      }
+      xmlhttp.send(options.data);
+      if (!options.async){
+        if (xmlhttp.status == 200){
+            if (options.done!=undefined){
+              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}});
+            }else{
+              return {ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}};
+            }
+        }else{
+          if (options.fail!=undefined){
+            options.fail({ok:false,text:function(){return xmlhttp.responseText;}});
+          }else{
+            throw xmlhttp.responseText;
+          }
+        }
+      }
+    }
 
     /*borrowed from undescore source*/
     var has = function(obj, path) {

@@ -16,8 +16,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod), false).Length > 0)
                 {
-                    builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
-        var ret = $.extend([],{{
+                    builder.AppendLine(string.Format(@"{0}=extend({0},{{LoadAll:function(){{
+        var ret = extend([],{{
             {1}
             {2}
         }});
@@ -29,8 +29,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         Constants._LIST_EVENTS_CODE,
                         Constants._LIST_RELOAD_CODE.Replace("$url$", string.Format("'{0}'",urlRoot)).Replace("$type$", modelType.Name)
                     }));
-                    /*builder.AppendLine(string.Format(@"{0}=$.extend({0},{{LoadAll:function(){{
-        var ret = $.extend([],{{
+                    /*builder.AppendLine(string.Format(@"{0}=extend({0},{{LoadAll:function(){{
+        var ret = extend([],{{
             reload:function(async){{
                 async = (async==undefined ? true : async);
                 $.ajax({{

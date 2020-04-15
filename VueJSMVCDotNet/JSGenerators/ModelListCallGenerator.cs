@@ -41,7 +41,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                 {
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
-                    builder.AppendFormat(@"{0}=$.extend({0},{{
+                    builder.AppendFormat(@"{0}=extend({0},{{
     {1}:function(", new object[] { Constants.STATICS_VARAIBLE, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     string url = _CreateJavacriptUrlCode(mlm, mi, modelType);
@@ -55,7 +55,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(@"){
         pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
         pageSize = (pageSize == undefined ? 10 : (pageSize == null ? 10 : pageSize));
-        var ret = $.extend([],{
+        var ret = extend([],{
             currentIndex:function(){return pageStartIndex;},
             currentPageSize:function(){return pageSize;},
             currentPage:function(){return Math.floor(this.currentIndex()/this.currentPageSize());},
@@ -90,7 +90,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     else
                     {
                         builder.AppendLine(@"){
-        var ret = $.extend([],{");
+        var ret = extend([],{");
                     }
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);

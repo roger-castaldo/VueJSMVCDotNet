@@ -30,7 +30,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("{0}=$.extend({0},{{{1}:function(",new object[] { Constants.STATICS_VARAIBLE, mi.Name });
+                    builder.AppendFormat("{0}=extend({0},{{{1}:function(",new object[] { Constants.STATICS_VARAIBLE, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -75,25 +75,26 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response = $.ajax({{
+                    builder.AppendLine(string.Format(@"             var response = ajax(
+                    {{
+                        url:'{0}/{1}',
                     type:'SMETHOD',
-                    url:'{0}/{1}?_='+parseInt((new Date().getTime() / 1000).toFixed(0)).toString(),
+                    headers: {{
+                        'Content-Type': 'application/json',
+                    }},
                     data:JSON.stringify(function_data),
-                    content_type:'application/json; charset=utf-8',
-                    dataType:'json',
-                    async:false,
-                    cache:false
+                    async:false
                 }});
-                if (response.status==200){{
+                if (response.ok){{
                     {2}
                 }}else{{
-                    throw response.responseText;
+                    throw response.text();
                 }}", new object[]{
                         urlRoot,
                         mi.Name,
-                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.responseText;
+                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined)
-                        var response = JSON.parse(ret);")
+                        var response = ret;")
                     }));
                     if (mi.ReturnType != typeof(void))
                     {
