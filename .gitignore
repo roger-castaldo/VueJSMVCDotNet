@@ -1,3 +1,4 @@
-TestApplication/
+TestApplication/bin/
+TestApplication/obj/
 VueJSMVCDotNet/bin/
 VueJSMVCDotNet/obj/

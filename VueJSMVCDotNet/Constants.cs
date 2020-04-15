@@ -48,17 +48,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public static readonly string _LIST_RELOAD_CODE = string.Format(@"            reload:function(async){{
                 var tmp = this;
                 async = (async==undefined ? true : async);
-                $.ajax({{
-                    type:'GET',
+                ajax({{
                     url:$url$,
-                    dataType:'text',
+                    type:'GET',
                     async:async,
-                    cache:false
-                }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    throw errorThrown;
-                }}).done(function(data,textStatus,jqXHR){{
-                    if (jqXHR.status==200){{                 
-                        data = JSON.parse(data);
+                    credentials: 'include',
+                    done:function(response){{
+                    if (response.ok){{                 
+                        data = response.json();
                         if (data!=null){{
                             if (data.TotalPages!=undefined){{
                                 var pages = data.TotalPages;
@@ -121,6 +118,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }}else{{
                         throw data;
                     }}
+                }}
                 }});
             }}", new object[]{
                                                                             PARSERS_VARIABLE,

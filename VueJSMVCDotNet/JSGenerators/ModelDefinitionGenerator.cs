@@ -40,7 +40,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"reload:function(options){{
-                options = $.extend((options==undefined || options==null ?{{}}:options),{{
+                options = extend((options==undefined || options==null ?{{}}:options),{{
                     async:true,
                     success:function(){{}},
                     failure:function(error){{throw (error==undefined ? 'failed' : error);}}
@@ -49,21 +49,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     options.failure('Cannot reload unsaved model.');
                 }}else{{
                     var model=this;
-                    $.ajax({{
-                        type:'GET',
+                    ajax(
+                    {{
                         url:'{1}/'+this.id(),
-                        dataType:'text',
+                        type:'GET',
                         async:options.async,
-                        cache:false
-                    }}).fail(function(jqXHR,testStatus,errorThrown){{
-                        options.failure(errorThrown);
-                    }}).done(function(data,textStatus,jqXHR){{
-                        if (jqXHR.status==200){{                 
-                            {2}['{0}'](JSON.parse(data),model);
-                            model.$emit('{3}',model);
-                            options.success(model);
-                        }}else{{
-                            options.failure(data);
+                        fail:function(response){{options.failure(response.text());}},
+                        done:function(response){{
+                            if (response.ok){{                 
+                                {2}['{0}'](response.json(),model);
+                                model.$emit('{3}',model);
+                                options.success(model);
+                            }}else{{
+                                options.failure(response.text());
+                            }}
                         }}
                     }});
                 }}
@@ -78,7 +77,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendDelete(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         destroy:function(options){{
-            options = $.extend({{
+            options = extend({{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
@@ -87,26 +86,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 options.failure('Cannot delete unsaved model.');
             }}else{{
                 var model=this;
-                $.ajax({{
-                    type:'{2}',
+                ajax(
+                {{
                     url:'{0}/'+this.id(),
-                    content_type:'application/json; charset=utf-8',
-                    dataType:'text',
+                    type:'{2}',
                     async:options.async,
-                    cache:false
-                }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    options.failure(errorThrown);
-                }}).done(function(data,textStatus,jqXHR){{
-                    if (jqXHR.status==200){{                 
-                        data = JSON.parse(data);
-                        if (data){{
-                            model.$emit('{1}',model);
-                            options.success(model);
+                    fail:function(response){{options.failure(response.text());}},
+                    done:function(response){{
+                        if (response.ok){{                 
+                            var data = response.json();
+                            if (data){{
+                                model.$emit('{1}',model);
+                                options.success(model);
+                            }}else{{
+                                options.failure();
+                            }}
                         }}else{{
-                            options.failure();
+                            options.failure(response.text());
                         }}
-                    }}else{{
-                        options.failure(data);
                     }}
                 }});
             }}
@@ -120,7 +117,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         update:function(options){{
-            options = $.extend({{
+            options = extend({{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
@@ -133,34 +130,35 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }}
             else {{
                 var model=this;
-                $.ajax({{
-                   type:'{4}',
-                   url:'{0}/'+this.id(),
-                   content_type:'application/json; charset=utf-8',
-                   data:JSON.stringify({1}(this)),
-                   dataType:'text',
-                   async:options.async,
-                   cache:false
-                }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    options.failure(errorThrown);
-                }}).done(function(data,textStatus,jqXHR){{
-                    if (jqXHR.status==200){{                 
-                        data = JSON.parse(data);
-                        if (data){{
-                            data=model.{3}();
-                            for(var prop in data){{
-                                if (prop!='id'){{
-                                    data[prop]=model[prop];
+                ajax(
+                {{
+                    url:'{0}/'+this.id(),
+                    type:'{4}',   
+                    headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                    data:JSON.stringify({1}(this)),
+                    async:options.async,
+                    fail:function(response){{options.failure(response.text());}},
+                    done:function(response){{
+                        if (response.ok){{                 
+                            var data = response.json();
+                            if (data){{
+                                data=model.{3}();
+                                for(var prop in data){{
+                                    if (prop!='id'){{
+                                        data[prop]=model[prop];
+                                    }}
                                 }}
+                                model.{3}=function(){{return data;}};
+                                model.$emit('{2}',model);
+                                options.success(model);
+                            }}else{{
+                                options.failure();
                             }}
-                            model.{3}=function(){{return data;}};
-                            model.$emit('{2}',model);
-                            options.success(model);
                         }}else{{
-                            options.failure();
+                            options.failure(response.text());
                         }}
-                    }}else{{
-                        options.failure(data);
                     }}
                 }});
             }}
@@ -176,7 +174,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"             save:function(options){{
-            options = $.extend({{
+            options = extend({{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
@@ -190,25 +188,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             else {{
                 var data = {1}(this);
                 var model=this;
-                $.ajax({{
-                    type:'{4}',
+                ajax(
+                {{
                     url:'{0}',
-                    content_type:'application/json; charset=utf-8',
+                    type:'{4}',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                    }},
                     data:JSON.stringify(data),
-                    dataType:'text',
                     async:options.async,
-                    cache:false
-                }}).fail(function(jqXHR,testStatus,errorThrown){{
-                    options.failure(errorThrown);
-                }}).done(function(ret,textStatus,jqXHR){{
-                    if (jqXHR.status==200){{                 
-                        data.id=JSON.parse(ret).id;
-                        model.{2}= function(){{return data;}};
-                        model.id=function(){{return this.{2}().id;}};
-                        model.$emit('{3}',model);
-                        options.success(model);
-                    }}else{{
-                        options.failure(data);
+                    fail:function(response){{options.failure(response.text());}},
+                    done:function(response){{
+                        if (response.ok){{                 
+                            data.id=response.json().id;
+                            model.{2}= function(){{return data;}};
+                            model.id=function(){{return this.{2}().id;}};
+                            model.$emit('{3}',model);
+                            options.success(model);
+                        }}else{{
+                            options.failure(response.text());
+                        }}
                     }}
                 }});
             }}
@@ -273,25 +272,26 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response = $.ajax({{
+                    builder.AppendLine(string.Format(@"             var response = ajax(
+                    {{
+                        url:'{0}/'+this.id()+'/{1}',
                     type:'METHOD',
-                    url:'{0}/'+this.id()+'/{1}?_='+parseInt((new Date().getTime() / 1000).toFixed(0)).toString(),
+                    headers: {{
+                        'Content-Type': 'application/json',
+                    }},
                     data:JSON.stringify(function_data),
-                    content_type:'application/json; charset=utf-8',
-                    dataType:'json',
-                    async:false,
-                    cache:false
+                    async:false
                 }});
-                if (response.status==200){{
+                if (response.ok){{
                     {2}
                 }}else{{
-                    throw response.responseText;
+                    throw response.text();
                 }}", new object[]{
                         urlRoot,
                         mi.Name,
-                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.responseText;
+                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined)
-                        var response = JSON.parse(ret);")
+                        var response = ret;")
                     }));
                     if (mi.ReturnType != typeof(void))
                     {

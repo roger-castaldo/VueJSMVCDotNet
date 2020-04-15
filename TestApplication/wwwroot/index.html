@@ -1,0 +1,175 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+        
+    </head>
+    <body>
+        <script src="/resources/scripts/mPerson.js"></script>
+        <table id="dvList">
+            <thead>
+                <tr>
+                    <th colspan="100%">Full Person List</th>
+                </tr>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>FullName</th>
+                    <th>
+                        <button v-on:click="CreateNew">Create New</button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="person in people">
+                    <td>{{person.FirstName}}</td>
+                    <td>{{person.LastName}}</td>
+                    <td>{{person.GetFullName()}}</td>
+                    <td>
+                        <button v-on:click="person.destroy()">Delete</button>
+                        <button v-on:click="EditPerson(person)">Edit</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table id="dvListFiltered">
+            <thead>
+                <tr>
+                    <th colspan="100%">Filtered Person List</th>
+                </tr>
+                <tr>
+                    <th colspan="100%">
+                        <input type="text" v-model="current_filter"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>FullName</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="person in people">
+                    <td>{{person.FirstName}}</td>
+                    <td>{{person.LastName}}</td>
+                    <td>{{person.GetFullName()}}</td>
+                </tr>
+            </tbody>
+        </table>
+        <table id="dvedit" v-show="person!=null">
+            <thead>
+                <tr>
+                    <th colspan="100%">
+                        <template v-if="person!=null && person.isNew()">
+                            Create
+                        </template>
+                        <template v-if="person!=null && !person.isNew()">
+                            Edit
+                        </template>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>First Name:</td>
+                    <td><input type="text" v-model="FirstName"/></td>
+                </tr>
+                <tr>
+                    <td>Last Name:</td>
+                    <td><input type="text" v-model="LastName"/></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="100%">
+                        <button v-on:click="Save" :disabled="FirstName==null||LastName==null">
+                            <template v-if="person!=null && person.isNew()">
+                                Create
+                            </template>
+                            <template v-if="person!=null && !person.isNew()">
+                                Update
+                            </template>
+                        </button>
+                        <button v-on:click="person=null">
+                            Cancel
+                        </button>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        <script>
+            var frm = new Vue({
+                el:'#dvedit',
+                data:function(){
+                    return {person:null,lst:null,FirstName:null,LastName:null};
+                },
+                watch:{
+                    person:function(val){
+                        if (val==null){
+                            this.FirstName=null;
+                            this.LastName=null;
+                        }else{
+                            this.FirstName=val.FirstName;
+                            this.LastName = val.LastName;
+                        }     
+                    }
+                },
+                methods:{
+                    Save:function(){
+                        this.person.FirstName=this.FirstName;
+                        this.person.LastName=this.LastName;
+                        if (this.person.isNew()){
+                            this.person.save({async:false});
+                            this.lst.reload();
+                            this.person=null;
+                        }else{
+                            this.person.update({async:false});
+                            this.person = null;
+                        }
+                    }
+                }
+            });
+            var lst = new Vue({
+                el: '#dvList',
+                data:function(){
+                    return {
+                        people:null
+                    };
+                },
+                methods:{
+                    EditPerson:function(person){
+                        frm.person=person;
+                    },
+                    CreateNew:function(){
+                        frm.lst=this.people;
+                        frm.person = new App.Models.mPerson();
+                    }
+                }
+            });
+            lst.people = App.Models.mPerson.LoadAll();
+            var lstFiltered = new Vue({
+                el: '#dvListFiltered',
+                data:function(){
+                    return {
+                        people:null,
+                        current_filter:null
+                    };
+                },
+                watch:{
+                    current_filter:function(val){
+                        if (val==''){
+                            val=null;
+                            this.current_filter=null;
+                            this.people=null;
+                        }else if (val!=null){
+                            if (this.people==null){
+                                this.people = App.Models.mPerson.Search(val);
+                            }else{
+                                this.people.changeParameters(val);
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
