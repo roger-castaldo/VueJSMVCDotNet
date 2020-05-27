@@ -110,5 +110,10 @@ namespace TestApplication{
             return string.Format("{0}, {1}",new object[]{LastName,FirstName});
         }
 
+        [ExposedMethod(true)]
+        public static mPerson TestNull(){
+            return null;
+        }
+
     }
 }

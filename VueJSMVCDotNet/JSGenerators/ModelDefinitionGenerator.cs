@@ -290,7 +290,7 @@ for(var x=0;x<{0}.length;x++){{
                         urlRoot,
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
-                    if (ret!=undefined)
+                    if (ret!=undefined||ret==null)
                         response = ret;")
                     }));
                     if (mi.ReturnType != typeof(void))
