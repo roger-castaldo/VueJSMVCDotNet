@@ -10,10 +10,10 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.0.25</Version>
-    <PackageReleaseNotes>patch for generic types and parsers to handle array properly</PackageReleaseNotes>
+    <Version>1.1.1</Version>
+    <PackageReleaseNotes>corrected bug with respect to certain method calls</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.0.25.0</AssemblyVersion>
+    <AssemblyVersion>1.1.1.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

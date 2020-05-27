@@ -291,7 +291,7 @@ for(var x=0;x<{0}.length;x++){{
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined)
-                        var response = ret;")
+                        response = ret;")
                     }));
                     if (mi.ReturnType != typeof(void))
                     {
