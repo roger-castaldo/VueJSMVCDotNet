@@ -1,21 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>Org.Reddragonit.VueJSMVCDotNet</RootNamespace>
     <Description>A DotNet to VueJS interface library.  This is used to generate model(mvc) style Vues designed to allow an integrated interface between the javascript and backend for data manipulation and obtainment.  It does require that you include vuejs and jquery in your project as the code uses it.</Description>
     <PackageProjectUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</PackageProjectUrl>
-    <PackageLicenseUrl/>
+    <PackageLicenseUrl></PackageLicenseUrl>
     <RepositoryUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.2.18</Version>
-    <PackageReleaseNotes>corrected bug wrt 304 return</PackageReleaseNotes>
+    <Version>1.1.2</Version>
+    <PackageReleaseNotes>corrected bug with respect to certain method calls</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.18.0</AssemblyVersion>
-    <FileVersion>1.2.18.0</FileVersion>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions"/>
+  </ItemGroup>
+
 </Project>
