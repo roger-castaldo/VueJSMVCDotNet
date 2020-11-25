@@ -9,7 +9,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelLoadAllGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.LOAD_METHOD_FLAGS))

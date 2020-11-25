@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.2/vue.global.js" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <div id="app">
+            <p>{{ count }}</p>
+            <p>{{ doubled }}</p>
+        </div>
+    </body>
+    <script>
+            var opts = {
+                data(){
+                    return {count:0};
+                },
+                computed:{
+                    doubled:{
+                        get:function(){
+                            return this.count*2;
+                        }
+                    },
+                    initial:{
+                        get:function(){
+                            return 0;
+                        }
+                    }
+                }
+            };
+            window.App = window.App||{};
+            window.App.Models = window.App.Models||{};
+            window.App.Models.mTest = {
+                newInstance:function(){
+                    return Vue.createApp(opts);
+                }
+            };
+            window.app = App.Models.mTest.newInstance().mount('#app');
+            window.dummy = {
+                count:0,
+                get doubled(){return this.count*2;}
+            };
+    </script>
+</html>

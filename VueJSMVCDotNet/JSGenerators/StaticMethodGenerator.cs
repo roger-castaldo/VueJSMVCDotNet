@@ -9,7 +9,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class StaticMethodGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             string urlRoot = "";
             foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false))

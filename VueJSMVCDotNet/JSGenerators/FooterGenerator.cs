@@ -5,9 +5,9 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
-    internal class FooterGenerator : IJSGenerator
+    internal class FooterGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder)
         {
             builder.AppendLine(@"}).call(this);");
         }

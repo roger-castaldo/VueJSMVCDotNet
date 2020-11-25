@@ -7,7 +7,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ExtendMethodGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             builder.AppendLine(string.Format(@"     var ext = function(clazz,data){{
         var ret = extend((clazz._extend==undefined ? clazz.extend(data) : clazz._extend(data)),{1});

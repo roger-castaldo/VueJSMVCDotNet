@@ -11,9 +11,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
     internal class JSHandler : IRequestHandler
     {
+        private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
+            new HeaderGenerator()
+        };
+
+        private static readonly IBasicJSGenerator[] _oneTimeFinishGenerators = new IBasicJSGenerator[]{
+            new FooterGenerator()
+        };
+
         private static readonly IJSGenerator[] _generators = new IJSGenerator[]
         {
-            new HeaderGenerator(),
             new JSONGenerator(),
             new ParsersGenerator(),
             new ModelDefinitionGenerator(),
@@ -22,8 +29,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             new ModelLoadGenerator(),
             new StaticMethodGenerator(),
             new ModelListCallGenerator(),
-            new ExtendMethodGenerator(),
-            new FooterGenerator()
+            new ExtendMethodGenerator()
         };
 
         private Dictionary<string, string> _cache;
@@ -75,7 +81,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 throw new CallNotFoundException();
             else
             {
-                Type model = null;
+                List<Type> models = new List<Type>();
                 if (_types != null)
                 {
                     foreach (Type t in _types)
@@ -83,14 +89,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
                         {
                             if (mjsfp.IsMatch(url))
-                            {
-                                model = t;
-                                break;
-                            }
+                                models.Add(t);
                         }
                     }
-                    if (model != null)
-                    {
+                    foreach (Type model in models){
                         if (!securityCheck.Invoke(model, null, session,null,url,null))
                             throw new InsecureAccessException();
                     }
@@ -103,11 +105,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     if (_cache.ContainsKey(url))
                         ret = _cache[url];
                 }
-                if (ret == null && model != null)
+                if (ret == null && models.Count>0)
                 {
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
-                    foreach (IJSGenerator gen in _generators)
-                        gen.GeneratorJS(ref builder, url.ToLower().EndsWith(".min.js"), model);
+                    foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
+                        gen.GeneratorJS(ref builder);
+                    foreach (Type model in models){
+                        foreach (IJSGenerator gen in _generators)
+                            gen.GeneratorJS(ref builder, model);
+                    }
+                    foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
+                        gen.GeneratorJS(ref builder);
                     ret = builder.ToString();
                     lock (_cache)
                     {

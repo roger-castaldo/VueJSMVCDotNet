@@ -10,7 +10,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ParsersGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             builder.AppendLine(string.Format("    var {0}={{}};",Constants.PARSERS_VARIABLE));
             List<Type> types = new List<Type>();
