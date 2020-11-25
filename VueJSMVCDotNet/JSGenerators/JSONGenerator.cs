@@ -9,7 +9,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, bool minimize, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             builder.AppendLine(string.Format(@"   var {0} = function(model){{
         var attrs={{}};
