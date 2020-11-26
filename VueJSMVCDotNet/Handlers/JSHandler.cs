@@ -19,17 +19,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             new FooterGenerator()
         };
 
-        private static readonly IJSGenerator[] _generators = new IJSGenerator[]
+        private static readonly IJSGenerator[] _instanceGenerators = new IJSGenerator[]
         {
+            new ModelInstanceHeaderGenerator(),
             new JSONGenerator(),
             new ParsersGenerator(),
             new ModelDefinitionGenerator(),
-            new StaticCallsHeaderGenerator(),
+            new ModelInstanceFooterGenerator()
+        };
+
+        private static readonly IJSGenerator[] _globalGenerators = new IJSGenerator[]
+        {
             new ModelLoadAllGenerator(),
             new ModelLoadGenerator(),
             new StaticMethodGenerator(),
-            new ModelListCallGenerator(),
-            new ExtendMethodGenerator()
+            new ModelListCallGenerator()
         };
 
         private Dictionary<string, string> _cache;
@@ -111,7 +115,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
                         gen.GeneratorJS(ref builder);
                     foreach (Type model in models){
-                        foreach (IJSGenerator gen in _generators)
+                        foreach (IJSGenerator gen in _instanceGenerators)
+                            gen.GeneratorJS(ref builder, model);
+                        foreach (IJSGenerator gen in _globalGenerators)
                             gen.GeneratorJS(ref builder, model);
                     }
                     foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)

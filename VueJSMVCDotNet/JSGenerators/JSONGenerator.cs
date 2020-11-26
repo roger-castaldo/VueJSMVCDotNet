@@ -9,12 +9,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type thisType)
         {
-            builder.AppendLine(string.Format(@"   var {0} = function(model){{
+            builder.AppendLine(string.Format(@"   methods = extend(methods,{{{0}:function(){{
         var attrs={{}};
-        var prop=null;", Constants.TO_JSON_VARIABLE));
-            foreach (PropertyInfo p in Utility.GetModelProperties(modelType))
+        var prop=null;",Constants.TO_JSON_VARIABLE));
+            foreach (PropertyInfo p in Utility.GetModelProperties(thisType))
             {
                 if (p.CanWrite)
                 {
@@ -41,9 +41,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                     if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
-                        builder.AppendLine(string.Format("            prop = (model.{1}==undefined ? (model.{0}!=undefined ? model.{0} : null) : (model.{1}().{0}!=undefined ? model.{1}().{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
+                        builder.AppendLine(string.Format("            prop = (this.{1}==undefined ? (this.{0}!=undefined ? this.{0} : null) : (this.{1}().{0}!=undefined ? this.{1}().{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
                     else
-                        builder.AppendLine(string.Format("            prop = (model.{0}!=undefined ? model.{0} : null);", p.Name));
+                        builder.AppendLine(string.Format("            prop = (this.{0}!=undefined ? this.{0} : null);", p.Name));
                     if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
                     {
                         builder.AppendLine(string.Format(@"     if (prop==null) {{
@@ -63,8 +63,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(string.Format("        attrs.{0}=prop;",p.Name));
                 }
             }
-            builder.AppendLine(string.Format(@"     if (model.{0}!=undefined){{
-            var tmp = model.{0}();
+            builder.AppendLine(string.Format(@"     if (this.{0}!=undefined){{
+            var tmp = this.{0};
             for(prop in tmp){{
                 if (isEqual(tmp[prop],attrs[prop])){{
                     delete attrs[prop];
@@ -72,7 +72,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }}
         }}
         return attrs;
-    }};",Constants.INITIAL_DATA_KEY));
+    }}}});",Constants.INITIAL_DATA_KEY));
         }
     }
 }

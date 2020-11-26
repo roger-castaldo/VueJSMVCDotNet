@@ -12,21 +12,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType);
-            builder.AppendLine(string.Format(@"{0}=extend({0},{{Load:function(id){{
+            builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:function(id){{
         var response = ajax(
         {{
-            url:'{2}/'+id,
+            url:'{1}/'+id,
             type:'GET',
             async:false
         }});
         if (response.ok){{
             var response=response.json();
-            return {3}['{1}'](response,new App.Models.{1}());
+            if (response==null){{ return null; }}
+            var ret = App.Models.{0}.{2}();
+            ret.{3}(response);
+            return ret;
         }}else{{
             throw response.text();
         }}
     }}
-}});", new object[] { Constants.STATICS_VARAIBLE,modelType.Name,urlRoot,Constants.PARSERS_VARIABLE}));
+}});", new object[] { modelType.Name,urlRoot,Constants.CREATE_INSTANCE_FUNCTION_NAME,Constants.PARSE_FUNCTION_NAME}));
         }
     }
 }
