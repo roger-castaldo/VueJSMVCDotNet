@@ -30,7 +30,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("{0}=extend({0},{{{1}:function(",new object[] { Constants.STATICS_VARAIBLE, mi.Name });
+                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -132,19 +132,23 @@ for(var x=0;x<{0}.length;x++){{
                             {
                                 builder.AppendLine(string.Format(@"      ret=[];
             for (var x=0;x<response.length;x++){{
-                ret.push({1}['{0}'](response[x],new App.Models.{0}());
+                ret.push(App.Models.{0}.{1}());
+                ret[x].{2}(response[x]);
             }}
             response = ret;", new object[]{
                                 propType.Name,
-                                Constants.PARSERS_VARIABLE
+                                Constants.CREATE_INSTANCE_FUNCTION_NAME,
+                                Constants.PARSE_FUNCTION_NAME
                                     }));
                             }
                             else
                             {
-                                builder.AppendLine(string.Format(@"             ret = {1}['{0}'](response,new App.Models.{0}());
+                                builder.AppendLine(string.Format(@"             ret = App.Models.{0}.{1}();
+            ret.{2}(response);
             response=ret;", new object[]{
                   propType.Name,
-                  Constants.PARSERS_VARIABLE
+                  Constants.CREATE_INSTANCE_FUNCTION_NAME,
+                  Constants.PARSE_FUNCTION_NAME
                       }));
                             }
                         }

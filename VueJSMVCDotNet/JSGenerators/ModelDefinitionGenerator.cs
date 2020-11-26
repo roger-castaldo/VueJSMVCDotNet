@@ -14,14 +14,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType);
-            builder.AppendLine(string.Format(@"App.Models.{0}=Vue.extend({{", modelType.Name));
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             IModel m = (IModel)modelType.GetConstructor(new Type[] { }).Invoke(new object[] { });
             _AppendData(m, props, ref builder);
             _AppendComputed(m, props, ref builder);
 
-            builder.AppendLine(string.Format(@"    methods:{{
-        isNew:function(){{ return (this.{0}==undefined ? true : (this.id==undefined? true : this.id()==undefined||this.id()==null));}},",Constants.INITIAL_DATA_KEY));
+            builder.AppendLine(string.Format(@"    methods = extend(methods,{{
+        isNew:function(){{ return (this.{0}==undefined ? true : (this.id==undefined? true : this.id==undefined||this.id==null));}},",Constants.INITIAL_DATA_KEY));
             _AppendInstanceMethods(modelType,urlRoot, ref builder);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
@@ -33,8 +32,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     _AppendDelete(urlRoot, ref builder);
             }
             _AppendReloadMethod(modelType, urlRoot, ref builder);
-            builder.AppendLine("    }");
-            builder.AppendLine("});");
+            builder.AppendLine("    });");
         }
 
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
@@ -51,14 +49,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     var model=this;
                     ajax(
                     {{
-                        url:'{1}/'+this.id(),
+                        url:'{0}/'+this.id,
                         type:'GET',
                         async:options.async,
                         fail:function(response){{options.failure(response.text());}},
                         done:function(response){{
                             if (response.ok){{                 
-                                {2}['{0}'](response.json(),model);
-                                model.$emit('{3}',model);
+                                model.{1}(response.json());
+                                if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
                                 options.success(model);
                             }}else{{
                                 options.failure(response.text());
@@ -67,9 +65,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }});
                 }}
             }}", new object[]{
-                modelType.Name,
                 urlRoot,
-                Constants.PARSERS_VARIABLE,
+                Constants.PARSE_FUNCTION_NAME,
                 Constants.Events.MODEL_LOADED
             }));
         }
@@ -88,7 +85,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 var model=this;
                 ajax(
                 {{
-                    url:'{0}/'+this.id(),
+                    url:'{0}/'+this.id,
                     type:'{2}',
                     async:options.async,
                     fail:function(response){{options.failure(response.text());}},
@@ -96,7 +93,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         if (response.ok){{                 
                             var data = response.json();
                             if (data){{
-                                model.$emit('{1}',model);
+                                if (model.$emit!=undefined){{model.$emit('{1}',model);}}
                                 options.success(model);
                             }}else{{
                                 options.failure();
@@ -132,12 +129,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 var model=this;
                 ajax(
                 {{
-                    url:'{0}/'+this.id(),
+                    url:'{0}/'+this.id,
                     type:'{4}',   
                     headers: {{
                             'Content-Type': 'application/json',
                         }},
-                    data:JSON.stringify({1}(this)),
+                    data:JSON.stringify(this.{1}()),
                     async:options.async,
                     fail:function(response){{options.failure(response.text());}},
                     done:function(response){{
@@ -150,8 +147,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                         data[prop]=model[prop];
                                     }}
                                 }}
-                                model.{3}=function(){{return data;}};
-                                model.$emit('{2}',model);
+                                Object.defineProperty(model,'{3}',{{get:function(){{return data;}}}});
+                                if (model.$emit!=undefined){{model.$emit('{2}',model);}}
                                 options.success(model);
                             }}else{{
                                 options.failure();
@@ -186,7 +183,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 options.failure('Cannot save a saved model,please call update instead.');
             }}
             else {{
-                var data = {1}(this);
+                var data = this.{1}();
                 var model=this;
                 ajax(
                 {{
@@ -201,9 +198,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     done:function(response){{
                         if (response.ok){{                 
                             data.id=response.json().id;
-                            model.{2}= function(){{return data;}};
-                            model.id=function(){{return this.{2}().id;}};
-                            model.$emit('{3}',model);
+                            Object.defineProperty(model,'{2}',{{get:function(){{return data;}}}});
+                            Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}}}});
+                            if (model.$emit!=undefined){{model.$emit('{3}',model);}}
                             options.success(model);
                         }}else{{
                             options.failure(response.text());
@@ -274,7 +271,7 @@ for(var x=0;x<{0}.length;x++){{
                     }
                     builder.AppendLine(string.Format(@"             var response = ajax(
                     {{
-                        url:'{0}/'+this.id()+'/{1}',
+                        url:'{0}/'+this.id+'/{1}',
                     type:'METHOD',
                     headers: {{
                         'Content-Type': 'application/json',
@@ -329,19 +326,23 @@ for(var x=0;x<{0}.length;x++){{
                             {
                                 builder.AppendLine(string.Format(@"         ret=[];
             for (var x=0;x<response.length;x++){{
-                ret.push({1}(response[x],new App.Models.{0}()));
+                ret.push(App.Models.{0}.{1}());
+                ret[x].{2}(response[x]);
             }}
             response = ret;", new object[]{
                                 propType.Name,
-                                Constants.PARSERS_VARIABLE
+                                Constants.CREATE_INSTANCE_FUNCTION_NAME,
+                                Constants.PARSE_FUNCTION_NAME
                                     }));
                             }
                             else
                             {
-                                builder.AppendLine(string.Format(@"             ret = {1}(response,new App.Models.{0}());
-response=ret;", new object[]{
+                                builder.AppendLine(string.Format(@"             ret = App.Models.{0}.{1}();
+            ret.{2}(response);
+            response=ret;", new object[]{
                   propType.Name,
-                  Constants.PARSERS_VARIABLE
+                  Constants.CREATE_INSTANCE_FUNCTION_NAME,
+                  Constants.PARSE_FUNCTION_NAME
                       }));
                             }
                         }
@@ -355,8 +356,7 @@ response=ret;", new object[]{
 
         private void _AppendData(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(@"   data:function(){
-        return {");
+            builder.AppendLine(@"   data = {");
             bool isFirst = true;
             foreach (PropertyInfo pi in props)
             {
@@ -373,13 +373,12 @@ response=ret;", new object[]{
                 }
             }
             builder.AppendLine(@"
-        };
-    },");
+    };");
         }
 
         private void _AppendComputed(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine("    computed:{");
+            builder.AppendLine("    computed = extend(computed,{");
             foreach (PropertyInfo pi in props)
             {
                 if (!pi.CanWrite)
@@ -388,7 +387,7 @@ response=ret;", new object[]{
                     {
                         builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
-                    return  (this.{1} == undefined ? undefined : (this.{1}().{0}==null ? null : new Date(this.{1}().{0})));
+                    return  (this.{1} == undefined ? undefined : (this.{1}.{0}==null ? null : new Date(this.{1}.{0})));
                 }}
             }},", new object[]{
                         pi.Name,
@@ -399,7 +398,7 @@ response=ret;", new object[]{
                     {
                         builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
-                    return  (this.{1} == undefined ? undefined : this.{1}().{0});
+                    return  (this.{1} == undefined ? undefined : this.{1}.{0});
                 }}
             }},", new object[]{
                         pi.Name,
@@ -409,7 +408,7 @@ response=ret;", new object[]{
                 }
             }
             _AppendValidations(props, ref builder);
-            builder.AppendLine("    },");
+            builder.AppendLine("    });");
         }
 
         private void _AppendValidations(List<PropertyInfo> props, ref WrappedStringBuilder builder)

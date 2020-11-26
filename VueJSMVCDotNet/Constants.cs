@@ -8,10 +8,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     internal static class Constants
     {
         public static readonly DateTime UTC = new DateTime(1970, 1, 1, 00, 00, 00, DateTimeKind.Utc);
-        public const string PARSERS_VARIABLE = "parsers";
         public const string INITIAL_DATA_KEY = "_initialData";
-        public const string TO_JSON_VARIABLE = "ModelToJSON";
-        public const string STATICS_VARAIBLE = "staticCalls";
+        public const string TO_JSON_VARIABLE = "_toJSON";
+        public const string PARSE_FUNCTION_NAME = "_parse";
+        public const string CREATE_INSTANCE_FUNCTION_NAME = "createInstance";
         public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
         public static readonly string _LIST_EVENTS_CODE = string.Format(@"          _events:{{
@@ -67,10 +67,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         }}
                         if (data!=null){{
                             for(var x=0;x<data.length;x++){{ 
-                                data[x] = {0}['$type$'](data[x],new App.Models.$type$()); 
+                                var mtmp = App.Models.$type$.{8}();
+                                mtmp.{0}(data[x]);
+                                data[x] = mtmp;
                                 data[x].$on('{1}',function(model){{
                                     for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id()==model.id()){{
+                                        if (tmp[x].id==model.id){{
                                             tmp._trigger('{2}',model);
                                             tmp.splice(x,1);
                                             break;
@@ -79,7 +81,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }});
                                 data[x].$on('{3}',function(model){{
                                     for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id()==model.id()){{
+                                        if (tmp[x].id==model.id){{
                                             tmp._trigger('{4}',model);
                                             Vue.set(tmp,x,model);
                                             break;
@@ -88,7 +90,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }});
                                 data[x].$on('{5}',function(model){{
                                     for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id()==model.id()){{
+                                        if (tmp[x].id==model.id){{
                                             tmp._trigger('{6}',model);
                                             Vue.set(tmp,x,model);
                                             break;
@@ -121,14 +123,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }}
                 }});
             }}", new object[]{
-                                                                            PARSERS_VARIABLE,
+                                                                            PARSE_FUNCTION_NAME,
                                                                             Events.MODEL_DESTROYED,
                                                                             Events.LIST_MODEL_DESTROYED,
                                                                             Events.MODEL_UPDATED,
                                                                             Events.LIST_MODEL_UPDATED,
                                                                             Events.MODEL_LOADED,
                                                                             Events.LIST_MODEL_LOADED,
-                                                                            Events.LIST_LOADED
+                                                                            Events.LIST_LOADED,
+                                                                            CREATE_INSTANCE_FUNCTION_NAME
         });
         public static class Events
         {

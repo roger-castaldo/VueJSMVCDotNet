@@ -41,8 +41,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                 {
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
-                    builder.AppendFormat(@"{0}=extend({0},{{
-    {1}:function(", new object[] { Constants.STATICS_VARAIBLE, mi.Name });
+                    builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
+    {1}:function(", new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     string url = _CreateJavacriptUrlCode(mlm, mi, modelType);
                     if (mlm.Paged)
@@ -95,62 +95,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
                     builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name));
-                    /*builder.AppendLine(@"reload:function(){
-                var tmp = this;
-                var response = $.ajax({
-                    type:'GET',
-                    url:this.url(),
-                    dataType:'text',
-                    async:false,
-                    cache:false
-                }).fail(function(jqXHR,testStatus,errorThrown){
-                    throw errorThrown;
-                }).done(function(data,textStatus,jqXHR){
-                    if (jqXHR.status==200){
-                        data = JSON.parse(data);
-                        while(tmp.length>0){ret.pop();}");
-                    if (mlm.Paged)
-                        builder.AppendLine("tmp.totalPages=function(){return data.TotalPages;};");
-                    builder.AppendLine(string.Format(@"                 if (data{2}!=null){{
-                            for(var x=0;x<data{2}.length;x++){{
-                                tmp.push({1}['{0}'](data{2}[x],new App.Models.{0}()));
-                            }}
-                        }}
-                        for(var x=0;x<tmp.length;x++){{
-                            tmp[x].$on('{4}',function(model){{
-                                tmp.reload();
-                            }});
-                            tmp[x].$on('{5}',function(model){{
-                                for(var x=0;x<tmp.length;x++){{
-                                    if (tmp[x].id()==model.id()){{
-                                        Vue.set(tmp,x,model);
-                                        break;
-                                    }}
-                                }}
-                            }});
-                            tmp[x].$on('{6}',function(model){{
-                                for(var x=0;x<tmp.length;x++){{
-                                    if (tmp[x].id()==model.id()){{
-                                        Vue.set(tmp,x,model);
-                                        break;
-                                    }}
-                                }}
-                            }});
-                        }}
-                    }}else{{
-                        throw data;
-                    }}
-                }});
-            }},
-            url:function(){{ return {3};}}", new object[] {
-                        modelType.Name,
-                        Constants.PARSERS_VARIABLE,
-                        (mlm.Paged ? ".response" : ""),
-                        url,
-                        Constants.Events.MODEL_DESTROYED,
-                        Constants.Events.MODEL_UPDATED,
-                        Constants.Events.MODEL_LOADED
-                    }));*/
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
                         builder.AppendLine(@",

@@ -1,0 +1,8 @@
+﻿<div class="form-group" v-bind:class="[typeclass,fieldclass,columns]">
+  <template  v-if="input.type=='text'">
+    <form-text v-bind:name="input.name" v-bind:label="input.label" v-bind:subtype="input.subtype" v-bind:required="input.required"/>
+  </template>
+  <template v-else>
+    <p>For Element</p>
+  </template>
+</div>
