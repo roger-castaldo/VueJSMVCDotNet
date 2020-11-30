@@ -94,6 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
+                    builder.Append(Constants.ARRAY_TO_VUE_METHOD);
                     builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name));
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
@@ -107,10 +108,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.Append("            changeParameters:function(");
                         for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                             builder.Append((x > 0 ? "," : "") + pars[x].Name);
-                        builder.AppendLine(string.Format(@"){{
+                        builder.AppendLine(@"){
+                if (arguments.length!=0){
+                    if (Array.isArray(arguments[0]) && arguments.length==1){
+                        var args = arguments[0];");
+                        for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
+                            builder.AppendLine(string.Format("                      {0} = (args.length>{1} ? args[{1}] : undefined);",pars[x].Name,x));
+                        builder.AppendLine(string.Format(@"                    }}
+                }}
                 this.url=function(){{ return {0};}};
                 this.currentParameters=function(){{
-                    return {{",url));
+                    return {{", url));
                         for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                             builder.AppendLine(string.Format("              {0}:{0}{1}", new object[] { pars[x].Name, (x + 1 == (mlm.Paged ? pars.Length - 3 : pars.Length) ? "" : ",") }));
                         builder.AppendLine(@"                   };

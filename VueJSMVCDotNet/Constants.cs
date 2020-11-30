@@ -12,6 +12,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public const string TO_JSON_VARIABLE = "_toJSON";
         public const string PARSE_FUNCTION_NAME = "_parse";
         public const string CREATE_INSTANCE_FUNCTION_NAME = "createInstance";
+        public const string IS_VUE_3_VARIABLE = "isVue3";
         public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
         public static readonly string _LIST_EVENTS_CODE = string.Format(@"          _events:{{
@@ -83,7 +84,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     for(var x=0;x<tmp.length;x++){{
                                         if (tmp[x].id==model.id){{
                                             tmp._trigger('{4}',model);
-                                            Vue.set(tmp,x,model);
+                                            if ({9}){{
+                                                tmp['splice'](x,1,model);
+                                            }}else{{
+                                                Vue.set(tmp,x,model);
+                                            }}
                                             break;
                                         }}
                                     }}
@@ -92,7 +97,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     for(var x=0;x<tmp.length;x++){{
                                         if (tmp[x].id==model.id){{
                                             tmp._trigger('{6}',model);
-                                            Vue.set(tmp,x,model);
+                                            if ({9}){{
+                                                tmp['splice'](x,1,model);
+                                            }}else{{
+                                                Vue.set(tmp,x,model);
+                                            }}
                                             break;
                                         }}
                                     }}
@@ -102,17 +111,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             if (tmp.length-data.length>0){{
                                 tmp.splice(0,tmp.length-data.length);
                             }}else{{
-                                tmp.push('');
+                                tmp.push(App.Models.$type$.{8}());
                                 tmp.splice(tmp.length-1,tmp.length);
                             }}
-                            /*for(var x=0;x<data.length;x++){{
-                                tmp.push(data[x]);
-                            }}*/
                         }}else{{
                             if (tmp.length>0){{
                                 tmp.splice(0,tmp.length);
                             }}else{{
-                                tmp.push('');
+                                tmp.push(App.Models.$type$.{8}());
                                 tmp.splice(tmp.length-1,tmp.length);
                             }}
                         }}
@@ -131,8 +137,71 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                                             Events.MODEL_LOADED,
                                                                             Events.LIST_MODEL_LOADED,
                                                                             Events.LIST_LOADED,
-                                                                            CREATE_INSTANCE_FUNCTION_NAME
+                                                                            CREATE_INSTANCE_FUNCTION_NAME,
+                                                                            IS_VUE_3_VARIABLE
         });
+        public static readonly string ARRAY_TO_VUE_METHOD = string.Format(@"            toVue:function(options){{
+                options = options || {{}};
+                var items = this;
+                var computed = {{
+                    Items:{{
+                        get:function(){{return items;}}
+                    }}
+                }};
+                var methods = {{
+                    reload:function(){{
+                        this.Items.reload();
+                    }}
+                }};
+                if (this.currentIndex!=undefined){{
+                    methods= extend(methods,{{
+                        currentIndex:function(){{ return this.Items.currentIndex();}},
+                        currentPageSize:function(){{ return this.Items.currentPageSize();}},
+                        totalPages:function(){{ return this.Items.totalPages();}},
+                        moveToPage:function(pageNumber){{ return this.Items.moveToPage(pageNumber);}},
+                        moveToNextPage:function(){{ return this.Items.moveToNextPage();}},
+                        moveToPreviousPage:function(){{ return this.Items.moveToPreviousPage();}},
+                        changePageSize:function(){{ return this.Items.changePageSize();}},
+                        currentParameters:function(){{ return this.Items.currentParameters();}},
+                        changeParameters:function(){{
+                            if (arguments.length==0){{
+                                this.Items.changeParameters.call(this.Items);
+                            }}else{{
+                                var args=[];
+                                for(var x=0;x<arguments.length;x++){{
+                                    args.push(arguments[x]);
+                                }}
+                                this.Items.changeParameters.call(this.Items,args);
+                            }}
+                        }}
+                    }});
+                }}
+                var _created = options.created;
+                options.created = function(){{
+                    var view=this;
+                    this.Items.on('{1}',function(){{view.$forceUpdate();}});
+                    this.Items.on('{2}',function(){{view.$forceUpdate();}});
+                    this.Items.on('{3}',function(){{view.$forceUpdate();}});
+                    this.Items.on('{4}',function(){{view.$forceUpdate();}});
+                    if (_created!=undefined&&_created!=null){{
+                        _created.call(this);
+                    }}
+                }};
+                options.computed = extend(computed,options.computed);
+                options.methods = extend(methods,options.methods);
+                if ({0}){{
+                    return Vue.createApp(options);
+                }}else{{
+                    return new Vue(options);
+                }}
+            }},", new object[]{
+                                                                               IS_VUE_3_VARIABLE,
+                                                                               Events.LIST_MODEL_LOADED,
+                                                                               Events.LIST_MODEL_UPDATED,
+                                                                               Events.LIST_MODEL_DESTROYED,
+                                                                               Events.LIST_LOADED
+            });
+
         public static class Events
         {
             public const string MODEL_LOADED = "loaded";

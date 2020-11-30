@@ -20,6 +20,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         var ret = extend([],{{
             {1}
             {2}
+            {3}
         }});
         ret.reload(false);
         return ret;
@@ -27,6 +28,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 }});", new object[] {
                         modelType.Name,
                         Constants._LIST_EVENTS_CODE,
+                        Constants.ARRAY_TO_VUE_METHOD,
                         Constants._LIST_RELOAD_CODE.Replace("$url$", string.Format("'{0}'",urlRoot)).Replace("$type$", modelType.Name)
                     }));
                     break;

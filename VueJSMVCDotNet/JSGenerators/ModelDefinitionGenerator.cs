@@ -141,13 +141,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         if (response.ok){{                 
                             var data = response.json();
                             if (data){{
-                                data=model.{3}();
+                                data=model.{3};
                                 for(var prop in data){{
                                     if (prop!='id'){{
                                         data[prop]=model[prop];
                                     }}
                                 }}
-                                Object.defineProperty(model,'{3}',{{get:function(){{return data;}}}});
+                                Object.defineProperty(model,'{3}',{{get:function(){{return data;}},configurable: true}});
                                 if (model.$emit!=undefined){{model.$emit('{2}',model);}}
                                 options.success(model);
                             }}else{{
@@ -198,8 +198,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     done:function(response){{
                         if (response.ok){{                 
                             data.id=response.json().id;
-                            Object.defineProperty(model,'{2}',{{get:function(){{return data;}}}});
-                            Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}}}});
+                            Object.defineProperty(model,'{2}',{{get:function(){{return data;}},configurable: true}});
+                            Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}},configurable: true}});
                             if (model.$emit!=undefined){{model.$emit('{3}',model);}}
                             options.success(model);
                         }}else{{

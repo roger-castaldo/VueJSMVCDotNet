@@ -209,6 +209,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }
         return eq(a, b);
       };");
+            builder.AppendLine(string.Format("      const {0} = Vue.version.indexOf('3')==0;",Constants.IS_VUE_3_VARIABLE));
         }
     }
 }

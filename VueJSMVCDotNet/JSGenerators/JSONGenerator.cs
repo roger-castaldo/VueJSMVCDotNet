@@ -41,7 +41,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                     if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
-                        builder.AppendLine(string.Format("            prop = (this.{1}==undefined ? (this.{0}!=undefined ? this.{0} : null) : (this.{1}().{0}!=undefined ? this.{1}().{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
+                        builder.AppendLine(string.Format("            prop = (this.{1}==undefined ? (this.{0}!=undefined ? this.{0} : null) : (this.{1}.{0}!=undefined ? this.{1}.{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
                     else
                         builder.AppendLine(string.Format("            prop = (this.{0}!=undefined ? this.{0} : null);", p.Name));
                     if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))

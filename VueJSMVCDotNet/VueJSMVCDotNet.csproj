@@ -10,14 +10,15 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.1.2</Version>
-    <PackageReleaseNotes>corrected bug with respect to certain method calls</PackageReleaseNotes>
+    <Version>1.2.1-alpha</Version>
+    <PackageReleaseNotes>additional functionality mapped into system to allow for toVue to exist for array objects as well, needs more testing to ensure all bugs have been worked out.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions"/>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
   </ItemGroup>
 
 </Project>

@@ -87,20 +87,27 @@ namespace TestApplication{
         {
             List<mPerson> ret = new List<mPerson>();
             totalPages=0;
-            List<mPerson> matches = new List<mPerson>();
-            q = (q==null ? "" : q);
-            for(int x=0;x<_persons.Count;x++){
-                if (_persons[x].FirstName.Contains(q)||
-                _persons[x].LastName.Contains(q)){
-                    matches.Add(_persons[x]);
+            if (q != null)
+            {
+                q = q.ToLower();
+                List<mPerson> matches = new List<mPerson>();
+                for (int x = 0; x < _persons.Count; x++)
+                {
+                    if (_persons[x].FirstName.ToLower().Contains(q) ||
+                    _persons[x].LastName.ToLower().Contains(q))
+                    {
+                        matches.Add(_persons[x]);
+                    }
                 }
-            }
-            totalPages = (int)Math.Ceiling((decimal)matches.Count/(decimal)pageSize);
-            for(int x=0;x<pageSize;x++){
-                if (pageStartIndex+x>=matches.Count){
-                    break;
+                totalPages = (int)Math.Ceiling((decimal)matches.Count / (decimal)pageSize);
+                for (int x = 0; x < pageSize; x++)
+                {
+                    if (pageStartIndex + x >= matches.Count)
+                    {
+                        break;
+                    }
+                    ret.Add(matches[pageStartIndex + x]);
                 }
-                ret.Add(matches[pageStartIndex+x]);
             }
             return ret;
         }
