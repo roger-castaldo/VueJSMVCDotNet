@@ -57,10 +57,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }));
                 }
             }
-            builder.AppendLine(string.Format(@"     Object.defineProperty(this,'{2}',{{get:function(){{ return data; }}}});
-            Object.defineProperty(this,'id',{{get:function(){{ return data.id; }}}});
+            builder.AppendLine(string.Format(@"     Object.defineProperty(this,'{2}',{{get:function(){{ return data; }},configurable: true}});
+            Object.defineProperty(this,'id',{{get:function(){{ return data.id; }},configurable: true}});
             for(var propName in data){{
-                if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined){{
+                if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined || Object.getOwnPropertyDescriptor(this,propName).writable){{
                     this[propName]=data[propName];
                 }}
             }}
