@@ -139,7 +139,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     {
                         if (Utility.IsArrayType(pi.PropertyType))
                         {
-                            builder.AppendLine(string.Format(@"          Object.defineProperty(model,'{0}',{{get:function(){{
+                            builder.AppendLine(string.Format(@"          Object.defineProperty(ret,'{0}',{{get:function(){{
                     ret = null;
                     if (data.{0}!=null){{
                         ret=[];
@@ -155,7 +155,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                         else
                         {
-                            builder.AppendLine(string.Format("          Object.defineProperty(model,'{0}',{{get:function(){{return data.{0}=(data.{0}==null ? null : new Date(data.{0}));}}}});", new object[]
+                            builder.AppendLine(string.Format("          Object.defineProperty(ret,'{0}',{{get:function(){{return data.{0}=(data.{0}==null ? null : new Date(data.{0}));}}}});", new object[]
                             {
                                 pi.Name
                             }));
@@ -163,7 +163,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     else
                     {
-                        builder.AppendLine(string.Format("          Object.defineProperty(model,'{0}',{{get:function(){{return data.{0};}}}});", pi.Name));
+                        builder.AppendLine(string.Format("          Object.defineProperty(ret,'{0}',{{get:function(){{return data.{0};}}}});", pi.Name));
                     }
                 }
                 builder.AppendLine(@"           }
