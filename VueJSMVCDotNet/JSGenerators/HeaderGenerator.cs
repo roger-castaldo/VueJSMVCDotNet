@@ -44,7 +44,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }
       }
       return obj1;
-    }
+    };
+    var _fixDates = function(data){
+        if (this._dateRegex==undefined){
+            this._dateRegex = new RegExp('^\\d{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12]\\d)|(3[01]))T([0-5]\\d):([0-5]\\d):([0-5]\\d).\\d{3}Z$');
+        }
+        if (data!=null){
+            if (Array.isArray(data)){
+                for(var x=0;x<data.length;x++){
+                    if (isString(data[x])){
+                        if (this._dateRegex.test(data[x])){
+                            data[x] = new Date(data[x]);
+                        }
+                    }else if (Array.isArray(data[x]) || isObject(data[x])){
+                        data[x] = _fixDates(data[x]);
+                    }
+                }
+            }else if (isObject(data)){
+                for(var prop in data){
+                    data[prop]=_fixDates(data[prop]);
+                }
+            }else if (isString(data)){
+                if (this._dateRegex.test(data)){
+                    data = new Date(data);
+                }
+            }
+        }
+        return data;
+    };
     var ajax = function(options){
       options = extend(options,{
         type:'GET',
@@ -67,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         xmlhttp.onreadystatechange = function() {
           if (xmlhttp.readyState == XMLHttpRequest.DONE) {
             if (xmlhttp.status == 200){
-              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}});
+              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
             }else{
               options.fail({ok:false,text:function(){return xmlhttp.responseText;}});
             }
@@ -82,9 +109,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
       if (!options.async){
         if (xmlhttp.status == 200){
             if (options.done!=undefined){
-              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}});
+              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
             }else{
-              return {ok:true,text:function(){return xmlhttp.responseText;},json:function(){return JSON.parse(xmlhttp.responseText);}};
+              return {ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}};
             }
         }else{
           if (options.fail!=undefined){

@@ -49,13 +49,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }}", pi.Name, t.Name));
                     }
                 }
-                else if (t == typeof(DateTime) || t == typeof(DateTime?))
-                {
-                    builder.AppendLine(string.Format("          data.{0}=(data.{0}==null ? null : new Date(data.{0}));", new object[]
-                    {
-                            pi.Name
-                    }));
-                }
             }
             builder.AppendLine(string.Format(@"     Object.defineProperty(this,'{2}',{{get:function(){{ return data; }},configurable: true}});
             Object.defineProperty(this,'id',{{get:function(){{ return data.id; }},configurable: true}});
@@ -132,32 +125,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                 pi.Name,
                                 Constants.CREATE_INSTANCE_FUNCTION_NAME,
                                 Constants.PARSE_FUNCTION_NAME,
-                            }));
-                        }
-                    }
-                    else if (t == typeof(DateTime) || t == typeof(DateTime?))
-                    {
-                        if (Utility.IsArrayType(pi.PropertyType))
-                        {
-                            builder.AppendLine(string.Format(@"          Object.defineProperty(ret,'{0}',{{get:function(){{
-                    ret = null;
-                    if (data.{0}!=null){{
-                        ret=[];
-                        for(var x=0;x<data.{0}.length;x++){{
-                            ret.push(new Date(data.{0}[x]));
-                        }}
-                    }}
-                    return ret;
-                }});", new object[]
-                            {
-                                pi.Name
-                            }));
-                        }
-                        else
-                        {
-                            builder.AppendLine(string.Format("          Object.defineProperty(ret,'{0}',{{get:function(){{return data.{0}=(data.{0}==null ? null : new Date(data.{0}));}}}});", new object[]
-                            {
-                                pi.Name
                             }));
                         }
                     }
