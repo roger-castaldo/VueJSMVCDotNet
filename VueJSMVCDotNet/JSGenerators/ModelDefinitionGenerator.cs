@@ -15,9 +15,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType);
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
-            IModel m = (IModel)modelType.GetConstructor(new Type[] { }).Invoke(new object[] { });
-            _AppendData(m, props, ref builder);
-            _AppendComputed(m, props, ref builder);
+            _AppendData(modelType, props, ref builder);
+            _AppendComputed(props, ref builder);
 
             builder.AppendLine(string.Format(@"    methods = extend(methods,{{
         isNew:function(){{ return (this.{0}==undefined ? true : (this.id==undefined? true : this.id==undefined||this.id==null));}},",Constants.INITIAL_DATA_KEY));
@@ -354,8 +353,13 @@ for(var x=0;x<{0}.length;x++){{
             }
         }
 
-        private void _AppendData(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
+        private void _AppendData(Type modelType, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
+            IModel m = null;
+            if (modelType.GetConstructor(Type.EmptyTypes) != null)
+            {
+                m = (IModel)modelType.GetConstructor(Type.EmptyTypes).Invoke(new object[] { });
+            }
             builder.AppendLine(@"   data = {");
             bool isFirst = true;
             foreach (PropertyInfo pi in props)
@@ -366,7 +370,7 @@ for(var x=0;x<{0}.length;x++){{
             {0}:{1}", new object[]
                     {
                         pi.Name,
-                        (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0]))),
+                        (m==null ? "null" : (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0])))),
                         (isFirst ? "" : ",")
                     }));
                     isFirst = false;
@@ -376,7 +380,7 @@ for(var x=0;x<{0}.length;x++){{
     };");
         }
 
-        private void _AppendComputed(IModel m, List<PropertyInfo> props, ref WrappedStringBuilder builder)
+        private void _AppendComputed(List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
             builder.AppendLine("    computed = extend(computed,{");
             foreach (PropertyInfo pi in props)
