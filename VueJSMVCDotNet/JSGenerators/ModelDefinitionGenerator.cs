@@ -387,20 +387,7 @@ for(var x=0;x<{0}.length;x++){{
             {
                 if (!pi.CanWrite)
                 {
-                    if (pi.PropertyType == typeof(DateTime) || pi.PropertyType == typeof(DateTime?))
-                    {
-                        builder.AppendLine(string.Format(@"         {0}:{{
-                get:function(){{
-                    return  (this.{1} == undefined ? undefined : (this.{1}.{0}==null ? null : new Date(this.{1}.{0})));
-                }}
-            }},", new object[]{
-                        pi.Name,
-                        Constants.INITIAL_DATA_KEY
-                    }));
-                    }
-                    else
-                    {
-                        builder.AppendLine(string.Format(@"         {0}:{{
+                    builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
                     return  (this.{1} == undefined ? undefined : this.{1}.{0});
                 }}
@@ -408,7 +395,6 @@ for(var x=0;x<{0}.length;x++){{
                         pi.Name,
                         Constants.INITIAL_DATA_KEY
                     }));
-                    }
                 }
             }
             _AppendValidations(props, ref builder);
