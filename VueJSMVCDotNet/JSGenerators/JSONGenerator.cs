@@ -52,11 +52,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         if (array)
                         {
                             builder.AppendLine(string.Format(@"         for(var x=0;x<prop.length;x++){{
-                            attrs.{0}.push({{id:prop.{0}[x].id()}});
+                            attrs.{0}.push({{id:prop[x].id()}});
                         }}", p.Name));
                         }
                         else
-                            builder.AppendLine(string.Format("      attrs.{0} = {{id:prop.{0}.id()}};", p.Name));
+                            builder.AppendLine(string.Format("      attrs.{0} = {{id:prop.id()}};", p.Name));
                         builder.AppendLine(@"           }");
                     }
                     else
