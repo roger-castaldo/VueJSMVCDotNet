@@ -73,11 +73,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendDelete(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         destroy:function(options){{
-            options = extend({{
+            options = extend((options==undefined || options==null ?{{}}:options),{{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }},(options==undefined || options==null ?{{}}:options));
+            }});
             if (this.isNew()){{
                 options.failure('Cannot delete unsaved model.');
             }}else{{
@@ -113,11 +113,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         update:function(options){{
-            options = extend({{
+            options = extend((options==undefined || options==null ?{{}}:options),{{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }},(options==undefined || options==null ?{{}}:options));
+            }});
             if (!this.isValid){{
                 options.failure('Invalid model.');
             }}
@@ -170,11 +170,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"             save:function(options){{
-            options = extend({{
+            options = extend((options==undefined || options==null ?{{}}:options),{{
                 async:true,
                 success:function(){{}},
                 failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }},(options==undefined || options==null ?{{}}:options));
+            }});
             if (!this.isValid){{
                 options.failure('Invalid model.');
             }}
