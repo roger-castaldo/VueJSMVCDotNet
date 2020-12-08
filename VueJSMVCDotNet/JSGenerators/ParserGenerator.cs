@@ -53,8 +53,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     Object.defineProperty(this,'{2}',{{get:function(){{ return data; }},configurable: true}});
             Object.defineProperty(this,'id',{{get:function(){{ return data.id; }},configurable: true}});
             for(var propName in data){{
-                if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined || Object.getOwnPropertyDescriptor(this,propName).writable){{
-                    this[propName]=data[propName];
+                if (Object.getOwnPropertyDescriptor(this,propName)!=undefined){{
+                    if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined || Object.getOwnPropertyDescriptor(this,propName).writable){{
+                        this[propName]=data[propName];
+                    }}
                 }}
             }}
         if (this.$emit != undefined) {{ this.$emit('parsed',this); }}
@@ -74,9 +76,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     ret.{2}(data);
                 }}
                 else {{
-                    ret = {{
-                        id : function(){{ return data.id;}}
-                    }};", new object[] { type.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME, Constants.PARSE_FUNCTION_NAME }));
+                    ret = {{}};
+                    Object.defineProperty(ret,'id',{{get:function(){{return data.id}}}});", new object[] { type.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME, Constants.PARSE_FUNCTION_NAME }));
                 List<PropertyInfo> props = Utility.GetModelProperties(type);
                 foreach (PropertyInfo pi in props)
                 {
