@@ -74,7 +74,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     ret.{2}(data);
                 }}
                 else {{
-                    ret = {{}};", new object[] { type.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME, Constants.PARSE_FUNCTION_NAME }));
+                    ret = {{
+                        id : function(){{ return data.id;}}
+                    }};", new object[] { type.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME, Constants.PARSE_FUNCTION_NAME }));
                 List<PropertyInfo> props = Utility.GetModelProperties(type);
                 foreach (PropertyInfo pi in props)
                 {
