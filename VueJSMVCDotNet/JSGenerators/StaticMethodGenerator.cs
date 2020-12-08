@@ -66,11 +66,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             {
                                 builder.AppendLine(string.Format(@"function_data.{0}=[];
 for(var x=0;x<{0}.length;x++){{
-    function_data.{0}.push({{id:{0}[x].id()}});
+    function_data.{0}.push({{id:{0}[x].id}});
 }}", par.Name));
                             }
                             else
-                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id() }};", par.Name));
+                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id }};", par.Name));
                         }
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
