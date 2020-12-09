@@ -125,38 +125,43 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 options.failure('Cannot updated unsaved model, please call save instead.');
             }}
             else {{
+                var data = this.{1}();
                 var model=this;
-                ajax(
-                {{
-                    url:'{0}/'+this.id,
-                    type:'{4}',   
-                    headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                    data:JSON.stringify(this.{1}()),
-                    async:options.async,
-                    fail:function(response){{options.failure(response.text());}},
-                    done:function(response){{
-                        if (response.ok){{                 
-                            var data = response.json();
-                            if (data){{
-                                data=model.{3};
-                                for(var prop in data){{
-                                    if (prop!='id'){{
-                                        data[prop]=model[prop];
+                if (Object.keys(data).length==0){{
+                    options.success(model);
+                }}else{{
+                    ajax(
+                    {{
+                        url:'{0}/'+this.id,
+                        type:'{4}',   
+                        headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                        data:JSON.stringify(this.{1}()),
+                        async:options.async,
+                        fail:function(response){{options.failure(response.text());}},
+                        done:function(response){{
+                            if (response.ok){{                 
+                                var data = response.json();
+                                if (data){{
+                                    data=model.{3};
+                                    for(var prop in data){{
+                                        if (prop!='id'){{
+                                            data[prop]=model[prop];
+                                        }}
                                     }}
+                                    Object.defineProperty(model,'{3}',{{get:function(){{return data;}},configurable: true}});
+                                    if (model.$emit!=undefined){{model.$emit('{2}',model);}}
+                                    options.success(model);
+                                }}else{{
+                                    options.failure();
                                 }}
-                                Object.defineProperty(model,'{3}',{{get:function(){{return data;}},configurable: true}});
-                                if (model.$emit!=undefined){{model.$emit('{2}',model);}}
-                                options.success(model);
                             }}else{{
-                                options.failure();
+                                options.failure(response.text());
                             }}
-                        }}else{{
-                            options.failure(response.text());
                         }}
-                    }}
-                }});
+                    }});
+                }}
             }}
         }},", new object[]{
                 urlRoot,
