@@ -21,9 +21,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private static readonly IJSGenerator[] _instanceGenerators = new IJSGenerator[]
         {
+            new ParsersGenerator(),
             new ModelInstanceHeaderGenerator(),
             new JSONGenerator(),
-            new ParsersGenerator(),
+            new ParseGenerator(),
             new ModelDefinitionGenerator(),
             new ModelInstanceFooterGenerator()
         };
