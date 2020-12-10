@@ -13,7 +13,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         App.Models.{0}.{1} = function(){{ 
             var methods = {{}};
             var data = {{}};
-            var computed = {{}};",modelType.Name,Constants.CREATE_INSTANCE_FUNCTION_NAME));
+            var computed = {{}};", modelType.Name,Constants.CREATE_INSTANCE_FUNCTION_NAME));
         }
     }
 }

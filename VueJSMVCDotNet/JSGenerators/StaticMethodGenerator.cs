@@ -132,19 +132,15 @@ for(var x=0;x<{0}.length;x++){{
                             {
                                 builder.AppendLine(string.Format(@"      ret=[];
             for (var x=0;x<response.length;x++){{
-                ret.push(App.Models.{0}.{1}());
-                ret[x].{2}(response[x]);
+                ret.push(_{0}(response[x]));
             }}
             response = ret;", new object[]{
-                                propType.Name,
-                                Constants.CREATE_INSTANCE_FUNCTION_NAME,
-                                Constants.PARSE_FUNCTION_NAME
+                                propType.Name
                                     }));
                             }
                             else
                             {
-                                builder.AppendLine(string.Format(@"             ret = App.Models.{0}.{1}();
-            ret.{2}(response);
+                                builder.AppendLine(string.Format(@"             ret = _{0}(response);
             response=ret;", new object[]{
                   propType.Name,
                   Constants.CREATE_INSTANCE_FUNCTION_NAME,
