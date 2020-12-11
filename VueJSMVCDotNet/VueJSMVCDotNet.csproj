@@ -10,11 +10,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.2.6</Version>
-    <PackageReleaseNotes>patched in ability to allow method calls to return non-defined models byt moving the parsers to global</PackageReleaseNotes>
+    <Version>1.2.7</Version>
+    <PackageReleaseNotes>patched arrays in the parser to ensure that changes are detected for updating.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.6.0</AssemblyVersion>
-    <FileVersion>1.2.6.0</FileVersion>
+    <AssemblyVersion>1.2.7.0</AssemblyVersion>
+    <FileVersion>1.2.7.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -52,7 +52,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             for(var propName in data){{
                 if (Object.getOwnPropertyDescriptor(this,propName)!=undefined){{
                     if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined || Object.getOwnPropertyDescriptor(this,propName).writable){{
-                        this[propName]=data[propName];
+                        if (data[propName]!=null){{
+                            this[propName]=(Array.isArray(data[propName]) ? data[propName].slice() : data[propName]);
+                        }}else{{
+                            this[propName]=null;
+                        }}
                     }}
                 }}
             }}
