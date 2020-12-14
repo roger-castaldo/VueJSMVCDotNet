@@ -58,7 +58,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 };
                 ret = extend(ret,data);
                 ret = extend(ret,methods);
-                ret = extend(ret,computed);
+                for(var prop in computed){
+                    Object.defineProperty(ret,prop,computed[prop]);
+                }
                 return ret;
             }else{
                 throw 'unsupported version of VueJS found.';
