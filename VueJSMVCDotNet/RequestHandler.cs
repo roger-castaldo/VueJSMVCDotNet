@@ -68,11 +68,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         public bool HandlesRequest(HttpContext context) {
             string url = Utility.CleanURL(Utility.BuildURL(context));
-            RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
-            foreach (IRequestHandler handler in _Handlers)
+            object method;
+            if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
             {
-                if (handler.HandlesRequest(url,method))
-                    return true;
+                foreach (IRequestHandler handler in _Handlers)
+                {
+                    if (handler.HandlesRequest(url, (RequestMethods)method))
+                        return true;
+                }
             }
             return false;
         }

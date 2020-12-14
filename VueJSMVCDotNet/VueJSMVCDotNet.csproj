@@ -10,11 +10,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.2.7</Version>
-    <PackageReleaseNotes>patched arrays in the parser to ensure that changes are detected for updating.</PackageReleaseNotes>
+    <Version>1.2.8</Version>
+    <PackageReleaseNotes>patch for checking if request is handled and not being provided with a listed method.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.7.0</AssemblyVersion>
-    <FileVersion>1.2.7.0</FileVersion>
+    <AssemblyVersion>1.2.8.0</AssemblyVersion>
+    <FileVersion>1.2.8.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
