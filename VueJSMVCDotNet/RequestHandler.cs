@@ -84,7 +84,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             string url = Utility.CleanURL(Utility.BuildURL(context));
             RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
-            string formData = new StreamReader(context.Request.Body).ReadToEnd();
+            string formData = await new StreamReader(context.Request.Body).ReadToEndAsync();
             bool found = false;
             foreach (IRequestHandler handler in _Handlers)
             {
