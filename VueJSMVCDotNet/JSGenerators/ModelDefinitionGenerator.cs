@@ -410,24 +410,29 @@ for(var x=0;x<{0}.length;x++){{
             }
             if (requiredProps.Count > 0)
             {
-                builder.AppendLine(@"        isValid:function(){
-            var ret=true;");
+                builder.AppendLine(@"        isValid:{ 
+            get:function(){
+                var ret=true;");
                 foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(string.Format("          ret&=(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
-                builder.AppendLine(@"           return ret;
+                    builder.AppendLine(string.Format("              ret&=(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
+                builder.AppendLine(@"               return ret;
+            }
         },
-        invalidFields:function(){
-            var ret=[];");
+        invalidFields:{
+            get:function(){
+                var ret=[];");
                 foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(string.Format(@"          if (this.{0}==undefined||this.{0}==null){{
-                ret.push('{0}');
-            }}", pi.Name));
-                builder.AppendLine(@"            return ret;
+                    builder.AppendLine(string.Format(@"                 if (this.{0}==undefined||this.{0}==null){{
+                        ret.push('{0}');
+                    }
+                }", pi.Name));
+                builder.AppendLine(@"               return ret;
+            }
         }");
             }
             else
-                builder.AppendLine(@"       isValid:function(){return true;},
-        invalidFields:function(){return [];}");
+                builder.AppendLine(@"       isValid:{get:function(){return true;}},
+        invalidFields:{get:function(){return [];}}");
         }
     }
 }
