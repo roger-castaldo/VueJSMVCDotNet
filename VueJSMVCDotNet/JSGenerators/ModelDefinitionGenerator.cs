@@ -414,7 +414,7 @@ for(var x=0;x<{0}.length;x++){{
             get:function(){
                 var ret=true;");
                 foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(string.Format("              ret&=(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
+                    builder.AppendLine(string.Format("              ret=ret&&(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
                 builder.AppendLine(@"               return ret;
             }
         },
@@ -422,10 +422,9 @@ for(var x=0;x<{0}.length;x++){{
             get:function(){
                 var ret=[];");
                 foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(string.Format(@"                 if (this.{0}==undefined||this.{0}==null){{
-                        ret.push('{0}');
-                    }
-                }", pi.Name));
+                    builder.AppendLine(string.Format(@"             if (this.{0}==undefined||this.{0}==null){{
+                    ret.push('{0}');
+                }}", pi.Name));
                 builder.AppendLine(@"               return ret;
             }
         }");
