@@ -11,9 +11,11 @@ namespace TestApplication{
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
 
         private string _firstName;
+        [ModelRequiredField()]
         public string FirstName{get{return _firstName;}set{_firstName=value;}}
 
         private string _lastName;
+        [ModelRequiredField()]
         public string LastName{get{return _lastName;}set{_lastName=value;}}
 
         private mPerson(string firstName,string lastName){
