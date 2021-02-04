@@ -24,7 +24,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                                  Constants.CREATE_INSTANCE_FUNCTION_NAME,
                                                  Constants.PARSE_FUNCTION_NAME
             }));
-            List<Type> types = _RecurLocateLinkedTypes(modelType);
+            List<Type> types = new List<Type>();
+            _RecurLocateLinkedTypes(ref types,modelType);
             types.Remove(modelType);
             foreach (Type type in types)
             {
@@ -103,82 +104,69 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }
         }
 
-        private List<Type> _RecurLocateLinkedTypes(Type modelType)
+        private void _RecurLocateLinkedTypes(ref List<Type> types,Type modelType)
         {
-            List<Type> ret = new List<Type>(new Type[] { modelType });
-            foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
+            if (!types.Contains(modelType))
             {
-                if (pi.CanRead)
+                types.Add(modelType);
+                foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
                 {
-                    Type t = pi.PropertyType;
-                    if (t.IsArray)
-                        t = t.GetElementType();
-                    else if (t.IsGenericType)
-                        t = t.GetGenericArguments()[0];
-                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                    if (pi.CanRead)
                     {
-                        if (!ret.Contains(t))
+                        Type t = pi.PropertyType;
+                        if (t.IsArray)
+                            t = t.GetElementType();
+                        else if (t.IsGenericType)
+                            t = t.GetGenericArguments()[0];
+                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                         {
-                            ret.Add(t);
-                            List<Type> tmp = _RecurLocateLinkedTypes(t);
-                            foreach (Type type in tmp)
+                            if (!types.Contains(t))
                             {
-                                if (!ret.Contains(type))
-                                    ret.Add(type);
+                                types.Add(t);
+                                _RecurLocateLinkedTypes(ref types,t);
+                            }
+                        }
+                    }
+                }
+                foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                    {
+                        Type t = mi.ReturnType;
+                        if (t.IsArray)
+                            t = t.GetElementType();
+                        else if (t.IsGenericType)
+                            t = t.GetGenericArguments()[0];
+                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                        {
+                            if (!types.Contains(t))
+                            {
+                                types.Add(t);
+                                 _RecurLocateLinkedTypes(ref types,t);
+                            }
+                        }
+                    }
+                }
+                foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                    {
+                        Type t = mi.ReturnType;
+                        if (t.IsArray)
+                            t = t.GetElementType();
+                        else if (t.IsGenericType)
+                            t = t.GetGenericArguments()[0];
+                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                        {
+                            if (!types.Contains(t))
+                            {
+                                types.Add(t);
+                                 _RecurLocateLinkedTypes(ref types,t);
                             }
                         }
                     }
                 }
             }
-            foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                {
-                    Type t = mi.ReturnType;
-                    if (t.IsArray)
-                        t = t.GetElementType();
-                    else if (t.IsGenericType)
-                        t = t.GetGenericArguments()[0];
-                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                    {
-                        if (!ret.Contains(t))
-                        {
-                            ret.Add(t);
-                            List<Type> tmp = _RecurLocateLinkedTypes(t);
-                            foreach (Type type in tmp)
-                            {
-                                if (!ret.Contains(type))
-                                    ret.Add(type);
-                            }
-                        }
-                    }
-                }
-            }
-            foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Static))
-            {
-                if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                {
-                    Type t = mi.ReturnType;
-                    if (t.IsArray)
-                        t = t.GetElementType();
-                    else if (t.IsGenericType)
-                        t = t.GetGenericArguments()[0];
-                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                    {
-                        if (!ret.Contains(t))
-                        {
-                            ret.Add(t);
-                            List<Type> tmp = _RecurLocateLinkedTypes(t);
-                            foreach (Type type in tmp)
-                            {
-                                if (!ret.Contains(type))
-                                    ret.Add(type);
-                            }
-                        }
-                    }
-                }
-            }
-            return ret;
         }
     }
 }
