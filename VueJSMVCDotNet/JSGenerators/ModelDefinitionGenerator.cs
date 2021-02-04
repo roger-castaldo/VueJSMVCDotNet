@@ -137,7 +137,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         headers: {{
                                 'Content-Type': 'application/json',
                             }},
-                        data:JSON.stringify(this.{1}()),
+                        data:JSON.stringify(data),
                         async:options.async,
                         fail:function(response){{options.failure(response.text());}},
                         done:function(response){{

@@ -13,7 +13,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         {
             builder.AppendLine(string.Format(@"   methods = extend(methods,{{{0}:function(){{
         var attrs={{}};
-        var prop=null;",Constants.TO_JSON_VARIABLE));
+        var prop=null;", Constants.TO_JSON_VARIABLE));
             foreach (PropertyInfo p in Utility.GetModelProperties(thisType))
             {
                 if (p.CanWrite)
@@ -71,8 +71,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }}
             }}
         }}
-        return attrs;
-    }}}});",Constants.INITIAL_DATA_KEY));
+        return cloneData(attrs);
+    }}}});", Constants.INITIAL_DATA_KEY));
         }
     }
 }

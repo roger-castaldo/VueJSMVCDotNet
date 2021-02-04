@@ -10,11 +10,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.2.13</Version>
-    <PackageReleaseNotes>patch for building js parser when types self-reference.</PackageReleaseNotes>
+    <Version>1.2.14</Version>
+    <PackageReleaseNotes>patch tojson call to both clone the objects to transmit as well as clean up unneeded data and work around the Proxy object to ensure that the actual data is supplied.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.13.0</AssemblyVersion>
-    <FileVersion>1.2.13.0</FileVersion>
+    <AssemblyVersion>1.2.14.0</AssemblyVersion>
+    <FileVersion>1.2.14.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

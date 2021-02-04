@@ -23,6 +23,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         return typeof value === 'string' || value instanceof String;
     };
     var isFunction = function(obj) {
+        if (obj===null){return false;}
       return typeof obj == 'function' || false;
     };
     var _keys = function(obj) {
@@ -45,6 +46,25 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
       }
       return obj1;
     };
+    var cloneData = function(obj){
+        if (obj===null){ return null; }
+        if (!isObject(obj) && !Array.isArray(obj)) { return obj; }
+        if (Array.isArray(obj)){
+            var ret = [];
+            for(var x=0;x<obj.length;x++){
+                ret.push(cloneData(obj[x]));
+            }
+            return ret;
+        }else{
+            var ret = {};
+            for(var prop in Object.getOwnPropertyNames(obj)){
+                if (!isFunction(obj[prop])){
+                    ret[prop] = cloneData(obj[prop]);
+                }
+            }
+            return ret;
+        }
+    }
     var _fixDates = function(data){
         if (this._dateRegex==undefined){
             this._dateRegex = new RegExp('^\\d{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12]\\d)|(3[01]))T([0-5]\\d):([0-5]\\d):([0-5]\\d).\\d{3}Z$');
