@@ -12,7 +12,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public const string TO_JSON_VARIABLE = "_toJSON";
         public const string PARSE_FUNCTION_NAME = "_parse";
         public const string CREATE_INSTANCE_FUNCTION_NAME = "createInstance";
-        public const string IS_VUE_3_VARIABLE = "isVue3";
+        public const string IS_VUE_3 = "(Vue.version.indexOf('3')==0)";
         public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
         public static readonly string _LIST_EVENTS_CODE = string.Format(@"          _events:{{
@@ -138,7 +138,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                                             Events.LIST_MODEL_LOADED,
                                                                             Events.LIST_LOADED,
                                                                             CREATE_INSTANCE_FUNCTION_NAME,
-                                                                            IS_VUE_3_VARIABLE
+                                                                            IS_VUE_3
         });
         public static readonly string ARRAY_TO_VUE_METHOD = string.Format(@"            toVue:function(options){{
                 options = options || {{}};
@@ -195,7 +195,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     return new Vue(options);
                 }}
             }},", new object[]{
-                                                                               IS_VUE_3_VARIABLE,
+                                                                               IS_VUE_3,
                                                                                Events.LIST_MODEL_LOADED,
                                                                                Events.LIST_MODEL_UPDATED,
                                                                                Events.LIST_MODEL_DESTROYED,
