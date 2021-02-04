@@ -56,7 +56,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     credentials: 'include',
                     done:function(response){{
                     if (response.ok){{                 
-                        data = response.json();
+                        var data = response.json();
                         if (data!=null){{
                             if (data.TotalPages!=undefined){{
                                 var pages = data.TotalPages;

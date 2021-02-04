@@ -9,9 +9,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            builder.AppendLine(string.Format(@"     App.Models.{0} = App.Models.{0}||{{}};
+        App.Models.{0}.{1} = function(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
             builder.AppendLine(@"         if (Vue.version.indexOf('2')==0){
                 
-                return new Vue({data:function(){return data},methods:methods,computed:computed});
+                return new Vue({data:function(){return data;},methods:methods,computed:computed});
             }else if (Vue.version.indexOf('3')==0){
                 var ret = {
                     $on:function(event,callback){
