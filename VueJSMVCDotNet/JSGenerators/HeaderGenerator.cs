@@ -57,9 +57,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             return ret;
         }else{
             var ret = {};
-            for(var prop in Object.getOwnPropertyNames(obj)){
-                if (!isFunction(obj[prop])){
-                    ret[prop] = cloneData(obj[prop]);
+            var props = Object.getOwnPropertyNames(obj);
+            for(var x=0;x<props.length;x++){
+                if (!isFunction(obj[props[x]])){
+                    ret[props[x]] = cloneData(obj[props[x]]);
                 }
             }
             return ret;
