@@ -10,11 +10,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.2.12</Version>
-    <PackageReleaseNotes>patch for setting up model validation calls properly.</PackageReleaseNotes>
+    <Version>1.2.13</Version>
+    <PackageReleaseNotes>patch for building js parser when types self-reference.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.12.0</AssemblyVersion>
-    <FileVersion>1.2.12.0</FileVersion>
+    <AssemblyVersion>1.2.13.0</AssemblyVersion>
+    <FileVersion>1.2.13.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
