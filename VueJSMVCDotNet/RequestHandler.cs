@@ -56,8 +56,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             new ModelListCallHandler()
         };
 
+        private static DateTime _startTime;
+        internal static DateTime StartTime { get { return _startTime; } }
+
         public RequestHandler(StartTypes startType,ILogWriter logWriter)
         {
+            _startTime = DateTime.Now;
             Logger.Setup(logWriter);
             Logger.Debug("Starting up VueJS Request Handler");
             _startType = startType;
