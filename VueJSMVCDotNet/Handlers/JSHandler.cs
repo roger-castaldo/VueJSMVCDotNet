@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -102,6 +103,27 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             throw new InsecureAccessException();
                     }
                 }
+                DateTime modDate = DateTime.MinValue;
+                foreach (Type model in models)
+                {
+                    try
+                    {
+                        FileInfo fi = new FileInfo(model.Assembly.Location);
+                        if (fi.Exists)
+                            modDate = new DateTime(Math.Max(modDate.Ticks, fi.LastWriteTime.Ticks));
+                    }
+                    catch (Exception e) { }
+                }
+                if (modDate == DateTime.MinValue)
+                    modDate = RequestHandler.StartTime;
+                if (context.Request.Headers.ContainsKey("If-Modified-Since"))
+                {
+                    DateTime lastModified = DateTime.Parse(context.Request.Headers["If-Modified-Since"]);
+                    if (modDate.ToString()==lastModified.ToString()) { 
+                        context.Response.StatusCode = 304;
+                        return context.Response.WriteAsync("");
+                    }
+                }
                 string ret = null;
                 context.Response.ContentType= "text/javascript";
                 context.Response.StatusCode= 200;
@@ -130,6 +152,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             _cache.Add(url, ret);
                     }
                 }
+                context.Response.Headers.Add("Last-Modified", modDate.ToUniversalTime().ToString("R"));
+                context.Response.Headers.Add("Cache-Control", "public");
                 return context.Response.WriteAsync(ret);
             }
         }
