@@ -68,6 +68,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             foreach (string str in Enum.GetNames(ptype))
                                 regexs[x] += str + "|";
                             regexs[x] = regexs[x].Substring(0, regexs[x].Length - 1) + (nullable ? "|NULL" : "") + ")";
+                        }else if (ptype == typeof(Guid)){
+                            regexs[x] = "([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"+(nullable ? "|NULL" : "")+")";
                         }
                     }
                     _groupIndexes = new int[(mlm.Paged ? pars.Length - 1 : pars.Length)];
@@ -149,6 +151,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     return bool.Parse(p);
                 else if (type.IsEnum)
                     return Enum.Parse(type, p);
+                else if (type == typeof(Guid))
+                    return new Guid(p);
                 else
                     return p;
             }

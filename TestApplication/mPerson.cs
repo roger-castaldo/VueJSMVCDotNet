@@ -124,5 +124,16 @@ namespace TestApplication{
             return null;
         }
 
+        [ExposedMethod(false)]
+        public static bool IsGuid(Guid id){
+            return true;
+        }
+
+        [ModelListMethod("/search/person/byguid?id={0}",false)]
+        public static List<mPerson> ByGuid(Guid id){
+            return _persons;
+        }
+
+
     }
 }
