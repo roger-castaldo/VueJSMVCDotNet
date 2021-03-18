@@ -121,7 +121,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     DateTime lastModified = DateTime.Parse(context.Request.Headers["If-Modified-Since"]);
                     if (modDate.ToString()==lastModified.ToString()) { 
                         context.Response.StatusCode = 304;
-                        return context.Response.WriteAsync("");
+                        return Task.CompletedTask;
                     }
                 }
                 string ret = null;
