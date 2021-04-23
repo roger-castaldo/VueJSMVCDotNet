@@ -46,15 +46,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                                             Events.LIST_MODEL_UPDATED,
                                                                             Events.LIST_LOADED
         });
-        public static readonly string _LIST_RELOAD_CODE = string.Format(@"            reload:function(async){{
+        public static readonly string _LIST_RELOAD_CODE = string.Format(@"            reload:function(){{
                 var tmp = this;
-                async = (async==undefined ? true : async);
                 ajax({{
                     url:$url$,
                     type:'GET',
-                    async:async,
-                    credentials: 'include',
-                    done:function(response){{
+                    credentials: 'include'
+                }}).then(response=>{{
                     if (response.ok){{                 
                         var data = response.json();
                         if (data!=null){{
@@ -126,8 +124,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }}else{{
                         throw data;
                     }}
-                }}
-                }});
+}});
             }}", new object[]{
                                                                             PARSE_FUNCTION_NAME,
                                                                             Events.MODEL_DESTROYED,

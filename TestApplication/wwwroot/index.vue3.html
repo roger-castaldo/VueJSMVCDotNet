@@ -1,6 +1,6 @@
 <html>
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.2/vue.global.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@next/dist/vue.global.js"></script>
 </head>
 <body>
     <script src="/resources/scripts/mPerson.js"></script>
@@ -22,7 +22,16 @@
             <tr v-for="person in Items">
                 <td>{{person.FirstName}}</td>
                 <td>{{person.LastName}}</td>
-                <td>{{person.GetFullName()}}</td>
+                <td>
+                    <asynccomp v-bind:promise="person.GetFullName()">
+                        <template #resolved="props">
+                            {{props.result}}
+                        </template>
+                        <template #rejected="props">
+                            <span style="color:red">{{props.result}}</span>
+                        </template>
+                    </asynccomp>
+                </td>
                 <td>
                     <button v-on:click="person.destroy()">Delete</button>
                     <button v-on:click="EditPerson(person)">Edit</button>
@@ -50,7 +59,14 @@
             <tr v-for="person in Items">
                 <td>{{person.FirstName}}</td>
                 <td>{{person.LastName}}</td>
-                <td>{{person.GetFullName()}}</td>
+                <asynccomp v-bind:promise="person.GetFullName()">
+                    <template #resolved="props">
+                        {{props.result}}
+                    </template>
+                    <template #rejected="props">
+                        <span style="color:red">{{props.result}}</span>
+                    </template>
+                </asynccomp>
             </tr>
         </tbody>
     </table>
@@ -117,40 +133,77 @@
                 Save: function () {
                     this.person.FirstName = this.FirstName;
                     this.person.LastName = this.LastName;
+                    var view = this;
                     if (this.person.isNew()) {
-                        this.person.save({ async: false });
-                        this.lst.reload();
-                        this.person = null;
+                        this.person.save().then(success => {
+                            view.lst.reload();
+                            view.person = null;
+                        });
                     } else {
-                        this.person.update({ async: false });
-                        this.person = null;
+                        this.person.update().then(success => {
+                            view.person = null;
+                        });
                     }
                 }
             }
         }).mount('#dvedit');
-        window.lst = App.Models.mPerson.LoadAll().toVue({
-            methods: {
-                EditPerson: function (person) {
-                    frm.person = person;
-                },
-                CreateNew: function () {
-                    frm.lst = this.people;
-                    frm.person = App.Models.mPerson.createInstance();
-                }
-            }
-        }).mount('#dvList');
-        window.lstFiltered = App.Models.mPerson.Search(null).toVue({
-            data: function () {
-                return { current_filter: null };
+        const asynccomp = {
+            template: '<slot v-if="resolve!=null" name="resolved" :result="resolve"></slot><slot v-if="reject!=null" name="rejected" :result="reject"></slot>',
+            props: ['promise'],
+            data: function(){
+                return { resolve: null,reject:null };
             },
             watch: {
-                current_filter: function(val){
-                    val = (val == '' ? null : val);
-                    this.changeParameters(val);
+                promise: function (val) {
+                    if (val != null && val instanceof Promise) {
+                        var view = this;
+                        val.then(result => { view.resolve = result; view.reject = null; }, result => { view.reject = result; view.resolve = null; });
+                    } else {
+                        this.resolve = null;
+                        this.reject = null;
+                    }
+                }
+            },
+            mounted: function () {
+                if (this.promise != null && this.promise instanceof Promise) {
+                    var view = this;
+                    this.promise.then(result => { view.resolve = result; view.reject = null; }, result => { view.reject = result; view.resolve = null; });
+                } else {
+                    this.resolve = null;
+                    this.reject = null;
                 }
             }
-        }).mount('#dvListFiltered');
-        alert(App.Models.mPerson.TestNull() == null);
+        };
+        App.Models.mPerson.LoadAll().then(result => {
+            window.lst = result.toVue({
+                components: {
+                    asynccomp
+                },
+                methods: {
+                    EditPerson: function (person) {
+                        frm.person = person;
+                    },
+                    CreateNew: function () {
+                        frm.lst = this.Items;
+                        frm.person = App.Models.mPerson.createInstance();
+                    }
+                }
+            }).mount('#dvList');
+        });
+        App.Models.mPerson.Search(null).then(result => {
+            window.lstFiltered = result.toVue({
+                data: function () {
+                    return { current_filter: null };
+                },
+                watch: {
+                    current_filter: function (val) {
+                        val = (val == '' ? null : val);
+                        this.changeParameters(val);
+                    }
+                }
+            }).mount('#dvListFiltered');
+        });
+        App.Models.mPerson.TestNull().then(result => { alert(result == null); });
     </script>
 </body>
 </html>

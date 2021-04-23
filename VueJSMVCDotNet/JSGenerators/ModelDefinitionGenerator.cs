@@ -36,33 +36,29 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"reload:function(options){{
-                options = extend((options==undefined || options==null ?{{}}:options),{{
-                    async:true,
-                    success:function(){{}},
-                    failure:function(error){{throw (error==undefined ? 'failed' : error);}}
+            builder.AppendLine(string.Format(@"reload:function(){{
+                var model=this;
+                return new Promise((resolve,reject)=>{{
+                    if (model.isNew()){{
+                        reject('Cannot reload unsaved model.');
+                    }}else{{
+                        ajax({{
+                            url:'{0}/'+this.id,
+                            type:'GET'
+                        }}).then(
+                            response=>{{
+                                if (response.ok){{                 
+                                    model.{1}(response.json());
+                                    if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
+                                    resolve(model);
+                                }}else{{
+                                    reject(response.text());
+                                }}
+                            }},
+                            response=>{{ reject(response.text()); }}
+                        );
+                    }}
                 }});
-                if (this.isNew()){{
-                    options.failure('Cannot reload unsaved model.');
-                }}else{{
-                    var model=this;
-                    ajax(
-                    {{
-                        url:'{0}/'+this.id,
-                        type:'GET',
-                        async:options.async,
-                        fail:function(response){{options.failure(response.text());}},
-                        done:function(response){{
-                            if (response.ok){{                 
-                                model.{1}(response.json());
-                                if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
-                                options.success(model);
-                            }}else{{
-                                options.failure(response.text());
-                            }}
-                        }}
-                    }});
-                }}
             }}", new object[]{
                 urlRoot,
                 Constants.PARSE_FUNCTION_NAME,
@@ -72,37 +68,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendDelete(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"         destroy:function(options){{
-            options = extend((options==undefined || options==null ?{{}}:options),{{
-                async:true,
-                success:function(){{}},
-                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }});
-            if (this.isNew()){{
-                options.failure('Cannot delete unsaved model.');
-            }}else{{
-                var model=this;
-                ajax(
-                {{
-                    url:'{0}/'+this.id,
-                    type:'{2}',
-                    async:options.async,
-                    fail:function(response){{options.failure(response.text());}},
-                    done:function(response){{
-                        if (response.ok){{                 
-                            var data = response.json();
-                            if (data){{
-                                if (model.$emit!=undefined){{model.$emit('{1}',model);}}
-                                options.success(model);
-                            }}else{{
-                                options.failure();
-                            }}
-                        }}else{{
-                            options.failure(response.text());
-                        }}
+            builder.AppendLine(string.Format(@"         destroy:function(){{
+                var model = this;
+                return new Promise((resolve,reject)=>{{
+                    if (model.isNew()){{
+                        reject('Cannot delete unsaved model.');
+                    }}else{{
+                        ajax(
+                        {{
+                            url:'{0}/'+this.id,
+                            type:'{2}'
+                        }}).then(
+                            response=>{{
+                                if (response.ok){{                 
+                                    var data = response.json();
+                                    if (data){{
+                                        if (model.$emit!=undefined){{model.$emit('{1}',model);}}
+                                        resolve(model);
+                                    }}else{{
+                                        reject();
+                                    }}
+                                }}else{{
+                                    reject(response.text());
+                                }}
+                            }},
+                            response=>{{reject(response.text());}}
+                        );    
                     }}
                 }});
-            }}
         }},", new object[]{
                 urlRoot,
                 Constants.Events.MODEL_DESTROYED,
@@ -112,35 +105,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"         update:function(options){{
-            options = extend((options==undefined || options==null ?{{}}:options),{{
-                async:true,
-                success:function(){{}},
-                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }});
-            if (!this.isValid){{
-                options.failure('Invalid model.');
-            }}
-            else if (this.isNew()){{
-                options.failure('Cannot updated unsaved model, please call save instead.');
-            }}
-            else {{
-                var data = this.{1}();
+            builder.AppendLine(string.Format(@"         update:function(){{
                 var model=this;
-                if (Object.keys(data).length==0){{
-                    options.success(model);
-                }}else{{
-                    ajax(
-                    {{
-                        url:'{0}/'+this.id,
-                        type:'{4}',   
-                        headers: {{
-                                'Content-Type': 'application/json',
+                return new Promise((resolve,reject)=>{{
+                    if (!model.isValid){{
+                        reject('Invalid model.');
+                    }}else if (model.isNew()){{
+                        reject('Cannot update unsaved model, please call save instead.');
+                    }}else{{
+                        var data = model.{1}();
+                        ajax(
+                        {{
+                            url:'{0}/'+this.id,
+                            type:'{4}',   
+                            headers: {{
+                                    'Content-Type': 'application/json',
                             }},
-                        data:JSON.stringify(data),
-                        async:options.async,
-                        fail:function(response){{options.failure(response.text());}},
-                        done:function(response){{
+                            data:JSON.stringify(data)
+                        }}).then(response=>{{
                             if (response.ok){{                 
                                 var data = response.json();
                                 if (data){{
@@ -152,17 +134,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                     }}
                                     Object.defineProperty(model,'{3}',{{get:function(){{return data;}},configurable: true}});
                                     if (model.$emit!=undefined){{model.$emit('{2}',model);}}
-                                    options.success(model);
+                                    resolve(model);
                                 }}else{{
-                                    options.failure();
+                                    reject();
                                 }}
                             }}else{{
-                                options.failure(response.text());
+                                reject(response.text());
                             }}
-                        }}
-                    }});
-                }}
-            }}
+                        }},response=>{{reject(response.text());}});
+                    }}
+                }});
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
@@ -174,44 +155,36 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"             save:function(options){{
-            options = extend((options==undefined || options==null ?{{}}:options),{{
-                async:true,
-                success:function(){{}},
-                failure:function(error){{throw (error==undefined ? 'failed' : error);}}
-            }});
-            if (!this.isValid){{
-                options.failure('Invalid model.');
-            }}
-            else if (!this.isNew()){{
-                options.failure('Cannot save a saved model,please call update instead.');
-            }}
-            else {{
-                var data = this.{1}();
+            builder.AppendLine(string.Format(@"             save:function(){{
                 var model=this;
-                ajax(
-                {{
-                    url:'{0}',
-                    type:'{4}',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                    }},
-                    data:JSON.stringify(data),
-                    async:options.async,
-                    fail:function(response){{options.failure(response.text());}},
-                    done:function(response){{
-                        if (response.ok){{                 
-                            data.id=response.json().id;
-                            Object.defineProperty(model,'{2}',{{get:function(){{return data;}},configurable: true}});
-                            Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}},configurable: true}});
-                            if (model.$emit!=undefined){{model.$emit('{3}',model);}}
-                            options.success(model);
-                        }}else{{
-                            options.failure(response.text());
-                        }}
+                return new Promise((resolve,reject)=>{{
+                    if (!model.isValid){{
+                        reject('Invalid model.');
+                    }}else if (!model.isNew()){{
+                        reject('Cannot save a saved model, please call update instead.');
+                    }}else{{
+                        var data = model.{1}();
+                        ajax(
+                        {{
+                            url:'{0}',
+                            type:'{4}',
+                            headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                            data:JSON.stringify(data)
+                        }}).then(response=>{{
+                            if (response.ok){{                 
+                                data.id=response.json().id;
+                                Object.defineProperty(model,'{2}',{{get:function(){{return data;}},configurable: true}});
+                                Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}},configurable: true}});
+                                if (model.$emit!=undefined){{model.$emit('{3}',model);}}
+                                resolve(model);
+                            }}else{{
+                                reject(response.text());
+                            }}
+                        }},response=>{{reject(response.text());}});    
                     }}
                 }});
-            }}
         }},", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
@@ -228,7 +201,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("          {0}:function(", mi.Name);
+                    builder.AppendFormat("          {0}:async function(", mi.Name);
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -273,21 +246,23 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response = ajax(
-                    {{
-                        url:'{0}/'+this.id+'/{1}',
-                    type:'METHOD',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                    }},
-                    data:JSON.stringify(function_data),
-                    async:false
-                }});
-                if (response.ok){{
-                    {2}
-                }}else{{
-                    throw response.text();
-                }}", new object[]{
+                    builder.AppendLine(string.Format(@"             var response=null;
+                    try{{
+                        response = await ajax(
+                        {{
+                            url:'{0}/'+this.id+'/{1}',
+                            type:'METHOD',
+                            headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                            data:JSON.stringify(function_data)
+                        }});
+                    }}catch(e){{ response=e; }}
+                    if (response.ok){{
+                        {2}
+                    }}else{{
+                        throw response.text();
+                    }}", new object[]{
                         urlRoot,
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();

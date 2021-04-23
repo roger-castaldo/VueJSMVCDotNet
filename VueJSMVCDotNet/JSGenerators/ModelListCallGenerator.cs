@@ -42,7 +42,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                     builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
-    {1}:function(", new object[] { modelType.Name, mi.Name });
+    {1}:async function(", new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     string url = _CreateJavacriptUrlCode(mlm, mi, modelType);
                     if (mlm.Paged)
@@ -127,7 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }");
                     }
                     builder.AppendLine(@"        });
-        ret.reload(false);
+        await ret.reload();
         return ret;
     }
 });");

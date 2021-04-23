@@ -94,55 +94,37 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         return data;
     };
     var ajax = function(options){
-      options = extend(options,{
-        type:'GET',
-        async:false,
-        credentials:false,
-        body:null,
-        headers:{},
-        data:null,
-        url:null,
-        fail:function(response){throw response.text();},
-        done:undefined
-      });
-      if (options.url==null){ throw 'Unable to call empty url';}
-      options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
-      var xmlhttp = new XMLHttpRequest();
-      if (options.credentials){
-        xmlhttp.withCredentials=true;
-      }
-      if (options.async){
-        xmlhttp.onreadystatechange = function() {
-          if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-            if (xmlhttp.status == 200){
-              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
-            }else{
-              options.fail({ok:false,text:function(){return xmlhttp.responseText;}});
+        return new Promise((resolve, reject) => {
+            options = extend(options,{
+                type:'GET',
+                credentials:false,
+                body:null,
+                headers:{},
+                data:null,
+                url:null
+            });
+            if (options.url==null){ throw 'Unable to call empty url';}
+            options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
+            var xmlhttp = new XMLHttpRequest();
+            if (options.credentials){
+                xmlhttp.withCredentials=true;
             }
-          }
-        };
-      }
-      xmlhttp.open(options.type,options.url,options.async);
-      for(var header in options.headers){
-        xmlhttp.setRequestHeader(header,options.headers[header]);
-      }
-      xmlhttp.send(options.data);
-      if (!options.async){
-        if (xmlhttp.status == 200){
-            if (options.done!=undefined){
-              options.done({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
-            }else{
-              return {ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}};
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+                    if (xmlhttp.status == 200){
+                        resolve({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
+                    }else{
+                        reject({ok:false,text:function(){return xmlhttp.responseText;}});
+                    }
+                }
+            };
+            xmlhttp.open(options.type,options.url,true);
+            for(var header in options.headers){
+                xmlhttp.setRequestHeader(header,options.headers[header]);
             }
-        }else{
-          if (options.fail!=undefined){
-            options.fail({ok:false,text:function(){return xmlhttp.responseText;}});
-          }else{
-            throw xmlhttp.responseText;
-          }
-        }
-      }
-    }
+            xmlhttp.send(options.data);
+        });
+    };
 
     /*borrowed from undescore source*/
     var has = function(obj, path) {
