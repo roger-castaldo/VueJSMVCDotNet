@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.3.0</Version>
-    <PackageReleaseNotes>updated code base to use promise then based architecture for improved performance.  WARNING:  If you used a previous version of this library you will need to update your code base to handle that all functions now return a promise, there is no more ability to pass in options for callbacks depending on results.  A successfull result is sent into the resolve then function and a failed result is sent into the reject then function</PackageReleaseNotes>
+    <Version>1.3.1</Version>
+    <PackageReleaseNotes>patch to ensure all functions resole with a promise</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.3.0.0</AssemblyVersion>
-    <FileVersion>1.3.0.0</FileVersion>
+    <AssemblyVersion>1.3.1.0</AssemblyVersion>
+    <FileVersion>1.3.1.0</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

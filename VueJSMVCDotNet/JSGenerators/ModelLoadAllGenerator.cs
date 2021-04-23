@@ -22,8 +22,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {2}
             {3}
         }});
-        await ret.reload();
-        return ret;
+        return ret.reload();
     }}
 }});", new object[] {
                         modelType.Name,
