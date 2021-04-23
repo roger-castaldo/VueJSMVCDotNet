@@ -48,83 +48,86 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         });
         public static readonly string _LIST_RELOAD_CODE = string.Format(@"            reload:function(){{
                 var tmp = this;
-                ajax({{
-                    url:$url$,
-                    type:'GET',
-                    credentials: 'include'
-                }}).then(response=>{{
-                    if (response.ok){{                 
-                        var data = response.json();
-                        if (data!=null){{
-                            if (data.TotalPages!=undefined){{
-                                var pages = data.TotalPages;
-                                tmp.totalPages=function(){{return pages;}};
-                                data=data.response;
+                return new Promise((resolve,reject)=>{{
+                    ajax({{
+                        url:$url$,
+                        type:'GET',
+                        credentials: 'include'
+                    }}).then(response=>{{
+                        if (response.ok){{                 
+                            var data = response.json();
+                            if (data!=null){{
+                                if (data.TotalPages!=undefined){{
+                                    var pages = data.TotalPages;
+                                    tmp.totalPages=function(){{return pages;}};
+                                    data=data.response;
+                                }}
+                            }}else if (tmp.totalPages!=undefined){{
+                                tmp.totalPages=function(){{return 0;}};
                             }}
-                        }}else if (tmp.totalPages!=undefined){{
-                            tmp.totalPages=function(){{return 0;}};
-                        }}
-                        if (data!=null){{
-                            for(var x=0;x<data.length;x++){{ 
-                                var mtmp = App.Models.$type$.{8}();
-                                mtmp.{0}(data[x]);
-                                data[x] = mtmp;
-                                data[x].$on('{1}',function(model){{
-                                    for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id==model.id){{
-                                            tmp._trigger('{2}',model);
-                                            tmp.splice(x,1);
-                                            break;
-                                        }}
-                                    }}
-                                }});
-                                data[x].$on('{3}',function(model){{
-                                    for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id==model.id){{
-                                            tmp._trigger('{4}',model);
-                                            if ({9}){{
-                                                tmp['splice'](x,1,model);
-                                            }}else{{
-                                                Vue.set(tmp,x,model);
+                            if (data!=null){{
+                                for(var x=0;x<data.length;x++){{ 
+                                    var mtmp = App.Models.$type$.{8}();
+                                    mtmp.{0}(data[x]);
+                                    data[x] = mtmp;
+                                    data[x].$on('{1}',function(model){{
+                                        for(var x=0;x<tmp.length;x++){{
+                                            if (tmp[x].id==model.id){{
+                                                tmp._trigger('{2}',model);
+                                                tmp.splice(x,1);
+                                                break;
                                             }}
-                                            break;
                                         }}
-                                    }}
-                                }});
-                                data[x].$on('{5}',function(model){{
-                                    for(var x=0;x<tmp.length;x++){{
-                                        if (tmp[x].id==model.id){{
-                                            tmp._trigger('{6}',model);
-                                            if ({9}){{
-                                                tmp['splice'](x,1,model);
-                                            }}else{{
-                                                Vue.set(tmp,x,model);
+                                    }});
+                                    data[x].$on('{3}',function(model){{
+                                        for(var x=0;x<tmp.length;x++){{
+                                            if (tmp[x].id==model.id){{
+                                                tmp._trigger('{4}',model);
+                                                if ({9}){{
+                                                    tmp['splice'](x,1,model);
+                                                }}else{{
+                                                    Vue.set(tmp,x,model);
+                                                }}
+                                                break;
                                             }}
-                                            break;
                                         }}
-                                    }}
-                                }});
-                            }}
-                            Array.prototype.push.apply(tmp,data);
-                            if (tmp.length-data.length>0){{
-                                tmp.splice(0,tmp.length-data.length);
+                                    }});
+                                    data[x].$on('{5}',function(model){{
+                                        for(var x=0;x<tmp.length;x++){{
+                                            if (tmp[x].id==model.id){{
+                                                tmp._trigger('{6}',model);
+                                                if ({9}){{
+                                                    tmp['splice'](x,1,model);
+                                                }}else{{
+                                                    Vue.set(tmp,x,model);
+                                                }}
+                                                break;
+                                            }}
+                                        }}
+                                    }});
+                                }}
+                                Array.prototype.push.apply(tmp,data);
+                                if (tmp.length-data.length>0){{
+                                    tmp.splice(0,tmp.length-data.length);
+                                }}else{{
+                                    tmp.push(App.Models.$type$.{8}());
+                                    tmp.splice(tmp.length-1,tmp.length);
+                                }}
                             }}else{{
-                                tmp.push(App.Models.$type$.{8}());
-                                tmp.splice(tmp.length-1,tmp.length);
+                                if (tmp.length>0){{
+                                    tmp.splice(0,tmp.length);
+                                }}else{{
+                                    tmp.push(App.Models.$type$.{8}());
+                                    tmp.splice(tmp.length-1,tmp.length);
+                                }}
                             }}
+                            tmp._trigger('{7}');
+                            resolve(tmp);
                         }}else{{
-                            if (tmp.length>0){{
-                                tmp.splice(0,tmp.length);
-                            }}else{{
-                                tmp.push(App.Models.$type$.{8}());
-                                tmp.splice(tmp.length-1,tmp.length);
-                            }}
+                            reject(data);
                         }}
-                        tmp._trigger('{7}');
-                    }}else{{
-                        throw data;
-                    }}
-}});
+                    }});
+                }});
             }}", new object[]{
                                                                             PARSE_FUNCTION_NAME,
                                                                             Events.MODEL_DESTROYED,
@@ -137,8 +140,25 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                                             CREATE_INSTANCE_FUNCTION_NAME,
                                                                             IS_VUE_3
         });
-        public static readonly string ARRAY_TO_VUE_METHOD = string.Format(@"            toVue:function(options){{
-                options = options || {{}};
+        public static readonly string ARRAY_TO_VUE_METHOD = string.Format(@"
+        toVue:function(options){{
+            var opts = this.toMixins();
+            if (options==undefined || options==null){{
+                options=opts;
+            }}else{{
+                if (options.mixins==undefined){{
+                    options.mixins=[];
+                }}
+                options.mixins.push(opts);
+            }}
+            if ({0}){{
+                return Vue.createApp(options);
+            }}else{{
+                return new Vue(options);
+            }}
+        }},
+        toMixins:function(){{
+                var options={{}};
                 var items = this;
                 var computed = {{
                     Items:{{

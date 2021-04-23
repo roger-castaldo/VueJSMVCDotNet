@@ -201,7 +201,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("          {0}:async function(", mi.Name);
+                    builder.AppendFormat("          {0}:function(", mi.Name);
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -246,23 +246,17 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response=null;
-                    try{{
-                        response = await ajax(
-                        {{
-                            url:'{0}/'+this.id+'/{1}',
-                            type:'METHOD',
-                            headers: {{
-                                'Content-Type': 'application/json',
-                            }},
-                            data:JSON.stringify(function_data)
-                        }});
-                    }}catch(e){{ response=e; }}
-                    if (response.ok){{
-                        {2}
-                    }}else{{
-                        throw response.text();
-                    }}", new object[]{
+                    builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
+                    ajax(
+                    {{
+                        url:'{0}/'+this.id+'/{1}',
+                        type:'METHOD',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        data:JSON.stringify(function_data)
+                    }}).then(response=>{{
+                        {2}", new object[]{
                         urlRoot,
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
@@ -295,9 +289,9 @@ for(var x=0;x<{0}.length;x++){{
                         }
                         builder.AppendLine("if (response==null){");
                         if (!allowNull)
-                            builder.AppendLine("throw \"A null response was returned by the server which is invalid.\";");
+                            builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
                         else
-                            builder.AppendLine("return response;");
+                            builder.AppendLine("resolve(response);");
                         builder.AppendLine("}else{");
                         if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
                         {
@@ -319,10 +313,14 @@ for(var x=0;x<{0}.length;x++){{
                       }));
                             }
                         }
-                        builder.AppendLine(@"           return response;
+                        builder.AppendLine(@"           resolve(response);
         }");
                     }
-                    builder.AppendLine("},");
+                    builder.AppendLine(@"},
+                    response=>{
+                        reject(response);
+                    });
+},");
                 }
             }
         }

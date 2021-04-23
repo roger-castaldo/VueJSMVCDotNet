@@ -43,19 +43,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     },
                     toVue:function(options){
+                        if (options.mixins==undefined){options.mixins=[];}
+                        options.mixins.push(this.toMixin());
+                        return Vue.createApp(options);
+                    },
+                    toMixin:function(){
                         for(var prop in data){
                             data[prop] = this[prop];
                         }
-                        options = options || {};
-                        if (options.data!=undefined){
-                            delete options.data;
-                        }
-                        var opts = {
+                        return {
                             data:function(){return data;},
                             methods:extend(extend({},methods),(options.methods==undefined ? {} : options.methods)),
                             computed:extend(extend({},computed),(options.computed==undefined ? {} : options.computed))
                         };
-                        return Vue.createApp(extend(opts,options));
                     }
                 };
                 ret = extend(ret,data);
