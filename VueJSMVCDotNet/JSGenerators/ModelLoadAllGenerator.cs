@@ -16,13 +16,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod), false).Length > 0)
                 {
-                    builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{LoadAll:function(){{
+                    builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{LoadAll:async function(){{
         var ret = extend([],{{
             {1}
             {2}
             {3}
         }});
-        ret.reload(false);
+        await ret.reload();
         return ret;
     }}
 }});", new object[] {

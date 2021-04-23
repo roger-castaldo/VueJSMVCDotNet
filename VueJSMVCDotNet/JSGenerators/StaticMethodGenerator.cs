@@ -30,7 +30,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
+                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:async function(",new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -75,21 +75,23 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response = ajax(
-                    {{
-                        url:'{0}/{1}',
-                    type:'SMETHOD',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                    }},
-                    data:JSON.stringify(function_data),
-                    async:false
-                }});
-                if (response.ok){{
-                    {2}
-                }}else{{
-                    throw response.text();
-                }}", new object[]{
+                    builder.AppendLine(string.Format(@"             var response=null;
+                    try{{
+                        response = await ajax(
+                        {{
+                            url:'{0}/{1}',
+                            type:'SMETHOD',
+                            headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                            data:JSON.stringify(function_data)
+                        }});
+                    }}catch(e){{response=e;}}
+                    if (response.ok){{
+                        {2}
+                    }}else{{
+                        throw response.text();
+                    }}", new object[]{
                         urlRoot,
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();

@@ -12,13 +12,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType);
-            builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:function(id){{
-        var response = ajax(
-        {{
-            url:'{1}/'+id,
-            type:'GET',
-            async:false
-        }});
+            builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:async function(id){{
+        var response=null;
+        try{{
+            response = await ajax(
+            {{
+                url:'{1}/'+id,
+                type:'GET'
+            }});
+        }}catch(e){{ response = e; }}
         if (response.ok){{
             var response=response.json();
             if (response==null){{ return null; }}
