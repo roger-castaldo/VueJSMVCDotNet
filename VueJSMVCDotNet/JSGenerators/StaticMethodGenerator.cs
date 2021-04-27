@@ -30,7 +30,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
-                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:async function(",new object[] { modelType.Name, mi.Name });
+                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = mi.GetParameters();
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -75,23 +75,17 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             var response=null;
-                    try{{
-                        response = await ajax(
-                        {{
-                            url:'{0}/{1}',
-                            type:'SMETHOD',
-                            headers: {{
-                                'Content-Type': 'application/json',
-                            }},
-                            data:JSON.stringify(function_data)
-                        }});
-                    }}catch(e){{response=e;}}
-                    if (response.ok){{
-                        {2}
-                    }}else{{
-                        throw response.text();
-                    }}", new object[]{
+                    builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
+                    ajax(
+                    {{
+                        url:'{0}/{1}',
+                        type:'SMETHOD',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        data:JSON.stringify(function_data)
+                    }}).then(response=>{{
+                        {2}", new object[]{
                         urlRoot,
                         mi.Name,
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
@@ -124,15 +118,15 @@ for(var x=0;x<{0}.length;x++){{
                         }
                         builder.AppendLine("if (response==null){");
                         if (!allowNull)
-                            builder.AppendLine("throw \"A null response was returned by the server which is invalid.\";");
+                            builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
                         else
-                            builder.AppendLine("return response;");
+                            builder.AppendLine("resolve(response);");
                         builder.AppendLine("}else{");
                         if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
                         {
                             if (array)
                             {
-                                builder.AppendLine(string.Format(@"      ret=[];
+                                builder.AppendLine(string.Format(@"         ret=[];
             for (var x=0;x<response.length;x++){{
                 ret.push(_{0}(response[x]));
             }}
@@ -144,16 +138,19 @@ for(var x=0;x<{0}.length;x++){{
                             {
                                 builder.AppendLine(string.Format(@"             ret = _{0}(response);
             response=ret;", new object[]{
-                  propType.Name,
-                  Constants.CREATE_INSTANCE_FUNCTION_NAME,
-                  Constants.PARSE_FUNCTION_NAME
+                  propType.Name
                       }));
                             }
                         }
-                        builder.AppendLine(@"           return response;
+                        builder.AppendLine(@"           resolve(response);
         }");
                     }
-                    builder.AppendLine("}});");
+                    builder.AppendLine(@"},
+                    response=>{
+                        reject(response);
+                    });
+    });
+}});");
                 }
             }
         }
