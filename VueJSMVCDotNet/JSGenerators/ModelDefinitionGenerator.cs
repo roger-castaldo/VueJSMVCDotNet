@@ -315,7 +315,8 @@ for(var x=0;x<{0}.length;x++){{
                         }
                         builder.AppendLine(@"           resolve(response);
         }");
-                    }
+                    }else
+                        builder.AppendLine("           resolve();");
                     builder.AppendLine(@"},
                     response=>{
                         reject(response);
