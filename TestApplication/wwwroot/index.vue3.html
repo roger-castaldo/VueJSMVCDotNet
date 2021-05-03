@@ -18,17 +18,17 @@
                 </th>
             </tr>
         </thead>
-        <tbody>
+        <tbody v-if="Items!=null">
             <tr v-for="person in Items">
                 <td>{{person.FirstName}}</td>
                 <td>{{person.LastName}}</td>
                 <td>
-                    <asynccomp v-bind:promise="person.GetFullName()">
+                    <asynccomp v-bind:promise="person.GetFullName()" resultname="fullName">
                         <template #resolved="props">
-                            {{props.result}}
+                            {{props.fullName}}
                         </template>
-                        <template #rejected="props">
-                            <span style="color:red">{{props.result}}</span>
+                        <template #rejected="result">
+                            <span style="color:red">{{result}}</span>
                         </template>
                     </asynccomp>
                 </td>
@@ -55,7 +55,7 @@
                 <th>FullName</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody v-if="Items!=null">
             <tr v-for="person in Items">
                 <td>{{person.FirstName}}</td>
                 <td>{{person.LastName}}</td>
@@ -148,26 +148,51 @@
             }
         }).mount('#dvedit');
         const asynccomp = {
-            template: '<slot v-if="resolve!=null" name="resolved" :result="resolve"></slot><slot v-if="reject!=null" name="rejected" :result="reject"></slot>',
-            props: ['promise'],
+            template: '<slot v-if="resolve!=null" name="resolved" v-bind="resolve"></slot><slot v-if="reject!=null" name="rejected" v-bind="reject"></slot>',
+            props: ['promise','resultname'],
             data: function(){
                 return { resolve: null,reject:null };
             },
             watch: {
                 promise: function (val) {
                     if (val != null && val instanceof Promise) {
-                        var view = this;
-                        val.then(result => { view.resolve = result; view.reject = null; }, result => { view.reject = result; view.resolve = null; });
+                        this.handlePromise();
                     } else {
                         this.resolve = null;
                         this.reject = null;
                     }
                 }
             },
+            methods: {
+                handlePromise() {
+                    var view = this;
+                    this.promise.then(
+                        result => {
+                            if (view.resultname != undefined && view.resultname != null) {
+                                var tmp = {};
+                                tmp[view.resultname] = result;
+                                view.resolve = tmp;
+                            } else {
+                                view.resolve = result;
+                            }
+                            view.reject = null;
+                        },
+                        result => {
+                            if (view.resultname != undefined && view.resultname != null) {
+                                var tmp = {};
+                                tmp[view.resultname] = result;
+                                view.reject = tmp;
+                            } else {
+                                view.reject = result;
+                            }
+                            view.resolve = null;
+                        }
+                    );
+                }
+            },
             mounted: function () {
                 if (this.promise != null && this.promise instanceof Promise) {
-                    var view = this;
-                    this.promise.then(result => { view.resolve = result; view.reject = null; }, result => { view.reject = result; view.resolve = null; });
+                    this.handlePromise();
                 } else {
                     this.resolve = null;
                     this.reject = null;

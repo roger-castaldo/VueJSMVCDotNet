@@ -1,6 +1,7 @@
 ﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
@@ -58,7 +59,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         };
                     }
                 };
-                ret = extend(ret,data);
+                var tmp = extend({_hashCode:null},data);");
+                foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
+                {
+                    if (pi.CanRead && pi.CanWrite)
+                    {
+                    builder.AppendLine(string.Format(@"                Object.defineProperty(ret,'{0}',{{
+                    get:function(){{return tmp.{0};}},
+                    set:function(value){{
+                        tmp.{0}=value;
+                        H(JSON.stringify(tmp)).then(hash=>{{tmp._hashCode=hash;}});
+                    }},
+                    enumerable: true,
+                    configurable: true
+                }});", pi.Name));
+                    }
+                }
+            builder.AppendLine(@"Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;}});
                 ret = extend(ret,methods);
                 for(var prop in computed){
                     Object.defineProperty(ret,prop,computed[prop]);
