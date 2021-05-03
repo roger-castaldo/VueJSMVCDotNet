@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.3.3</Version>
-    <PackageReleaseNotes>patch correcting promises that don't resolve when the method return type is void</PackageReleaseNotes>
+    <Version>1.3.4</Version>
+    <PackageReleaseNotes>added in a built in property of _hashCode which will automatically recalulate when changing property values.  This is done to allow for use in a v-for loop by binding the key to this value it should trigger updates more effectively.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.3.3.0</AssemblyVersion>
-    <FileVersion>1.3.3.0</FileVersion>
+    <AssemblyVersion>1.3.4.0</AssemblyVersion>
+    <FileVersion>1.3.4.0</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

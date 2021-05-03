@@ -206,11 +206,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }};
                 options.computed = extend(computed,options.computed);
                 options.methods = extend(methods,options.methods);
-                if ({0}){{
-                    return Vue.createApp(options);
-                }}else{{
-                    return new Vue(options);
-                }}
+                return options;
             }},", new object[]{
                                                                                IS_VUE_3,
                                                                                Events.LIST_MODEL_LOADED,
