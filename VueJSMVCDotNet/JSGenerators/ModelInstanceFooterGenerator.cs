@@ -59,7 +59,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         };
                     }
                 };
-                var tmp = extend({_hashCode:null},data);");
+                var tmp = extend({_hashCode:null},data);
+                Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;},set:function(hash){tmp._hashCode=null;H(JSON.stringify(ret)).then(hash=>{tmp._hashCode=hash;});}});");
                 foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
                 {
                     if (pi.CanRead && pi.CanWrite)
@@ -68,15 +69,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     get:function(){{return tmp.{0};}},
                     set:function(value){{
                         tmp.{0}=value;
-                        H(JSON.stringify(tmp)).then(hash=>{{tmp._hashCode=hash;}});
+                        ret._hashCode='';
                     }},
                     enumerable: true,
                     configurable: true
                 }});", pi.Name));
                     }
                 }
-            builder.AppendLine(@"Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;}});
-                ret = extend(ret,methods);
+            builder.AppendLine(@"                ret = extend(ret,methods);
                 for(var prop in computed){
                     Object.defineProperty(ret,prop,computed[prop]);
                 }

@@ -173,6 +173,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 if (this.currentIndex!=undefined){{
                     methods= extend(methods,{{
                         currentIndex:function(){{ return this.Items.currentIndex();}},
+                        currentPage:function(){{ return this.Items.currentPage();}},
                         currentPageSize:function(){{ return this.Items.currentPageSize();}},
                         totalPages:function(){{ return this.Items.totalPages();}},
                         moveToPage:function(pageNumber){{ return this.Items.moveToPage(pageNumber);}},

@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.3.5</Version>
-    <PackageReleaseNotes>patch to move list calls to return the list as well as calling reload to grab the data for the list asyncrhonously to make implementations easier and simpler to use by giving access to all the additional functionality prior to the asynchronous load call completing.</PackageReleaseNotes>
+    <Version>1.3.5.1</Version>
+    <PackageReleaseNotes>minor patch to include the currentPage() function in a paged list when exporting to mixin</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.3.5.0</AssemblyVersion>
-    <FileVersion>1.3.5.0</FileVersion>
+    <AssemblyVersion>1.3.6.1</AssemblyVersion>
+    <FileVersion>1.3.6.1</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
