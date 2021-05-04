@@ -199,35 +199,31 @@
                 }
             }
         };
-        App.Models.mPerson.LoadAll().then(result => {
-            window.lst = result.toVue({
-                components: {
-                    asynccomp
+        window.lst = App.Models.mPerson.LoadAll().toVue({
+            components: {
+                asynccomp
+            },
+            methods: {
+                EditPerson: function (person) {
+                    frm.person = person;
                 },
-                methods: {
-                    EditPerson: function (person) {
-                        frm.person = person;
-                    },
-                    CreateNew: function () {
-                        frm.lst = this.Items;
-                        frm.person = App.Models.mPerson.createInstance();
-                    }
+                CreateNew: function () {
+                    frm.lst = this.Items;
+                    frm.person = App.Models.mPerson.createInstance();
                 }
-            }).mount('#dvList');
-        });
-        App.Models.mPerson.Search(null).then(result => {
-            window.lstFiltered = result.toVue({
-                data: function () {
-                    return { current_filter: null };
-                },
-                watch: {
-                    current_filter: function (val) {
-                        val = (val == '' ? null : val);
-                        this.changeParameters(val);
-                    }
+            }
+        }).mount('#dvList');
+        window.lstFiltered = App.Models.mPerson.Search(null).toVue({
+            data: function () {
+                return { current_filter: null };
+            },
+            watch: {
+                current_filter: function (val) {
+                    val = (val == '' ? null : val);
+                    this.changeParameters(val);
                 }
-            }).mount('#dvListFiltered');
-        });
+            }
+        }).mount('#dvListFiltered');
         App.Models.mPerson.TestNull().then(result => { alert(result == null); });
     </script>
 </body>

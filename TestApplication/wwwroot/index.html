@@ -194,9 +194,7 @@
             }
         }
     });
-    App.Models.mPerson.LoadAll().then(response => {
-        lst.people = response;
-    });
+    lst.people = App.Models.mPerson.LoadAll();
     var lstFiltered = new Vue({
         el: '#dvListFiltered',
         data: function () {
