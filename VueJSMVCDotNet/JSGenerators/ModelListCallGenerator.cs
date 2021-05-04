@@ -127,7 +127,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }");
                     }
                     builder.AppendLine(@"        });
-        return ret.reload();
+        ret.reload();
+        return ret;
     }
 });");
                 }
