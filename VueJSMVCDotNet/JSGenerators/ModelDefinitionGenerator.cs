@@ -19,7 +19,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             _AppendComputed(props, ref builder);
 
             builder.AppendLine(string.Format(@"    methods = extend(methods,{{
-        isNew:function(){{ return (this.{0}==undefined ? true : (this.id==undefined? true : this.id==undefined||this.id==null));}},",Constants.INITIAL_DATA_KEY));
+        isNew:function(){{ return (getMap(this)==undefined ? true : (getMap(this).{0} == undefined ? true : (this.id==undefined? true : this.id==undefined||this.id==null)));}},",Constants.INITIAL_DATA_KEY));
             _AppendInstanceMethods(modelType,urlRoot, ref builder);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
@@ -43,7 +43,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         reject('Cannot reload unsaved model.');
                     }}else{{
                         ajax({{
-                            url:'{0}/'+this.id,
+                            url:'{0}/'+model.id,
                             type:'GET'
                         }}).then(
                             response=>{{
@@ -76,7 +76,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }}else{{
                         ajax(
                         {{
-                            url:'{0}/'+this.id,
+                            url:'{0}/'+model.id,
                             type:'{2}'
                         }}).then(
                             response=>{{
@@ -116,7 +116,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         var data = model.{1}();
                         ajax(
                         {{
-                            url:'{0}/'+this.id,
+                            url:'{0}/'+model.id,
                             type:'{4}',   
                             headers: {{
                                     'Content-Type': 'application/json',
@@ -126,13 +126,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             if (response.ok){{                 
                                 var data = response.json();
                                 if (data){{
-                                    data=model.{3};
+                                    data=getMap(model).{3};
                                     for(var prop in data){{
                                         if (prop!='id'){{
                                             data[prop]=model[prop];
                                         }}
                                     }}
-                                    Object.defineProperty(model,'{3}',{{get:function(){{return data;}},configurable: true}});
+                                    setMap(model,{{{3}:data}});
                                     if (model.$emit!=undefined){{model.$emit('{2}',model);}}
                                     resolve(model);
                                 }}else{{
@@ -174,9 +174,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             data:JSON.stringify(data)
                         }}).then(response=>{{
                             if (response.ok){{                 
-                                data.id=response.json().id;
-                                Object.defineProperty(model,'{2}',{{get:function(){{return data;}},configurable: true}});
-                                Object.defineProperty(model,'id',{{get:function(){{return this.{2}.id;}},configurable: true}});
+                                setMap(model,{{{2}:data}});
                                 if (model.$emit!=undefined){{model.$emit('{3}',model);}}
                                 resolve(model);
                             }}else{{
@@ -246,10 +244,11 @@ for(var x=0;x<{0}.length;x++){{
                         else
                             builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
                     }
-                    builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
+                    builder.AppendLine(string.Format(@"             var model = this;
+                return new Promise((resolve,reject)=>{{
                     ajax(
                     {{
-                        url:'{0}/'+this.id+'/{1}',
+                        url:'{0}/'+model.id+'/{1}',
                         type:'METHOD',
                         headers: {{
                             'Content-Type': 'application/json',
@@ -334,7 +333,7 @@ for(var x=0;x<{0}.length;x++){{
             {
                 m = (IModel)modelType.GetConstructor(Type.EmptyTypes).Invoke(new object[] { });
             }
-            builder.AppendLine(@"   data = {");
+            builder.AppendLine(@"    data = {");
             bool isFirst = true;
             foreach (PropertyInfo pi in props)
             {
@@ -363,14 +362,20 @@ for(var x=0;x<{0}.length;x++){{
                 {
                     builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
-                    return  (this.{1} == undefined ? undefined : this.{1}.{0});
-                }}
+                    return  (getMap(this) == undefined ? undefined : getMap(this).{1}.{0});
+                }},
+                set:function(val){{}}
             }},", new object[]{
                         pi.Name,
                         Constants.INITIAL_DATA_KEY
                     }));
                 }
             }
+            builder.AppendLine(string.Format(@"     id:{{
+            get:function(){{ 
+                return (getMap(this)==undefined ? undefined : (getMap(this).{0}==undefined ? undefined : getMap(this).{0}.id));
+            }}
+        }},",Constants.INITIAL_DATA_KEY));
             _AppendValidations(props, ref builder);
             builder.AppendLine("    });");
         }

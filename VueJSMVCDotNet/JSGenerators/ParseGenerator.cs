@@ -47,22 +47,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                 }
             }
-            builder.AppendLine(string.Format(@"     Object.defineProperty(this,'{2}',{{get:function(){{ return data; }},configurable: true}});
-            Object.defineProperty(this,'id',{{get:function(){{ return data.id; }},configurable: true}});
-            for(var propName in data){{
-                if (Object.getOwnPropertyDescriptor(this,propName)!=undefined){{
-                    if (Object.getOwnPropertyDescriptor(this,propName).set!=undefined || Object.getOwnPropertyDescriptor(this,propName).writable){{
-                        if (data[propName]!=null){{
-                            this[propName]=(Array.isArray(data[propName]) ? data[propName].slice() : data[propName]);
-                        }}else{{
-                            this[propName]=null;
-                        }}
-                    }}
-                }}
-            }}
-        if (this.$emit != undefined) {{ this.$emit('parsed',this); }}
+            builder.AppendLine(string.Format("      setMap(this,{{ {0}:data }});", new object[] { Constants.INITIAL_DATA_KEY }));
+            foreach (PropertyInfo pi in props)
+                builder.AppendLine(string.Format("    this.{0}=(data.{0}==null ? null : (Array.isArray(data.{0}) ? data.{0}.slice() : data.{0}));",pi.Name));
+            builder.AppendLine(@"        if (this.$emit != undefined) { this.$emit('parsed',this); }
         return this;
-        }}}});", new object[] { modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME,Constants.INITIAL_DATA_KEY }));
+        }});");
         }
     }
 }

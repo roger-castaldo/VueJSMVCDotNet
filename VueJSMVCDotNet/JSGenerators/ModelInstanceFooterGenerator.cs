@@ -13,14 +13,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     App.Models.{0} = App.Models.{0}||{{}};
         App.Models.{0}.{1} = function(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
             builder.AppendLine(@"         if (Vue.version.indexOf('2')==0){
-                
                 return new Vue({data:function(){return data;},methods:methods,computed:computed});
             }else if (Vue.version.indexOf('3')==0){
                 var ret = {
                     $on:function(event,callback){
                         if (this._$events==undefined){this._$events={};}
-                        if (this._$events[event]==undefined){this._$events[event]=[];}
-                        this._$events[event].push(callback);
+                        if (Array.isArray(event)){
+                            for(var x=0;x<event.length;x++){
+                                if (this._$events[event[x]]==undefined){this._$events[event[x]]=[];}
+                                this._$events[event[x]].push(callback);
+                            }
+                        }else{
+                            if (this._$events[event]==undefined){this._$events[event]=[];}
+                            this._$events[event].push(callback);
+                        }
                     },
                     $off:function(callback){
                         if (this._$events!=undefined){
@@ -49,13 +55,28 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         return Vue.createApp(options);
                     },
                     toMixin:function(){
+                        var tmp = {};
                         for(var prop in data){
-                            data[prop] = this[prop];
+                            tmp[prop] = this[prop];
                         }
+                        if (tmp.id!=undefined)
+                            delete tmp.id;
+                        var og = this;
+                        Object.defineProperty(tmp,'id',{get:function(){return (getMap(this)==undefined ? undefined : getMap(this).id);}});
                         return {
-                            data:function(){return data;},
-                            methods:extend(extend({},methods),(options.methods==undefined ? {} : options.methods)),
-                            computed:extend(extend({},computed),(options.computed==undefined ? {} : options.computed))
+                            data:function(){return tmp;},
+                            methods:extend({$on:ret.$on,$off:ret.$off},methods),
+                            computed:computed,
+                            created:function(){
+                                var view=this;
+                                this.$on([");
+                builder.AppendFormat("'{0}','{1}','{2}','parsed'",new object[]{
+                    Constants.Events.MODEL_LOADED,
+                    Constants.Events.MODEL_SAVED,
+                    Constants.Events.MODEL_UPDATED
+                });
+                builder.AppendLine(@"],function(){view.$forceUpdate();});
+                            }
                         };
                     }
                 };
@@ -72,7 +93,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         ret._hashCode='';
                     }},
                     enumerable: true,
-                    configurable: true
+                    configurable: false
                 }});", pi.Name));
                     }
                 }
@@ -80,6 +101,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 for(var prop in computed){
                     Object.defineProperty(ret,prop,computed[prop]);
                 }
+                setMap(ret,getMap(this));
                 return ret;
             }else{
                 throw 'unsupported version of VueJS found.';

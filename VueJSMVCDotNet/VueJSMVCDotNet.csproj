@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.3.5.1</Version>
-    <PackageReleaseNotes>minor patch to include the currentPage() function in a paged list when exporting to mixin</PackageReleaseNotes>
+    <Version>1.3.6.0</Version>
+    <PackageReleaseNotes>migrated the _initialData object over to use a weakmap principal to ensure it is hidden and only accessible and writable from internal calls as well as adjusted other properties and how they are built to get vue reactivity to be more thorough.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.3.6.1</AssemblyVersion>
-    <FileVersion>1.3.6.1</FileVersion>
+    <AssemblyVersion>1.3.6.0</AssemblyVersion>
+    <FileVersion>1.3.6.0</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
