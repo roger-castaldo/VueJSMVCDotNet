@@ -63,10 +63,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(string.Format("        attrs.{0}=prop;",p.Name));
                 }
             }
-            builder.AppendLine(string.Format(@"     if (this.{0}!=undefined){{
-            var tmp = this.{0};
-            for(prop in tmp){{
-                if (isEqual(tmp[prop],attrs[prop])){{
+            builder.AppendLine(string.Format(@"     var idata = (getMap(this)==undefined ? undefined : getMap(this).{0});
+        if (idata!=undefined){{
+            for(prop in idata){{
+                if (isEqual(idata[prop],attrs[prop])){{
                     delete attrs[prop];
                 }}
             }}
