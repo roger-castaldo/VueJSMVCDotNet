@@ -36,7 +36,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static bool _IsValidDataActionMethod(MethodInfo method)
         {
-            return (method.ReturnType == typeof(bool)) && (method.GetParameters().Length == 0);
+            return (method.ReturnType == typeof(bool)) && (
+                method.GetParameters().Length == 0 || 
+                (method.GetParameters().Length==1 && method.GetParameters()[0].ParameterType==typeof(ISecureSession))
+            );
         }
 
         /*
@@ -150,6 +153,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     paths.Add(new sPathTypePair(mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
                 }
                 bool found = false;
+                bool foundLoadAll=false;
                 foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
                     if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
@@ -182,6 +186,64 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                         errors.Add(new DuplicateLoadMethodException(t, mi.Name));
                                     }
                                     found = true;
+                                }
+                            }else if (mi.GetParameters().Length==2){
+                                if ((
+                                    mi.GetParameters()[0].ParameterType==typeof(string)
+                                    && mi.GetParameters()[1].ParameterType==typeof(ISecureSession)
+                                )||(
+                                    mi.GetParameters()[1].ParameterType==typeof(string)
+                                    && mi.GetParameters()[0].ParameterType==typeof(ISecureSession)
+                                )){
+                                    if (found)
+                                    {
+                                        if (!invalidModels.Contains(t))
+                                            invalidModels.Add(t);
+                                        errors.Add(new DuplicateLoadMethodException(t, mi.Name));
+                                    }
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+                    if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod),false).Length>0){
+                        Type rtype = mi.ReturnType;
+                        if (rtype.IsArray){
+                            rtype=rtype.GetElementType();
+                        }else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(List<>)){
+                            rtype = rtype.GetGenericArguments()[0];
+                        }else{
+                            rtype=null;
+                            if (!invalidModels.Contains(t))
+                                invalidModels.Add(t);
+                            errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
+                        }
+                        if (rtype!=null){
+                            if (rtype!=t){
+                                if (!invalidModels.Contains(t))
+                                    invalidModels.Add(t);
+                                errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
+                            }else{
+                                if (mi.GetParameters().Length!=0){
+                                    if (mi.GetParameters().Length==1){
+                                        if (mi.GetParameters()[0].ParameterType!=typeof(ISecureSession)){
+                                            if (!invalidModels.Contains(t))
+                                                invalidModels.Add(t);
+                                            errors.Add(new InvalidLoadAllArguements(t, mi.Name));
+                                        }
+                                    }else{
+                                        if (!invalidModels.Contains(t))
+                                            invalidModels.Add(t);
+                                        errors.Add(new InvalidLoadAllArguements(t, mi.Name));
+                                    }
+                                }else
+                                {
+                                    if (foundLoadAll){
+                                        if (!invalidModels.Contains(t))
+                                            invalidModels.Add(t);
+                                        errors.Add(new DuplicateLoadAllMethodException(t, mi.Name));
+                                    }
+                                    foundLoadAll=true;
                                 }
                             }
                         }
@@ -227,14 +289,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListNotAllPagedException(t, mi, mlm.Path));
                             }
-                            if (mc.Count != mi.GetParameters().Length - (isPaged ? 3 : 0))
+                            if (mc.Count != Utility.ExtractStrippedParameters(mi).Length - (isPaged ? 3 : 0))
                             {
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterCountException(t, mi, mlm.Path));
                             }
                         }
-                        ParameterInfo[] pars = mi.GetParameters();
+                        ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                         for (int x = 0; x < pars.Length; x++)
                         {
                             ParameterInfo pi = pars[x];

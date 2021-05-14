@@ -72,9 +72,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return t;
         }
 
-        internal static void SetModelValues(string formData, ref IModel model, bool isNew)
+        internal static void SetModelValues(Hashtable data, ref IModel model, bool isNew)
         {
-            Hashtable data = (Hashtable)JSON.JsonDecode(formData);
             foreach (string str in data.Keys)
             {
                 if (str != "id")
@@ -103,42 +102,49 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        internal static void LocateMethod(string formData,List<MethodInfo> methods,out MethodInfo method,out object[] pars)
+        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,ISecureSession session,out MethodInfo method,out object[] pars)
         {
-            Hashtable hpars = (Hashtable)JSON.JsonDecode(formData);
             method = null;
             pars = null;
-            if (hpars == null || hpars.Count == 0)
+            int idx=-1;
+            if (formData == null || formData.Count == 0)
             {
                 foreach (MethodInfo mi in methods)
                 {
-                    if (mi.GetParameters().Length == 0)
+                    if (mi.GetParameters().Length == 0
+                        || UsesSecureSession(mi,out idx))
                     {
                         method = mi;
-                        pars = new object[] { };
+                        pars = (idx==-1 ? new object[] { } : new object[]{session});
                         return;
                     }
                 }
             }
             else
             {
-                pars = new object[hpars.Count];
                 foreach (MethodInfo m in methods)
                 {
-                    if (m.GetParameters().Length == pars.Length)
+                    bool useSession = UsesSecureSession(m,out idx);
+                    if (m.GetParameters().Length == formData.Count
+                    || (useSession && m.GetParameters().Length==formData.Count+1))
                     {
+                        pars = new object[formData.Count+(useSession ? 1 : 0)];
                         bool isMethod = true;
                         int index = 0;
                         foreach (ParameterInfo pi in m.GetParameters())
                         {
-                            if (hpars.ContainsKey(pi.Name))
-                                pars[index] = _ConvertObjectToType(hpars[pi.Name], pi.ParameterType);
-                            else
-                            {
-                                isMethod = false;
-                                break;
+                            if (index==idx){
+                                pars[idx]=session;
+                            }else{
+                                if (formData.ContainsKey(pi.Name))
+                                    pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
+                                else
+                                {
+                                    isMethod = false;
+                                    break;
+                                }
+                                index++;
                             }
-                            index++;
                         }
                         if (isMethod)
                         {
@@ -395,6 +401,42 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             return type.IsArray ||
                 (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
+        }
+
+        public static IModel InvokeLoad(MethodInfo mi,string id,ISecureSession session){
+            List<object> pars = new List<object>();
+            ParameterInfo[] mpars = mi.GetParameters();
+            if (mpars.Length==1)
+                pars.Add(id);
+            else{
+                if (mpars[0].ParameterType == typeof(string)){
+                    pars.AddRange(new object[]{id,session});
+                }else{
+                    pars.AddRange(new object[]{session,id});
+                }
+            }
+            return (IModel)mi.Invoke(null,pars.ToArray());
+        }
+
+        public static bool UsesSecureSession(MethodInfo mi,out int index){
+            index=-1;
+            ParameterInfo[] pars = mi.GetParameters();
+            for(int x=0;x<pars.Length;x++){
+                if (pars[x].ParameterType == typeof(ISecureSession)){
+                    index=x;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi){
+            int idx;
+            List<ParameterInfo> ret = new List<ParameterInfo>(mi.GetParameters());
+            if (UsesSecureSession(mi,out idx)){
+                ret.RemoveAt(idx);
+            }
+            return ret.ToArray();
         }
     }
 }

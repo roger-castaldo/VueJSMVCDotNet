@@ -27,13 +27,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _deleteMethods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             IModel model = null;
             lock (_loadMethods)
             {
                 if (_loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                    model = (IModel)_loadMethods[url.Substring(0, url.LastIndexOf("/"))].Invoke(null, new object[] { url.Substring(url.LastIndexOf("/") + 1) });
+                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))],url.Substring(url.LastIndexOf("/") + 1),session);
             }
             if (model == null)
                 throw new CallNotFoundException("Model Not Found");
@@ -53,7 +53,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     {
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode = 200;
-                        return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, new object[] { })));
+                        return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));
                     }
                 }
                 else

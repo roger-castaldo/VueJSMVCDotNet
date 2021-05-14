@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _saveMethods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             IModel model = null;
             lock (_constructors)
@@ -47,10 +47,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (mi != null)
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,formData))
                         throw new InsecureAccessException();
                     Utility.SetModelValues(formData, ref model, true);
-                    if ((bool)mi.Invoke(model, new object[] { }))
+                    if ((bool)mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { })))
                     {
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode= 200;

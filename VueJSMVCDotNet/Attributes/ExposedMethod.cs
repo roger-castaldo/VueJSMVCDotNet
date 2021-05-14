@@ -10,7 +10,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
      * instance of the model and is used to perform operations on the model.  Allow null response is used 
      * to indicate that the function can respond with null, otherwise null response is treated as an error.
      */
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ExposedMethod : Attribute
     {
         private bool _allowNullResponse;

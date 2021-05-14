@@ -35,7 +35,8 @@ namespace TestApplication{
         });
 
         [ModelLoadMethod()]
-        public static mPerson Load(string id){
+        public static mPerson Load(string id,ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             mPerson ret=null;
             foreach (mPerson per in _persons){
                 if (id==per.id){
@@ -47,12 +48,14 @@ namespace TestApplication{
         }
 
         [ModelLoadAllMethod()]
-        public static List<mPerson> LoadAll(){
+        public static List<mPerson> LoadAll(ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             return _persons;
         }
 
         [ModelDeleteMethod()]
-        public bool Delete(){
+        public bool Delete(ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             bool ret=false;
             for(int x=0;x<_persons.Count;x++){
                 if (_persons[x].id==this.id){
@@ -65,7 +68,8 @@ namespace TestApplication{
         }
 
         [ModelUpdateMethod()]
-        public bool Update(){
+        public bool Update(ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             bool ret=false;
             for(int x=0;x<_persons.Count;x++){
                 if (_persons[x].id==this.id){
@@ -79,14 +83,16 @@ namespace TestApplication{
         }
 
         [ModelSaveMethod()]
-        public bool Save(){
+        public bool Save(ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             _persons.Add(this);
             return true;
         }
 
         [ModelListMethod("/search/mPerson?q={0}",true)]
-        public static List<mPerson> Search(string q,int pageStartIndex, int pageSize, out int totalPages)
+        public static List<mPerson> Search(string q,ISecureSession session,int pageStartIndex, int pageSize, out int totalPages)
         {
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             List<mPerson> ret = new List<mPerson>();
             totalPages=0;
             if (q != null)
@@ -115,7 +121,8 @@ namespace TestApplication{
         }
 
         [ExposedMethod(false)]
-        public string GetFullName(){
+        public string GetFullName(ISecureSession session){
+            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             return string.Format("{0}, {1}",new object[]{LastName,FirstName});
         }
 

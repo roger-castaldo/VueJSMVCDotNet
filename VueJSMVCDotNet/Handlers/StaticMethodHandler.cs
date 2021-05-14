@@ -43,18 +43,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
                 Match m = _reg.Match(url);
                 string smethod = m.Groups[1].Value;
                 MethodInfo mi;
                 object[] pars;
-                Utility.LocateMethod(formData, _methods[smethod], out mi, out pars);
+                Utility.LocateMethod(formData, _methods[smethod],session, out mi, out pars);
                 if (mi == null)
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
                 else
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,formData))
                         throw new InsecureAccessException();
                     try
                     {
@@ -88,7 +88,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             sMethodPatterns? patt = null;
             lock (_patterns)

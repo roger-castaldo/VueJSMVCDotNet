@@ -112,8 +112,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 body:null,
                 headers:{},
                 data:null,
-                url:null
+                url:null,
+                useJSON:true
             });
+            if (options.useJSON){
+                options.headers['Content-Type'] = 'application/json';
+            }
             if (options.url==null){ throw 'Unable to call empty url';}
             options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
             var xmlhttp = new XMLHttpRequest();
@@ -133,7 +137,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             for(var header in options.headers){
                 xmlhttp.setRequestHeader(header,options.headers[header]);
             }
-            xmlhttp.send(options.data);
+            var data = null;
+            if (options.data!=null){
+                if (options.useJSON){
+                    data = JSON.stringify(options.data);
+                }else{
+                    data = new FormData();
+                    for(var prop in options.data){
+                        if (Array.isArray(options.data[prop])){
+                            if (options.data[prop].length>0){
+                                if (isObject(options.data[prop][0])){
+                                    for(var x=0;x<options.data[prop].length;x++){
+                                        data.append(prop+':json',JSON.stringify(options.data[prop][x]));
+                                    }
+                                }else{
+                                    for(var x=0;x<options.data[prop].length;x++){
+                                        data.append(prop,options.data[prop][x]);
+                                    }
+                                }
+                            }
+                        }else if (isObject(options.data[prop])){
+                            data.append(prop+':json',JSON.stringify(options.data[prop]));
+                        }else{
+                            data.append(prop,options.data[prop]);
+                        }
+                    }
+                }
+            }
+            xmlhttp.send(data);
         });
     };
 

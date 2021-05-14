@@ -37,7 +37,7 @@ namespace TestApplication
                 app.UseDeveloperExceptionPage();
             }
 
-            _vueReqesthandler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _vueReqesthandler = new RequestHandler(RequestHandler.StartTypes.ThrowInvalidExceptions, null);
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseCookiePolicy();

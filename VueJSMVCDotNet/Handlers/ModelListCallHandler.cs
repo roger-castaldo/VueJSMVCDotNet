@@ -21,15 +21,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             private MethodInfo _method;
             private int[] _groupIndexes;
             private bool _isPaged;
+            private int _sessionIndex;
+            private bool _usesSession;
 
             public sModelListCall(ModelListMethod mlm,MethodInfo mi)
             {
                 _isPaged = mlm.Paged;
                 string reg = "";
                 _groupIndexes = null;
-                if (mi.GetParameters().Length > 0)
+                _usesSession = Utility.UsesSecureSession(mi,out _sessionIndex);
+                ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                if (pars.Length > 0)
                 {
-                    ParameterInfo[] pars = mi.GetParameters();
                     string[] regexs = new string[pars.Length];
                     reg = (mlm.Path + (mlm.Paged ? (mlm.Path.Contains("?") ? "&" : "?") + "PageStartIndex={" + (regexs.Length - 3).ToString() + "}&PageSize={" + (regexs.Length - 2).ToString() + "}" : "")).Replace("?", "\\?");
                     for (int x = 0; x < pars.Length; x++)
@@ -90,9 +93,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
-                if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,(Hashtable)JSON.JsonDecode(formData)))
+                if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,formData))
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
@@ -101,9 +104,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 if (pars.Length > 0)
                 {
                     opars = new object[pars.Length];
-                    Match m = _reg.Match(url);
-                    for (int x = 0; x < _groupIndexes.Length; x++)
-                        opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
+                    if (_usesSession)
+                        opars[_sessionIndex] = session;
+                    if (pars.Length>1 || !_usesSession){
+                        Match m = _reg.Match(url);
+                        for (int x = 0; x < _groupIndexes.Length; x++)
+                            opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
+                    }
                 }
                 object ret = _method.Invoke(null, opars);
                 if (_isPaged)
@@ -170,7 +177,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _calls.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             sModelListCall? mlc = null;
             lock (_calls)

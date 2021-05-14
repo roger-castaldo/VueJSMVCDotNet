@@ -24,9 +24,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                    _AppendSave(urlRoot, ref builder);
+                    _AppendSave(urlRoot, ref builder,(mi.GetCustomAttributes(typeof(UseFormData),false).Length==0));
                 else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                    _AppendUpdate(urlRoot, ref builder);
+                    _AppendUpdate(urlRoot, ref builder,(mi.GetCustomAttributes(typeof(UseFormData),false).Length==0));
                 else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
                     _AppendDelete(urlRoot, ref builder);
             }
@@ -103,7 +103,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }));
         }
 
-        private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder)
+        private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"         update:function(){{
                 var model=this;
@@ -117,11 +117,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         ajax(
                         {{
                             url:'{0}/'+model.id,
-                            type:'{4}',   
-                            headers: {{
-                                    'Content-Type': 'application/json',
-                            }},
-                            data:JSON.stringify(data)
+                            type:'{4}',
+                            useJSON:{5},
+                            data:data
                         }}).then(response=>{{
                             if (response.ok){{                 
                                 var data = response.json();
@@ -149,11 +147,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 Constants.Events.MODEL_UPDATED,
                 Constants.INITIAL_DATA_KEY,
-                RequestHandler.RequestMethods.PATCH
+                RequestHandler.RequestMethods.PATCH,
+                useJSON.ToString().ToLower()
             }));
         }
 
-        private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder)
+        private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"             save:function(){{
                 var model=this;
@@ -168,10 +167,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         {{
                             url:'{0}',
                             type:'{4}',
-                            headers: {{
-                                'Content-Type': 'application/json',
-                            }},
-                            data:JSON.stringify(data)
+                            useJSON:{5},
+                            data:data
                         }}).then(response=>{{
                             if (response.ok){{                 
                                 setMap(model,{{{2}:data}});
@@ -188,7 +185,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 Constants.INITIAL_DATA_KEY,
                 Constants.Events.MODEL_SAVED,
-                RequestHandler.RequestMethods.PUT
+                RequestHandler.RequestMethods.PUT,
+                useJSON.ToString().ToLower()
             }));
         }
 
@@ -200,7 +198,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
                     builder.AppendFormat("          {0}:function(", mi.Name);
-                    ParameterInfo[] pars = mi.GetParameters();
+                    ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
                     builder.AppendLine(@"){
@@ -250,14 +248,13 @@ for(var x=0;x<{0}.length;x++){{
                     {{
                         url:'{0}/'+model.id+'/{1}',
                         type:'METHOD',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        data:JSON.stringify(function_data)
+                        useJSON:{2},
+                        data:function_data
                     }}).then(response=>{{
-                        {2}", new object[]{
+                        {3}", new object[]{
                         urlRoot,
                         mi.Name,
+                        (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;")

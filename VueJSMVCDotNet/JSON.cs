@@ -175,7 +175,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
 
                     // name
-                    string name = (string)ParseString(json, ref index);
+                    object name = ParseString(json, ref index);
                     if (name == null)
                     {
                         return null;
