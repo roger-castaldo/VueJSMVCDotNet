@@ -31,11 +31,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
                     builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
-                    ParameterInfo[] pars = mi.GetParameters();
+                    ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
                     builder.AppendLine(@"){
-                var function_data = {};");
+                        var function_data = {};");
                     foreach (ParameterInfo par in pars)
                     {
                         Type propType = par.ParameterType;
@@ -80,14 +80,13 @@ for(var x=0;x<{0}.length;x++){{
                     {{
                         url:'{0}/{1}',
                         type:'SMETHOD',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        data:JSON.stringify(function_data)
+                        useJSON:{2},
+                        data:function_data
                     }}).then(response=>{{
-                        {2}", new object[]{
+                        {3}", new object[]{
                         urlRoot,
                         mi.Name,
+                        (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
                         (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;")

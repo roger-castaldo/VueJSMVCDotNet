@@ -43,7 +43,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                     builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
     {1}:function(", new object[] { modelType.Name, mi.Name });
-                    ParameterInfo[] pars = mi.GetParameters();
+                    ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     string url = _CreateJavacriptUrlCode(mlm, mi, modelType);
                     if (mlm.Paged)
                         url += string.Format("+'{0}PageStartIndex='+this.currentIndex()+'&PageSize='+this.currentPageSize()", (mlm.Path.Contains("?") ? "&" : "?"));

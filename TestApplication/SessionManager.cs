@@ -10,5 +10,14 @@ namespace TestApplication{
         {
             _current = context;
         }
+
+        public DateTime Start{
+            get{
+                if (_current.Session.GetString("Start")==null){
+                    _current.Session.SetString("Start",DateTime.Now.ToString());
+                }
+                return DateTime.Parse(_current.Session.GetString("Start"));
+            }
+        }
     }
 }

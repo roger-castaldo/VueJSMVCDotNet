@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -24,7 +25,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _methods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             MethodInfo mi = null;
             lock (_methods)
@@ -38,7 +39,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode = 200;
-                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, new object[] { })));
+                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));
             }
             else
                 throw new CallNotFoundException();

@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -81,7 +82,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             return ret;
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             if (!HandlesRequest(url, method))
                 throw new CallNotFoundException();

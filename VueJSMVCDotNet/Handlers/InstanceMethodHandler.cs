@@ -45,22 +45,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
                 Match m = _reg.Match(url);
                 string id = m.Groups[1].Value;
                 string smethod = m.Groups[2].Value;
-                IModel model = (IModel)_loadMethod.Invoke(null, new object[] { id });
+                IModel model = Utility.InvokeLoad(_loadMethod,id,session);
                 if (model == null)
                     throw new CallNotFoundException("Model Not Found");
                 MethodInfo mi;
                 object[] pars;
-                Utility.LocateMethod(formData, _methods[smethod], out mi, out pars);
+                Utility.LocateMethod(formData, _methods[smethod],session, out mi, out pars);
                 if (mi == null)
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
                 else
                 {
-                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,model,url,(Hashtable)JSON.JsonDecode(formData)))
+                    if (!securityCheck.Invoke(mi.DeclaringType, mi, session,model,url,formData))
                         throw new InsecureAccessException();
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
@@ -94,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, string formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             sMethodPatterns? patt = null;
             lock (_patterns)

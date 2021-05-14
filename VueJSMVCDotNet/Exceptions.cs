@@ -57,6 +57,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         protected DuplicateLoadMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
+    //thrown when more than one Load all method exists in a given model
+    [Serializable]
+    public class DuplicateLoadAllMethodException : Exception
+    {
+        public DuplicateLoadAllMethodException(Type t, string methodName)
+            : base("The IModel type " + t.FullName + " is not valid because the method " + methodName + " is tagged as a load all method when a valid load all method already exists.") { }
+
+        protected DuplicateLoadAllMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
     //thrown when the return type of a load method is not of the model or of the models inheritance
     [Serializable]
     public class InvalidLoadMethodReturnType : Exception
@@ -66,6 +76,28 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         { }
 
         protected InvalidLoadMethodReturnType(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+    //thrown when the return type of a load all method is not an array or List<> of the model type
+    [Serializable]
+    public class InvalidLoadAllMethodReturnType : Exception
+    {
+        public InvalidLoadAllMethodReturnType(Type t, string methodName)
+            : base("The IModel type " + t.FullName + " is not valid because the method " + methodName + " does not return a valid type for load all.")
+        { }
+
+        protected InvalidLoadAllMethodReturnType(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+    //thrown when the return type of a load all method is not either parameterless or only contains one parameter and thats ISecureSession
+    [Serializable]
+    public class InvalidLoadAllArguements : Exception
+    {
+        public InvalidLoadAllArguements(Type t, string methodName)
+            : base("The IModel type " + t.FullName + " is not valid because the method " + methodName + " does not have a valid signature for a LoadAll call.")
+        { }
+
+        protected InvalidLoadAllArguements(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     //thrown when no Load method is specified

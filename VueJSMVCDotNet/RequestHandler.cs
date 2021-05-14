@@ -88,7 +88,39 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             string url = Utility.CleanURL(Utility.BuildURL(context));
             RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
-            string formData = await new StreamReader(context.Request.Body).ReadToEndAsync();
+            Hashtable formData = new Hashtable();
+            if (context.Request.ContentType=="application/x-www-form-urlencoded" 
+            || context.Request.ContentType=="multipart/form-data")
+            {
+                foreach (string key in context.Request.Form.Keys){
+                    if (key.EndsWith(":json")){
+                        if (context.Request.Form[key].Count>1){
+                            ArrayList al = new ArrayList();
+                            foreach (string str in context.Request.Form[key]){
+                                al.Add(JSON.JsonDecode(str));
+                            }
+                            formData.Add(key.Substring(0,key.Length-5),al);
+                        }else{
+                            formData.Add(key.Substring(0,key.Length-5),JSON.JsonDecode(context.Request.Form[key][0]));
+                        }
+                    }else{
+                        if (context.Request.Form[key].Count>1){
+                            ArrayList al = new ArrayList();
+                            foreach (string str in context.Request.Form[key]){
+                                al.Add(str);
+                            }
+                            formData.Add(key,al);
+                        }else{
+                            formData.Add(key,context.Request.Form[key][0]);
+                        }
+                    }
+                }
+            }else{
+                string tmp =  await new StreamReader(context.Request.Body).ReadToEndAsync();
+                if (tmp!=""){
+                    formData = (Hashtable)JSON.JsonDecode(tmp);
+                }
+            }
             bool found = false;
             foreach (IRequestHandler handler in _Handlers)
             {
