@@ -9,10 +9,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelListCallGenerator : IJSGenerator
     {
-        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, MethodInfo mi, Type modelType)
+        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, Type modelType)
         {
             Logger.Debug("Creating the javascript url call for the model list method at path " + mlm.Path);
-            ParameterInfo[] pars = mi.GetParameters();
             if (pars.Length > 0)
             {
                 string[] pNames = new string[pars.Length];
@@ -44,7 +43,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
     {1}:function(", new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
-                    string url = _CreateJavacriptUrlCode(mlm, mi, modelType);
+                    string url = _CreateJavacriptUrlCode(mlm, pars, modelType);
                     if (mlm.Paged)
                         url += string.Format("+'{0}PageStartIndex='+this.currentIndex()+'&PageSize='+this.currentPageSize()", (mlm.Path.Contains("?") ? "&" : "?"));
                     for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
