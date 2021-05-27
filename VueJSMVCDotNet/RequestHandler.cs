@@ -89,8 +89,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             string url = Utility.CleanURL(Utility.BuildURL(context));
             RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
             Hashtable formData = new Hashtable();
-            if (context.Request.ContentType=="application/x-www-form-urlencoded" 
-            || context.Request.ContentType=="multipart/form-data")
+            if (context.Request.ContentType!=null && 
+            (
+                context.Request.ContentType=="application/x-www-form-urlencoded" 
+                || context.Request.ContentType.StartsWith("multipart/form-data")
+            ))
             {
                 foreach (string key in context.Request.Form.Keys){
                     if (key.EndsWith(":json")){
