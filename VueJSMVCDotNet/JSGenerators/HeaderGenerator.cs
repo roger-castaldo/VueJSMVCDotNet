@@ -127,7 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             xmlhttp.onreadystatechange = function() {
                 if (xmlhttp.readyState == XMLHttpRequest.DONE) {
                     if (xmlhttp.status == 200){
-                        resolve({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return _fixDates(JSON.parse(xmlhttp.responseText));}});
+                        resolve({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return (xmlhttp.getResponseHeader('Content-Type')=='text/text' ? xmlhttp.responseText : _fixDates(JSON.parse(xmlhttp.responseText)));}});
                     }else{
                         reject({ok:false,text:function(){return xmlhttp.responseText;}});
                     }

@@ -62,17 +62,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 {
                     if (!securityCheck.Invoke(mi.DeclaringType, mi, session,model,url,formData))
                         throw new InsecureAccessException();
-                    context.Response.ContentType= "text/json";
-                    context.Response.StatusCode= 200;
                     try
                     {
                         if (mi.ReturnType == typeof(void))
                         {
                             mi.Invoke(model,pars);
+                            context.Response.ContentType= "text/json";
+                            context.Response.StatusCode= 200;
                             return context.Response.WriteAsync("");
+                        }else if (mi.ReturnType==typeof(string)){
+                            context.Response.ContentType= "text/text";
+                            context.Response.StatusCode= 200;
+                            return context.Response.WriteAsync((string)mi.Invoke(model,pars));
                         }
-                        else
+                        else{
+                            context.Response.ContentType= "text/json";
+                            context.Response.StatusCode= 200;
                             return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model,pars)));
+                        }
                     }
                     catch (Exception ex)
                     {

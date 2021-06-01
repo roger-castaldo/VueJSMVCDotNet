@@ -19,7 +19,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
             private Regex _reg;
             private MethodInfo _method;
-            private int[] _groupIndexes;
+            private Dictionary<int,int> _groupIndexes;
             private bool _isPaged;
             private int _sessionIndex;
             private bool _usesSession;
@@ -75,10 +75,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             regexs[x] = "([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"+(nullable ? "|NULL" : "")+")";
                         }
                     }
-                    _groupIndexes = new int[(mlm.Paged ? pars.Length - 1 : pars.Length)];
+                    _groupIndexes = new Dictionary<int, int>();
                     MatchCollection matches = _regParameter.Matches(reg);
-                    for (int x = 0; x < matches.Count; x++)
-                        _groupIndexes[int.Parse(matches[x].Groups[1].Value)] = x;
+                    for (int x = 0; x < matches.Count; x++){
+                        int idx = int.Parse(matches[x].Groups[1].Value);
+                        if (_usesSession){
+                            if (idx>=_sessionIndex)
+                                idx++;
+                        }
+                        _groupIndexes.Add(idx,x);
+                    }
                     reg = string.Format(reg, regexs);
                     reg = (reg.StartsWith("/") ? reg : "/" + reg).TrimEnd('/');
                 }
@@ -108,7 +114,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         opars[_sessionIndex] = session;
                     if (pars.Length>1 || !_usesSession){
                         Match m = _reg.Match(url);
-                        for (int x = 0; x < _groupIndexes.Length; x++)
+                        foreach(int x in _groupIndexes.Keys)
                             opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
                     }
                 }
