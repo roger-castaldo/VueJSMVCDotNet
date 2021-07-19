@@ -38,7 +38,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             return (method.ReturnType == typeof(bool)) && (
                 method.GetParameters().Length == 0 || 
-                (method.GetParameters().Length==1 && method.GetParameters()[0].ParameterType==typeof(ISecureSession))
+                (method.GetParameters().Length==1 && Utility.IsISecureSessionType(method.GetParameters()[0].ParameterType))
             );
         }
 
@@ -190,10 +190,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             }else if (mi.GetParameters().Length==2){
                                 if ((
                                     mi.GetParameters()[0].ParameterType==typeof(string)
-                                    && mi.GetParameters()[1].ParameterType==typeof(ISecureSession)
+                                    && Utility.IsISecureSessionType(mi.GetParameters()[1].ParameterType)
                                 )||(
                                     mi.GetParameters()[1].ParameterType==typeof(string)
-                                    && mi.GetParameters()[0].ParameterType==typeof(ISecureSession)
+                                    && Utility.IsISecureSessionType(mi.GetParameters()[0].ParameterType)
                                 )){
                                     if (found)
                                     {
@@ -226,7 +226,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             }else{
                                 if (mi.GetParameters().Length!=0){
                                     if (mi.GetParameters().Length==1){
-                                        if (mi.GetParameters()[0].ParameterType!=typeof(ISecureSession)){
+                                        if (!Utility.IsISecureSessionType(mi.GetParameters()[0].ParameterType)){
                                             if (!invalidModels.Contains(t))
                                                 invalidModels.Add(t);
                                             errors.Add(new InvalidLoadAllArguements(t, mi.Name));

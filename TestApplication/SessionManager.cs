@@ -2,7 +2,7 @@ using System;
 using Microsoft.AspNetCore.Http;
 
 namespace TestApplication{
-    internal class SessionManager : Org.Reddragonit.VueJSMVCDotNet.Interfaces.ISecureSession
+    internal class SessionManager : ISessionManager
     {
         [ThreadStatic()]
         private static HttpContext _current;

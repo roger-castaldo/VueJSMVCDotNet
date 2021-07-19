@@ -121,8 +121,8 @@ namespace TestApplication{
         }
 
         [ExposedMethod(false)]
-        public string GetFullName(ISecureSession session){
-            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
+        public string GetFullName(ISessionManager session){
+            System.Diagnostics.Debug.WriteLine(session.Start);
             return string.Format("{0}, {1}",new object[]{LastName,FirstName});
         }
 

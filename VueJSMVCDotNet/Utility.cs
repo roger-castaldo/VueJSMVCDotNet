@@ -422,12 +422,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             index=-1;
             ParameterInfo[] pars = mi.GetParameters();
             for(int x=0;x<pars.Length;x++){
-                if (pars[x].ParameterType == typeof(ISecureSession)){
+                if (IsISecureSessionType(pars[x].ParameterType)) {
                     index=x;
                     return true;
                 }
             }
             return false;
+        }
+
+        public static bool IsISecureSessionType(Type type)
+        {
+            return type == typeof(ISecureSession) ||
+                new List<Type>(type.GetInterfaces()).Contains(typeof(ISecureSession));
         }
 
         public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi){
