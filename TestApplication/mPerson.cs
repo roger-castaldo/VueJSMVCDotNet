@@ -136,6 +136,12 @@ namespace TestApplication{
             return true;
         }
 
+        [ExposedMethod(false)]
+        public static bool AreGuids(ISessionManager session,Guid[] guids)
+        {
+            return true;
+        }
+
         [ModelListMethod("/search/person/byguid?id={0}",false)]
         public static List<mPerson> ByGuid(Guid id){
             return _persons;

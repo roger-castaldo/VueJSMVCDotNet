@@ -135,6 +135,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         {
                             if (index==idx){
                                 pars[idx]=session;
+                                index++;
                             }else{
                                 if (formData.ContainsKey(pi.Name))
                                     pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
@@ -178,14 +179,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 return new Version(obj.ToString());
             if (expectedType.Equals(typeof(Guid)))
                 return new Guid(obj.ToString());
-            try
-            {
-                object ret = Convert.ChangeType(obj, expectedType);
-                return ret;
-            }
-            catch (Exception e)
-            {
-            }
             if (expectedType.IsArray || (obj is ArrayList))
             {
                 int count = 1;
@@ -197,24 +190,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 if (obj is ArrayList)
                     count = ((ArrayList)obj).Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
-                ArrayList tmp = new ArrayList();
                 if (!(obj is ArrayList))
                 {
-                    tmp.Add(_ConvertObjectToType(obj, underlyingType));
+                    ret.SetValue(_ConvertObjectToType(obj, underlyingType), 0);
                 }
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                    {
-                        tmp.Add(_ConvertObjectToType(((ArrayList)obj)[x], underlyingType));
-                    }
+                        ret.SetValue(_ConvertObjectToType(((ArrayList)obj)[x], underlyingType), x);
                 }
-                tmp.CopyTo(ret);
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
                 return ret;
             }
-            else if (expectedType.FullName.StartsWith("System.Collections.Generic.Dictionary"))
+            if (expectedType.FullName.StartsWith("System.Collections.Generic.Dictionary"))
             {
                 object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(new object[0]);
                 Type keyType = expectedType.GetGenericArguments()[0];
@@ -225,7 +214,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 return ret;
             }
-            else if (expectedType.FullName.StartsWith("System.Nullable"))
+            if (expectedType.FullName.StartsWith("System.Nullable"))
             {
                 Type underlyingType = null;
                 if (expectedType.IsGenericType)
@@ -236,19 +225,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     return null;
                 return _ConvertObjectToType(obj, underlyingType);
             }
-            else
+            if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
                 object ret = null;
                 MethodInfo loadMethod = null;
-                if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
+                foreach (MethodInfo mi in expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
-                    foreach (MethodInfo mi in expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS))
+                    if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
                     {
-                        if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
-                        {
-                            loadMethod = mi;
-                            break;
-                        }
+                        loadMethod = mi;
+                        break;
                     }
                 }
                 if (loadMethod == null)
@@ -283,6 +269,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     ret = loadMethod.Invoke(null, new object[] { ((Hashtable)obj)["id"] });
                 return ret;
             }
+            try
+            {
+                object ret = Convert.ChangeType(obj, expectedType);
+                return ret;
+            }
+            catch (Exception e)
+            {
+            }
+            return obj;
         }
 
         //Called to locate all child classes of a given parent type
