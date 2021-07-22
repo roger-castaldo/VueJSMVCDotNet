@@ -64,26 +64,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     throw 'Unable to move to Page that exceeds current total pages.';
                 }else{
                     this.currentIndex=function(){return pageNumber*this.currentPageSize();};
-                    this.reload();
+                    return this.reload();
                 }
             },
             moveToNextPage:function(){
                 if(Math.floor(this.currentIndex()/this.currentPageSize())+1<this.totalPages()){
-                    this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())+1);
+                    return this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())+1);
                 }else{
                     throw 'Unable to move to next Page as that will excess current total pages.';
                 }
             },
             moveToPreviousPage:function(){
                 if(Math.floor(this.currentIndex()/this.currentPageSize())-1>=0){
-                    this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())-1);
+                    return this.moveToPage(Math.floor(this.currentIndex()/this.currentPageSize())-1);
                 }else{
                     throw 'Unable to move to previous Page as that will be before the first page.';
                 }
             },
             changePageSize:function(size){
                 this.currentPageSize = function(){ return size;};
-                this.reload();
+                return this.reload();
             },");
                     }
                     else
