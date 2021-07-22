@@ -71,9 +71,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             context.Response.StatusCode= 200;
                             return context.Response.WriteAsync("");
                         }else if (mi.ReturnType==typeof(string)){
-                            context.Response.ContentType= "text/text";
                             context.Response.StatusCode= 200;
-                            return context.Response.WriteAsync((string)mi.Invoke(model,pars));
+                            string tmp = (string)mi.Invoke(model,pars);
+                            context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
+                            return context.Response.WriteAsync((tmp==null ? JSON.JsonEncode(tmp) : tmp));
                         }
                         else{
                             context.Response.ContentType= "text/json";
