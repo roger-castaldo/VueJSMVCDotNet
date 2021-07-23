@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.3.10.2</Version>
-    <PackageReleaseNotes>patch to handle null response from string method not being encoded</PackageReleaseNotes>
+    <Version>1.3.10.3</Version>
+    <PackageReleaseNotes>patch to correct issued with converting method parameters when an implicit conversion is available</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.3.10.2</AssemblyVersion>
-    <FileVersion>1.3.10.2</FileVersion>
+    <AssemblyVersion>1.3.10.3</AssemblyVersion>
+    <FileVersion>1.3.10.3</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

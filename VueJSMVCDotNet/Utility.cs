@@ -225,6 +225,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     return null;
                 return _ConvertObjectToType(obj, underlyingType);
             }
+            MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
                 object ret = null;
@@ -239,7 +240,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 if (loadMethod == null)
                 {
-                    MethodInfo conMethod = null;
                     foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
                     {
                         if (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
@@ -269,6 +269,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     ret = loadMethod.Invoke(null, new object[] { ((Hashtable)obj)["id"] });
                 return ret;
             }
+            foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
+            {
+                if (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
+                {
+                    if (mi.ReturnType.Equals(expectedType)
+                        && mi.GetParameters().Length == 1
+                        && mi.GetParameters()[0].ParameterType.Equals(obj.GetType()))
+                    {
+                        conMethod = mi;
+                        break;
+                    }
+                }
+            }
+            if (conMethod != null)
+                return conMethod.Invoke(null, new object[] { obj });
             try
             {
                 object ret = Convert.ChangeType(obj, expectedType);
