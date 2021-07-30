@@ -136,18 +136,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }
                     catch(CallNotFoundException cnfe)
                     {
+                        Logger.LogError(cnfe);
                         context.Response.ContentType = "text/text";
                         context.Response.StatusCode = 400;
                         await context.Response.WriteAsync(cnfe.Message);
                     }
                     catch (InsecureAccessException iae)
                     {
+                        Logger.LogError(iae);
                         context.Response.ContentType = "text/text";
                         context.Response.StatusCode = 403;
                         await context.Response.WriteAsync(iae.Message);
                     }
                     catch (Exception e)
                     {
+                        Logger.LogError(e);
                         context.Response.ContentType= "text/text";
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("Error");

@@ -84,7 +84,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception("Execution Error");
+                        throw new Exception("Execution Error",ex);
                     }
                 }
             }

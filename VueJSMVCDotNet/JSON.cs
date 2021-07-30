@@ -34,7 +34,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public const int TOKEN_NULL = 11;
 
         private readonly Regex _regDateTime = new Regex("\\d{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12]\\d)|(3[01]))T([0-5]\\d):([0-5]\\d):([0-5]\\d).\\d{3}Z", RegexOptions.Compiled | RegexOptions.ECMAScript);
-        private static readonly Regex _regGuid = new Regex("[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}",RegexOptions.Compiled|RegexOptions.ECMAScript);
+        private static readonly Regex _regGuid = new Regex("^[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}$",RegexOptions.Compiled|RegexOptions.ECMAScript);
 
         private const int BUILDER_CAPACITY = 2000;
 
