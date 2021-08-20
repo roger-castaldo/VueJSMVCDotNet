@@ -35,6 +35,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
+        private bool _isInitialized=false;
         internal bool IsTypeAllowed(Type type)
         {
             return !_invalidModels.Contains(type);
@@ -223,6 +224,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         //to rescan for all new model types and add them accordingly.
         public void AssemblyAdded()
         {
+            _isInitialized=false;
             Utility.ClearCaches();
             foreach (IRequestHandler irh in _Handlers)
                 irh.ClearCache();
@@ -242,7 +244,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
             List<Type> models;
-            List<Exception> errors = DefinitionValidator.Validate(alc,out _invalidModels,out models);
+            List<Type> invalidModels;
+            List<Exception> errors = DefinitionValidator.Validate(alc,out invalidModels,out models);
+            if (!_isInitialized)
+                _invalidModels = new List<Type>();
+            _invalidModels.AddRange(invalidModels);
             if (errors.Count > 0)
             {
                 Logger.Error("Backbone validation errors:");
@@ -262,8 +268,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     x--;
                 }
             }
-            foreach (IRequestHandler irh in _Handlers)
-                irh.LoadTypes(models);
+            foreach (IRequestHandler irh in _Handlers){
+                if (_isInitialized)
+                    irh.LoadTypes(models);
+                else
+                    irh.Init(models);
+            }
             lock (_typeChecks)
             {
                 foreach (Type t in models)
@@ -292,6 +302,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }
                 }
             }
+            _isInitialized=true;
         }
         #else
         //called when a new assembly has been loaded in the case of dynamic loading, in order 
