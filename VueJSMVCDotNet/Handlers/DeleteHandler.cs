@@ -74,26 +74,59 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             {
                 _loadMethods.Clear();
                 _deleteMethods.Clear();
-                foreach (Type t in types)
+                _LoadTypes(types);
+            }
+        }
+
+        private void _LoadTypes(List<Type> types){
+            foreach (Type t in types)
+            {
+                foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
                 {
-                    foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
+                    if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
                     {
-                        if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
+                        _deleteMethods.Add(Utility.GetModelUrlRoot(t), mi);
+                        foreach (MethodInfo m in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
                         {
-                            _deleteMethods.Add(Utility.GetModelUrlRoot(t), mi);
-                            foreach (MethodInfo m in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
+                            if (m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
                             {
-                                if (m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
-                                {
-                                    _loadMethods.Add(Utility.GetModelUrlRoot(t), m);
-                                    break;
-                                }
+                                _loadMethods.Add(Utility.GetModelUrlRoot(t), m);
+                                break;
                             }
-                            break;
                         }
+                        break;
                     }
                 }
             }
         }
+
+        #if NETCOREAPP3_1
+        public void LoadTypes(List<Type> types){
+            lock(_deleteMethods){
+                _LoadTypes(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            string[] keys;
+            lock(_deleteMethods){
+                keys = new string[_deleteMethods.Count];
+                _deleteMethods.Keys.CopyTo(keys,0);
+                foreach (string str in keys){
+                    if (types.Contains(_deleteMethods[str].DeclaringType)){
+                        _deleteMethods.Remove(str);
+                    }
+                }
+            }
+            lock(_loadMethods){
+                keys = new string[_loadMethods.Count];
+                _loadMethods.Keys.CopyTo(keys,0);
+                foreach (string str in keys){
+                    if (types.Contains(_loadMethods[str].DeclaringType)){
+                        _loadMethods.Remove(str);
+                    }
+                }
+            }
+        }
+        #endif
     }
 }

@@ -94,6 +94,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 _method = mi;
             }
 
+            #if NETCOREAPP3_1
+            public bool IsForType(Type type){
+                return _method.DeclaringType == type;
+            }
+            #endif
+
             public bool IsValid(string url)
             {
                 return _reg.IsMatch(url);
@@ -228,15 +234,39 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             lock (_calls)
             {
                 _calls.Clear();
-                foreach (Type t in types)
+                _LoadTypes(types);
+            }
+        }
+
+        private void _LoadTypes(List<Type> types){
+            foreach (Type t in types)
+            {
+                foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
-                    foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
-                    {
-                        if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
-                            _calls.Add(new sModelListCall((ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0], mi));
+                    if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
+                        _calls.Add(new sModelListCall((ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0], mi));
+                }
+            }
+        }
+
+        #if NETCOREAPP3_1
+        public void LoadTypes(List<Type> types){
+            lock(_calls){
+                _LoadTypes(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            lock(_calls){
+                foreach(Type t in types){
+                    for(int x=0;x<_calls.Count;x++){
+                        if (_calls[x].IsForType(t)){
+                            _calls.RemoveAt(x);
+                            x--;
+                        }
                     }
                 }
             }
         }
+        #endif
     }
 }

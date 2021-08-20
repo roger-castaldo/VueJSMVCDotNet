@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -192,6 +193,107 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return true;
         }
 
+        #if NETCOREAPP3_1
+        //called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
+        //that load context to allow for an unload
+        public void UnloadAssemblyContext(AssemblyLoadContext context){
+            UnloadAssemblyContext(context.Name);
+        }
+        public void UnloadAssemblyContext(string contextName){
+            List<Type> types = Utility.UnloadAssemblyContext(contextName);
+            if (types!=null){
+                foreach (IRequestHandler irh in _Handlers)
+                    irh.UnloadTypes(types);
+                lock (_typeChecks)
+                {
+                    foreach (Type t in types){
+                        _typeChecks.Remove(t);
+                    }
+                }
+                lock (_methodChecks)
+                {
+                    foreach (Type t in types){
+                        _methodChecks.Remove(t);
+                    }
+                }
+            }
+        }
+
+        //called when a new assembly has been loaded in the case of dynamic loading, in order 
+        //to rescan for all new model types and add them accordingly.
+        public void AssemblyAdded()
+        {
+            Utility.ClearCaches();
+            foreach (IRequestHandler irh in _Handlers)
+                irh.ClearCache();
+            foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
+                AsssemblyLoadContextAdded(alc);
+            }
+        }
+
+        public void AsssemblyLoadContextAdded(string contextName){
+            foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
+                if (alc.Name==contextName){
+                    AsssemblyLoadContextAdded(alc);
+                    break;
+                }
+            }
+        }
+
+        public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
+            List<Type> models;
+            List<Exception> errors = DefinitionValidator.Validate(alc,out _invalidModels,out models);
+            if (errors.Count > 0)
+            {
+                Logger.Error("Backbone validation errors:");
+                foreach (Exception e in errors)
+                    Logger.LogError(e);
+                Logger.Error("Invalid IModels:");
+                foreach (Type t in _invalidModels)
+                    Logger.Error(t.FullName);
+            }
+            if (_startType == StartTypes.ThrowInvalidExceptions && errors.Count > 0)
+                throw new ModelValidationException(errors);
+            for(int x = 0; x < models.Count; x++)
+            {
+                if (_invalidModels.Contains(models[x]))
+                {
+                    models.RemoveAt(x);
+                    x--;
+                }
+            }
+            foreach (IRequestHandler irh in _Handlers)
+                irh.LoadTypes(models);
+            lock (_typeChecks)
+            {
+                foreach (Type t in models)
+                {
+                    if (IsTypeAllowed(t))
+                    {
+                        List<ASecurityCheck> checks = new List<ASecurityCheck>();
+                        foreach (object obj in t.GetCustomAttributes())
+                        {
+                            if (obj is ASecurityCheck)
+                                checks.Add((ASecurityCheck)obj);
+                        }
+                        _typeChecks.Add(t,checks.ToArray());
+                        Dictionary<MethodInfo, ASecurityCheck[]> methodChecks = new Dictionary<MethodInfo, ASecurityCheck[]>();
+                        foreach (MethodInfo mi in t.GetMethods())
+                        {
+                            checks = new List<ASecurityCheck>();
+                            foreach (object obj in mi.GetCustomAttributes())
+                            {
+                                if (obj is ASecurityCheck)
+                                    checks.Add((ASecurityCheck)obj);
+                            }
+                            methodChecks.Add(mi, checks.ToArray());
+                        }
+                        _methodChecks.Add(t, methodChecks);
+                    }
+                }
+            }
+        }
+        #else
         //called when a new assembly has been loaded in the case of dynamic loading, in order 
         //to rescan for all new model types and add them accordingly.
         public void AssemblyAdded()
@@ -253,5 +355,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
             }
         }
+        #endif
     }
 }

@@ -5,6 +5,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Loader;
+#if NETCOREAPP3_1
+using System.Runtime.Loader;
+#endif
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -20,11 +24,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private static Dictionary<string, Type> _TYPE_CACHE;
         //houses a cache of Type instances through locate type instances, this is used to increate preformance
         private static Dictionary<string, List<Type>> _INSTANCES_CACHE;
+        #if NETCOREAPP3_1
+        //houses the assembly load contexts for types
+        private static Dictionary<string,List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
+        #endif
 
         static Utility()
         {
             _TYPE_CACHE = new Dictionary<string, Type>();
             _INSTANCES_CACHE = new Dictionary<string, List<Type>>();
+            #if NETCOREAPP3_1
+            _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
+            #endif
         }
 
         //Called to locate a type by its name, this scans through all assemblies 
@@ -43,25 +54,37 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 t = Type.GetType(typeName, false, true);
                 if (t == null)
                 {
-                    foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        try
+                    #if NETCOREAPP3_1
+                    foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
+                        foreach (Assembly ass in alc.Assemblies)
+                    #else 
+                        foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies())
+                    #endif
                         {
-                            if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
+                            try
                             {
-                                t = ass.GetType(typeName, false, true);
-                                if (t != null)
-                                    break;
+                                if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
+                                {
+                                    t = ass.GetType(typeName, false, true);
+                                    if (t != null){
+                                        #if NETCOREAPP3_1
+                                        _MarkTypeSource(alc.Name,t);
+                                        #endif
+                                        break;
+                                    }
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                if (e.Message != "The invoked member is not supported in a dynamic assembly.")
+                                {
+                                    throw e;
+                                }
                             }
                         }
-                        catch (Exception e)
-                        {
-                            if (e.Message != "The invoked member is not supported in a dynamic assembly.")
-                            {
-                                throw e;
-                            }
-                        }
+                    #if NETCOREAPP3_1
                     }
+                    #endif
                 }
                 lock (_TYPE_CACHE)
                 {
@@ -305,24 +328,52 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 if (_INSTANCES_CACHE.ContainsKey(parent.FullName))
                     ret = _INSTANCES_CACHE[parent.FullName];
             }
-            if (ret == null)
+            if (ret==null){
+                #if NETCOREAPP3_1
+                    foreach (AssemblyLoadContext acl in AssemblyLoadContext.All){
+                        List<Type> tmp = _LocateTypeInstances(parent,acl.Assemblies);
+                        #if NETCOREAPP3_1
+                            foreach (Type t in tmp){
+                                _MarkTypeSource(acl.Name,t);
+                            }
+                        #endif
+                        ret.AddRange(tmp);
+                    }
+                #else
+                    ret = _LocateTypeInstances(parent,AppDomain.CurrentDomain.GetAssemblies());
+                #endif 
+            }
+            lock (_INSTANCES_CACHE)
             {
-                ret = new List<Type>();
-                foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies())
+                if (!_INSTANCES_CACHE.ContainsKey(parent.FullName))
+                    _INSTANCES_CACHE.Add(parent.FullName, ret);
+            }
+            return ret;
+        }
+
+        #if NETCOREAPP3_1
+        public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){
+            List<Type> ret = _LocateTypeInstances(parent,alc.Assemblies);
+            foreach (Type t in ret){
+                _MarkTypeSource(alc.Name,t);
+            }
+            return ret;
+        }
+        #endif
+
+        private static List<Type> _LocateTypeInstances(Type parent,IEnumerable<Assembly> assemblies)
+        {
+            List<Type> ret = new List<Type>();
+            foreach (Assembly ass in assemblies)
+            {
+                if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
                 {
-                    if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
+                    foreach (Type t in _GetLoadableTypes(ass))
                     {
-                        foreach (Type t in _GetLoadableTypes(ass))
-                        {
-                            if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent)))
-                                ret.Add(t);
+                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))){
+                            ret.Add(t);
                         }
                     }
-                }
-                lock (_INSTANCES_CACHE)
-                {
-                    if (!_INSTANCES_CACHE.ContainsKey(parent.FullName))
-                        _INSTANCES_CACHE.Add(parent.FullName, ret);
                 }
             }
             return ret;
@@ -350,6 +401,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
+        #if NETCOREAPP3_1
+        private static void _MarkTypeSource(string contextName,Type type){
+            lock(_LOAD_CONTEXT_TYPE_SOURCES)
+            {
+                List<Type> types = new List<Type>();
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)){
+                    types = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
+                    _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
+                }
+                if (!types.Contains(type)){
+                    types.Add(type);
+                }
+                _LOAD_CONTEXT_TYPE_SOURCES.Add(contextName,types);
+            }
+        }
+
+        internal static List<Type> UnloadAssemblyContext(string contextName){
+            List<Type> ret = null;
+            lock(_LOAD_CONTEXT_TYPE_SOURCES){
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)){
+                    ret = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
+                    _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
+                }
+            }
+            return ret;
+        }
+        #endif
+
         internal static void ClearCaches()
         {
             lock (_INSTANCES_CACHE)
@@ -360,6 +439,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 _TYPE_CACHE.Clear();
             }
+            #if NETCOREAPP3_1
+            lock(_LOAD_CONTEXT_TYPE_SOURCES){
+                _LOAD_CONTEXT_TYPE_SOURCES.Clear();
+            }
+            #endif
         }
 
         internal static List<PropertyInfo> GetModelProperties(Type modelType)

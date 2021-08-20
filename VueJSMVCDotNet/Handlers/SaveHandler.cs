@@ -75,19 +75,52 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             {
                 _saveMethods.Clear();
                 _constructors.Clear();
-                foreach (Type t in types)
+                _LoadTypes(types);
+            }
+        }
+
+        private void _LoadTypes(List<Type> types){
+            foreach (Type t in types)
+            {
+                foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
                 {
-                    foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
+                    if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
                     {
-                        if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                        {
-                            _saveMethods.Add(Utility.GetModelUrlRoot(t), mi);
-                            _constructors.Add(Utility.GetModelUrlRoot(t), t.GetConstructor(Type.EmptyTypes));
-                            break;
-                        }
+                        _saveMethods.Add(Utility.GetModelUrlRoot(t), mi);
+                        _constructors.Add(Utility.GetModelUrlRoot(t), t.GetConstructor(Type.EmptyTypes));
+                        break;
                     }
                 }
             }
         }
+
+        #if NETCOREAPP3_1
+        public void LoadTypes(List<Type> types){
+            lock(_saveMethods){
+                _LoadTypes(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            string[] keys;
+            lock(_saveMethods){
+                keys = new string[_saveMethods.Count];
+                _saveMethods.Keys.CopyTo(keys,0);
+                foreach (string str in keys){
+                    if (types.Contains(_saveMethods[str].DeclaringType)){
+                        _saveMethods.Remove(str);
+                    }
+                }
+            }
+            lock(_constructors){
+                keys = new string[_constructors.Count];
+                _constructors.Keys.CopyTo(keys,0);
+                foreach (string str in keys){
+                    if (types.Contains(_constructors[str].DeclaringType)){
+                        _constructors.Remove(str);
+                    }
+                }
+            }
+        }
+        #endif
     }
 }

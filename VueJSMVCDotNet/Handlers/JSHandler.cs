@@ -67,14 +67,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
             if (!ret && _types != null)
             {
-                foreach (Type t in _types)
-                {
-                    foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                lock(_types){
+                    foreach (Type t in _types)
                     {
-                        if (mjsfp.IsMatch(url))
+                        foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
                         {
-                            ret = true;
-                            break;
+                            if (mjsfp.IsMatch(url))
+                            {
+                                ret = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -91,12 +93,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 List<Type> models = new List<Type>();
                 if (_types != null)
                 {
-                    foreach (Type t in _types)
-                    {
-                        foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                    lock(_types){
+                        foreach (Type t in _types)
                         {
-                            if (mjsfp.IsMatch(url))
-                                models.Add(t);
+                            foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                            {
+                                if (mjsfp.IsMatch(url))
+                                    models.Add(t);
+                            }
                         }
                     }
                     foreach (Type model in models){
@@ -163,5 +167,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         {
             _types = types;
         }
+
+        #if NETCOREAPP3_1
+
+        public void LoadTypes(List<Type> types){
+            lock(_types){
+                _types.AddRange(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            lock(_cache){
+                _cache.Clear();
+            }
+            if (_types!=null){
+                lock(_types){
+                    foreach (Type t in types){
+                        _types.Remove(t);
+                    }
+                }
+            }
+        }
+        #endif
     }
 }

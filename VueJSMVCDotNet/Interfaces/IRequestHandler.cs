@@ -13,5 +13,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
         void ClearCache();
         bool HandlesRequest(string url, RequestHandler.RequestMethods method);
         Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context,ISecureSession session, IsValidCall securityCheck);
+        #if NETCOREAPP3_1
+        void LoadTypes(List<Type> types);
+        void UnloadTypes(List<Type> types);
+        #endif
     }
 }

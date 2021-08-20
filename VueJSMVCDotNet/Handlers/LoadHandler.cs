@@ -53,21 +53,44 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public void Init(List<Type> types)
         {
-            _methods.Clear();
             lock (_methods)
             {
-                foreach (Type t in types)
+                _methods.Clear();
+                _LoadTypes(types);
+            }
+        }
+
+        private void _LoadTypes(List<Type> types){
+            foreach (Type t in types)
+            {
+                foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
-                    foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
+                    if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
                     {
-                        if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
-                        {
-                            _methods.Add(Utility.GetModelUrlRoot(t), mi);
-                            break;
-                        }
+                        _methods.Add(Utility.GetModelUrlRoot(t), mi);
+                        break;
                     }
                 }
             }
         }
+
+        #if NETCOREAPP3_1
+        public void LoadTypes(List<Type> types){
+            lock(_methods){
+                _LoadTypes(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            lock(_methods){
+                string[] keys = new string[_methods.Count];
+                _methods.Keys.CopyTo(keys,0);
+                foreach (string str in keys){
+                    if (types.Contains(_methods[str].DeclaringType)){
+                        _methods.Remove(str);
+                    }
+                }
+            }
+        }
+        #endif
     }
 }

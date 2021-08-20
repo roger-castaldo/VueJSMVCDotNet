@@ -38,6 +38,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 _reg = new Regex(string.Format("^{0}/({1})$", new object[] { baseURL, sb.ToString() }), RegexOptions.Compiled | RegexOptions.ECMAScript);
             }
 
+            #if NETCOREAPP3_1
+            public bool IsForType(Type type){
+                foreach (string str in _methods.Keys){
+                    foreach (MethodInfo mi in _methods[str]){
+                        if (mi.DeclaringType==type){
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            #endif
+
             public bool IsValid(string url)
             {
                 return _reg.IsMatch(url);
@@ -139,17 +152,41 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             lock (_patterns)
             {
                 _patterns.Clear();
-                foreach (Type t in types)
+                _LoadTypes(types);
+            }
+        }
+
+        private void _LoadTypes(List<Type> types){
+            foreach (Type t in types)
+            {
+                List<MethodInfo> methods = new List<MethodInfo>();
+                foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
-                    List<MethodInfo> methods = new List<MethodInfo>();
-                    foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
-                    {
-                        if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                            methods.Add(mi);
+                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                        methods.Add(mi);
+                }
+                _patterns.Add(new sMethodPatterns(Utility.GetModelUrlRoot(t), methods));
+            }
+        }
+
+        #if NETCOREAPP3_1
+        public void LoadTypes(List<Type> types){
+            lock(_patterns){
+                _LoadTypes(types);
+            }
+        }
+        public void UnloadTypes(List<Type> types){
+            lock(_patterns){
+                foreach(Type t in types){
+                    for(int x=0;x<_patterns.Count;x++){
+                        if (_patterns[x].IsForType(t)){
+                            _patterns.RemoveAt(x);
+                            x--;
+                        }
                     }
-                    _patterns.Add(new sMethodPatterns(Utility.GetModelUrlRoot(t), methods));
                 }
             }
         }
+        #endif
     }
 }

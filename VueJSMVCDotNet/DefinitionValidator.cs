@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -54,12 +55,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
          * 12.  Check to make sure all paged select lists have proper parameters
          * 13.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
          */
+        #if NETCOREAPP3_1
+        internal static List<Exception> Validate(AssemblyLoadContext alc,out List<Type> invalidModels,out List<Type> models)
+        {
+            models = Utility.LocateTypeInstances(typeof(IModel),alc);
+        #else
         internal static List<Exception> Validate(out List<Type> invalidModels,out List<Type> models)
         {
+            models = Utility.LocateTypeInstances(typeof(IModel));
+        #endif
             List<Exception> errors = new List<Exception>();
             invalidModels = new List<Type>();
             List<sPathTypePair> paths = new List<sPathTypePair>();
-            models = Utility.LocateTypeInstances(typeof(IModel));
             foreach (Type t in models)
             {
                 if (t.GetCustomAttributes(typeof(ModelRoute), false).Length == 0)
