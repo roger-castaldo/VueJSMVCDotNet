@@ -167,7 +167,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }};
                 var methods = {{
                     reload:function(){{
-                        this.Items.reload();
+                        return this.Items.reload();
                     }}
                 }};
                 if (this.currentIndex!=undefined){{
