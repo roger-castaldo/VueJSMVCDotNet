@@ -183,13 +183,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         currentParameters:function(){{ return this.Items.currentParameters();}},
                         changeParameters:function(){{
                             if (arguments.length==0){{
-                                this.Items.changeParameters.call(this.Items);
+                                return this.Items.changeParameters.call(this.Items);
                             }}else{{
                                 var args=[];
                                 for(var x=0;x<arguments.length;x++){{
                                     args.push(arguments[x]);
                                 }}
-                                this.Items.changeParameters.call(this.Items,args);
+                                return this.Items.changeParameters.call(this.Items,args);
                             }}
                         }}
                     }});

@@ -122,7 +122,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             builder.AppendLine(string.Format("              {0}:{0}{1}", new object[] { pars[x].Name, (x + 1 == (mlm.Paged ? pars.Length - 3 : pars.Length) ? "" : ",") }));
                         builder.AppendLine(@"                   };
                 };
-                this.reload();
+                return this.reload();
             }");
                     }
                     builder.AppendLine(@"        });

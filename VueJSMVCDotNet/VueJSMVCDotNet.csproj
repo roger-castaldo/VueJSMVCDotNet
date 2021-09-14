@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.4.0.2</Version>
-    <PackageReleaseNotes>patch to return the reload promise on a mixins reload call for the list</PackageReleaseNotes>
+    <Version>1.4.0.3</Version>
+    <PackageReleaseNotes>patch to return the reload promise on change parameters</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.4.0.2</AssemblyVersion>
-    <FileVersion>1.4.0.2</FileVersion>
+    <AssemblyVersion>1.4.0.3</AssemblyVersion>
+    <FileVersion>1.4.0.3</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
