@@ -179,7 +179,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         moveToPage:function(pageNumber){{ return this.Items.moveToPage(pageNumber);}},
                         moveToNextPage:function(){{ return this.Items.moveToNextPage();}},
                         moveToPreviousPage:function(){{ return this.Items.moveToPreviousPage();}},
-                        changePageSize:function(){{ return this.Items.changePageSize();}},
+                        changePageSize:function(){{ return this.Items.changePageSize();}}
+                    }});
+                }}
+                if (this.changeParameters!=undefined){{
+                    methods= extend(methods,{{
                         currentParameters:function(){{ return this.Items.currentParameters();}},
                         changeParameters:function(){{
                             if (arguments.length==0){{
