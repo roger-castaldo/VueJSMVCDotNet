@@ -283,7 +283,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }
                 }
                 else
-                    ret = loadMethod.Invoke(null, new object[] { ((Hashtable)obj)["id"] });
+                    ret = loadMethod.Invoke(null, new object[] { (((Hashtable)obj)["id"]).ToString() });
                 return ret;
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
