@@ -78,6 +78,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         protected InvalidLoadMethodReturnType(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
+    //thrown when the paremeters of a load method are not valid (ie either string, or ISecureSession and a string
+    [Serializable]
+    public class InvalidLoadMethodArguements : Exception
+    {
+        public InvalidLoadMethodArguements(Type t, string methodName)
+            : base("The IModel type " + t.FullName + " is not valid because the method " + methodName + " does not return a valid type for load all.")
+        { }
+
+        protected InvalidLoadMethodArguements(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+    
+
     //thrown when the return type of a load all method is not an array or List<> of the model type
     [Serializable]
     public class InvalidLoadAllMethodReturnType : Exception

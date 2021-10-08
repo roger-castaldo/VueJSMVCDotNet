@@ -111,6 +111,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
+                Logger.Trace("Converting url parameters from {0} to be handled by the model list call {1}.{2}", new object[] { url, _method.GetType().FullName, _method.Name });
                 ParameterInfo[] pars = _method.GetParameters();
                 object[] opars = new object[] { };
                 if (pars.Length > 0)
@@ -124,9 +125,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
                     }
                 }
+                Logger.Trace("Invoking method {0}.{1} for {2}", new object[] { _method.GetType().FullName, _method.Name, url });
                 object ret = _method.Invoke(null, opars);
                 if (_isPaged)
                 {
+                    Logger.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[opars.Length - 1], method, url });
                     return context.Response.WriteAsync(JSON.JsonEncode(new Hashtable()
                         {
                             {"response",ret },
@@ -139,6 +142,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
             private object _ConvertParameterValue(string p, Type type)
             {
+                Logger.Trace("Attempting to convert url parameter {0} to the type {1}", new object[] { p, type.FullName });
                 p = Uri.UnescapeDataString(p);
                 if (type.IsGenericType)
                     type = type.GetGenericArguments()[0];
@@ -191,6 +195,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle {0}:{1} in the Model List Call Handler", new object[] { method, url });
             sModelListCall? mlc = null;
             lock (_calls)
             {
@@ -198,6 +203,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 {
                     if (call.IsValid(url))
                     {
+                        Logger.Trace("Valid model list call located for {0}:{1}", new object[] { method, url });
                         mlc = call;
                         break;
                     }
@@ -210,6 +216,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { method, url });
             if (method==RequestHandler.RequestMethods.GET)
             {
                 bool ret = false;

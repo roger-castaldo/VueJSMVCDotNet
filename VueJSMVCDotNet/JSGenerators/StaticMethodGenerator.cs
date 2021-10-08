@@ -29,6 +29,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
+                    Logger.Trace("Appending Static Exposed Method[{0}] to Model Definition[{1}]", new object[]
+                    {
+                        mi.Name,
+                        modelType.FullName
+                    });
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
                     builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);

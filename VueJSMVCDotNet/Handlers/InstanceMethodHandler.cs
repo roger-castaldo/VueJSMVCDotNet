@@ -56,11 +56,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 Match m = _reg.Match(url);
                 string id = m.Groups[1].Value;
                 string smethod = m.Groups[2].Value;
+                Logger.Trace("Attempting to load model at {0} for invoked an instance method", new object[] { url });
                 IModel model = Utility.InvokeLoad(_loadMethod,id,session);
                 if (model == null)
                     throw new CallNotFoundException("Model Not Found");
                 MethodInfo mi;
                 object[] pars;
+                Logger.Trace("Attempting to locate the appropriate version of the instance method at {0} with the supplied parameters", new object[] { url });
                 Utility.LocateMethod(formData, _methods[smethod],session, out mi, out pars);
                 if (mi == null)
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
@@ -70,6 +72,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         throw new InsecureAccessException();
                     try
                     {
+                        Logger.Trace("Using {0}.{1} to invoke the Instance Method at the url {2}", new object[] { mi.DeclaringType.FullName, mi.Name, url });
                         if (mi.ReturnType == typeof(void))
                         {
                             mi.Invoke(model,pars);
@@ -110,6 +113,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle request {0} with an Instance Method", new object[] { url });
             sMethodPatterns? patt = null;
             lock (_patterns)
             {
@@ -129,6 +133,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Debug("Checking if the url {0} is handled by an instance method", new object[] { url });
             bool ret = false;
             if (method == RequestHandler.RequestMethods.METHOD)
             {

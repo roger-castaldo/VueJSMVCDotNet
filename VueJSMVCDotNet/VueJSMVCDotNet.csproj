@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.4.1</Version>
-    <PackageReleaseNotes>patch to toMixins to esnure that all methods get transferred over, including when pages and when not pages but has parameters</PackageReleaseNotes>
+    <Version>1.5</Version>
+    <PackageReleaseNotes>added in significant trace logging for diagnostics purposes, not recommended to have on a production site as there is significant amounts of logging that occurs in Trace mode</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.4.1</AssemblyVersion>
-    <FileVersion>1.4.1.0</FileVersion>
+    <AssemblyVersion>1.5.0</AssemblyVersion>
+    <FileVersion>1.5.0.0</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -11,7 +11,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, Type modelType)
         {
-            Logger.Debug("Creating the javascript url call for the model list method at path " + mlm.Path);
+            Logger.Trace("Creating the javascript url call for the model list method at path {0}",new object[] { mlm.Path });
             if (pars.Length > 0)
             {
                 string[] pNames = new string[pars.Length];
@@ -39,6 +39,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                 {
+                    Logger.Trace("Adding List Call[{0}] for Model Definition[{1}]", new object[]
+                    {
+                        mi.Name,
+                        modelType.FullName
+                    });
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                     builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
     {1}:function(", new object[] { modelType.Name, mi.Name });

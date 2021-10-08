@@ -29,6 +29,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle the request {0}:{1} with the Save Handler", new object[] { method, url });
             IModel model = null;
             lock (_constructors)
             {
@@ -49,6 +50,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 {
                     if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,formData))
                         throw new InsecureAccessException();
+                    Logger.Trace("Attempting to handle a save request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
                     Utility.SetModelValues(formData, ref model, true);
                     if ((bool)mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { })))
                     {
@@ -64,6 +66,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { method, url });
             if (method == RequestHandler.RequestMethods.PUT)
                 return _saveMethods.ContainsKey(url)&& _constructors.ContainsKey(url);
             return false;

@@ -29,16 +29,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Debug("Attempting to execute the Delete Handler for the path {0}", new object[] { url });
             IModel model = null;
             lock (_loadMethods)
             {
+                Logger.Trace("Trying to find a load method matching the url {0}", new object[] { url });
                 if (_loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))],url.Substring(url.LastIndexOf("/") + 1),session);
+                {
+                    Logger.Trace("Attempting to load model at url {0}", new object[] { url });
+                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))], url.Substring(url.LastIndexOf("/") + 1), session);
+                }
             }
             if (model == null)
                 throw new CallNotFoundException("Model Not Found");
             else
             {
+                Logger.Trace("Trying to find a delete method matching the url {0}", new object[] { url });
                 MethodInfo mi = null;
                 lock (_deleteMethods)
                 {
@@ -51,6 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         throw new UnauthorizedAccessException();
                     else
                     {
+                        Logger.Trace("Invoking the delete method {0}.{1} for the url {2}", new object[] { mi.DeclaringType.FullName,mi.Name,url });
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode = 200;
                         return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));

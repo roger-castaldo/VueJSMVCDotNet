@@ -26,6 +26,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, System.Collections.Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle {0}:{1} inside the Load Handler", new object[] { method, url });
             MethodInfo mi = null;
             lock (_methods)
             {
@@ -39,6 +40,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
                 string id = url.Substring(url.LastIndexOf("/")+1);
+                Logger.Trace("Attempting to load model using {0}.{1} with the id {2}", new object[] { mi.DeclaringType.FullName, mi.Name, id });
                 return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeLoad(mi,id,session)));
             }
             throw new CallNotFoundException();
@@ -46,6 +48,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking if the Load Handler handles {0}:{1}", new object[] { method, url });
             if (method == RequestHandler.RequestMethods.GET)
                 return _methods.ContainsKey(url.Substring(0,url.LastIndexOf("/")));
             return false;

@@ -9,12 +9,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type thisType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            Logger.Trace("Generating toJSON method for {0}", new object[] { modelType.FullName });
             builder.AppendLine(string.Format(@"   methods = extend(methods,{{{0}:function(){{
         var attrs={{}};
         var prop=null;", Constants.TO_JSON_VARIABLE));
-            foreach (PropertyInfo p in Utility.GetModelProperties(thisType))
+            foreach (PropertyInfo p in Utility.GetModelProperties(modelType))
             {
                 if (p.CanWrite)
                 {

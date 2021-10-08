@@ -12,6 +12,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            Logger.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.FullName });
             builder.AppendLine(string.Format(@"         methods = extend(methods,{{{0}:function(data){{
         if (data==null) {{
             throw 'Unable to parse null result for a model';

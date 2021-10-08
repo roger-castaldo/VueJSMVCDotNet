@@ -11,6 +11,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            Logger.Trace("Appending Model Load method for Model Definition[{0}]", new object[] { modelType.FullName });
             string urlRoot = Utility.GetModelUrlRoot(modelType);
             builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:function(id){{
         var ret = App.Models.{0}.{1}();

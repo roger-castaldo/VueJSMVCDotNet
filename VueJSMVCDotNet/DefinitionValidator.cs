@@ -58,19 +58,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         #if NETCOREAPP3_1
         internal static List<Exception> Validate(AssemblyLoadContext alc,out List<Type> invalidModels,out List<Type> models)
         {
+            Logger.Debug("Attempting to load and validate the models found in the Assembly Load Context {0}", new object[] { alc.Name });
             models = Utility.LocateTypeInstances(typeof(IModel),alc);
-        #else
+            Logger.Debug("Located {0} models in Assembly Load Context {1}", new object[] { models.Count, alc.Name });
+#else
         internal static List<Exception> Validate(out List<Type> invalidModels,out List<Type> models)
         {
             models = Utility.LocateTypeInstances(typeof(IModel));
-        #endif
+            Logger.Debug("Located {0} models in the system",new object[]{models.Count});
+#endif
             List<Exception> errors = new List<Exception>();
             invalidModels = new List<Type>();
             List<sPathTypePair> paths = new List<sPathTypePair>();
             foreach (Type t in models)
             {
+                Logger.Debug("Validating Model {0}", new object[] { t.FullName });
                 if (t.GetCustomAttributes(typeof(ModelRoute), false).Length == 0)
                 {
+                    Logger.Trace("Model {0} has no route", new object[] { t.FullName });
                     invalidModels.Add(t);
                     errors.Add(new NoRouteException(t));
                 }
@@ -83,6 +88,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (hasAdd)
                         {
+                            Logger.Trace("Model {0} has more than 1 save method", new object[] { t.FullName });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new DuplicateModelSaveMethodException(t, mi));
@@ -92,6 +98,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             hasAdd = true;
                             if (!_IsValidDataActionMethod(mi))
                             {
+                                Logger.Trace("Model {0} has and invalid save method", new object[] { t.FullName });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelSaveMethodException(t, mi));
@@ -102,6 +109,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (hasDelete)
                         {
+                            Logger.Trace("Model {0} has more than 1 delete method", new object[] { t.FullName });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new DuplicateModelDeleteMethodException(t, mi));
@@ -111,6 +119,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             hasDelete = true;
                             if (!_IsValidDataActionMethod(mi))
                             {
+                                Logger.Trace("Model {0} has and invalid delete method", new object[] { t.FullName });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelDeleteMethodException(t, mi));
@@ -121,6 +130,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (hasUpdate)
                         {
+                            Logger.Trace("Model {0} has more than 1 update method", new object[] { t.FullName });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new DuplicateModelUpdateMethodException(t, mi));
@@ -128,8 +138,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         else
                         {
                             hasUpdate = true;
-                            if (!_IsValidDataActionMethod(mi))
-                            {
+                            if (!_IsValidDataActionMethod(mi)) { 
+                                Logger.Trace("Model {0} has and invalid update method", new object[] { t.FullName });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelUpdateMethodException(t, mi));
@@ -141,6 +151,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     if (t.GetConstructor(Type.EmptyTypes) == null)
                     {
+                        Logger.Trace("Model {0} has a save method without an empty constructor", new object[] { t.FullName });
                         invalidModels.Add(t);
                         errors.Add(new NoEmptyConstructorException(t));
                     }
@@ -152,6 +163,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (reg.IsMatch(p.Path) && (p.ModelType.FullName != t.FullName))
                         {
+                            Logger.Trace("Model {0} has a model route that is a duplicate of another model", new object[] { t.FullName });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new DuplicateRouteException(p.Path, p.ModelType, mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
@@ -165,16 +177,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
                     {
-                        if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
-                        {
-                            if (!invalidModels.Contains(t))
-                                invalidModels.Add(t);
-                            errors.Add(new InvalidModelListMethodReturnException(t, mi));
-                        }
                         if (mi.ReturnType != t)
                         {
                             if (!mi.ReturnType.IsAssignableFrom(t))
                             {
+                                Logger.Trace("Model {0} does not return a valid type for its Load method", new object[] { t.FullName });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidLoadMethodReturnType(t, mi.Name));
@@ -188,6 +195,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 {
                                     if (found)
                                     {
+                                        Logger.Trace("Model {0} has a duplicated load method", new object[] { t.FullName });
                                         if (!invalidModels.Contains(t))
                                             invalidModels.Add(t);
                                         errors.Add(new DuplicateLoadMethodException(t, mi.Name));
@@ -204,12 +212,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 )){
                                     if (found)
                                     {
+                                        Logger.Trace("Model {0} has a duplicated load method", new object[] { t.FullName });
                                         if (!invalidModels.Contains(t))
                                             invalidModels.Add(t);
                                         errors.Add(new DuplicateLoadMethodException(t, mi.Name));
                                     }
                                     found = true;
                                 }
+                            }
+                            else
+                            {
+                                Logger.Trace("Model {0} has an invalid load method", new object[] { t.FullName });
+                                if (!invalidModels.Contains(t))
+                                    invalidModels.Add(t);
+                                errors.Add(new InvalidLoadMethodArguements(t, mi.Name));
                             }
                         }
                     }
@@ -221,12 +237,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             rtype = rtype.GetGenericArguments()[0];
                         }else{
                             rtype=null;
+                            Logger.Trace("Model {0} has an invalid return type for ModelLoadAllMethod", new object[] { t.FullName });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
                         }
                         if (rtype!=null){
                             if (rtype!=t){
+                                Logger.Trace("Model {0} has an invalid return type for ModelLoadAllMethod", new object[] { t.FullName });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
@@ -234,6 +252,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 if (mi.GetParameters().Length!=0){
                                     if (mi.GetParameters().Length==1){
                                         if (!Utility.IsISecureSessionType(mi.GetParameters()[0].ParameterType)){
+                                            Logger.Trace("Model {0} has an invalid arguement for ModelLoadAllMethod", new object[] { t.FullName });
                                             if (!invalidModels.Contains(t))
                                                 invalidModels.Add(t);
                                             errors.Add(new InvalidLoadAllArguements(t, mi.Name));
@@ -246,6 +265,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }else
                                 {
                                     if (foundLoadAll){
+                                        Logger.Trace("Model {0} has more than 1 ModelLoadAllMethod", new object[] { t.FullName });
                                         if (!invalidModels.Contains(t))
                                             invalidModels.Add(t);
                                         errors.Add(new DuplicateLoadAllMethodException(t, mi.Name));
@@ -274,6 +294,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         }
                         if (rtype != t)
                         {
+                            Logger.Trace("Model {0} has an invalid return type for the model list method {1}", new object[] { t.FullName,mi.Name });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new InvalidModelListMethodReturnException(t, mi));
@@ -292,12 +313,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             MatchCollection mc = _regListPars.Matches(mlm.Path);
                             if (isPaged && !mlm.Paged)
                             {
+                                Logger.Trace("Model {0} has a model list method using paging without indicating it {1}", new object[] { t.FullName, mi.Name });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListNotAllPagedException(t, mi, mlm.Path));
                             }
                             if (mc.Count != Utility.ExtractStrippedParameters(mi).Length - (isPaged ? 3 : 0))
                             {
+                                Logger.Trace("Model {0} has missing parameters from the url for the list method {1}", new object[] { t.FullName, mi.Name });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterCountException(t, mi, mlm.Path));
@@ -313,6 +336,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 {
                                     if (Utility.IsArrayType(pi.ParameterType.GetGenericArguments()[0]))
                                     {
+                                        Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name,pi.Name });
                                         if (!invalidModels.Contains(t))
                                             invalidModels.Add(t);
                                         errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
@@ -320,6 +344,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }
                                 else
                                 {
+                                    Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                     if (!invalidModels.Contains(t))
                                         invalidModels.Add(t);
                                     errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
@@ -327,12 +352,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             }
                             else if (pi.ParameterType.IsArray)
                             {
+                                Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
                             }
                             if (pi.IsOut && (!isPaged || x != pars.Length - 1))
                             {
+                                Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                 if (!invalidModels.Contains(t))
                                     invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterOutException(t, mi, pi));
@@ -349,6 +376,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     && ptype != typeof(ulong)
                                     && ptype != typeof(ushort))
                                 {
+                                    Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                     if (!invalidModels.Contains(t))
                                         invalidModels.Add(t);
                                     errors.Add(new InvalidModelListPageParameterTypeException(t, mi, pi));
@@ -358,6 +386,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             {
                                 if (!pi.IsOut)
                                 {
+                                    Logger.Trace("Model {0} is not a valid page total parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                     if (!invalidModels.Contains(t))
                                         invalidModels.Add(t);
                                     errors.Add(new InvalidModelListPageTotalPagesNotOutException(t, mi, pi));
@@ -389,12 +418,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 if (t.GetProperty("id").GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length > 0)
                 {
+                    Logger.Trace("Model {0} is not valid because the id property is blocked by ModelIgnoreProperty", new object[] { t.FullName });
                     if (!invalidModels.Contains(t))
                         invalidModels.Add(t);
                     errors.Add(new ModelIDBlockedException(t));
                 }
                 if (!found)
                 {
+                    Logger.Trace("Model {0} is not valid because no load method was found", new object[] { t.FullName });
                     if (!invalidModels.Contains(t))
                         invalidModels.Add(t);
                     errors.Add(new NoLoadMethodException(t));
@@ -406,6 +437,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (methods.Contains(mi.Name + "." + mi.GetParameters().Length.ToString()))
                         {
+                            Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName,mi.Name });
                             if (!invalidModels.Contains(t))
                                 invalidModels.Add(t);
                             errors.Add(new DuplicateMethodSignatureException(t, mi));

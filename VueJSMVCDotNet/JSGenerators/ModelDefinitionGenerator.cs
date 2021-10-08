@@ -13,9 +13,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.FullName });
             string urlRoot = Utility.GetModelUrlRoot(modelType);
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             _AppendData(modelType, props, ref builder);
+            Logger.Trace("Adding computed properties for Model Definition[{0}]", new object[] { modelType.FullName });
             _AppendComputed(props, ref builder);
 
             builder.AppendLine(string.Format(@"    methods = extend(methods,{{
@@ -24,11 +26,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                    _AppendSave(urlRoot, ref builder,(mi.GetCustomAttributes(typeof(UseFormData),false).Length==0));
+                {
+                    Logger.Trace("Adding save method for Model Definition[{0}]", new object[] { modelType.FullName });
+                    _AppendSave(urlRoot, ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                }
                 else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                    _AppendUpdate(urlRoot, ref builder,(mi.GetCustomAttributes(typeof(UseFormData),false).Length==0));
+                {
+                    Logger.Trace("Adding update method for Model Definition[{0}]", new object[] { modelType.FullName });
+                    _AppendUpdate(urlRoot, ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                }
                 else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
+                {
+                    Logger.Trace("Adding delete method for Model Definition[{0}]", new object[] { modelType.FullName });
                     _AppendDelete(urlRoot, ref builder);
+                }
             }
             _AppendReloadMethod(modelType, urlRoot, ref builder);
             builder.AppendLine("    });");
@@ -36,6 +47,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
         {
+            Logger.Trace("Adding reload method for Model Definition[{0}]", new object[] { modelType.FullName });
             builder.AppendLine(string.Format(@"reload:function(){{
                 var model=this;
                 return new Promise((resolve,reject)=>{{
@@ -196,6 +208,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
+                    Logger.Trace("Adding Exposed Method[{1}] for Model Definition[{0}]", new object[] { modelType.FullName,mi.Name });
                     bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
                     builder.AppendFormat("          {0}:function(", mi.Name);
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
@@ -325,6 +338,7 @@ for(var x=0;x<{0}.length;x++){{
 
         private void _AppendData(Type modelType, List<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
+            Logger.Trace("Adding data method for Model Definition[{0}]", new object[] { modelType.FullName });
             IModel m = null;
             if (modelType.GetConstructor(Type.EmptyTypes) != null)
             {
@@ -351,12 +365,16 @@ for(var x=0;x<{0}.length;x++){{
         }
 
         private void _AppendComputed(List<PropertyInfo> props, ref WrappedStringBuilder builder)
-        {
+        {   
             builder.AppendLine("    computed = extend(computed,{");
             foreach (PropertyInfo pi in props)
             {
                 if (!pi.CanWrite)
                 {
+                    Logger.Trace("Appending Computed Property[{0}] for Model Definition[{1}]", new object[]{
+                        pi.Name,
+                        pi.DeclaringType.FullName
+                    });
                     builder.AppendLine(string.Format(@"         {0}:{{
                 get:function(){{
                     return  (getMap(this) == undefined ? undefined : getMap(this).{1}.{0});
@@ -391,7 +409,13 @@ for(var x=0;x<{0}.length;x++){{
             get:function(){
                 var ret=true;");
                 foreach (PropertyInfo pi in requiredProps)
+                {
+                    Logger.Trace("Appending Required Propert[{0}] for Model Definition[{1}] validations", new object[]{
+                        pi.Name,
+                        pi.DeclaringType.FullName
+                    });
                     builder.AppendLine(string.Format("              ret=ret&&(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
+                }
                 builder.AppendLine(@"               return ret;
             }
         },

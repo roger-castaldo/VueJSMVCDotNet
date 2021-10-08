@@ -42,7 +42,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         //which by default Type.Load does not perform.
         public static Type LocateType(string typeName)
         {
-            Logger.Debug("Attempting to locate type " + typeName);
+            Logger.Trace("Attempting to locate type {0}",new object[] { typeName });
             Type t = null;
             lock (_TYPE_CACHE)
             {
@@ -108,15 +108,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         {
                             if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty),true).Length==0 || isNew)
                             {
-                                Type propType = pi.PropertyType;
-                                if (propType.IsArray)
-                                    propType = propType.GetElementType();
-                                else if (propType.IsGenericType)
-                                {
-                                    if (propType.GetGenericTypeDefinition() == typeof(List<>))
-                                        propType = propType.GetGenericArguments()[0];
-                                }
+                                Logger.Trace("Attempting to convert the value supplied for property {0}.{1} to {2}", new object[] { model.GetType().FullName, pi.Name, pi.PropertyType });
                                 var obj = _ConvertObjectToType(data[str], pi.PropertyType);
+                                Logger.Trace("Setting mode property {0}.{1} with converted value", new object[] { model.GetType(), pi.Name });
                                 pi.SetValue(model, obj);
                             }
                         }
@@ -185,7 +179,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
          */
         private static object _ConvertObjectToType(object obj, Type expectedType)
         {
-            Logger.Debug("Attempting to convert object of type " + (obj == null ? "NULL" : obj.GetType().FullName) + " to " + expectedType.FullName);
+            Logger.Trace("Attempting to convert object of type {0} to {1}",new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
             if (expectedType.Equals(typeof(object)))
                 return obj;
             if (expectedType.Equals(typeof(bool)) && (obj == null))
@@ -321,7 +315,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         //Called to locate all child classes of a given parent type
         public static List<Type> LocateTypeInstances(Type parent)
         {
-            Logger.Debug("Attempting to locate instances of type " + parent.FullName);
+            Logger.Trace("Attempting to locate instances of type {0}",new object[] { parent.FullName });
             List<Type> ret = null;
             lock (_INSTANCES_CACHE)
             {
@@ -353,6 +347,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         #if NETCOREAPP3_1
         public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){
+            Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
             List<Type> ret = _LocateTypeInstances(parent,alc.Assemblies);
             foreach (Type t in ret){
                 _MarkTypeSource(alc.Name,t);
@@ -376,11 +371,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }
                 }
             }
+            Logger.Trace("Located {0} instances of type {1} from the given assemblies", new object[] { ret.Count, parent.FullName });
             return ret;
         }
 
         private static Type[] _GetLoadableTypes(Assembly ass)
         {
+            Logger.Trace("Extracting Loadable types from assembly: {0}", new object[] { ass.FullName });
             Type[] ret;
             try
             {
@@ -403,6 +400,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         #if NETCOREAPP3_1
         private static void _MarkTypeSource(string contextName,Type type){
+            Logger.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
             lock(_LOAD_CONTEXT_TYPE_SOURCES)
             {
                 List<Type> types = new List<Type>();
@@ -431,6 +429,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         internal static void ClearCaches()
         {
+            Logger.Trace("Clearing cached types from loaded contexts");
             lock (_INSTANCES_CACHE)
             {
                 _INSTANCES_CACHE.Clear();

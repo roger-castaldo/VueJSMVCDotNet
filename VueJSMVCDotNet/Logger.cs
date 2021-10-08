@@ -21,25 +21,40 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         public static void Trace(string message)
         {
-            LogMessage(LogLevels.Trace, message);
+            Trace(message, null);
+        }
+
+        public static void Trace(string message,object[] pars)
+        {
+            LogMessage(LogLevels.Trace, message,pars);
         }
 
         public static void Debug(string message)
         {
-            LogMessage(LogLevels.Debug, message);
+            Debug(message, null);
+        }
+
+        public static void Debug(string message,object[] pars)
+        {
+            LogMessage(LogLevels.Debug, message,pars);
         }
 
         public static void Error(string message)
         {
-            LogMessage(LogLevels.Critical, message);
+            Error(message, null);
         }
 
-        private static void LogMessage(LogLevels level, string message)
+        public static void Error(string message,object[] pars)
+        {
+            LogMessage(LogLevels.Critical, message,pars);
+        }
+
+        private static void LogMessage(LogLevels level, string message,object[] pars)
         {
             if (_writer != null)
             {
                 if ((int)_writer.LogLevel >= (int)level)
-                    _writer.WriteLogMessage(DateTime.Now, level, message);
+                    _writer.WriteLogMessage(DateTime.Now, level, (pars==null ? message : string.Format(message,pars)));
             }
         }
 

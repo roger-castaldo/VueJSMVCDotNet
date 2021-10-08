@@ -29,6 +29,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle {0}:{1} request in the Update Handler", new object[] { method, url });
             IModel model = null;
             lock (_loadMethods)
             {
@@ -55,6 +56,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         throw new InsecureAccessException();
                     context.Response.ContentType = "text/json";
                     context.Response.StatusCode= 200;
+                    Logger.Trace("Attempting to handle an update request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
                     Utility.SetModelValues(formData, ref model, false);
                     return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, (mi.GetParameters().Length == 1 ? new object[]{session} : new object[] { }))));
                 }
@@ -64,6 +66,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking if the request {0}:{1} is handled by the Update Handler", new object[] { method, url });
             if (method == RequestHandler.RequestMethods.PATCH)
                 return _updateMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")))&& _loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")));
             return false;

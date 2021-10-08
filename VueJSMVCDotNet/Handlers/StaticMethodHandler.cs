@@ -58,10 +58,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
             public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
+                Logger.Trace("Attempting to handle call {0}:{1} with a static method handler", new object[] { method, url });
                 Match m = _reg.Match(url);
                 string smethod = m.Groups[1].Value;
                 MethodInfo mi;
                 object[] pars;
+                Logger.Trace("Attempting to locate method to handle the static method call at {0}:{1}", new object[] { method, url });
                 Utility.LocateMethod(formData, _methods[smethod],session, out mi, out pars);
                 if (mi == null)
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
@@ -71,6 +73,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         throw new InsecureAccessException();
                     try
                     {
+                        Logger.Trace("Attempting to call the method {0}.{1} to answer the static method call {2}:{3}", new object[] { mi.DeclaringType.Name, mi.Name, method, url });
                         if (mi.ReturnType == typeof(void))
                         {
                             mi.Invoke(null,pars);
@@ -129,6 +132,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking to see if the request {0}:{1} is handled by the static method handler", new object[] { method, url });
             bool ret = false;
             if (method == RequestHandler.RequestMethods.SMETHOD)
             {

@@ -29,6 +29,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             types.Remove(modelType);
             foreach (Type type in types)
             {
+                Logger.Trace("Appending Parser Call for Linked Type[{0}] for Model Definition[{1}]", new object[]
+                {
+                    type.FullName,
+                    modelType.FullName
+                });
                 builder.AppendLine(string.Format(@"     var _{0} = function(data){{
             var ret=null;
             if (data!=null){{

@@ -27,6 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle {0}:{1} inside the Load All Handler", new object[] { method, url });
             MethodInfo mi = null;
             lock (_methods)
             {
@@ -39,6 +40,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode = 200;
+                Logger.Trace("Invoking the Load All call {0}.{1} to handle {2}:{3}", new object[] { mi.DeclaringType.FullName, mi.Name, method, url });
                 return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));
             }
             else
@@ -47,6 +49,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking if {0}:{1} is handled by the Load All Handler", new object[] { method, url });
             if (method==RequestHandler.RequestMethods.GET)
                 return _methods.ContainsKey(url);
             return false;

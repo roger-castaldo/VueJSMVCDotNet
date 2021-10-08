@@ -16,6 +16,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             {
                 if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod), false).Length > 0)
                 {
+                    Logger.Trace("Adding Load All Method for Model Definition[{0}]", new object[] { modelType.FullName });
                     builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{LoadAll:function(){{
         var ret = extend([],{{
             {1}

@@ -40,11 +40,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         };
 
         private Dictionary<string, string> _cache;
-        private List<Type> _types;
+        private Dictionary<Type,ModelJSFilePath[]> _types;
 
         public JSHandler()
         {
             _cache = new Dictionary<string, string>();
+            _types = new Dictionary<Type, ModelJSFilePath[]>();
         }
 
         public void ClearCache()
@@ -57,6 +58,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
         {
+            Logger.Trace("Checking if {0}:{1} is handled by the JS Handler", new object[] { method,url });
             if (method != RequestHandler.RequestMethods.GET)
                 return false;
             bool ret = false;
@@ -68,9 +70,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             if (!ret && _types != null)
             {
                 lock(_types){
-                    foreach (Type t in _types)
+                    foreach (Type t in _types.Keys)
                     {
-                        foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                        foreach (ModelJSFilePath mjsfp in _types[t])
                         {
                             if (mjsfp.IsMatch(url))
                             {
@@ -86,6 +88,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
+            Logger.Trace("Attempting to handle {0}:{1} with the JS Handler", new object[] { method, url });
             if (!HandlesRequest(url, method))
                 throw new CallNotFoundException();
             else
@@ -94,12 +97,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 if (_types != null)
                 {
                     lock(_types){
-                        foreach (Type t in _types)
+                        foreach (Type t in _types.Keys)
                         {
-                            foreach (ModelJSFilePath mjsfp in t.GetCustomAttributes(typeof(ModelJSFilePath), false))
+                            foreach (ModelJSFilePath mjsfp in _types[t])
                             {
                                 if (mjsfp.IsMatch(url))
+                                {
                                     models.Add(t);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -130,6 +136,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     }
                 }
                 string ret = null;
+                Logger.Trace("Checking cache for existing js file for {0}", new object[] { url });
                 context.Response.ContentType= "text/javascript";
                 context.Response.StatusCode= 200;
                 lock (_cache)
@@ -139,10 +146,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (ret == null && models.Count>0)
                 {
+                    Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
                         gen.GeneratorJS(ref builder);
-                    foreach (Type model in models){
+                    foreach (Type model in models) {
+                        Logger.Trace("Processing module {0} for js url {1}", new object[] { model.FullName, url });
                         foreach (IJSGenerator gen in _instanceGenerators)
                             gen.GeneratorJS(ref builder, model);
                         foreach (IJSGenerator gen in _globalGenerators)
@@ -154,7 +163,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     lock (_cache)
                     {
                         if (!_cache.ContainsKey(url))
+                        {
+                            Logger.Trace("Caching generated js file for {0}", new object[] { url });
                             _cache.Add(url, ret);
+                        }
                     }
                 }
                 context.Response.Headers.Add("Last-Modified", modDate.ToUniversalTime().ToString("R"));
@@ -165,25 +177,44 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         public void Init(List<Type> types)
         {
-            _types = types;
+            lock (_types)
+            {
+                foreach (Type t in types)
+                {
+                    ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
+                    if (paths != null && paths.Length > 0)
+                        _types.Add(t, paths);
+                }
+            }
         }
 
         #if NETCOREAPP3_1
 
         public void LoadTypes(List<Type> types){
-            lock(_types){
-                _types.AddRange(types);
+            lock (_types)
+            {
+                foreach (Type t in types)
+                {
+                    if (!_types.ContainsKey(t))
+                    {
+                        ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
+                        if (paths != null && paths.Length > 0)
+                            _types.Add(t, paths);
+                    }
+                }
             }
         }
-        public void UnloadTypes(List<Type> types){
-            lock(_cache){
+        public void UnloadTypes(List<Type> types)
+        {
+            lock (_cache)
+            {
                 _cache.Clear();
             }
-            if (_types!=null){
-                lock(_types){
-                    foreach (Type t in types){
-                        _types.Remove(t);
-                    }
+            lock (_types)
+            {
+                foreach (Type t in types)
+                {
+                    _types.Remove(t);
                 }
             }
         }

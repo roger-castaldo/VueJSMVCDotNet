@@ -10,6 +10,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
         {
+            Logger.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.FullName });
             builder.AppendLine(string.Format(@"     App.Models.{0} = App.Models.{0}||{{}};
         App.Models.{0}.{1} = function(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
             builder.AppendLine(@"         if (Vue.version.indexOf('2')==0){

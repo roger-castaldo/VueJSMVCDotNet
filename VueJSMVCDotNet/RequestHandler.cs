@@ -74,11 +74,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         public bool HandlesRequest(HttpContext context) {
             string url = Utility.CleanURL(Utility.BuildURL(context));
+            Logger.Debug("Checking if {0} is handled by VueJS library", new object[] { url });
             object method;
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
             {
                 foreach (IRequestHandler handler in _Handlers)
                 {
+                    Logger.Trace("Checking if {0} handles {1}:{2}", new object[] { handler.GetType().FullName, method, url });
                     if (handler.HandlesRequest(url, (RequestMethods)method))
                         return true;
                 }
@@ -90,6 +92,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             string url = Utility.CleanURL(Utility.BuildURL(context));
             RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
+            Logger.Debug("Attempting to handle request {0}:{1}", new object[] { method, url });
             Hashtable formData = new Hashtable();
             if (context.Request.ContentType!=null && 
             (
@@ -98,6 +101,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             ))
             {
                 foreach (string key in context.Request.Form.Keys){
+                    Logger.Trace("Loading form data value from key {0}", new object[] { key });
                     if (key.EndsWith(":json")){
                         if (context.Request.Form[key].Count>1){
                             ArrayList al = new ArrayList();
@@ -123,6 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }else{
                 string tmp =  await new StreamReader(context.Request.Body).ReadToEndAsync();
                 if (tmp!=""){
+                    Logger.Trace("Loading form data from request body");
                     formData = (Hashtable)JSON.JsonDecode(tmp);
                 }
             }
@@ -169,6 +174,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private bool _ValidCall(Type t, MethodInfo method, ISecureSession session,IModel model,string url, Hashtable parameters)
         {
+            Logger.Trace("Checking security for call {0} under class {1}.{2}", new object[] { url, t.FullName, (method==null ? null :  method.Name) });
             List<ASecurityCheck> checks = new List<ASecurityCheck>();
             lock (_typeChecks)
             {
@@ -224,10 +230,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         //to rescan for all new model types and add them accordingly.
         public void AssemblyAdded()
         {
+            Logger.Debug("Assembly added called, rebuilding handlers...");
             _isInitialized=false;
             Utility.ClearCaches();
             foreach (IRequestHandler irh in _Handlers)
+            {
+                Logger.Debug("Clearing cache for handler {0}",new object[] { irh.GetType().Name });
                 irh.ClearCache();
+            }
+            Logger.Debug("Processing all available AssemblyLoadContexts...");
             foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                 AsssemblyLoadContextAdded(alc);
             }
@@ -243,6 +254,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         }
 
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
+            Logger.Debug("Loading Assembly Load Context {0}", new object[] { alc.Name });
             List<Type> models;
             List<Type> invalidModels;
             List<Exception> errors = DefinitionValidator.Validate(alc,out invalidModels,out models);
@@ -251,7 +263,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _invalidModels.AddRange(invalidModels);
             if (errors.Count > 0)
             {
-                Logger.Error("Backbone validation errors:");
+                Logger.Error("Validation errors:");
                 foreach (Exception e in errors)
                     Logger.LogError(e);
                 Logger.Error("Invalid IModels:");
