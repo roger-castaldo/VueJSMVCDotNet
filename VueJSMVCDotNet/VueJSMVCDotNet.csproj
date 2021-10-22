@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>16.0</Version>
+    <Version>1.6.0</Version>
     <PackageReleaseNotes>extended functionality to ensure observations occur when dealing with lists as well as making the lists readonly arrays outside of the internal manipulation</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyVersion>1.6.0</AssemblyVersion>
