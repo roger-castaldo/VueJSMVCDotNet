@@ -204,6 +204,14 @@
             components: {
                 asynccomp
             },
+            watch: {
+                Items: {
+                    deep: true,
+                    handler: function () {
+                        console.log('Items changed');
+                    }
+                }
+            },
             methods: {
                 EditPerson: function (person) {
                     frm.person = person;

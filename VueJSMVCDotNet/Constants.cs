@@ -40,7 +40,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 for(var x=0;x<this._events[event].length;x++){{
                     this._events[event][x]((model==undefined ? this : model));
                 }}
-            }},",new object[]{
+            }},", new object[]{
                                                                             Events.LIST_MODEL_LOADED,
                                                                             Events.LIST_MODEL_DESTROYED,
                                                                             Events.LIST_MODEL_UPDATED,
@@ -59,11 +59,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             if (data!=null){{
                                 if (data.TotalPages!=undefined){{
                                     var pages = data.TotalPages;
-                                    tmp.totalPages=function(){{return pages;}};
+                                    Object.defineProperty(tmp,'totalPages',{{value:function(){{return pages;}},writeable:true}});
                                     data=data.response;
                                 }}
                             }}else if (tmp.totalPages!=undefined){{
-                                tmp.totalPages=function(){{return 0;}};
+                                Object.defineProperty(tmp,'totalPages',{{value:function(){{return 0;}},writeable:true}});
                             }}
                             if (data!=null){{
                                 for(var x=0;x<data.length;x++){{ 
@@ -71,55 +71,62 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     mtmp.{0}(data[x]);
                                     data[x] = mtmp;
                                     data[x].$on('{1}',function(model){{
-                                        for(var x=0;x<tmp.length;x++){{
-                                            if (tmp[x].id==model.id){{
-                                                tmp._trigger('{2}',model);
-                                                tmp.splice(x,1);
+                                        var arr = getArrayMap(tmp);
+                                        for(var x=0;x<arr.length;x++){{
+                                            if (arr[x].id==model.id){{
+                                                arr._trigger('{2}',model);
+                                                var tid = unlockArray(arr);
+                                                Array.prototype.splice.apply(arr,[x,1]);
+                                                lockArray(arr,tid);
                                                 break;
                                             }}
                                         }}
                                     }});
                                     data[x].$on('{3}',function(model){{
-                                        for(var x=0;x<tmp.length;x++){{
-                                            if (tmp[x].id==model.id){{
-                                                tmp._trigger('{4}',model);
+                                        var arr = getArrayMap(tmp);
+                                        for(var x=0;x<arr.length;x++){{
+                                            if (arr[x].id==model.id){{
+                                                arr._trigger('{4}',model);
+                                                var tid = unlockArray(arr);
                                                 if ({9}){{
-                                                    tmp['splice'](x,1,model);
+                                                    Array.prototype.splice.apply(arr,[x,1,model]);
                                                 }}else{{
-                                                    Vue.set(tmp,x,model);
+                                                    Vue.set(arr,x,model);
                                                 }}
+                                                lockArray(arr,tid);
                                                 break;
                                             }}
                                         }}
                                     }});
                                     data[x].$on('{5}',function(model){{
-                                        for(var x=0;x<tmp.length;x++){{
-                                            if (tmp[x].id==model.id){{
-                                                tmp._trigger('{6}',model);
+                                        var arr = getArrayMap(tmp);
+                                        for(var x=0;x<arr.length;x++){{
+                                            if (arr[x].id==model.id){{
+                                                arr._trigger('{6}',secureArrElement(tmp,model));
+                                                var tid = unlockArray(arr);
                                                 if ({9}){{
-                                                    tmp['splice'](x,1,model);
+                                                    Array.prototype.splice.apply(arr,[x,1,model]);
                                                 }}else{{
-                                                    Vue.set(tmp,x,model);
+                                                    Vue.set(arr,x,model);
                                                 }}
+                                                lockArray(arr,tid);
                                                 break;
                                             }}
                                         }}
                                     }});
                                 }}
-                                Array.prototype.push.apply(tmp,data);
+                                var tid = unlockArray(tmp);
+                                Array.prototype.push.apply(getArrayMap(tmp),data);
                                 if (tmp.length-data.length>0){{
-                                    tmp.splice(0,tmp.length-data.length);
-                                }}else{{
-                                    tmp.push(App.Models.$type$.{8}());
-                                    tmp.splice(tmp.length-1,tmp.length);
+                                    Array.prototype.splice.apply(tmp,[0,tmp.length-data.length]);
                                 }}
+                                lockArray(tmp,tid);
                             }}else{{
+                                var tid = unlockArray(tmp);
                                 if (tmp.length>0){{
-                                    tmp.splice(0,tmp.length);
-                                }}else{{
-                                    tmp.push(App.Models.$type$.{8}());
-                                    tmp.splice(tmp.length-1,tmp.length);
+                                    Array.prototype.splice.apply(tmp,[0,tmp.length]);
                                 }}
+                                lockArray(tmp,tid);
                             }}
                             tmp._trigger('{7}');
                             resolve(tmp);
@@ -158,20 +165,31 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }}
         }},
         toMixins:function(){{
-                var options={{}};
                 var items = this;
-                var computed = {{
-                    Items:{{
-                        get:function(){{return items;}}
-                    }}
-                }};
-                var methods = {{
-                    reload:function(){{
-                        return this.Items.reload();
+                var options={{
+                    data : function(){{
+                        return {{
+                            Items:items
+                        }};
+                    }},
+                    methods:{{
+                        reload:function(){{
+                            return this.Items.reload();
+                        }}
+                    }},
+                    created:function(){{
+                        var view=this;
+                        setArrayMap(this.Items);
+                        if ({0}){{
+                            this.Items.on('{1}',function(){{view.$forceUpdate();}});
+                            this.Items.on('{2}',function(){{view.$forceUpdate();}});
+                            this.Items.on('{3}',function(){{view.$forceUpdate();}});
+                            this.Items.on('{4}',function(){{view.$forceUpdate();}});
+                        }}
                     }}
                 }};
                 if (this.currentIndex!=undefined){{
-                    methods= extend(methods,{{
+                    options.methods= extend(options.methods,{{
                         currentIndex:function(){{ return this.Items.currentIndex();}},
                         currentPage:function(){{ return this.Items.currentPage();}},
                         currentPageSize:function(){{ return this.Items.currentPageSize();}},
@@ -183,7 +201,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }});
                 }}
                 if (this.changeParameters!=undefined){{
-                    methods= extend(methods,{{
+                    options.methods= extend(options.methods,{{
                         currentParameters:function(){{ return this.Items.currentParameters();}},
                         changeParameters:function(){{
                             if (arguments.length==0){{
@@ -198,22 +216,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         }}
                     }});
                 }}
-                var _created = options.created;
-                options.created = function(){{
-                    var view=this;
-                    this.Items.on('{1}',function(){{view.$forceUpdate();}});
-                    this.Items.on('{2}',function(){{view.$forceUpdate();}});
-                    this.Items.on('{3}',function(){{view.$forceUpdate();}});
-                    this.Items.on('{4}',function(){{view.$forceUpdate();}});
-                    if (_created!=undefined&&_created!=null){{
-                        _created.call(this);
-                    }}
-                }};
-                options.computed = extend(computed,options.computed);
-                options.methods = extend(methods,options.methods);
                 return options;
             }},", new object[]{
-                                                                               IS_VUE_3,
+                                                                              IS_VUE_3,
                                                                                Events.LIST_MODEL_LOADED,
                                                                                Events.LIST_MODEL_UPDATED,
                                                                                Events.LIST_MODEL_DESTROYED,

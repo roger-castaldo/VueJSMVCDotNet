@@ -18,11 +18,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     Logger.Trace("Adding Load All Method for Model Definition[{0}]", new object[] { modelType.FullName });
                     builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{LoadAll:function(){{
-        var ret = extend([],{{
+        var ret = secureArray(extend([],{{
             {1}
             {2}
             {3}
-        }});
+        }}));
         ret.reload();
         return ret;
     }}

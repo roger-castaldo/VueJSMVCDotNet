@@ -59,7 +59,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(@"){
         pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
         pageSize = (pageSize == undefined ? 10 : (pageSize == null ? 10 : pageSize));
-        var ret = extend([],{
+        var ret = secureArray(extend([],{
             currentIndex:function(){return pageStartIndex;},
             currentPageSize:function(){return pageSize;},
             currentPage:function(){return Math.floor(this.currentIndex()/this.currentPageSize());},
@@ -94,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     else
                     {
                         builder.AppendLine(@"){
-        var ret = extend([],{");
+        var ret = secureArray(extend([],{");
                     }
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
@@ -130,7 +130,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 return this.reload();
             }");
                     }
-                    builder.AppendLine(@"        });
+                    builder.AppendLine(@"        }));
         ret.reload();
         return ret;
     }

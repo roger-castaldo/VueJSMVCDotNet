@@ -1,6 +1,6 @@
 <html>
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.js"></script>
 </head>
 <script src="/resources/scripts/mPerson.js"></script>
 <table id="dvList">
@@ -184,6 +184,11 @@
             return {
                 people: null
             };
+        },
+        watch: {
+            people: function () {
+                console.log('people changed');
+            }
         },
         methods: {
             EditPerson: function (person) {
