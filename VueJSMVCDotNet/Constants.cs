@@ -102,7 +102,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                         var arr = getArrayMap(tmp);
                                         for(var x=0;x<arr.length;x++){{
                                             if (arr[x].id==model.id){{
-                                                arr._trigger('{6}',secureArrElement(tmp,model));
+                                                arr._trigger('{6}',model);
                                                 var tid = unlockArray(arr);
                                                 if ({9}){{
                                                     Array.prototype.splice.apply(arr,[x,1,model]);
