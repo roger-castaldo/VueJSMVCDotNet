@@ -126,32 +126,36 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         reject('Cannot update unsaved model, please call save instead.');
                     }}else{{
                         var data = model.{1}();
-                        ajax(
-                        {{
-                            url:'{0}/'+model.id,
-                            type:'{4}',
-                            useJSON:{5},
-                            data:data
-                        }}).then(response=>{{
-                            if (response.ok){{                 
-                                var data = response.json();
-                                if (data){{
-                                    data=getMap(model).{3};
-                                    for(var prop in data){{
-                                        if (prop!='id'){{
-                                            data[prop]=model[prop];
+                        if (JSON.stringify(data)===JSON.stringify({{}})){{
+                            resolve(model);
+                        }}else{{
+                            ajax(
+                            {{
+                                url:'{0}/'+model.id,
+                                type:'{4}',
+                                useJSON:{5},
+                                data:data
+                            }}).then(response=>{{
+                                if (response.ok){{                 
+                                    var data = response.json();
+                                    if (data){{
+                                        data=getMap(model).{3};
+                                        for(var prop in data){{
+                                            if (prop!='id'){{
+                                                data[prop]=model[prop];
+                                            }}
                                         }}
+                                        setMap(model,{{{3}:data}});
+                                        if (model.$emit!=undefined){{model.$emit('{2}',model);}}
+                                        resolve(model);
+                                    }}else{{
+                                        reject();
                                     }}
-                                    setMap(model,{{{3}:data}});
-                                    if (model.$emit!=undefined){{model.$emit('{2}',model);}}
-                                    resolve(model);
                                 }}else{{
-                                    reject();
+                                    reject(response.text());
                                 }}
-                            }}else{{
-                                reject(response.text());
-                            }}
-                        }},response=>{{reject(response.text());}});
+                            }},response=>{{reject(response.text());}});
+                        }}
                     }}
                 }});
         }},", new object[]{
