@@ -15,6 +15,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public const string IS_VUE_3 = "(Vue.version.indexOf('3')==0)";
         public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        public static readonly BindingFlags INSTANCE_METHOD_FLAGS = BindingFlags.Public|BindingFlags.Instance;
+        public static readonly BindingFlags STATIC_INSTANCE_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static;
         public static readonly string _LIST_EVENTS_CODE = string.Format(@"          _events:{{
                 {0}:[],
                 {1}:[],

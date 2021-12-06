@@ -25,7 +25,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     break;
                 }
             }
-            foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            foreach (MethodInfo mi in modelType.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {

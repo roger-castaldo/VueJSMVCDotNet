@@ -176,7 +176,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (loadMethod != null)
                 {
-                    foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
+                    foreach (MethodInfo mi in t.GetMethods(Constants.INSTANCE_METHOD_FLAGS))
                     {
                         if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                             methods.Add(mi);

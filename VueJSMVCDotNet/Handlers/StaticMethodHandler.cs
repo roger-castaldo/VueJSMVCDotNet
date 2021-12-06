@@ -164,7 +164,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             foreach (Type t in types)
             {
                 List<MethodInfo> methods = new List<MethodInfo>();
-                foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
+                foreach (MethodInfo mi in t.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
                 {
                     if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         methods.Add(mi);

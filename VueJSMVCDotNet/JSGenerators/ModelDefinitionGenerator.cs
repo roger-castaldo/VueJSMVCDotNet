@@ -208,7 +208,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendInstanceMethods(Type modelType,string urlRoot, ref WrappedStringBuilder builder)
         {
-            foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            foreach (MethodInfo mi in modelType.GetMethods(Constants.INSTANCE_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
