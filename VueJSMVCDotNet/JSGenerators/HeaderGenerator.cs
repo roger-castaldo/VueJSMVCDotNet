@@ -15,12 +15,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     const H = function(m) {
         var msgUint8 = new TextEncoder().encode(m);
         return new Promise((resolve)=>{
-            crypto.subtle.digest('SHA-256', msgUint8).then(
-                hashBuffer=>{
-                    var hashArray = Array.from(new Uint8Array(hashBuffer));      
-                    resolve(hashArray.map(b => b.toString(16).padStart(2, '0')).join(''));
-                }
-            );
+            if (crypto.subtle==undefined){
+                resolve(m);
+            }else{
+                crypto.subtle.digest('SHA-256', msgUint8).then(
+                    hashBuffer=>{
+                        var hashArray = Array.from(new Uint8Array(hashBuffer));      
+                        resolve(hashArray.map(b => b.toString(16).padStart(2, '0')).join(''));
+                    }
+                );
+            }
         });
     };
     var extractUTCDate = function (date) {

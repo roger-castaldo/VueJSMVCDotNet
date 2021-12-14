@@ -385,10 +385,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             catch (ReflectionTypeLoadException rtle)
             {
+                Logger.Error(rtle.Message);
                 ret = rtle.Types;
             }
             catch (Exception e)
             {
+                Logger.Error(e.Message);
                 if (e.Message != "The invoked member is not supported in a dynamic assembly."
                             && !e.Message.StartsWith("Unable to load one or more of the requested types."))
                     throw e;
