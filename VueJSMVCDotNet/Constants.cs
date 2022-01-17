@@ -91,7 +91,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                 arr._trigger('{4}',model);
                                                 var tid = unlockArray(arr);
                                                 if ({9}){{
-                                                    Array.prototype.splice.apply(arr,[x,1,model]);
+                                                    Array.prototype.splice.apply(arr,[x,0,model]);
+                                                    Array.prototype.splice.apply(arr,[x+1,1]);
                                                 }}else{{
                                                     Vue.set(arr,x,model);
                                                 }}
@@ -107,7 +108,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                                 arr._trigger('{6}',model);
                                                 var tid = unlockArray(arr);
                                                 if ({9}){{
-                                                    Array.prototype.splice.apply(arr,[x,1,model]);
+                                                    Array.prototype.splice.apply(arr,[x,0,model]);
+                                                    Array.prototype.splice.apply(arr,[x+1,1]);
                                                 }}else{{
                                                     Vue.set(arr,x,model);
                                                 }}

@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.6.3.2</Version>
-    <PackageReleaseNotes>patch for chrmoium and non ssl site that won't have access to the cha-256 hashing algorythm</PackageReleaseNotes>
+    <Version>1.6.3.3</Version>
+    <PackageReleaseNotes>patch to ensure a model load and update triggers a change in the vue model</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.6.3.2</AssemblyVersion>
-    <FileVersion>1.6.3.2</FileVersion>
+    <AssemblyVersion>1.6.3.3</AssemblyVersion>
+    <FileVersion>1.6.3.3</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
