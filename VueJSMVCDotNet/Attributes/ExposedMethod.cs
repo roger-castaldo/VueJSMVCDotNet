@@ -19,13 +19,31 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
             get { return _allowNullResponse; }
         }
 
+        private bool _isSlow;
+        public bool IsSlow { get { return _isSlow; } }
+
+        private Type _arrayElementType;
+        public Type ArrayElementType { get { return _arrayElementType; } }
+
 
         public ExposedMethod() :
-            this(false)
+            this(false,false,null)
         { }
 
-        public ExposedMethod(bool allowNullResponse){
-            _allowNullResponse=allowNullResponse;
+        public ExposedMethod(bool allowNullResponse)
+            : this(allowNullResponse, false, null) { }
+
+        public ExposedMethod(bool allowNullResponse, bool isSlow)
+            : this(allowNullResponse, isSlow, null) { }
+
+        public ExposedMethod(bool allowNullResponse, Type arrayElementType)
+            : this(allowNullResponse, true,arrayElementType) { }
+
+        private ExposedMethod(bool allowNullResponse,bool isSlow,Type arrayElementType)
+        {
+            _allowNullResponse = allowNullResponse;
+            _isSlow = isSlow;
+            _arrayElementType = arrayElementType;
         }
     }
 }

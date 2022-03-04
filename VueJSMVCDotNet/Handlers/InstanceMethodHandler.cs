@@ -18,11 +18,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             private Regex _reg;
             private MethodInfo _loadMethod;
             private Dictionary<string, List<MethodInfo>> _methods;
+            private List<MethodInfo> _slowMethods;
 
             public sMethodPatterns(string baseURL,MethodInfo loadMethod,List<MethodInfo> functions)
             {
                 _loadMethod = loadMethod;
                 _methods = new Dictionary<string, List<MethodInfo>>();
+                _slowMethods = new List<MethodInfo>();
                 StringBuilder sb = new StringBuilder();
                 foreach (MethodInfo mi in functions)
                 {
@@ -35,6 +37,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     else
                         sb.AppendFormat("{0}{1}", new object[] { (sb.Length > 0 ? "|" : ""), mi.Name });
                     methods.Add(mi);
+                    if (((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).IsSlow)
+                        _slowMethods.Add(mi);
                     _methods.Add(mi.Name, methods);
                 }
                 _reg = new Regex(string.Format("^{0}/([^/]+)/({1})$", new object[] { baseURL, sb.ToString() }), RegexOptions.Compiled | RegexOptions.ECMAScript);
@@ -51,7 +55,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, RequestHandler handler)
             {
                 Match m = _reg.Match(url);
                 string id = m.Groups[1].Value;
@@ -73,22 +77,40 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     try
                     {
                         Logger.Trace("Using {0}.{1} to invoke the Instance Method at the url {2}", new object[] { mi.DeclaringType.FullName, mi.Name, url });
-                        if (mi.ReturnType == typeof(void))
+                        if (_slowMethods.Contains(mi))
                         {
-                            mi.Invoke(model,pars);
-                            context.Response.ContentType= "text/json";
-                            context.Response.StatusCode= 200;
-                            return context.Response.WriteAsync("");
-                        }else if (mi.ReturnType==typeof(string)){
-                            context.Response.StatusCode= 200;
-                            string tmp = (string)mi.Invoke(model,pars);
-                            context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
-                            return context.Response.WriteAsync((tmp==null ? JSON.JsonEncode(tmp) : tmp));
+                            string newPath = handler.RegisterSlowMethodInstance(url, mi, model, pars);
+                            if (newPath!= null)
+                            {
+                                context.Response.ContentType = "text/json";
+                                context.Response.StatusCode = 200;
+                                return context.Response.WriteAsync(JSON.JsonEncode(newPath));
+                            }
+                            else
+                                throw new Exception("Execution Error");
                         }
-                        else{
-                            context.Response.ContentType= "text/json";
-                            context.Response.StatusCode= 200;
-                            return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model,pars)));
+                        else
+                        {
+                            if (mi.ReturnType == typeof(void))
+                            {
+                                mi.Invoke(model, pars);
+                                context.Response.ContentType= "text/json";
+                                context.Response.StatusCode= 200;
+                                return context.Response.WriteAsync("");
+                            }
+                            else if (mi.ReturnType==typeof(string))
+                            {
+                                context.Response.StatusCode= 200;
+                                string tmp = (string)mi.Invoke(model, pars);
+                                context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
+                                return context.Response.WriteAsync((tmp==null ? JSON.JsonEncode(tmp) : tmp));
+                            }
+                            else
+                            {
+                                context.Response.ContentType= "text/json";
+                                context.Response.StatusCode= 200;
+                                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, pars)));
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -100,9 +122,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         }
 
         private List<sMethodPatterns> _patterns;
+        private RequestHandler _handler;
 
-        public InstanceMethodHandler()
+        public InstanceMethodHandler(RequestHandler handler)
         {
+            _handler=handler;
             _patterns = new List<sMethodPatterns>();
         }
 
@@ -127,7 +151,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
             }
             if (patt.HasValue)
-                return patt.Value.HandleRequest(url, method, formData, context, session, securityCheck);
+                return patt.Value.HandleRequest(url, method, formData, context, session, securityCheck,_handler);
             throw new CallNotFoundException();
         }
 

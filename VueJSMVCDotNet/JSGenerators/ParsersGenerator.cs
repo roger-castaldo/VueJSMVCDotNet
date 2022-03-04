@@ -133,40 +133,36 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                 }
-                foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                foreach (BindingFlags bf in new BindingFlags[] { Constants.INSTANCE_METHOD_FLAGS, Constants.STATIC_INSTANCE_METHOD_FLAGS })
                 {
-                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                    foreach (MethodInfo mi in modelType.GetMethods(bf))
                     {
-                        Type t = mi.ReturnType;
-                        if (t.IsArray)
-                            t = t.GetElementType();
-                        else if (t.IsGenericType)
-                            t = t.GetGenericArguments()[0];
-                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                        if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
-                            if (!types.Contains(t))
+                            Type t = mi.ReturnType;
+                            if (t.IsArray)
+                                t = t.GetElementType();
+                            else if (t.IsGenericType)
+                                t = t.GetGenericArguments()[0];
+                            if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                             {
-                                types.Add(t);
-                                 _RecurLocateLinkedTypes(ref types,t);
+                                if (!types.Contains(t))
+                                {
+                                    types.Add(t);
+                                    _RecurLocateLinkedTypes(ref types, t);
+                                }
                             }
-                        }
-                    }
-                }
-                foreach (MethodInfo mi in modelType.GetMethods(BindingFlags.Public | BindingFlags.Static))
-                {
-                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                    {
-                        Type t = mi.ReturnType;
-                        if (t.IsArray)
-                            t = t.GetElementType();
-                        else if (t.IsGenericType)
-                            t = t.GetGenericArguments()[0];
-                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                        {
-                            if (!types.Contains(t))
+                            t = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).ArrayElementType;
+                            if (t!=null)
                             {
-                                types.Add(t);
-                                 _RecurLocateLinkedTypes(ref types,t);
+                                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                                {
+                                    if (!types.Contains(t))
+                                    {
+                                        types.Add(t);
+                                        _RecurLocateLinkedTypes(ref types, t);
+                                    }
+                                }
                             }
                         }
                     }

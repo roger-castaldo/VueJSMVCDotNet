@@ -124,15 +124,27 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             method = null;
             pars = null;
             int idx=-1;
+            int sidx = -1;
             if (formData == null || formData.Count == 0)
             {
                 foreach (MethodInfo mi in methods)
                 {
-                    if (mi.GetParameters().Length == 0
-                        || UsesSecureSession(mi,out idx))
+                    int parCount = mi.GetParameters().Length+(UsesSecureSession(mi, out idx) ? -1 : 0)+(UsesAddItem(mi, out sidx)?-1:0);
+                    if (parCount==0)
                     {
                         method = mi;
-                        pars = (idx==-1 ? new object[] { } : new object[]{session});
+                        if (idx==-1 && sidx==-1)
+                            pars = new object[] { };
+                        else if (idx!=-1&&sidx==-1)
+                            pars = new object[] { session };
+                        else if (idx==-1&&sidx!=-1)
+                            pars = new object[] { null };
+                        else
+                        {
+                            pars = new object[2];
+                            pars[idx]=session;
+                            pars[sidx]=null;
+                        }
                         return;
                     }
                 }
@@ -142,18 +154,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 foreach (MethodInfo m in methods)
                 {
                     bool useSession = UsesSecureSession(m,out idx);
-                    if (m.GetParameters().Length == formData.Count
-                    || (useSession && m.GetParameters().Length==formData.Count+1))
+                    bool useAddItem = UsesAddItem(m, out sidx);
+                    int parCount = m.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0);
+                    if (parCount == formData.Count)
                     {
-                        pars = new object[formData.Count+(useSession ? 1 : 0)];
+                        pars = new object[formData.Count+(useSession ? 1 : 0)+(useAddItem ? 1 : 0)];
                         bool isMethod = true;
                         int index = 0;
                         foreach (ParameterInfo pi in m.GetParameters())
                         {
-                            if (index==idx){
+                            if (index==idx)
+                            {
                                 pars[idx]=session;
                                 index++;
-                            }else{
+                            }
+                            else if (index==sidx)
+                                index++;
+                            else{
                                 if (formData.ContainsKey(pi.Name))
                                     pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
                                 else
@@ -525,6 +542,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return false;
         }
 
+        public static bool UsesAddItem(MethodInfo mi, out int index)
+        {
+            index=-1;
+            ParameterInfo[] pars = mi.GetParameters();
+            for (int x = 0; x<pars.Length; x++)
+            {
+                if (pars[x].ParameterType==typeof(AddItem))
+                {
+                    index=x;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static bool IsISecureSessionType(Type type)
         {
             return type == typeof(ISecureSession) ||
@@ -537,6 +569,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (UsesSecureSession(mi,out idx)){
                 ret.RemoveAt(idx);
             }
+            if (UsesAddItem(mi, out idx))
+                ret.RemoveAt(idx);
             return ret.ToArray();
         }
     }

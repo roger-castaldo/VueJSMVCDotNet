@@ -213,7 +213,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                 {
                     Logger.Trace("Adding Exposed Method[{1}] for Model Definition[{0}]", new object[] { modelType.FullName,mi.Name });
-                    bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
+                    ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
+                    Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
                     builder.AppendFormat("          {0}:function(", mi.Name);
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
@@ -272,41 +273,62 @@ for(var x=0;x<{0}.length;x++){{
                         urlRoot,
                         mi.Name,
                         (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
-                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
+                        (returnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;")
                     }));
-                    if (mi.ReturnType != typeof(void))
+                    if (em.IsSlow)
                     {
-                        Type propType = mi.ReturnType;
+                        builder.AppendLine(@"               ret=[];
+                var pullCall = function(){
+                    ajax(
+                    {
+                        url:response,
+                        type:'PULL',
+                        useJSON:true
+                    }).then(
+                        res=>{
+                            res = res.json();
+                            if (res.Data.length>0){
+                                Array.prototype.push.apply(ret,res.Data);
+                            }
+                            if (res.HasMore){
+                                pullCall();
+                            }else if (res.IsFinished){
+                                response = ret;");
+                    }
+                    if (returnType != typeof(void))
+                    {
                         bool array = false;
-                        if (propType.FullName.StartsWith("System.Nullable"))
+                        if (returnType.FullName.StartsWith("System.Nullable"))
                         {
-                            if (propType.IsGenericType)
-                                propType = propType.GetGenericArguments()[0];
+                            if (returnType.IsGenericType)
+                                returnType = returnType.GetGenericArguments()[0];
                             else
-                                propType = propType.GetElementType();
+                                returnType = returnType.GetElementType();
                         }
-                        if (propType.IsArray)
+                        if (returnType.IsArray)
                         {
                             array = true;
-                            propType = propType.GetElementType();
+                            returnType = returnType.GetElementType();
                         }
-                        else if (propType.IsGenericType)
+                        else if (returnType.IsGenericType)
                         {
-                            if (propType.GetGenericTypeDefinition() == typeof(List<>))
+                            if (returnType.GetGenericTypeDefinition() == typeof(List<>))
                             {
                                 array = true;
-                                propType = propType.GetGenericArguments()[0];
+                                returnType = returnType.GetGenericArguments()[0];
                             }
                         }
+                        if (!array && em.IsSlow)
+                            builder.AppendLine("response = (ret.length==1 ? ret[0] : null);");
                         builder.AppendLine("if (response==null){");
-                        if (!allowNull)
+                        if (!em.AllowNullResponse)
                             builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
                         else
                             builder.AppendLine("resolve(response);");
                         builder.AppendLine("}else{");
-                        if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
+                        if (new List<Type>(returnType.GetInterfaces()).Contains(typeof(IModel)))
                         {
                             if (array)
                             {
@@ -315,14 +337,14 @@ for(var x=0;x<{0}.length;x++){{
                 ret.push(_{0}(response[x]));
             }}
             response = ret;", new object[]{
-                                propType.Name
+                                returnType.Name
                                     }));
                             }
                             else
                             {
                                 builder.AppendLine(string.Format(@"             ret = _{0}(response);
             response=ret;", new object[]{
-                  propType.Name
+                  returnType.Name
                       }));
                             }
                         }
@@ -330,6 +352,20 @@ for(var x=0;x<{0}.length;x++){{
         }");
                     }else
                         builder.AppendLine("           resolve();");
+                    if (em.IsSlow)
+                    {
+                        builder.AppendLine(@"                   resolve(ret);
+                            }else{
+                                setTimeout(pullCall,200);
+                            }
+                        },
+                        err=>{
+                            reject(err);
+                        }
+                    );
+                };
+                pullCall();");
+                    }
                     builder.AppendLine(@"},
                     response=>{
                         reject(response);

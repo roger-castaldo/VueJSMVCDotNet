@@ -2,6 +2,7 @@ using System;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using System.Collections.Generic;
+using Org.Reddragonit.VueJSMVCDotNet;
 
 namespace TestApplication{
     [ModelRoute("/models/mPerson")]
@@ -147,6 +148,47 @@ namespace TestApplication{
             return _persons;
         }
 
+        [ExposedMethod(false,typeof(int))]
+        public static void SlowStatic(AddItem addCall)
+        {
+            int idx = 0;
+            while (idx<10)
+            {
+                System.Threading.Thread.Sleep(1000);
+                addCall(idx, false);
+                idx++;
+            }
+            addCall(idx, true);
+        }
 
+        [ExposedMethod(false,true)]
+        public static string GetSlowTimespan()
+        {
+            DateTime now = DateTime.Now;
+            System.Threading.Thread.Sleep(3456);
+            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+        }
+
+        [ExposedMethod(false,typeof(string))]
+        public void GenerateNames(AddItem addCall)
+        {
+            for(int x = 0; x<3; x++)
+            {
+                switch (x)
+                {
+                    case 0:
+                        addCall(_firstName, false);
+                        break;
+                    case 1:
+                        addCall(_lastName, false);
+                        break;
+                    case 2:
+                        addCall(string.Format("{0}, {1}", new Object[] { _lastName, _firstName }), false);
+                        break;
+                }
+                System.Threading.Thread.Sleep(1000);
+            }
+            addCall(string.Format("{1} {0}", new Object[] { _lastName, _firstName }), true);
+        }
     }
 }

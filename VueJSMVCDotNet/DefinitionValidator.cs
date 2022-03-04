@@ -49,13 +49,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
          * 2.  Check for an empty constructor, and if no empty constructor is specified, ensure that the create method is blocked
          * 3.  Check the all paths specified for the model are unique
          * 4.  Check to make sure only 1 load method exists for a model
-         * 6.  Check to make sure that the select model method has the right return type
-         * 8.  Check to make sure a Load method exists
-         * 9.  Check to make sure that the id property is not blocked.
-         * 12.  Check to make sure all paged select lists have proper parameters
-         * 13.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
+         * 5.  Check to make sure that the select model method has the right return type
+         * 6.  Check to make sure a Load method exists
+         * 7.  Check to make sure that the id property is not blocked.
+         * 8.  Check to make sure all paged select lists have proper parameters
+         * 9.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
+         * 10.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void)
          */
-        #if NETCOREAPP3_1
+#if NETCOREAPP3_1
         internal static List<Exception> Validate(AssemblyLoadContext alc,out List<Type> invalidModels,out List<Type> models)
         {
             Logger.Debug("Attempting to load and validate the models found in the Assembly Load Context {0}", new object[] { alc.Name });
@@ -430,20 +431,54 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         invalidModels.Add(t);
                     errors.Add(new NoLoadMethodException(t));
                 }
-                List<string> methods = new List<string>();
-                foreach (MethodInfo mi in t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                foreach (BindingFlags bf in new BindingFlags[] { Constants.STATIC_INSTANCE_METHOD_FLAGS,Constants.INSTANCE_METHOD_FLAGS })
                 {
-                    if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                    List<string> methods = new List<string>();
+                    MethodInfo[] methodInfos = t.GetMethods(bf);
+                    foreach (MethodInfo mi in methodInfos)
                     {
-                        if (methods.Contains(mi.Name + "." + mi.GetParameters().Length.ToString()))
+                        if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
-                            Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName,mi.Name });
-                            if (!invalidModels.Contains(t))
-                                invalidModels.Add(t);
-                            errors.Add(new DuplicateMethodSignatureException(t, mi));
+                            int parCount = 0;
+                            bool hasAddItem = false;
+                            foreach (ParameterInfo pi in mi.GetParameters())
+                            {
+                                parCount+=(pi.ParameterType.FullName==typeof(AddItem).FullName ? 0 : 1);
+                                hasAddItem|=pi.ParameterType.FullName==typeof(AddItem).FullName;
+                            }
+                            if (methods.Contains(mi.Name + "." + parCount.ToString()))
+                            {
+                                Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName, mi.Name });
+                                if (!invalidModels.Contains(t))
+                                    invalidModels.Add(t);
+                                errors.Add(new DuplicateMethodSignatureException(t, mi));
+                            }
+                            else
+                            {
+                                bool isValidCall = true;
+                                ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
+                                if (hasAddItem)
+                                {
+                                    if (!em.IsSlow)
+                                    {
+                                        Logger.Trace("Model {0} is not valid because the method {1} is using the AddItem delegate but is not marked slow", new object[] { t.FullName, mi.Name });
+                                        if (!invalidModels.Contains(t))
+                                            invalidModels.Add(t);
+                                        errors.Add(new MethodNotMarkedAsSlow(t, mi));
+                                        isValidCall = false;
+                                    }else if (mi.ReturnType!=typeof(void))
+                                    {
+                                        Logger.Trace("Model {0} is not valid because the method {1} is using the AddItem delegate requires a void response", new object[] { t.FullName, mi.Name });
+                                        if (!invalidModels.Contains(t))
+                                            invalidModels.Add(t);
+                                        errors.Add(new DuplicateMethodSignatureException(t, mi));
+                                        isValidCall = false;
+                                    }
+                                }
+                                if (isValidCall)
+                                    methods.Add(mi.Name + "." + parCount.ToString());
+                            }
                         }
-                        else
-                            methods.Add(mi.Name + "." + mi.GetParameters().Length.ToString());
                     }
                 }
             }

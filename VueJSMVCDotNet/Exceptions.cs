@@ -318,4 +318,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         protected DuplicateMethodSignatureException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
+
+    //thrown when an ExposedMethod uses the AddItem delegate but is not marked as slow
+    [Serializable]
+    public class MethodNotMarkedAsSlow : Exception
+    {
+        public MethodNotMarkedAsSlow(Type t,MethodInfo mi)
+            : base(string.Format("The IModel type {0} is not valid is not valid because the method {1} is using the AddItem delegate but is not marked slow.",
+            t.FullName,
+            mi.Name))
+        { }
+
+        protected MethodNotMarkedAsSlow(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+    //thrown when an ExposedMethod uses the AddItem delegate but has a return value
+    [Serializable]
+    public class MethodUsesAddItemNotVoid : Exception
+    {
+        public MethodUsesAddItemNotVoid(Type t, MethodInfo mi)
+            : base(string.Format("The IModel type {0} is not valid because the method {1} is using the AddItem delegate requires a void response.",
+            t.FullName,
+            mi.Name))
+        { }
+
+        protected MethodUsesAddItemNotVoid(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
 }

@@ -10,10 +10,11 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
-    public class RequestHandler
+    public class RequestHandler : IDisposable
     {
         //how to startup the system as per their names, either disable invalid models or throw 
         //and exception about them
@@ -30,7 +31,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             DELETE,
             PATCH,
             METHOD,
-            SMETHOD
+            SMETHOD,
+            PULL
         }
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
@@ -44,19 +46,27 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private Dictionary<Type, ASecurityCheck[]> _typeChecks;
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
+        private Dictionary<string,SlowMethodInstance> _methodInstances;
+        private Timer _cleanupTimer;
 
-        private IRequestHandler[] _Handlers = new IRequestHandler[]
+        internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
         {
-            new JSHandler(),
-            new LoadAllHandler(),
-            new StaticMethodHandler(),
-            new LoadHandler(),
-            new UpdateHandler(),
-            new SaveHandler(),
-            new DeleteHandler(),
-            new InstanceMethodHandler(),
-            new ModelListCallHandler()
-        };
+            string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
+            try
+            {
+                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars);
+                lock (_methodInstances)
+                {
+                    _methodInstances.Add(ret, smi);
+                }
+            }catch(Exception e)
+            {
+                ret=null;
+            }
+            return ret;
+        }
+
+        private IRequestHandler[] _Handlers;
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
@@ -64,12 +74,73 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public RequestHandler(StartTypes startType,ILogWriter logWriter)
         {
             _startTime = DateTime.Now;
+            _Handlers = new IRequestHandler[]
+            {
+                new JSHandler(),
+                new LoadAllHandler(),
+                new StaticMethodHandler(this),
+                new LoadHandler(),
+                new UpdateHandler(),
+                new SaveHandler(),
+                new DeleteHandler(),
+                new InstanceMethodHandler(this),
+                new ModelListCallHandler()
+            };
             Logger.Setup(logWriter);
             Logger.Debug("Starting up VueJS Request Handler");
             _startType = startType;
             _typeChecks = new Dictionary<Type, ASecurityCheck[]>();
             _methodChecks = new Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>>();
+            _methodInstances= new Dictionary<string, SlowMethodInstance>();
+            _cleanupTimer = new Timer(5*60*1000);
+            _cleanupTimer.Elapsed+=_cleanupTimer_Elapsed;
+            _cleanupTimer.Start();
             AssemblyAdded();
+        }
+
+        private void _cleanupTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            lock (_methodInstances)
+            {
+                string[] keys = new string[_methodInstances.Count];
+                _methodInstances.Keys.CopyTo(keys, 0);
+                foreach (string str in keys)
+                {
+                    if (_methodInstances[str].IsExpired)
+                    {
+                        SlowMethodInstance smi = _methodInstances[str];
+                        try { smi.Dispose(); } catch (Exception ex) { }
+                        _methodInstances.Remove(str);
+                    }else if (_methodInstances[str].IsFinished)
+                    {
+                        _methodInstances.Remove(str);
+                    }
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                _cleanupTimer.Stop();
+            }
+            catch (Exception e) { }
+            try
+            {
+                _cleanupTimer.Dispose();
+            }
+            catch (Exception e) { }
+            lock (_methodInstances)
+            {
+                string[] keys = new string[_methodInstances.Count];
+                _methodInstances.Keys.CopyTo(keys, 0);
+                foreach (string str in keys)
+                {
+                    try { _methodInstances[str].Dispose(); } catch (Exception e) { };
+                    _methodInstances.Remove(str);
+                }
+            }
         }
 
         public bool HandlesRequest(HttpContext context) {
@@ -78,11 +149,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             object method;
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
             {
-                foreach (IRequestHandler handler in _Handlers)
+                if ((RequestMethods)method==RequestMethods.PULL)
                 {
-                    Logger.Trace("Checking if {0} handles {1}:{2}", new object[] { handler.GetType().FullName, method, url });
-                    if (handler.HandlesRequest(url, (RequestMethods)method))
-                        return true;
+                    bool ret = false;
+                    lock (_methodInstances)
+                    {
+                        ret= _methodInstances.ContainsKey(url.ToLower());
+                    }
+                    return ret;
+                }
+                else
+                {
+                    foreach (IRequestHandler handler in _Handlers)
+                    {
+                        Logger.Trace("Checking if {0} handles {1}:{2}", new object[] { handler.GetType().FullName, method, url });
+                        if (handler.HandlesRequest(url, (RequestMethods)method))
+                            return true;
+                    }
                 }
             }
             return false;
@@ -132,35 +215,66 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
             }
             bool found = false;
-            foreach (IRequestHandler handler in _Handlers)
+            if (method==RequestMethods.PULL)
             {
-                if (handler.HandlesRequest(url, method))
+                SlowMethodInstance smi = null;
+                lock (_methodInstances)
                 {
-                    found = true;
-                    try
+                    if (_methodInstances.ContainsKey(url.ToLower()))
                     {
-                        await handler.HandleRequest(url, method, formData, context,session,new IsValidCall(_ValidCall));
+                        smi=_methodInstances[url];
+                        if (smi.IsExpired)
+                        {
+                            _methodInstances.Remove(url.ToLower());
+                            smi=null;
+                        }
                     }
-                    catch(CallNotFoundException cnfe)
+                }
+                if (smi!=null)
+                {
+                    found=true;
+                    await smi.HandleRequest(context);
+                    if (smi.IsFinished)
                     {
-                        Logger.LogError(cnfe);
-                        context.Response.ContentType = "text/text";
-                        context.Response.StatusCode = 400;
-                        await context.Response.WriteAsync(cnfe.Message);
+                        lock (_methodInstances)
+                        {
+                            _methodInstances.Remove(url.ToLower());
+                        }
                     }
-                    catch (InsecureAccessException iae)
+                }
+            }
+            else
+            {
+                foreach (IRequestHandler handler in _Handlers)
+                {
+                    if (handler.HandlesRequest(url, method))
                     {
-                        Logger.LogError(iae);
-                        context.Response.ContentType = "text/text";
-                        context.Response.StatusCode = 403;
-                        await context.Response.WriteAsync(iae.Message);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(e);
-                        context.Response.ContentType= "text/text";
-                        context.Response.StatusCode = 500;
-                        await context.Response.WriteAsync("Error");
+                        found = true;
+                        try
+                        {
+                            await handler.HandleRequest(url, method, formData, context, session, new IsValidCall(_ValidCall));
+                        }
+                        catch (CallNotFoundException cnfe)
+                        {
+                            Logger.LogError(cnfe);
+                            context.Response.ContentType = "text/text";
+                            context.Response.StatusCode = 400;
+                            await context.Response.WriteAsync(cnfe.Message);
+                        }
+                        catch (InsecureAccessException iae)
+                        {
+                            Logger.LogError(iae);
+                            context.Response.ContentType = "text/text";
+                            context.Response.StatusCode = 403;
+                            await context.Response.WriteAsync(iae.Message);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.LogError(e);
+                            context.Response.ContentType= "text/text";
+                            context.Response.StatusCode = 500;
+                            await context.Response.WriteAsync("Error");
+                        }
                     }
                 }
             }
@@ -316,7 +430,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             _isInitialized=true;
         }
-        #else
+#else
         //called when a new assembly has been loaded in the case of dynamic loading, in order 
         //to rescan for all new model types and add them accordingly.
         public void AssemblyAdded()
@@ -378,6 +492,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
             }
         }
-        #endif
+#endif
     }
 }

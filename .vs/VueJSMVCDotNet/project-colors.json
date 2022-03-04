@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "df7b32f9-bfb6-4065-8288-762f5e9be4b1": {
+      "ProjectGuid": "df7b32f9-bfb6-4065-8288-762f5e9be4b1",
+      "DisplayName": "VueJSMVCDotNet",
+      "ColorIndex": 0
+    },
+    "a574d550-d2d9-460a-8f3c-bddc66fb0148": {
+      "ProjectGuid": "a574d550-d2d9-460a-8f3c-bddc66fb0148",
+      "DisplayName": "TestApplication",
+      "ColorIndex": 1
+    }
+  },
+  "NextColorIndex": 2
+}

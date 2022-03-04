@@ -34,7 +34,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         mi.Name,
                         modelType.FullName
                     });
-                    bool allowNull = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).AllowNullResponse;
+                    ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
+                    Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
                     builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
@@ -92,64 +93,99 @@ for(var x=0;x<{0}.length;x++){{
                         urlRoot,
                         mi.Name,
                         (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
-                        (mi.ReturnType == typeof(void) ? "" : @"var ret=response.json();
+                        (returnType == typeof(void) ? "" : @"var ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;")
                     }));
-                    if (mi.ReturnType != typeof(void))
+                    if (em.IsSlow)
                     {
-                        Type propType = mi.ReturnType;
+                        builder.AppendLine(@"               ret=[];
+                var pullCall = function(){
+                    ajax(
+                    {
+                        url:response,
+                        type:'PULL',
+                        useJSON:true
+                    }).then(
+                        res=>{
+                            res = res.json();
+                            if (res.Data.length>0){
+                                Array.prototype.push.apply(ret,res.Data);
+                            }
+                            if (res.HasMore){
+                                pullCall();
+                            }else if (res.IsFinished){
+                                response = ret;");
+                    }
+                    if (returnType != typeof(void))
+                    {
                         bool array = false;
-                        if (propType.FullName.StartsWith("System.Nullable"))
+                        if (returnType.FullName.StartsWith("System.Nullable"))
                         {
-                            if (propType.IsGenericType)
-                                propType = propType.GetGenericArguments()[0];
+                            if (returnType.IsGenericType)
+                                returnType = returnType.GetGenericArguments()[0];
                             else
-                                propType = propType.GetElementType();
+                                returnType = returnType.GetElementType();
                         }
-                        if (propType.IsArray)
+                        if (returnType.IsArray)
                         {
                             array = true;
-                            propType = propType.GetElementType();
+                            returnType = returnType.GetElementType();
                         }
-                        else if (propType.IsGenericType)
+                        else if (returnType.IsGenericType)
                         {
-                            if (propType.GetGenericTypeDefinition() == typeof(List<>))
+                            if (returnType.GetGenericTypeDefinition() == typeof(List<>))
                             {
                                 array = true;
-                                propType = propType.GetGenericArguments()[0];
+                                returnType = returnType.GetGenericArguments()[0];
                             }
                         }
+                        if (!array && em.IsSlow)
+                            builder.AppendLine("response = (ret.length==1 ? ret[0] : null);");
                         builder.AppendLine("if (response==null){");
-                        if (!allowNull)
+                        if (!em.AllowNullResponse)
                             builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
                         else
                             builder.AppendLine("resolve(response);");
                         builder.AppendLine("}else{");
-                        if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
+                        if (new List<Type>(returnType.GetInterfaces()).Contains(typeof(IModel)))
                         {
                             if (array)
                             {
                                 builder.AppendLine(string.Format(@"         ret=[];
-            for (var x=0;x<response.length;x++){{
-                ret.push(_{0}(response[x]));
-            }}
-            response = ret;", new object[]{
-                                propType.Name
-                                    }));
+        for (var x=0;x<response.length;x++){{
+            ret.push(_{0}(response[x]));
+        }}
+        response = ret;", new object[]{
+                            returnType.Name
+                                }));
                             }
                             else
                             {
                                 builder.AppendLine(string.Format(@"             ret = _{0}(response);
-            response=ret;", new object[]{
-                  propType.Name
-                      }));
+        response=ret;", new object[]{
+                returnType.Name
+                    }));
                             }
                         }
                         builder.AppendLine(@"           resolve(response);
-        }");
-                    }else
+    }");
+                    }
+                    else
                         builder.AppendLine("           resolve();");
+                    if (em.IsSlow)
+                    {
+                        builder.AppendLine(@"}else{
+                                setTimeout(pullCall,200);
+                            }
+                        },
+                        err=>{
+                            reject(err);
+                        }
+                    );
+                };
+                pullCall();");
+                    }
                     builder.AppendLine(@"},
                     response=>{
                         reject(response);
