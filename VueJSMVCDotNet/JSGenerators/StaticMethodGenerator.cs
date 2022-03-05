@@ -36,90 +36,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     });
                     ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
                     Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
-                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
-                    ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
-                    for (int x = 0; x < pars.Length; x++)
-                        builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
-                    builder.AppendLine(@"){
-                        var function_data = {};");
-                    foreach (ParameterInfo par in pars)
-                    {
-                        Type propType = par.ParameterType;
-                        bool array = false;
-                        if (propType.FullName.StartsWith("System.Nullable"))
-                        {
-                            if (propType.IsGenericType)
-                                propType = propType.GetGenericArguments()[0];
-                            else
-                                propType = propType.GetElementType();
-                        }
-                        if (propType.IsArray)
-                        {
-                            array = true;
-                            propType = propType.GetElementType();
-                        }
-                        else if (propType.IsGenericType)
-                        {
-                            if (propType.GetGenericTypeDefinition() == typeof(List<>))
-                            {
-                                array = true;
-                                propType = propType.GetGenericArguments()[0];
-                            }
-                        }
-                        if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
-                        {
-                            if (array)
-                            {
-                                builder.AppendLine(string.Format(@"function_data.{0}=[];
-for(var x=0;x<{0}.length;x++){{
-    function_data.{0}.push({{id:{0}[x].id}});
-}}", par.Name));
-                            }
-                            else
-                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id }};", par.Name));
-                        }
-                        else
-                            builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
-                    }
-                    builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
-                    ajax(
-                    {{
-                        url:'{0}/{1}',
-                        type:'SMETHOD',
-                        useJSON:{2},
-                        data:function_data
-                    }}).then(response=>{{
-                        {3}", new object[]{
-                        urlRoot,
-                        mi.Name,
-                        (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
-                        (returnType == typeof(void) ? "" : @"var ret=response.json();
-                    if (ret!=undefined||ret==null)
-                        response = ret;")
-                    }));
-                    if (em.IsSlow)
-                    {
-                        builder.AppendLine(@"               ret=[];
-                var pullCall = function(){
-                    ajax(
-                    {
-                        url:response,
-                        type:'PULL',
-                        useJSON:true
-                    }).then(
-                        res=>{
-                            res = res.json();
-                            if (res.Data.length>0){
-                                Array.prototype.push.apply(ret,res.Data);
-                            }
-                            if (res.HasMore){
-                                pullCall();
-                            }else if (res.IsFinished){
-                                response = ret;");
-                    }
+                    bool array = false;
                     if (returnType != typeof(void))
                     {
-                        bool array = false;
                         if (returnType.FullName.StartsWith("System.Nullable"))
                         {
                             if (returnType.IsGenericType)
@@ -140,8 +59,71 @@ for(var x=0;x<{0}.length;x++){{
                                 returnType = returnType.GetGenericArguments()[0];
                             }
                         }
-                        if (!array && em.IsSlow)
-                            builder.AppendLine("response = (ret.length==1 ? ret[0] : null);");
+                    }
+                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
+                    ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                    for (int x = 0; x < pars.Length; x++)
+                        builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
+                    builder.AppendLine(@"){
+                        var function_data = {};");
+                    foreach (ParameterInfo par in pars)
+                    {
+                        Type propType = par.ParameterType;
+                        bool parray = false;
+                        if (propType.FullName.StartsWith("System.Nullable"))
+                        {
+                            if (propType.IsGenericType)
+                                propType = propType.GetGenericArguments()[0];
+                            else
+                                propType = propType.GetElementType();
+                        }
+                        if (propType.IsArray)
+                        {
+                            parray = true;
+                            propType = propType.GetElementType();
+                        }
+                        else if (propType.IsGenericType)
+                        {
+                            if (propType.GetGenericTypeDefinition() == typeof(List<>))
+                            {
+                                parray = true;
+                                propType = propType.GetGenericArguments()[0];
+                            }
+                        }
+                        if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
+                        {
+                            if (parray)
+                            {
+                                builder.AppendLine(string.Format(@"function_data.{0}=[];
+for(var x=0;x<{0}.length;x++){{
+    function_data.{0}.push({{id:{0}[x].id}});
+}}", par.Name));
+                            }
+                            else
+                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id }};", par.Name));
+                        }
+                        else
+                            builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
+                    }
+                    builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
+                    ajax(
+                    {{
+                        url:'{0}/{1}',
+                        type:'SMETHOD',
+                        useJSON:{2},
+                        data:function_data{4}
+                    }}).then(response=>{{
+                        {3}", new object[]{
+                        urlRoot,
+                        mi.Name,
+                        (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
+                        (returnType == typeof(void) ? "" : @"var ret=response.json();
+                    if (ret!=undefined||ret==null)
+                        response = ret;"),
+                        (em.IsSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")
+                    }));
+                    if (returnType != typeof(void))
+                    {
                         builder.AppendLine("if (response==null){");
                         if (!em.AllowNullResponse)
                             builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
@@ -173,19 +155,6 @@ for(var x=0;x<{0}.length;x++){{
                     }
                     else
                         builder.AppendLine("           resolve();");
-                    if (em.IsSlow)
-                    {
-                        builder.AppendLine(@"}else{
-                                setTimeout(pullCall,200);
-                            }
-                        },
-                        err=>{
-                            reject(err);
-                        }
-                    );
-                };
-                pullCall();");
-                    }
                     builder.AppendLine(@"},
                     response=>{
                         reject(response);

@@ -109,67 +109,109 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         return data;
     };
     var ajax = function(options){
-        return new Promise((resolve, reject) => {
-            options = extend(options,{
-                type:'GET',
-                credentials:false,
-                body:null,
-                headers:{},
-                data:null,
-                url:null,
-                useJSON:true
-            });
-            if (options.useJSON){
-                options.headers['Content-Type'] = 'application/json';
-            }
-            if (options.url==null){ throw 'Unable to call empty url';}
-            options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
-            var xmlhttp = new XMLHttpRequest();
-            if (options.credentials){
-                xmlhttp.withCredentials=true;
-            }
-            xmlhttp.onreadystatechange = function() {
-                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-                    if (xmlhttp.status == 200){
-                        resolve({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return (xmlhttp.getResponseHeader('Content-Type')=='text/text' ? xmlhttp.responseText : _fixDates(JSON.parse(xmlhttp.responseText)));}});
-                    }else{
-                        reject({ok:false,text:function(){return xmlhttp.responseText;}});
-                    }
-                }
-            };
-            xmlhttp.open(options.type,options.url,true);
-            for(var header in options.headers){
-                xmlhttp.setRequestHeader(header,options.headers[header]);
-            }
-            var data = null;
-            if (options.data!=null){
-                if (options.useJSON){
-                    data = JSON.stringify(options.data);
-                }else{
-                    data = new FormData();
-                    for(var prop in options.data){
-                        if (Array.isArray(options.data[prop])){
-                            if (options.data[prop].length>0){
-                                if (isObject(options.data[prop][0])){
-                                    for(var x=0;x<options.data[prop].length;x++){
-                                        data.append(prop+':json',JSON.stringify(options.data[prop][x]));
+        if (options.isSlow!=undefined && options.isSlow){
+            return new Promise((resolve,reject) => {
+                delete options.isSlow;
+                var isArray = (options.isArray==undefined ? false : options.isArray);
+                ajax(options).then(
+                    res=>{
+                        var ret=[];
+                        var url = res.json();
+                        var pullCall = function(){
+                            ajax(
+                            {
+                                url:url,
+                                type:'PULL',
+                                useJSON:true
+                            }).then(
+                                res=>{
+                                    res=res.json();
+                                    if (res.Data.length>0){
+                                        Array.prototype.push.apply(ret,res.Data);
                                     }
-                                }else{
-                                    for(var x=0;x<options.data[prop].length;x++){
-                                        data.append(prop,options.data[prop][x]);
+                                    if (res.HasMore){
+                                        pullCall();
+                                    }else if (res.IsFinished){
+                                        resolve({json:function(){return (isArray ? ret : (ret.length==0 ? null : ret[0]));}});
+                                    }else{
+                                        setTimeout(pullCall,200);
+                                    }
+                                },
+                                err=>{
+                                    reject(err);
+                                }
+                            );
+                        };
+                        pullCall();
+                    },
+                    err=>{
+                        reject(err);
+                    }
+                );
+            });
+        }else{
+            return new Promise((resolve, reject) => {
+                options = extend(options,{
+                    type:'GET',
+                    credentials:false,
+                    body:null,
+                    headers:{},
+                    data:null,
+                    url:null,
+                    useJSON:true
+                });
+                if (options.useJSON){
+                    options.headers['Content-Type'] = 'application/json';
+                }
+                if (options.url==null){ throw 'Unable to call empty url';}
+                options.url+=(options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
+                var xmlhttp = new XMLHttpRequest();
+                if (options.credentials){
+                    xmlhttp.withCredentials=true;
+                }
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+                        if (xmlhttp.status == 200){
+                            resolve({ok:true,text:function(){return xmlhttp.responseText;},json:function(){return (xmlhttp.getResponseHeader('Content-Type')=='text/text' ? xmlhttp.responseText : _fixDates(JSON.parse(xmlhttp.responseText)));}});
+                        }else{
+                            reject({ok:false,text:function(){return xmlhttp.responseText;}});
+                        }
+                    }
+                };
+                xmlhttp.open(options.type,options.url,true);
+                for(var header in options.headers){
+                    xmlhttp.setRequestHeader(header,options.headers[header]);
+                }
+                var data = null;
+                if (options.data!=null){
+                    if (options.useJSON){
+                        data = JSON.stringify(options.data);
+                    }else{
+                        data = new FormData();
+                        for(var prop in options.data){
+                            if (Array.isArray(options.data[prop])){
+                                if (options.data[prop].length>0){
+                                    if (isObject(options.data[prop][0])){
+                                        for(var x=0;x<options.data[prop].length;x++){
+                                            data.append(prop+':json',JSON.stringify(options.data[prop][x]));
+                                        }
+                                    }else{
+                                        for(var x=0;x<options.data[prop].length;x++){
+                                            data.append(prop,options.data[prop][x]);
+                                        }
                                     }
                                 }
+                            }else if (isObject(options.data[prop])){
+                                data.append(prop+':json',JSON.stringify(options.data[prop]));
+                            }else{
+                                data.append(prop,options.data[prop]);
                             }
-                        }else if (isObject(options.data[prop])){
-                            data.append(prop+':json',JSON.stringify(options.data[prop]));
-                        }else{
-                            data.append(prop,options.data[prop]);
                         }
                     }
                 }
-            }
-            xmlhttp.send(data);
-        });
+                xmlhttp.send(data);
+            });
+        }
     };
 
     /*borrowed from undescore source*/
