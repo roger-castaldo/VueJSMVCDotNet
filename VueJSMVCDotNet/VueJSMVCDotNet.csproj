@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7</Version>
-    <PackageReleaseNotes>added new feature to allow an exposed method to be a slow background method, including the ability to call a supplied delegate to add results to a given array on the client side.</PackageReleaseNotes>
+    <Version>1.7.1</Version>
+    <PackageReleaseNotes>minor patch to improve performance of slow method calls.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7</AssemblyVersion>
-    <FileVersion>1.7</FileVersion>
+    <AssemblyVersion>1.7.1</AssemblyVersion>
+    <FileVersion>1.7.1</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

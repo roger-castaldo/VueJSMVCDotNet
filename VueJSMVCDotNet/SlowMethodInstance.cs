@@ -36,6 +36,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private ConcurrentQueue<object> _data;
         private bool _finished;
+        private bool _completed;
         private Exception _error;
         private DateTime _lastCall;
         private Task _execution;
@@ -45,6 +46,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             _data=new ConcurrentQueue<object>();
             _finished=false;
+            _completed=false;
             _error=null;
             _lastCall=DateTime.Now;
             int sidx = -1;
@@ -82,7 +84,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         public bool IsFinished
         {
-            get { return _finished&&(_data.IsEmpty||_error!=null); }
+            get { return _completed; }
         }
 
         public bool IsExpired { get { return DateTime.Now.Subtract(_lastCall).TotalMilliseconds > _TIMEOUT_MILLISECONDS; } }
@@ -95,6 +97,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 context.Response.ContentType= "text/text";
                 context.Response.StatusCode = 500;
                 _finished=true;
+                _completed=true;
                 return context.Response.WriteAsync("Error");
             }
             else
@@ -111,6 +114,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 context.Response.ContentType= "text/json";
                 context.Response.StatusCode = 200;
+                _completed = _finished&&_data.IsEmpty;
                 return context.Response.WriteAsync(JSON.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty)));
             }
         }
