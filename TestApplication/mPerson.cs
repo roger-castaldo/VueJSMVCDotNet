@@ -18,6 +18,12 @@ namespace TestApplication{
         private string _lastName;
         [ModelRequiredField()]
         public string LastName{get{return _lastName;}set{_lastName=value;}}
+        private DateTime _birthday;
+        public DateTime BirthDay
+        {
+            get { return _birthday; }
+            set { _birthday=value; }
+        }
 
         private mPerson(string firstName,string lastName){
             _firstName=firstName;

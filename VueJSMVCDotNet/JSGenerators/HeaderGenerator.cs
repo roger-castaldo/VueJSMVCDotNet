@@ -49,9 +49,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         if (hasEnumBug) collectNonEnumProps(obj, keys);
         return keys;
     };
+    var isDate = function(obj){
+        return Object.prototype.toString.call(obj) === '[object Date]';
+    };
     var isObject = function(obj) {
         var type = typeof obj;
-        return type === 'function' || type === 'object' && !!obj;
+        return (type === 'function' || type === 'object' && !!obj)&&!isDate(obj);
     };
     var extend = function(obj1,obj2){
       for(prop in obj2){

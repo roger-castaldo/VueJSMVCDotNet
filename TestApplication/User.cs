@@ -33,9 +33,11 @@ namespace TestApplication
             get { return new DateTime((long)new Random().Next() * (long)100000); }
         }
 
+        private DateTime? _lastLogin;
         public DateTime? LastLoginDate
         {
-            get { return (new Random().Next(0,2)<=1 ? DateTime.Now : (DateTime?)null); }
+            get { return _lastLogin; }
+            set { _lastLogin=value; }
         }
 
         public int Seed
