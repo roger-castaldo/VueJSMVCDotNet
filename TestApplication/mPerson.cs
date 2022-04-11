@@ -154,7 +154,7 @@ namespace TestApplication{
             return _persons;
         }
 
-        [ExposedMethod(false,typeof(int))]
+        [ExposedMethod(isSlow:true,arrayElementType:typeof(int))]
         public static void SlowStatic(AddItem addCall)
         {
             int idx = 0;
@@ -167,7 +167,7 @@ namespace TestApplication{
             addCall(idx, true);
         }
 
-        [ExposedMethod(false,true)]
+        [ExposedMethod(allowNullResponse:false,isSlow:true)]
         public static string GetSlowTimespan()
         {
             DateTime now = DateTime.Now;
@@ -175,7 +175,7 @@ namespace TestApplication{
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethod(false,typeof(string))]
+        [ExposedMethod(allowNullResponse:false,arrayElementType:typeof(string))]
         public void GenerateNames(AddItem addCall)
         {
             for(int x = 0; x<3; x++)

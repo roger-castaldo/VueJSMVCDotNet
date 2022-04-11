@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
 {
-    /*
-     * Used to Ignore a property for model generation.
-     */
+    /// <summary>
+    /// Used to Ignore a property for model generation. 
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property,AllowMultiple=false)]
     public class ModelIgnoreProperty : Attribute
     {

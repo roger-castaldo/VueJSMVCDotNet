@@ -123,7 +123,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         if (fi.Exists)
                             modDate = new DateTime(Math.Max(modDate.Ticks, fi.LastWriteTime.Ticks));
                     }
-                    catch (Exception e) { }
+                    catch (Exception e) {
+                        Logger.LogError(e);
+                    }
                 }
                 if (modDate == DateTime.MinValue)
                     modDate = RequestHandler.StartTime;

@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
 {
-    /*
-     * Used to tag the Load All Models method
-     */
+    /// <summary>
+    /// Used to tag the Load All Models method
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ModelLoadAllMethod : Attribute
     {

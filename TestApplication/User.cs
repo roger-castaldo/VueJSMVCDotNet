@@ -155,7 +155,7 @@ namespace TestApplication
             return new Random().Next(0, 10)>=5;
         }
 
-        [ExposedMethod(true)]
+        [ExposedMethod(allowNullResponse:true)]
         public static User Login(string username,string password) {
             User ret = null;
             lock (_USERS)

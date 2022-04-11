@@ -4,45 +4,40 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
 {
-    /*
-     * This attribute is used to expose a method to a javascript based called for a model. A static
-     * call will be attached to the Model object, whereas a non-static call will be attached to an 
-     * instance of the model and is used to perform operations on the model.  Allow null response is used 
-     * to indicate that the function can respond with null, otherwise null response is treated as an error.
-     */
+    /// <summary>
+    /// This attribute is used to expose a method to a javascript based called for a model. A static 
+    /// call will be attached to the Model object, whereas a non-static call will be attached to an
+    /// instance of the model and is used to perform operations on the model.Allow null response is used
+    /// to indicate that the function can respond with null, otherwise null response is treated as an error.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ExposedMethod : Attribute
     {
         private bool _allowNullResponse;
-        public bool AllowNullResponse
+        internal bool AllowNullResponse
         {
             get { return _allowNullResponse; }
         }
 
         private bool _isSlow;
-        public bool IsSlow { get { return _isSlow; } }
+        internal bool IsSlow { get { return _isSlow; } }
 
         private Type _arrayElementType;
-        public Type ArrayElementType { get { return _arrayElementType; } }
+        internal Type ArrayElementType { get { return _arrayElementType; } }
 
-
-        public ExposedMethod() :
-            this(false,false,null)
-        { }
-
-        public ExposedMethod(bool allowNullResponse)
-            : this(allowNullResponse, false, null) { }
-
-        public ExposedMethod(bool allowNullResponse, bool isSlow)
-            : this(allowNullResponse, isSlow, null) { }
-
-        public ExposedMethod(bool allowNullResponse, Type arrayElementType)
-            : this(allowNullResponse, true,arrayElementType) { }
-
-        private ExposedMethod(bool allowNullResponse,bool isSlow,Type arrayElementType)
+        /// <summary>
+        /// Tag a method as being exposed to allow for it to be called from the javascript side as either 
+        /// and instance method (non-static) or a non-instance method (static).
+        /// </summary>
+        /// <param name="allowNullResponse">Set to true if a response can be null, if not, an exception will be thrown if null is returned</param>
+        /// <param name="isSlow">Set true to tag the method as a slow method.  This means that this method will take a long enough time
+        /// that the potential for the connection to timeout exists, so additional code calls will be made to handle 
+        /// running the method in the background.</param>
+        /// <param name="arrayElementType">Set to the type of element that is going to be supplied in a slow response array.</param>
+        public ExposedMethod(bool allowNullResponse=false,bool isSlow=false,Type arrayElementType=null)
         {
             _allowNullResponse = allowNullResponse;
-            _isSlow = isSlow;
+            _isSlow = isSlow||arrayElementType!=null;
             _arrayElementType = arrayElementType;
         }
     }

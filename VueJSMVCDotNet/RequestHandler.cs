@@ -7,20 +7,35 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+#if !NETSTANDARD
 using System.Runtime.Loader;
+#endif
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
+    /// <summary>
+    /// This is the primary component for handling all requests within this library, and is 
+    /// therefore required to be created and passed web request appropriately
+    /// </summary>
     public class RequestHandler : IDisposable
     {
-        //how to startup the system as per their names, either disable invalid models or throw 
-        //and exception about them
+        /// <summary>
+        /// how to startup the system as per their names, either disable invalid models or throw 
+        /// and exception about them
+        /// </summary>
         public enum StartTypes
         {
+            /// <summary>
+            /// Disable any models that were found to be invalid
+            /// </summary>
             DisableInvalidModels,
+            /// <summary>
+            /// Throw a contained exception that will list all the errors
+            /// and the models associated with them.
+            /// </summary>
             ThrowInvalidExceptions
         }
 
@@ -37,7 +52,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
+#if NETCOREAPP3_1
         private bool _isInitialized=false;
+#endif
         internal bool IsTypeAllowed(Type type)
         {
             return !_invalidModels.Contains(type);
@@ -70,7 +87,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
-
+        
+        /// <summary>
+        /// Create an isntance of the Request Handler, specifying what to do on the start up and attaching a 
+        /// log writer if desired
+        /// </summary>
+        /// <param name="startType">The type of startup to use (either disable models or throw exception)</param>
+        /// <param name="logWriter">A log writer instance to write the log messages to</param>
         public RequestHandler(StartTypes startType,ILogWriter logWriter)
         {
             _startTime = DateTime.Now;
@@ -119,6 +142,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
+        /// <summary>
+        /// Disposes of the request handler and cleans up the resources there in
+        /// </summary>
         public void Dispose()
         {
             try
@@ -143,6 +169,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
+        /// <summary>
+        /// Called to check if this class handles the given request
+        /// </summary>
+        /// <param name="context">The context of the request</param>
+        /// <returns>true if the request is handled by the library</returns>
         public bool HandlesRequest(HttpContext context) {
             string url = Utility.CleanURL(Utility.BuildURL(context));
             Logger.Debug("Checking if {0} is handled by VueJS library", new object[] { url });
@@ -171,6 +202,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return false;
         }
 
+        /// <summary>
+        /// Called to handle a given request
+        /// </summary>
+        /// <param name="context">The context of the request</param>
+        /// <param name="session">The security session associated with the request</param>
+        /// <returns>a task as a result of handling the request</returns>
         public async Task ProcessRequest(HttpContext context,ISecureSession session)
         {
             string url = Utility.CleanURL(Utility.BuildURL(context));
@@ -314,12 +351,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return true;
         }
 
-        #if NETCOREAPP3_1
-        //called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
-        //that load context to allow for an unload
+#if NETCOREAPP3_1
+        /// <summary>
+        /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
+        /// that load context to allow for an unload
+        /// </summary>
+        /// <param name="context">The assembly context being unloaded</param>
         public void UnloadAssemblyContext(AssemblyLoadContext context){
             UnloadAssemblyContext(context.Name);
         }
+        /// <summary>
+        /// called when an assembly context needs to be unloaded without providing the context but its name
+        /// instead
+        /// </summary>
+        /// <param name="contextName">The name of the assembly load context to unload</param>
         public void UnloadAssemblyContext(string contextName){
             List<Type> types = Utility.UnloadAssemblyContext(contextName);
             if (types!=null){
@@ -340,8 +385,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        //called when a new assembly has been loaded in the case of dynamic loading, in order 
-        //to rescan for all new model types and add them accordingly.
+        /// <summary>
+        /// called when a new assembly has been loaded in the case of dynamic loading, in order 
+        /// to rescan for all new model types and add them accordingly.
+        /// </summary>
         public void AssemblyAdded()
         {
             Logger.Debug("Assembly added called, rebuilding handlers...");
@@ -358,6 +405,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
+        /// <summary>
+        /// Called when a new Assembly Load Context has been added
+        /// </summary>
+        /// <param name="contextName">The name of the context that was added</param>
         public void AsssemblyLoadContextAdded(string contextName){
             foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                 if (alc.Name==contextName){
@@ -367,6 +418,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
+        /// <summary>
+        /// Called when a new Assembly Load Context has been added
+        /// </summary>
+        /// <param name="alc">The assembly load context that was added</param>
+        /// <exception cref="ModelValidationException">Houses a set of exceptions if any newly loaded models fail validation</exception>
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
             Logger.Debug("Loading Assembly Load Context {0}", new object[] { alc.Name });
             List<Type> models;
@@ -431,8 +487,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _isInitialized=true;
         }
 #else
-        //called when a new assembly has been loaded in the case of dynamic loading, in order 
-        //to rescan for all new model types and add them accordingly.
+        ///<summary>
+        ///called when a new assembly has been loaded in the case of dynamic loading, in order 
+        ///to rescan for all new model types and add them accordingly.
+        ///</summary>
         public void AssemblyAdded()
         {
             Utility.ClearCaches();

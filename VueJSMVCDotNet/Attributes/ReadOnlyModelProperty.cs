@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
 {
-    /*
-     * Used to specify an uneditable readonly property for a given model
-     */
+    /// <summary>
+    /// Used to specify an uneditable readonly property for a given model 
+    /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class ReadOnlyModelProperty : Attribute
     {

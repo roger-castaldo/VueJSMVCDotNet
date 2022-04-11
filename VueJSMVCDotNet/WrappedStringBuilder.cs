@@ -15,7 +15,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _minimize = minimize;
         }
 
-        public string ToString()
+        public new string ToString()
         {
             return (_minimize ? JSMinifier.Minify(_sb.ToString()) : _sb.ToString());
         }

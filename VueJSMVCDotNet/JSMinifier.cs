@@ -5,9 +5,6 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
-    /// <summary>
-	/// Description of JSMinifier.
-	/// </summary>
 	internal class JSMinifier
     {
         internal static string StripComments(string originalString)

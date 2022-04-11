@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
 {
-    /*
-     * Used to mark the model save method which returns a bool
-     */
+    /// <summary>
+    /// Used to mark the model save method which returns a bool 
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ModelSaveMethod : Attribute
     {
