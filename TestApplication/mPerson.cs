@@ -97,7 +97,7 @@ namespace TestApplication{
         }
 
         [ModelListMethod("/search/mPerson?q={0}",true)]
-        public static List<mPerson> Search(string q,ISecureSession session,int pageStartIndex, int pageSize, out int totalPages)
+        public static List<mPerson> Search(string q,int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             List<mPerson> ret = new List<mPerson>();

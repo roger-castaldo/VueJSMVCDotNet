@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.3</Version>
+    <Version>1.7.4</Version>
     <PackageReleaseNotes>patch to correct issue detecting a Date as an object</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyVersion>1.7.3</AssemblyVersion>

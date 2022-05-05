@@ -129,11 +129,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 object ret = _method.Invoke(null, opars);
                 if (_isPaged)
                 {
-                    Logger.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[opars.Length - 1], method, url });
+                    int pageIndex = opars.Length-1;
+                    for(int x = 0; x<pars.Length; x++)
+                    {
+                        if (pars[x].IsOut)
+                        {
+                            pageIndex=x;
+                            break;
+                        }
+                    }
+                    Logger.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[pageIndex], method, url });
                     return context.Response.WriteAsync(JSON.JsonEncode(new Hashtable()
                         {
                             {"response",ret },
-                            {"TotalPages",opars[opars.Length-1] }
+                            {"TotalPages",opars[pageIndex] }
                         }));
                 }
                 else
