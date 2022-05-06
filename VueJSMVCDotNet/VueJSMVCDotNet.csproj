@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.4</Version>
-    <PackageReleaseNotes>patch to correct issue detecting a Date as an object</PackageReleaseNotes>
+    <Version>1.7.5</Version>
+    <PackageReleaseNotes>patch to allow a callback to be passed to a load function that will supply the model loaded</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.3</AssemblyVersion>
-    <FileVersion>1.7.3</FileVersion>
+    <AssemblyVersion>1.7.5</AssemblyVersion>
+    <FileVersion>1.7.5</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

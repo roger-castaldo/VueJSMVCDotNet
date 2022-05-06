@@ -13,10 +13,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         {
             Logger.Trace("Appending Model Load method for Model Definition[{0}]", new object[] { modelType.FullName });
             string urlRoot = Utility.GetModelUrlRoot(modelType);
-            builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:function(id){{
+            builder.AppendLine(string.Format(@"App.Models.{0}=extend(App.Models.{0},{{Load:function(id,callback){{
         var ret = App.Models.{0}.{1}();
         ret.{2}({{id:id}});
-        ret.reload();
+        if (callback!=undefined){{
+            ret.reload().then(
+                model=>{{callback(model);}},
+                errored=>{{callback(null);}}
+            );
+        }}else{{
+            ret.reload();
+        }}
         return ret;
     }}
 }});", new object[] { modelType.Name,Constants.CREATE_INSTANCE_FUNCTION_NAME,Constants.PARSE_FUNCTION_NAME}));
