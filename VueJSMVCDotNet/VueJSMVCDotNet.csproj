@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.6</Version>
+    <Version>1.7.7</Version>
     <PackageReleaseNotes>patch to correctly convert nullable objects to their nullable versions</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.6</AssemblyVersion>
-    <FileVersion>1.7.6</FileVersion>
+    <AssemblyVersion>1.7.7</AssemblyVersion>
+    <FileVersion>1.7.7</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

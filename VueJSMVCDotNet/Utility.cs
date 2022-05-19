@@ -256,7 +256,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return Activator.CreateInstance(expectedType, _ConvertObjectToType(obj, underlyingType));
+                return _ConvertObjectToType(obj, underlyingType);
+                //return Activator.CreateInstance(expectedType, _ConvertObjectToType(obj, underlyingType));
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
@@ -306,9 +307,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 if (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
                 {
-                    if (mi.ReturnType.Equals(expectedType)
+                    if (
+                        (
+                            mi.ReturnType.Equals(expectedType)
+                            || mi.ReturnType.Equals(typeof(Nullable<>).MakeGenericType(expectedType))
+                        )
                         && mi.GetParameters().Length == 1
-                        && mi.GetParameters()[0].ParameterType.Equals(obj.GetType()))
+                        && (
+                            mi.GetParameters()[0].ParameterType.Equals(obj.GetType())
+                            || mi.GetParameters()[0].ParameterType.Equals(typeof(Nullable<>).MakeGenericType(obj.GetType()))
+                        )
+                    )
                     {
                         conMethod = mi;
                         break;
