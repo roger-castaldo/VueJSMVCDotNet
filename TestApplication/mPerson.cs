@@ -25,6 +25,14 @@ namespace TestApplication{
             set { _birthday=value; }
         }
 
+
+        private Guid? _testNullable;
+        public Guid? TestNullable
+        {
+            get { return _testNullable; }
+            set { _testNullable=value; }
+        }
+
         private mPerson(string firstName,string lastName){
             _firstName=firstName;
             _lastName=lastName;

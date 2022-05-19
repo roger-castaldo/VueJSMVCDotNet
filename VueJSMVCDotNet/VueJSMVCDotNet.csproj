@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.5</Version>
-    <PackageReleaseNotes>patch to allow a callback to be passed to a load function that will supply the model loaded</PackageReleaseNotes>
+    <Version>1.7.6</Version>
+    <PackageReleaseNotes>patch to correctly convert nullable objects to their nullable versions</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.5</AssemblyVersion>
-    <FileVersion>1.7.5</FileVersion>
+    <AssemblyVersion>1.7.6</AssemblyVersion>
+    <FileVersion>1.7.6</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -256,7 +256,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return _ConvertObjectToType(obj, underlyingType);
+                return Activator.CreateInstance(expectedType, _ConvertObjectToType(obj, underlyingType));
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
