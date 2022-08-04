@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.1;net6.0;</TargetFrameworks>
     <RootNamespace>Org.Reddragonit.VueJSMVCDotNet</RootNamespace>
@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.7</Version>
-    <PackageReleaseNotes>patch to correctly convert nullable objects to their nullable versions</PackageReleaseNotes>
+    <Version>1.7.8</Version>
+    <PackageReleaseNotes>patch to respond with a null model when a load call is made and the resulting load is a null</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.7</AssemblyVersion>
-    <FileVersion>1.7.7</FileVersion>
+    <AssemblyVersion>1.7.8</AssemblyVersion>
+    <FileVersion>1.7.8</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

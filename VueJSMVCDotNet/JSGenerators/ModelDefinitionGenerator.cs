@@ -59,10 +59,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             type:'GET'
                         }}).then(
                             response=>{{
-                                if (response.ok){{                 
-                                    model.{1}(response.json());
-                                    if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
-                                    resolve(model);
+                                if (response.ok){{
+                                    var data = response.json();
+                                    if (data==null){{
+                                        reject(null);
+                                    }}else{{
+                                        model.{1}(data);
+                                        if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
+                                        resolve(model);
+                                    }}
                                 }}else{{
                                     reject(response.text());
                                 }}
