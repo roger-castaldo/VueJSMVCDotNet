@@ -100,6 +100,7 @@ namespace TestApplication{
         [ModelSaveMethod()]
         public bool Save(ISecureSession session){
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
+            this._id = new Random().Next(999999);
             _persons.Add(this);
             return true;
         }

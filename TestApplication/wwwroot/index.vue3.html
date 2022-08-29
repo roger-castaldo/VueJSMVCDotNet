@@ -137,6 +137,7 @@
                     var view = this;
                     if (this.person.isNew()) {
                         this.person.save().then(success => {
+                            console.log(success);
                             view.lst.reload();
                             view.person = null;
                         });

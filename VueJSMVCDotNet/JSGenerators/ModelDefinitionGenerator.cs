@@ -192,7 +192,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             data:data
                         }}).then(response=>{{
                             if (response.ok){{                 
-                                setMap(model,{{{2}:data}});
+                                setMap(model,{{{2}:extend(data,response.json())}});
                                 if (model.$emit!=undefined){{model.$emit('{3}',model);}}
                                 resolve(model);
                             }}else{{

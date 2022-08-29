@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.8</Version>
-    <PackageReleaseNotes>patch to respond with a null model when a load call is made and the resulting load is a null</PackageReleaseNotes>
+    <Version>1.7.9</Version>
+    <PackageReleaseNotes>patch to ensure id value gets applied to a model when saving</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.8</AssemblyVersion>
-    <FileVersion>1.7.8</FileVersion>
+    <AssemblyVersion>1.7.9</AssemblyVersion>
+    <FileVersion>1.7.9</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
