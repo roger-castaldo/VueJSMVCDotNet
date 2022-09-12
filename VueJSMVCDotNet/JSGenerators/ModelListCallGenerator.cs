@@ -9,7 +9,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelListCallGenerator : IJSGenerator
     {
-        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, Type modelType)
+        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, Type modelType,string urlBase)
         {
             Logger.Trace("Creating the javascript url call for the model list method at path {0}",new object[] { mlm.Path });
             if (pars.Length > 0)
@@ -27,13 +27,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         sb.AppendFormat("{0}==undefined ? 'NULL' : ({0} == null ? 'NULL' : encodeURI({0})))+'", pars[x].Name);
                     pNames[x] = sb.ToString();
                 }
-                return "'" + string.Format((mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/'), pNames) + "'";
+                return "'" + (urlBase==null ? null : urlBase)+string.Format((mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/'), pNames) + "'";
             }
             else
-                return "'" + (mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/') + "'";
+                return "'"  + (urlBase==null ? null : urlBase)+ (mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/') + "'";
         }
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
         {
             foreach (MethodInfo mi in modelType.GetMethods(Constants.LOAD_METHOD_FLAGS))
             {
@@ -45,10 +45,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         modelType.FullName
                     });
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
-                    builder.AppendFormat(@"App.Models.{0}=extend(App.Models.{0},{{
-    {1}:function(", new object[] { modelType.Name, mi.Name });
+                    builder.AppendFormat(@"{0}.{1}=extend({0}.{1},{{
+    {2}:function(", new object[] { modelNamespace,modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
-                    string url = _CreateJavacriptUrlCode(mlm, pars, modelType);
+                    string url = _CreateJavacriptUrlCode(mlm, pars, modelType,urlBase);
                     if (mlm.Paged)
                         url += string.Format("+'{0}PageStartIndex='+this.currentIndex()+'&PageSize='+this.currentPageSize()", (mlm.Path.Contains("?") ? "&" : "?"));
                     for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
@@ -99,7 +99,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
                     builder.Append(Constants.ARRAY_TO_VUE_METHOD);
-                    builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name));
+                    builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name).Replace("$nspace$",modelNamespace));
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
                         builder.AppendLine(@",

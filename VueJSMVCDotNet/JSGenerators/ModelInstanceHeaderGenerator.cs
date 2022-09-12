@@ -1,14 +1,23 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     class ModelInstanceHeaderGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
         {
+            string curBase = "window";
+            string[] parts = modelNamespace.Split('.');
+            foreach (string part in parts)
+            {
+                builder.AppendLine(string.Format("{0}.{1}={0}.{1}||{{}};", new object[] { curBase, part }));
+                curBase+="."+part;
+            }
             builder.AppendLine(@"            var methods = {};
             var data = {};
             var computed = {};

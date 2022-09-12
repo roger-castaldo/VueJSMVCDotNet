@@ -10,7 +10,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
         {
             Logger.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.FullName });
             builder.AppendLine(string.Format(@"         methods = extend(methods,{{{0}:function(data){{

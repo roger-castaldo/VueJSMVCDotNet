@@ -41,11 +41,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private Dictionary<string, string> _cache;
         private Dictionary<Type,ModelJSFilePath[]> _types;
-
-        public JSHandler()
+        private string _defaultModelNamespace;
+        private string _urlBase;
+        public JSHandler(string defaultModelNamespace, string urlBase)
         {
             _cache = new Dictionary<string, string>();
             _types = new Dictionary<Type, ModelJSFilePath[]>();
+            _defaultModelNamespace=defaultModelNamespace;
+            _urlBase=urlBase;
         }
 
         public void ClearCache()
@@ -151,16 +154,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
-                        gen.GeneratorJS(ref builder);
+                        gen.GeneratorJS(ref builder,_defaultModelNamespace,_urlBase);
                     foreach (Type model in models) {
                         Logger.Trace("Processing module {0} for js url {1}", new object[] { model.FullName, url });
                         foreach (IJSGenerator gen in _instanceGenerators)
-                            gen.GeneratorJS(ref builder, model);
+                            gen.GeneratorJS(ref builder, model, (((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? _defaultModelNamespace : ((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace), _urlBase);
                         foreach (IJSGenerator gen in _globalGenerators)
-                            gen.GeneratorJS(ref builder, model);
+                            gen.GeneratorJS(ref builder, model, (((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? _defaultModelNamespace : ((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace), _urlBase);
                     }
                     foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
-                        gen.GeneratorJS(ref builder);
+                        gen.GeneratorJS(ref builder,_defaultModelNamespace, _urlBase);
                     ret = builder.ToString();
                     lock (_cache)
                     {

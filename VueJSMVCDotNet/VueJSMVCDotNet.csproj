@@ -9,10 +9,10 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>1.7.9</Version>
-    <PackageReleaseNotes>patch to ensure id value gets applied to a model when saving</PackageReleaseNotes>
+    <Version>1.8</Version>
+    <PackageReleaseNotes>added 2 new features.  First allowing the specification of a namespace to build models into on the javascript side.  Second is the ability to remap all defined paths at the handler level to allow for specification of a sub (application) path in all responses/javascript calls.</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>1.7.9</AssemblyVersion>
+    <AssemblyVersion>1.8</AssemblyVersion>
     <FileVersion>1.7.9</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>

@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 #endif
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -65,7 +66,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
-
+        private string _defaultModelNamespace;
+        private string _urlBase;
         internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
@@ -87,19 +89,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
-        
+
+        private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
+
         /// <summary>
         /// Create an isntance of the Request Handler, specifying what to do on the start up and attaching a 
         /// log writer if desired
         /// </summary>
         /// <param name="startType">The type of startup to use (either disable models or throw exception)</param>
         /// <param name="logWriter">A log writer instance to write the log messages to</param>
-        public RequestHandler(StartTypes startType,ILogWriter logWriter)
+        /// <param name="defaultModelNamespace">Optional: The namespace to build all javascript models into.  The default is App.Models</param>
+        /// <param name="baseURL">Optional: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")</param>
+        public RequestHandler(StartTypes startType,ILogWriter logWriter,
+            string defaultModelNamespace = "App.Models",
+            string baseURL=null)
         {
+            _defaultModelNamespace=defaultModelNamespace;
+            _urlBase=baseURL;
+            if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
+            {
+                if (!_urlBase.EndsWith("/"))
+                    _urlBase+="/";
+                if (_urlBase!="/" && !_baseUrlRegex.IsMatch(_urlBase))
+                    _urlBase="/"+_urlBase;
+            }
             _startTime = DateTime.Now;
             _Handlers = new IRequestHandler[]
             {
-                new JSHandler(),
+                new JSHandler(_defaultModelNamespace,_urlBase),
                 new LoadAllHandler(),
                 new StaticMethodHandler(this),
                 new LoadHandler(),
@@ -175,7 +192,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="context">The context of the request</param>
         /// <returns>true if the request is handled by the library</returns>
         public bool HandlesRequest(HttpContext context) {
-            string url = Utility.CleanURL(Utility.BuildURL(context));
+            string url = Utility.CleanURL(Utility.BuildURL(context, _urlBase));
             Logger.Debug("Checking if {0} is handled by VueJS library", new object[] { url });
             object method;
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
@@ -210,7 +227,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <returns>a task as a result of handling the request</returns>
         public async Task ProcessRequest(HttpContext context,ISecureSession session)
         {
-            string url = Utility.CleanURL(Utility.BuildURL(context));
+            string url = Utility.CleanURL(Utility.BuildURL(context, _urlBase));
             RequestMethods method = (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
             Logger.Debug("Attempting to handle request {0}:{1}", new object[] { method, url });
             Hashtable formData = new Hashtable();

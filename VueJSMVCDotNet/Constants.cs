@@ -69,7 +69,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             }}
                             if (data!=null){{
                                 for(var x=0;x<data.length;x++){{ 
-                                    var mtmp = App.Models.$type$.{8}();
+                                    var mtmp = $nspace$.$type$.{8}();
                                     mtmp.{0}(data[x]);
                                     data[x] = mtmp;
                                     data[x].$on('{1}',function(model){{

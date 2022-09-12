@@ -11,10 +11,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
         {
             Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.FullName });
-            string urlRoot = Utility.GetModelUrlRoot(modelType);
+            string urlRoot = Utility.GetModelUrlRoot(modelType,urlBase);
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             _AppendData(modelType, props, ref builder);
             Logger.Trace("Adding computed properties for Model Definition[{0}]", new object[] { modelType.FullName });

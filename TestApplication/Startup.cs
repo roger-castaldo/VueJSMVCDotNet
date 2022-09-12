@@ -37,7 +37,7 @@ namespace TestApplication
                 app.UseDeveloperExceptionPage();
             }
 
-            _vueReqesthandler = new RequestHandler(RequestHandler.StartTypes.ThrowInvalidExceptions, null);
+            _vueReqesthandler = new RequestHandler(RequestHandler.StartTypes.ThrowInvalidExceptions, null, defaultModelNamespace: "Models",baseURL:"testing");
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseCookiePolicy();

@@ -8,11 +8,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     class ModelInstanceFooterGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
         {
             Logger.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.FullName });
-            builder.AppendLine(string.Format(@"     App.Models.{0} = App.Models.{0}||{{}};
-        App.Models.{0}.{1} = function(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
+            builder.AppendLine(string.Format(@"     {0}.{1} = {0}.{1}||{{}};
+        {0}.{1}.{2} = function(){{ ", modelNamespace, modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
             builder.AppendLine(@"         if (Vue.version.indexOf('2')==0){
                 return new Vue({data:function(){return data;},methods:methods,computed:computed});
             }else if (Vue.version.indexOf('3')==0){

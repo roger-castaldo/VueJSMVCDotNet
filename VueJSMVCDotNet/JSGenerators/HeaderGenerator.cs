@@ -7,11 +7,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class HeaderGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string modelNamespace, string urlBase)
         {
             builder.AppendLine(@"(function(){
-    window.App=window.App||{};
-    window.App.Models=window.App.Models||{};
     const H = function(m) {
         var msgUint8 = new TextEncoder().encode(m);
         return new Promise((resolve)=>{

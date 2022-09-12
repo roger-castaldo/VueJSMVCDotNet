@@ -486,13 +486,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         internal static string GetModelUrlRoot(Type modelType)
         {
-            string urlRoot = "";
+            return GetModelUrlRoot(modelType, null);
+        }
+
+        internal static string GetModelUrlRoot(Type modelType,string urlBase)
+        {
+            string urlRoot = (urlBase==null ? "" : urlBase);
             foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false))
             {
-                urlRoot = mr.Path;
+                urlRoot += mr.Path;
                 break;
             }
-            return urlRoot;
+            return urlRoot.Replace("//","/");
         }
 
         private static Regex _regNoCache = new Regex("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript);
@@ -502,13 +507,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return _regNoCache.Replace(url.PathAndQuery, "");
         }
 
-        public static Uri BuildURL(HttpContext context)
+        public static Uri BuildURL(HttpContext context, string urlBase)
         {
             UriBuilder builder = new UriBuilder(
                 context.Request.Scheme,
                 context.Request.Host.Host,
                 (context.Request.Host.Port.HasValue ? context.Request.Host.Port.Value : (context.Request.IsHttps ? 443 : 80)),
-                context.Request.Path
+                (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase,"/"))
             );
             if (context.Request.QueryString.HasValue)
                 builder.Query = context.Request.QueryString.Value.Substring(1);

@@ -9,22 +9,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class StaticMethodGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType,string modelNamespace, string urlBase)
         {
-            string urlRoot = "";
-            foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false))
-            {
-                urlRoot = mr.Path;
-                break;
-            }
-            if (urlRoot == "")
-            {
-                foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false))
-                {
-                    urlRoot = mr.Path;
-                    break;
-                }
-            }
+            string urlRoot = Utility.GetModelUrlRoot(modelType, urlBase);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
@@ -60,7 +47,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             }
                         }
                     }
-                    builder.AppendFormat("App.Models.{0}=extend(App.Models.{0},{{{1}:function(",new object[] { modelType.Name, mi.Name });
+                    builder.AppendFormat("{0}.{1}=extend({0}.{1},{{{2}:function(",new object[] { modelNamespace,modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));

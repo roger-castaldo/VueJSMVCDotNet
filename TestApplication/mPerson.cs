@@ -6,7 +6,7 @@ using Org.Reddragonit.VueJSMVCDotNet;
 
 namespace TestApplication{
     [ModelRoute("/models/mPerson")]
-    [ModelJSFilePath("/resources/scripts/mPerson.js")]
+    [ModelJSFilePath("/resources/scripts/mPerson.js",modelNamespace:"App.Models")]
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);

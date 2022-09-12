@@ -7,7 +7,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class FooterGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string modelNamespace, string urlBase)
         {
             builder.AppendLine(@"}).call(this);");
         }
