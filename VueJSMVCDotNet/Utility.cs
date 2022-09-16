@@ -354,7 +354,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         foreach (Type t in tmp){
                             _MarkTypeSource(acl.Name,t);
                         }
-                        ret.AddRange(tmp);
+                        ret = new List<Type>(tmp.ToArray());
                     }
 #else
                     ret = _LocateTypeInstances(parent,AppDomain.CurrentDomain.GetAssemblies());
