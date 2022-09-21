@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
 #endif
 using System.Text;
@@ -195,8 +195,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             string url = Utility.CleanURL(Utility.BuildURL(context, _urlBase));
             Logger.Debug("Checking if {0} is handled by VueJS library", new object[] { url });
             object method;
+#if !NET481
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
             {
+#else
+            RequestMethods rm;
+            if (Enum.TryParse<RequestMethods>(context.Request.Method.ToUpper(),out rm))
+            {
+                method = rm;
+#endif
+            
                 if ((RequestMethods)method==RequestMethods.PULL)
                 {
                     bool ret = false;

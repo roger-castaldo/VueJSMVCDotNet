@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
 #endif
 using System.Text;
@@ -23,7 +23,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private static Dictionary<string, Type> _TYPE_CACHE;
         //houses a cache of Type instances through locate type instances, this is used to increate preformance
         private static Dictionary<string, List<Type>> _INSTANCES_CACHE;
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
         //houses the assembly load contexts for types
         private static Dictionary<string,List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
 #endif
@@ -32,7 +32,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             _TYPE_CACHE = new Dictionary<string, Type>();
             _INSTANCES_CACHE = new Dictionary<string, List<Type>>();
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
             _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
 #endif
         }
@@ -348,13 +348,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     ret = _INSTANCES_CACHE[parent.FullName];
             }
             if (ret==null){
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
+                ret = new List<Type>(); 
                 foreach (AssemblyLoadContext acl in AssemblyLoadContext.All){
-                        List<Type> tmp = _LocateTypeInstances(parent,acl.Assemblies);
-                        foreach (Type t in tmp){
-                            _MarkTypeSource(acl.Name,t);
-                        }
-                        ret = new List<Type>(tmp.ToArray());
+                        ret.AddRange(LocateTypeInstances(parent,acl));
                     }
 #else
                     ret = _LocateTypeInstances(parent,AppDomain.CurrentDomain.GetAssemblies());
@@ -368,7 +365,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
         public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){
             Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
             List<Type> ret = _LocateTypeInstances(parent,alc.Assemblies);
@@ -423,7 +420,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
         private static void _MarkTypeSource(string contextName,Type type){
             Logger.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
             lock(_LOAD_CONTEXT_TYPE_SOURCES)
