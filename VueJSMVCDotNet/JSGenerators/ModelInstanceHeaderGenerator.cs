@@ -76,7 +76,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                 }
                 arrMap.set(t,arr);
-            }
+            };
         
             var arrSecMap = new WeakMap();
             const unlockArray=function(arr){
@@ -92,7 +92,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 var id = generateUUID();
                 arrSecMap.set(t,arrSecMap.get(t).concat([id]));
                 return id;
-            }
+            };
             const lockArray=function(arr,id){
                 var t = arr;
                 if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
@@ -108,7 +108,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         arrSecMap.set(t,tmp);
                     }
                 }
-            }
+            };
             const isArrayLocked=function(arr){
                 var t = arr;
                 if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
@@ -117,7 +117,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                 }
                 return (arrSecMap.get(t)==undefined ? [] : arrSecMap.get(t)).length==0;
-            }
+            };
             const secureArray=function(arr){
                 return new Proxy(arr,
                     {
@@ -186,7 +186,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                 );
-            }");
+            };");
         }
     }
 }

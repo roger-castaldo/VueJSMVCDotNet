@@ -31,7 +31,7 @@ namespace AutomatedTesting.Models
         {
             _firstName = firstName;
             _lastName = lastName;
-            _id = Math.Abs(_rnd.Next());
+            _id = Math.Abs(_rnd.Next(1,9999));
         }
 
         public mPerson() { }
