@@ -14,7 +14,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
     internal class JSHandler : IRequestHandler
     {
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
-            new HeaderGenerator()
+            new HeaderGenerator(),
+            new TypingHeader()
         };
 
         private static readonly IBasicJSGenerator[] _oneTimeFinishGenerators = new IBasicJSGenerator[]{

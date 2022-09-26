@@ -87,10 +87,20 @@ for(var x=0;x<{0}.length;x++){{
 }}", par.Name));
                             }
                             else
-                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id }};", par.Name));
+                                builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                                {
+                                    par.Name,
+                                    Utility.GetTypeString(par.ParameterType),
+                                    Utility.GetEnumList(par.ParameterType)
+                                }));
                         }
                         else
-                            builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
+                            builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                            {
+                                par.Name,
+                                Utility.GetTypeString(par.ParameterType),
+                                Utility.GetEnumList(par.ParameterType)
+                            }));
                     }
                     builder.AppendLine(string.Format(@"             return new Promise((resolve,reject)=>{{
                     ajax(

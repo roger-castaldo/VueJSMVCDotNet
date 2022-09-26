@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Reflection;
 #if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
@@ -580,6 +581,85 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (UsesAddItem(mi, out idx))
                 ret.RemoveAt(idx);
             return ret.ToArray();
+        }
+
+        internal static string GetTypeString(Type propertyType)
+        {
+            if (propertyType.IsArray)
+                return GetTypeString(propertyType.GetElementType())+"[]";
+            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
+                return GetTypeString(propertyType.GetGenericArguments()[0])+"[]";
+            else if (propertyType.FullName.StartsWith("System.Nullable"))
+            {
+                if (propertyType.IsGenericType)
+                    return GetTypeString(propertyType.GetGenericArguments()[0])+"?";
+                else
+                    return GetTypeString(propertyType.GetElementType())+"?";
+            }
+            else if (propertyType.IsEnum)
+                return "Enum";
+            else if (propertyType.IsSubclassOf(typeof(Exception)))
+                return "System.Exception";
+            else
+            {
+                switch (propertyType.FullName)
+                {
+                    case "System.String":
+                    case "System.Char":
+                    case "System.Int16":
+                    case "System.Int32":
+                    case "System.Int64":
+                    case "System.SByte":
+                    case "System.Single":
+                    case "System.Decimal":
+                    case "System.Double":
+                    case "System.UInt16":
+                    case "System.UInt32":
+                    case "System.UInt64":
+                    case "System.Byte":
+                    case "System.Boolean":
+                    case "System.DateTime":
+                    case "System.Net.IPAddress":
+                    case "System.Version":
+                    case "System.Guid":
+                        return propertyType.FullName;
+                        break;
+                }
+            }
+            return "System.Object";
+        }
+
+        internal static string GetEnumList(Type propertyType)
+        {
+            if (propertyType.IsArray)
+                return GetEnumList(propertyType.GetElementType());
+            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
+                return GetEnumList(propertyType.GetGenericArguments()[0]);
+            else if (propertyType.FullName.StartsWith("System.Nullable"))
+            {
+                if (propertyType.IsGenericType)
+                    return GetEnumList(propertyType.GetGenericArguments()[0]);
+                else
+                    return GetEnumList(propertyType.GetElementType());
+            }
+            if (propertyType.IsEnum)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("[");
+                bool isFirst = true;
+                foreach (string str in Enum.GetNames(propertyType))
+                {
+                    sb.AppendFormat("{1}'{0}'", new object[] {
+                        str,
+                        (isFirst?",":"")
+                    });
+                    isFirst = false;
+                }
+                sb.Append("]");
+                return sb.ToString();
+            }
+            else
+                return "undefined";
         }
     }
 }

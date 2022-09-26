@@ -54,10 +54,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                         builder.Append((x > 0 ? "," : "") + pars[x].Name);
                     if (mlm.Paged)
-                    {
                         builder.Append((pars.Length > 3 ? "," : "") + "pageStartIndex,pageSize");
-                        builder.AppendLine(@"){
-        pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
+                    builder.AppendLine(@"){");
+                    for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
+                        builder.AppendLine(string.Format("      {0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                            {
+                                pars[x].Name,
+                                Utility.GetTypeString(pars[x].ParameterType),
+                                Utility.GetEnumList(pars[x].ParameterType)
+                            }));
+                    if (mlm.Paged) { 
+                        builder.AppendLine(@"       pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
         pageSize = (pageSize == undefined ? 10 : (pageSize == null ? 10 : pageSize));
         var ret = secureArray(extend([],{
             currentIndex:function(){return pageStartIndex;},
@@ -92,10 +99,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             },");
                     }
                     else
-                    {
-                        builder.AppendLine(@"){
-        var ret = secureArray(extend([],{");
-                    }
+                        builder.AppendLine(@"        var ret = secureArray(extend([],{");
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
                     builder.Append(Constants.ARRAY_TO_VUE_METHOD);
