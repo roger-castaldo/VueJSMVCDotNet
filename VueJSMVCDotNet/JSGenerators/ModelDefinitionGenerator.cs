@@ -284,10 +284,20 @@ for(var x=0;x<{0}.length;x++){{
 }}", par.Name));
                             }
                             else
-                                builder.AppendLine(string.Format("function_data.{0} = {{ id: {0}.id }};", par.Name));
+                                builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                                {
+                                    par.Name,
+                                    Utility.GetTypeString(par.ParameterType),
+                                    Utility.GetEnumList(par.ParameterType)
+                                }));
                         }
                         else
-                            builder.AppendLine(string.Format("function_data.{0} = {0};", par.Name));
+                            builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                            {
+                                par.Name,
+                                Utility.GetTypeString(par.ParameterType),
+                                Utility.GetEnumList(par.ParameterType)
+                            }));
                     }
                     builder.AppendLine(string.Format(@"             var model = this;
                 return new Promise((resolve,reject)=>{{
@@ -357,24 +367,30 @@ for(var x=0;x<{0}.length;x++){{
             {
                 m = (IModel)modelType.GetConstructor(Type.EmptyTypes).Invoke(new object[] { });
             }
-            builder.AppendLine(@"    data = {");
+            builder.AppendLine(@"    data = _defineTypedObject({");
             bool isFirst = true;
             foreach (PropertyInfo pi in props)
             {
                 if (pi.CanRead && pi.CanWrite)
                 {
-                    builder.Append(string.Format(@"{2}
-            {0}:{1}", new object[]
+                    builder.Append(string.Format(@"{0}
+            {1}:{{
+                initial:{2},
+                type:'{3}',
+                enumlist:{4}
+            }}", new object[]
                     {
+                        (isFirst ? "" : ","),
                         pi.Name,
                         (m==null ? "null" : (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0])))),
-                        (isFirst ? "" : ",")
+                        Utility.GetTypeString(pi.PropertyType),
+                        Utility.GetEnumList(pi.PropertyType)
                     }));
                     isFirst = false;
                 }
             }
             builder.AppendLine(@"
-    };");
+    });");
         }
 
         private void _AppendComputed(List<PropertyInfo> props, ref WrappedStringBuilder builder)
