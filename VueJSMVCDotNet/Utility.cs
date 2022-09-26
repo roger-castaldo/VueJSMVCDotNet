@@ -583,18 +583,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret.ToArray();
         }
 
-        internal static string GetTypeString(Type propertyType)
+        internal static string GetTypeString(Type propertyType,bool notNullTagged)
         {
             if (propertyType.IsArray)
-                return GetTypeString(propertyType.GetElementType())+"[]";
+                return GetTypeString(propertyType.GetElementType(), false) + "[]"+(propertyType.GetElementType() == typeof(Byte) && !notNullTagged ? "?" : "");
             else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                return GetTypeString(propertyType.GetGenericArguments()[0])+"[]";
+                return GetTypeString(propertyType.GetGenericArguments()[0], false) + "[]";
             else if (propertyType.FullName.StartsWith("System.Nullable"))
             {
                 if (propertyType.IsGenericType)
-                    return GetTypeString(propertyType.GetGenericArguments()[0])+"?";
+                    return GetTypeString(propertyType.GetGenericArguments()[0], true)+"?";
                 else
-                    return GetTypeString(propertyType.GetElementType())+"?";
+                    return GetTypeString(propertyType.GetElementType(), true)+"?";
             }
             else if (propertyType.IsEnum)
                 return "Enum";
@@ -605,6 +605,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 switch (propertyType.FullName)
                 {
                     case "System.String":
+                        return propertyType.FullName +(!notNullTagged ? "?" : "");
+                        break;
                     case "System.Char":
                     case "System.Int16":
                     case "System.Int32":
@@ -626,7 +628,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         break;
                 }
             }
-            return "System.Object";
+            return "System.Object" + (!notNullTagged ? "?" : "");
         }
 
         internal static string GetEnumList(Type propertyType)
@@ -651,7 +653,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     sb.AppendFormat("{1}'{0}'", new object[] {
                         str,
-                        (isFirst?",":"")
+                        (isFirst?"":",")
                     });
                     isFirst = false;
                 }

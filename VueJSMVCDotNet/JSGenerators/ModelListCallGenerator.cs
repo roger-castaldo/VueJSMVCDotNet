@@ -45,6 +45,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         modelType.FullName
                     });
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
+                    NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
                     builder.AppendFormat(@"{0}.{1}=extend({0}.{1},{{
     {2}:function(", new object[] { modelNamespace,modelType.Name, mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
@@ -60,7 +61,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(string.Format("      {0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
                             {
                                 pars[x].Name,
-                                Utility.GetTypeString(pars[x].ParameterType),
+                                Utility.GetTypeString(pars[x].ParameterType,(nna==null ? false : !nna.IsParameterNullable(pars[x]))),
                                 Utility.GetEnumList(pars[x].ParameterType)
                             }));
                     if (mlm.Paged) { 
@@ -121,7 +122,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     if (Array.isArray(arguments[0]) && arguments.length==1){
                         var args = arguments[0];");
                         for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
-                            builder.AppendLine(string.Format("                      {0} = (args.length>{1} ? args[{1}] : undefined);",pars[x].Name,x));
+                            builder.AppendLine(string.Format("                      {0} = _checkProperty('{0}','{2}',(args.length>{1} ? args[{1}] : undefined),{3});", new object[]{
+                                pars[x].Name,
+                                x,
+                                Utility.GetTypeString(pars[x].ParameterType,(nna==null ? false : !nna.IsParameterNullable(pars[x]))),
+                                Utility.GetEnumList(pars[x].ParameterType)
+                            }));
                         builder.AppendLine(string.Format(@"                    }}
                 }}
                 this.url=function(){{ return {0};}};

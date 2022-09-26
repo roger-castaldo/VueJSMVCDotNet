@@ -250,6 +250,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
                     builder.AppendLine(@"){
                 var function_data = {};");
+                    NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
                     foreach (ParameterInfo par in pars)
                     {
                         Type propType = par.ParameterType;
@@ -287,7 +288,7 @@ for(var x=0;x<{0}.length;x++){{
                                 builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
                                 {
                                     par.Name,
-                                    Utility.GetTypeString(par.ParameterType),
+                                    Utility.GetTypeString(par.ParameterType,(nna==null ? false : !nna.IsParameterNullable(par))),
                                     Utility.GetEnumList(par.ParameterType)
                                 }));
                         }
@@ -295,7 +296,7 @@ for(var x=0;x<{0}.length;x++){{
                             builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
                             {
                                 par.Name,
-                                Utility.GetTypeString(par.ParameterType),
+                                Utility.GetTypeString(par.ParameterType, (nna == null ? false : ! nna.IsParameterNullable(par))),
                                 Utility.GetEnumList(par.ParameterType)
                             }));
                     }
@@ -383,7 +384,7 @@ for(var x=0;x<{0}.length;x++){{
                         (isFirst ? "" : ","),
                         pi.Name,
                         (m==null ? "null" : (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0])))),
-                        Utility.GetTypeString(pi.PropertyType),
+                        Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttributes(typeof(NotNullProperty),false).Length>0),
                         Utility.GetEnumList(pi.PropertyType)
                     }));
                     isFirst = false;
