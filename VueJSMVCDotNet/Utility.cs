@@ -605,6 +605,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 switch (propertyType.FullName)
                 {
                     case "System.String":
+                    case "System.Net.IPAddress":
+                    case "System.Version":
+                    case "System.Exception":
                         return propertyType.FullName +(!notNullTagged ? "?" : "");
                         break;
                     case "System.Char":
@@ -621,8 +624,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     case "System.Byte":
                     case "System.Boolean":
                     case "System.DateTime":
-                    case "System.Net.IPAddress":
-                    case "System.Version":
                     case "System.Guid":
                         return propertyType.FullName;
                         break;

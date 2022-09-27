@@ -2,6 +2,7 @@
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace AutomatedTesting.Models
@@ -92,6 +93,24 @@ namespace AutomatedTesting.Models
         public byte[] ByteArrayField { get { return _byteArrayField; } set { _byteArrayField = value; } }
         private byte[] _nullByteArrayField = null;
         public byte[] NullByteArrayField { get { return _nullByteArrayField; } set { _nullByteArrayField = value; } }
+
+        private IPAddress _IPAddressField = IPAddress.Loopback;
+        [NotNullProperty()]
+        public IPAddress IPAddressField { get { return _IPAddressField; } set { _IPAddressField = value; } }
+        private IPAddress _nullIPAddressField = null;
+        public IPAddress NullIPAddressField { get { return _nullIPAddressField; } set { _nullIPAddressField = value; } }
+
+        private Version _VersionField = new Version("0.0.0");
+        [NotNullProperty()]
+        public Version VersionField { get { return _VersionField; } set { _VersionField = value; } }
+        private Version _nullVersionField = null;
+        public Version NullVersionField { get { return _nullVersionField; } set { _nullVersionField = value; } }
+
+        private Exception _ExceptionField = new Exception("Testing");
+        [NotNullProperty()]
+        public Exception ExceptionField { get { return _ExceptionField; } set { _ExceptionField = value; } }
+        private Exception _nullExceptionField = null;
+        public Exception NullExceptionField { get { return _nullExceptionField; } set { _nullExceptionField = value; } }
 
         [ModelLoadMethod()]
         public static mDataTypes Load(string id)

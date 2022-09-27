@@ -178,6 +178,7 @@ const _checkDataType = function(type, value,enumlist) {
                 }
 				break;
 			case 'Net.IPAddress':
+			case 'IPAddress':
                 if (typeof value !== 'string' && value.toString === undefined)
 					value = value.toString();
 				if (!_ipv4Regex.test(value)) {
@@ -204,12 +205,12 @@ const _checkDataType = function(type, value,enumlist) {
 						value = JSON.parse(value);
 					} catch (err) { }
 				}
-                if (Object.prototype.toString.call(value) !== '[object Error]') {
+                if (Object.prototype.toString.call(value) !== '[object String]') {
 					if (typeof value === 'object' && !Array.isArray(value)) {
 						try {
-							_checkDataType('String', value['Message']);
-							_checkDataType('String', value['StackTrace']);
-							_checkDataType('String', value['Source']);
+							_checkDataType('String', value.Message);
+							_checkDataType('String', value.StackTrace);
+							_checkDataType('String', value.Source);
 						} catch (err) {
 							throw 'invalid type: Value is not an Exception';
 						}

@@ -4,12 +4,12 @@ using Org.Reddragonit.VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Net;
 
 namespace AutomatedTesting
 {
     [TestClass]
-    public class StrongTyping
+    public class ModelStrongTyping
     {
         private string _content;
 
@@ -1315,9 +1315,9 @@ if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }"
             Engine eng = new Engine();
             try
             {
-                eng.Execute(_content + "mdl.DateTimeField=new Date();");
+                eng.Execute(_content + "mdl.NullDateTimeField=new Date();");
                 Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.DateTimeField='2022-09-01';");
+                eng.Execute(_content + "mdl.NullDateTimeField='2022-09-01';");
                 Assert.IsTrue(true);
                 eng.Execute(_content + "mdl.NullDateTimeField='testing';");
                 Assert.IsTrue(false);
@@ -1401,6 +1401,226 @@ if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }"
             try
             {
                 eng.Execute(_content + @"mdl.NullByteArrayField=null;");
+                Assert.IsTrue(true);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
+
+        [TestMethod]
+        public void TestIPAddressProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + String.Format("mdl.IPAddressField='{0}';",IPAddress.Loopback));
+                Assert.IsTrue(true);
+                eng.Execute(_content + String.Format("mdl.IPAddressField='{0}';", IPAddress.IPv6Loopback));
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.IPAddressField='testing';");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set IPAddressField: invalid type: Value is not an IPAddress");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.IPAddressField=null;");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set IPAddressField: invalid type: Value is not allowed to be null");
+            }
+        }
+
+        [TestMethod]
+        public void TestNullIPAddressProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + String.Format("mdl.NullIPAddressField='{0}';", IPAddress.Loopback));
+                Assert.IsTrue(true);
+                eng.Execute(_content + String.Format("mdl.NullIPAddressField='{0}';", IPAddress.IPv6Loopback));
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.NullIPAddressField='testing';");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set NullIPAddressField: invalid type: Value is not an IPAddress");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.NullIPAddressField=null;");
+                Assert.IsTrue(true);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
+
+        [TestMethod]
+        public void TestVersionProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + "mdl.VersionField='0.0.0';");
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.VersionField='testing';");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set VersionField: invalid type: Value is not a Version");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.VersionField=null;");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set VersionField: invalid type: Value is not allowed to be null");
+            }
+        }
+
+        [TestMethod]
+        public void TestNullVersionProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + "mdl.NullVersionField='0.0.0';");
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.NullVersionField='testing';");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set NullVersionField: invalid type: Value is not a Version");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.NullVersionField=null;");
+                Assert.IsTrue(true);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
+
+        [TestMethod]
+        public void TestExceptionProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + "mdl.ExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';");
+                Assert.IsTrue(true);
+                eng.Execute(_content + @"try{
+    throw 'Testing';
+}catch(err){
+    mdl.ExceptionField=err;
+}");
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.ExceptionField={};");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set ExceptionField: invalid type: Value is not an Exception");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.ExceptionField=null;");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set ExceptionField: invalid type: Value is not allowed to be null");
+            }
+        }
+
+        [TestMethod]
+        public void TestNullExceptionProperty()
+        {
+            Engine eng = new Engine();
+            try
+            {
+                eng.Execute(_content + "mdl.NullExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';");
+                Assert.IsTrue(true);
+                eng.Execute(_content + @"try{
+    throw 'Testing';
+}catch(err){
+    mdl.NullExceptionField=err;
+}");
+                Assert.IsTrue(true);
+                eng.Execute(_content + "mdl.NullExceptionField={};");
+                Assert.IsTrue(false);
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(e.Message, "Cannot set NullExceptionField: invalid type: Value is not an Exception");
+            }
+            try
+            {
+                eng.Execute(_content + @"mdl.NullExceptionField=null;");
                 Assert.IsTrue(true);
             }
             catch (Esprima.ParserException e)
