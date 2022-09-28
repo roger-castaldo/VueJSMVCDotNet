@@ -11,7 +11,7 @@ namespace AutomatedTesting
     internal static class Utility
     {
 
-        public static MemoryStream ExecuteRequest(string method,string path, RequestHandler handler,out int responseStatus,SecureSession session=null)
+        public static MemoryStream ExecuteRequest(string method,string path, RequestHandler handler,out int responseStatus,SecureSession session=null,object parameters=null)
         {
             MemoryStream ms = new MemoryStream();
             HttpContext context = new DefaultHttpContext();
@@ -20,6 +20,16 @@ namespace AutomatedTesting
             context.Request.IsHttps = false;
             context.Request.Path = new PathString(path);
             context.Response.Body = ms;
+
+            if (parameters != null)
+            {
+                context.Request.ContentType = "text/json";
+                context.Request.Body = new MemoryStream();
+                StreamWriter sw = new StreamWriter(context.Request.Body);
+                sw.Write(JSON.JsonEncode(parameters));
+                sw.Flush();
+                context.Request.Body.Position = 0;
+            }
 
             Assert.IsTrue(handler.HandlesRequest(context));
             handler.ProcessRequest(context,(session==null ? new SecureSession() : session)).Wait();

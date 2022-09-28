@@ -12,6 +12,7 @@ namespace AutomatedTesting
             public const string DELETE = "Delete";
             public const string LOAD = "Load";
             public const string LOAD_ALL = "LoadAll";
+            public const string UPDATE = "Update";
         }
 
         public const string JAVASCRIPT_BASE = @"

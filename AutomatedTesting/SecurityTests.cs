@@ -77,7 +77,6 @@ namespace AutomatedTesting
         [TestMethod]
         public void TestDeleteSecurity()
         {
-            int personCount = mPerson.Persons.Length;
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}",new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
@@ -91,7 +90,24 @@ namespace AutomatedTesting
             content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.DELETE }))).ReadToEnd();
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
-            Assert.AreNotEqual(personCount, mPerson.Persons.Length);
+        }
+
+        [TestMethod]
+        public void TestUpdateSecurity()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.UPDATE }),parameters:new Hashtable() { { "FirstName", "Testing123" } })).ReadToEnd();
+            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
 
     }

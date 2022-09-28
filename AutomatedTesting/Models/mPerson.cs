@@ -90,6 +90,7 @@ namespace AutomatedTesting.Models
         }
 
         [ModelUpdateMethod()]
+        [SecurityRoleCheck(Constants.Rights.UPDATE)]
         public bool Update(ISecureSession session)
         {
             bool ret = false;
