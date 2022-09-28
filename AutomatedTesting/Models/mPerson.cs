@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using AutomatedTesting.Security;
+using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mPerson")]
     [ModelJSFilePath("/resources/scripts/mPerson.js", modelNamespace: "App.Models")]
+    [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
@@ -48,6 +50,7 @@ namespace AutomatedTesting.Models
         public static mPerson[] Persons { get { return _persons.ToArray(); } }
 
         [ModelLoadMethod()]
+        [SecurityRoleCheck(Constants.Rights.LOAD)]
         public static mPerson Load(string id, ISecureSession session)
         {
             mPerson ret = null;
@@ -63,12 +66,14 @@ namespace AutomatedTesting.Models
         }
 
         [ModelLoadAllMethod()]
+        [SecurityRoleCheck(Constants.Rights.LOAD_ALL)]
         public static List<mPerson> LoadAll(ISecureSession session)
         {
             return _persons;
         }
 
         [ModelDeleteMethod()]
+        [SecurityRoleCheck(Constants.Rights.DELETE)]
         public bool Delete(ISecureSession session)
         {
             bool ret = false;

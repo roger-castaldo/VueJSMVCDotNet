@@ -27,6 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             new ParsersGenerator(),
             new ModelInstanceHeaderGenerator(),
             new JSONGenerator(),
+            new ModelDataDefinitionGenerator(),
             new ParseGenerator(),
             new ModelDefinitionGenerator(),
             new ModelInstanceFooterGenerator()

@@ -57,6 +57,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
             public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, RequestHandler handler)
             {
+                if (!securityCheck(_loadMethod.DeclaringType,_loadMethod, session, null, url, formData))
+                    throw new InsecureAccessException();
                 Match m = _reg.Match(url);
                 string id = m.Groups[1].Value;
                 string smethod = m.Groups[2].Value;

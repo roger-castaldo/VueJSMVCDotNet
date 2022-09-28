@@ -16,7 +16,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.FullName });
             string urlRoot = Utility.GetModelUrlRoot(modelType,urlBase);
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
-            _AppendData(modelType, props, ref builder);
             Logger.Trace("Adding computed properties for Model Definition[{0}]", new object[] { modelType.FullName });
             _AppendComputed(props, ref builder);
 
@@ -358,40 +357,6 @@ for(var x=0;x<{0}.length;x++){{
 },");
                 }
             }
-        }
-
-        private void _AppendData(Type modelType, List<PropertyInfo> props, ref WrappedStringBuilder builder)
-        {
-            Logger.Trace("Adding data method for Model Definition[{0}]", new object[] { modelType.FullName });
-            IModel m = null;
-            if (modelType.GetConstructor(Type.EmptyTypes) != null)
-            {
-                m = (IModel)modelType.GetConstructor(Type.EmptyTypes).Invoke(new object[] { });
-            }
-            builder.AppendLine(@"    data = _defineTypedObject({");
-            bool isFirst = true;
-            foreach (PropertyInfo pi in props)
-            {
-                if (pi.CanRead && pi.CanWrite)
-                {
-                    builder.Append(string.Format(@"{0}
-            {1}:{{
-                initial:{2},
-                type:'{3}',
-                enumlist:{4}
-            }}", new object[]
-                    {
-                        (isFirst ? "" : ","),
-                        pi.Name,
-                        (m==null ? "null" : (pi.GetValue(m,new object[0])==null ? "null" : JSON.JsonEncode(pi.GetValue(m,new object[0])))),
-                        Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttributes(typeof(NotNullProperty),false).Length>0),
-                        Utility.GetEnumList(pi.PropertyType)
-                    }));
-                    isFirst = false;
-                }
-            }
-            builder.AppendLine(@"
-    });");
         }
 
         private void _AppendComputed(List<PropertyInfo> props, ref WrappedStringBuilder builder)

@@ -17,37 +17,8 @@ namespace AutomatedTesting
         public void Init()
         {
             RequestHandler handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
-            _content = @"
-    var window={App:{}};
-    var App = window.App;
-    var Vue = {
-        version:'3.0'
-    };
-
-    function WeakMap(){
-        return {
-            _data:{},
-            set:function(key,value){
-                this._data[key]=value;
-            },
-            get:function(key){
-                return this._data[key];
-            }
-        }
-    };
-
-    function TextEncoder(){
-        return {
-            encode:function(data){
-                data;
-            }
-        }
-    }
-
-    var crypto = {};
-
-    function atob(data){return data;}
-"+new StreamReader(Utility.ExecuteGet("/resources/scripts/mDataTypes.js", handler)).ReadToEnd()+@"
+            int status;
+            _content = Constants.JAVASCRIPT_BASE+new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", handler,out status)).ReadToEnd()+@"
 
 var mdl = App.Models.mDataTypes.createInstance();
 ";

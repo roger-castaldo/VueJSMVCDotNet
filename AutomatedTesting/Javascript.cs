@@ -32,30 +32,13 @@ namespace AutomatedTesting
         [TestMethod]
         public void JavascriptGenerationValidation()
         {
-            string content = new StreamReader(Utility.ExecuteGet("/resources/scripts/mPerson.js", _handler)).ReadToEnd();
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _handler,out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             Engine eng = new Engine();
             try
             {
-                eng.Execute(@"
-    var window={App:{}};
-    var App = window.App;
-    var Vue = {
-        version:'3.0'
-    };
-
-    function WeakMap(){
-        return {
-            _data:{},
-            set:function(key,value){
-                this._data[key]=value;
-            },
-            get:function(key){
-                return this._data[key];
-            }
-        }
-    };
-"+content);
+                eng.Execute(Constants.JAVASCRIPT_BASE + content);
             }catch(Esprima.ParserException e)
             {
                 Assert.Fail(e.Message);
@@ -69,30 +52,13 @@ namespace AutomatedTesting
         [TestMethod]
         public void JavascriptCompressedGenerationValidation()
         {
-            string content = new StreamReader(Utility.ExecuteGet("/resources/scripts/mPerson.min.js", _handler)).ReadToEnd();
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _handler, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             Engine eng = new Engine();
             try
             {
-                eng.Execute(@"
-    var window={App:{}};
-    var App = window.App;
-    var Vue = {
-        version:'3.0'
-    };
-
-    function WeakMap(){
-        return {
-            _data:{},
-            set:function(key,value){
-                this._data[key]=value;
-            },
-            get:function(key){
-                return this._data[key];
-            }
-        }
-    };
-" + content);
+                eng.Execute(Constants.JAVASCRIPT_BASE + content);
             }
             catch (Esprima.ParserException e)
             {
@@ -108,9 +74,10 @@ namespace AutomatedTesting
         [TestMethod]
         public void JavascriptCompressionPerformance()
         {
-            string content = new StreamReader(Utility.ExecuteGet("/resources/scripts/mPerson.js", _handler)).ReadToEnd();
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _handler,out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteGet("/resources/scripts/mPerson.min.js", _handler)).ReadToEnd();
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _handler,out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }

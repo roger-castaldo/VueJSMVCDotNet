@@ -31,14 +31,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         {
             Logger.Debug("Attempting to execute the Delete Handler for the path {0}", new object[] { url });
             IModel model = null;
+            MethodInfo loadMethod = null;
             lock (_loadMethods)
             {
                 Logger.Trace("Trying to find a load method matching the url {0}", new object[] { url });
                 if (_loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                {
-                    Logger.Trace("Attempting to load model at url {0}", new object[] { url });
-                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))], url.Substring(url.LastIndexOf("/") + 1), session);
-                }
+                    loadMethod = _loadMethods[url.Substring(0, url.LastIndexOf("/"))];
+            }
+            if (loadMethod!=null)
+            {
+                if (!securityCheck(loadMethod.DeclaringType, loadMethod,session, model, url, null))
+                    throw new InsecureAccessException();
+                Logger.Trace("Attempting to load model at url {0}", new object[] { url });
+                model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))], url.Substring(url.LastIndexOf("/") + 1), session);
             }
             if (model == null)
                 throw new CallNotFoundException("Model Not Found");
@@ -54,7 +59,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 if (mi != null)
                 {
                     if (!securityCheck(mi.DeclaringType, mi, session,model, url, null))
-                        throw new UnauthorizedAccessException();
+                        throw new InsecureAccessException();
                     else
                     {
                         Logger.Trace("Invoking the delete method {0}.{1} for the url {2}", new object[] { mi.DeclaringType.FullName,mi.Name,url });
