@@ -15,6 +15,7 @@ namespace AutomatedTesting
             public const string UPDATE = "Update";
             public const string SAVE = "Save";
             public const string SEARCH = "Search";
+            public const string METHOD = "Method";
         }
 
         public const string JAVASCRIPT_BASE = @"

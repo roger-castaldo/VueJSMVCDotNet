@@ -152,6 +152,7 @@ namespace AutomatedTesting.Models
         }
 
         [ExposedMethod(false)]
+        [SecurityRoleCheck(Constants.Rights.METHOD)]
         public string GetFullName(ISecureSession session)
         {
             return string.Format("{0}, {1}", new object[] { LastName, FirstName });
