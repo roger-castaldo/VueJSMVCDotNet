@@ -1,0 +1,24 @@
+name: .NET-Test-Framework-4.8.1
+
+on:
+  push:
+    branches: [ 'automated_testing' ]
+  pull_request:
+    branches: [ 'automated_testing' ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        version: [net461]
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Restore dependencies
+      run: dotnet restore AutomatedTesting
+    - name: Build-4.8.1
+      run: dotnet build --framework net481 --no-restore AutomatedTesting
+    - name: Test-4.8.1
+      run: dotnet test --framework net481 --no-build --verbosity normal AutomatedTesting

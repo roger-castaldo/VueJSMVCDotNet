@@ -81,8 +81,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         };
                     }
                 };
-                var tmp = _defineTypedObject(extend({_hashCode:'System.String'},data._definition));
-                Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;},set:function(hash){tmp._hashCode=null;H(JSON.stringify(ret)).then(hash=>{tmp._hashCode=hash;});}});");
+                var tmp = _defineTypedObject(extend({_hashCode:'System.String?'},data._definition));
+                Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;},set:function(hash){tmp._hashCode=null;H(JSON.stringify(_stripBigInt(ret))).then(hash=>{tmp._hashCode=hash;});}});");
                 foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
                 {
                     if (pi.CanRead && pi.CanWrite)

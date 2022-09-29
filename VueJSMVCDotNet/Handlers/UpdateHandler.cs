@@ -31,14 +31,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         {
             Logger.Trace("Attempting to handle {0}:{1} request in the Update Handler", new object[] { method, url });
             IModel model = null;
+            MethodInfo loadMethod = null;
             lock (_loadMethods)
             {
+                Logger.Trace("Trying to find a load method matching the url {0}", new object[] { url });
                 if (_loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                {
-                    if (!securityCheck.Invoke(_loadMethods[url.Substring(0, url.LastIndexOf("/"))].DeclaringType, _loadMethods[url.Substring(0, url.LastIndexOf("/"))], session,null,url,new Hashtable() { {"id", url.Substring(0, url.LastIndexOf("/")) } }))
-                        throw new InsecureAccessException();
-                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))],url.Substring(url.LastIndexOf("/") + 1),session);
-                }
+                    loadMethod = _loadMethods[url.Substring(0, url.LastIndexOf("/"))];
+            }
+            if (loadMethod != null)
+            {
+                if (!securityCheck(loadMethod.DeclaringType, loadMethod, session, model, url, null))
+                    throw new InsecureAccessException();
+                Logger.Trace("Attempting to load model at url {0}", new object[] { url });
+                model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))], url.Substring(url.LastIndexOf("/") + 1), session);
             }
             if (model == null)
                 throw new CallNotFoundException("Model Not Found");

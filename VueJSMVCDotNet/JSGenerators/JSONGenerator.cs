@@ -72,7 +72,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }}
             }}
         }}
-        return cloneData(attrs);
+        return _stripBigInt(cloneData(attrs));
     }}}});", Constants.INITIAL_DATA_KEY));
         }
     }

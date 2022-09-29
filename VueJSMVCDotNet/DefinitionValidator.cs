@@ -4,7 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.JSGenerators;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-#if !NETSTANDARD
+#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
 #endif
 using System.Text;

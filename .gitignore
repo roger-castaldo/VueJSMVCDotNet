@@ -2,3 +2,5 @@ TestApplication/bin/
 TestApplication/obj/
 VueJSMVCDotNet/bin/
 VueJSMVCDotNet/obj/
+/AutomatedTesting/bin/Debug
+/AutomatedTesting/obj

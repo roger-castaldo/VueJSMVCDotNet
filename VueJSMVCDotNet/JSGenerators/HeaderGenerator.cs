@@ -186,7 +186,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 var data = null;
                 if (options.data!=null){
                     if (options.useJSON){
-                        data = JSON.stringify(options.data);
+                        data = JSON.stringify(_stripBigInt(options.data));
                     }else{
                         data = new FormData();
                         for(var prop in options.data){
