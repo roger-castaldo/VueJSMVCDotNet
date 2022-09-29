@@ -2,9 +2,9 @@ name: .NET-Test-6x
 
 on:
   push:
-    branches: [ 'automated_testing' ]
+    branches: [ 'master' ]
   pull_request:
-    branches: [ 'automated_testing' ]
+    branches: [ 'master' ]
 
 jobs:
   build:

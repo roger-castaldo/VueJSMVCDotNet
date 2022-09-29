@@ -2,9 +2,9 @@ name: .NET-Test-Framework-4.8.1
 
 on:
   push:
-    branches: [ 'automated_testing' ]
+    branches: [ 'master' ]
   pull_request:
-    branches: [ 'automated_testing' ]
+    branches: [ 'master' ]
 
 jobs:
   build:
