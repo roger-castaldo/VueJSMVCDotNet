@@ -18,7 +18,13 @@ namespace AutomatedTesting
             context.Request.Method = method;
             context.Request.Host = new HostString("localhost");
             context.Request.IsHttps = false;
-            context.Request.Path = new PathString(path);
+            if (path.Contains("?"))
+            {
+                context.Request.Path = new PathString(path.Substring(0,path.IndexOf("?")));
+                context.Request.QueryString = new QueryString(path.Substring(path.IndexOf("?")));
+            }
+            else
+                context.Request.Path = new PathString(path);
             context.Response.Body = ms;
 
             if (parameters != null)

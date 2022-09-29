@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AutomatedTesting.Models
 {
@@ -117,14 +118,15 @@ namespace AutomatedTesting.Models
         }
 
         [ModelListMethod("/search/mPerson?q={0}", true)]
+        [SecurityRoleCheck(Constants.Rights.SEARCH)]
         public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {
             List<mPerson> ret = new List<mPerson>();
             totalPages = 0;
+            List<mPerson> matches = new List<mPerson>();
             if (q != null)
             {
                 q = q.ToLower();
-                List<mPerson> matches = new List<mPerson>();
                 for (int x = 0; x < _persons.Count; x++)
                 {
                     if (_persons[x].FirstName.ToLower().Contains(q) ||
@@ -133,15 +135,18 @@ namespace AutomatedTesting.Models
                         matches.Add(_persons[x]);
                     }
                 }
-                totalPages = (int)Math.Ceiling((decimal)matches.Count / (decimal)pageSize);
-                for (int x = 0; x < pageSize; x++)
+
+            }
+            else
+                matches.AddRange(mPerson.Persons);
+            totalPages = (int)Math.Ceiling((decimal)matches.Count / (decimal)pageSize);
+            for (int x = 0; x < pageSize; x++)
+            {
+                if ((pageStartIndex*pageSize) + x >= matches.Count)
                 {
-                    if (pageStartIndex + x >= matches.Count)
-                    {
-                        break;
-                    }
-                    ret.Add(matches[pageStartIndex + x]);
+                    break;
                 }
+                ret.Add(matches[(pageStartIndex * pageSize) + x]);
             }
             return ret;
         }
