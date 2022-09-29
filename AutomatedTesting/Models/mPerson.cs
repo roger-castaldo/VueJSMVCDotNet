@@ -157,5 +157,12 @@ namespace AutomatedTesting.Models
         {
             return string.Format("{0}, {1}", new object[] { LastName, FirstName });
         }
+
+        [ExposedMethod(false)]
+        [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
+        public static string FormatName(ISecureSession session,string lastName,string firstName)
+        {
+            return string.Format("{0}, {1}", new object[] { firstName, lastName });
+        }
     }
 }

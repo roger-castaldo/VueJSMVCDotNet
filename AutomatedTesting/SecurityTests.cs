@@ -160,5 +160,20 @@ namespace AutomatedTesting
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
+
+        [TestMethod]
+        public void TestStaticMethodSecurity()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _handler, out status, session: new Security.SecureSession(new string[] { "" }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" }})).ReadToEnd();
+            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+        }
     }
 }
