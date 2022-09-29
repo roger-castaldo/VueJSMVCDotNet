@@ -1,4 +1,5 @@
 ﻿using AutomatedTesting.Security;
+using Org.Reddragonit.VueJSMVCDotNet;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
@@ -163,6 +164,27 @@ namespace AutomatedTesting.Models
         public static string FormatName(ISecureSession session,string lastName,string firstName)
         {
             return string.Format("{0}, {1}", new object[] { firstName, lastName });
+        }
+
+        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        public static void SlowAddCall(AddItem addCall)
+        {
+            int idx = 0;
+            while (idx < 5)
+            {
+                System.Threading.Thread.Sleep(1000);
+                addCall(idx, false);
+                idx++;
+            }
+            addCall(idx, true);
+        }
+
+        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        public static string GetSlowTimespan()
+        {
+            DateTime now = DateTime.Now;
+            System.Threading.Thread.Sleep(3456);
+            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
     }
 }
