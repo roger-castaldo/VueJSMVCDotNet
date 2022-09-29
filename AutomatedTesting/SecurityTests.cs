@@ -110,5 +110,22 @@ namespace AutomatedTesting
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
 
+        [TestMethod]
+        public void TestSaveSecurity()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _handler, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
+            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
+            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _handler, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SAVE }), parameters: new Hashtable() { { "FirstName", "Testing123" }, { "LastName", "Testing1234" }, { "BirthDay", DateTime.Now } })).ReadToEnd();
+            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
+            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+        }
     }
 }

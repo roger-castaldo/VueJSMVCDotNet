@@ -108,6 +108,7 @@ namespace AutomatedTesting.Models
         }
 
         [ModelSaveMethod()]
+        [SecurityRoleCheck(Constants.Rights.SAVE)]
         public bool Save(ISecureSession session)
         {
             this._id = new Random().Next(999999);

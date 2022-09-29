@@ -13,6 +13,7 @@ namespace AutomatedTesting
             public const string LOAD = "Load";
             public const string LOAD_ALL = "LoadAll";
             public const string UPDATE = "Update";
+            public const string SAVE = "Save";
         }
 
         public const string JAVASCRIPT_BASE = @"
