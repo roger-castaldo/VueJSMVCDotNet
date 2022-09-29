@@ -255,21 +255,22 @@ const _defineTypedObject = function(definition) {
 const _stripBigInt = function(data){
 	var ret = data;
 	if (data!==null && data!==undefined){
-		if (Array.isArray(data)){
-			ret = [];
-			for(var x=0;x<data.length;x++){
-				ret.push(_stripBigInt(data[x]));
-			}
-		}
-		else if (typeof data === 'object'){
-			ret={};
-			for(var prop in data){
-				if (prop!=='_hashCode'){
-					ret[prop] = _stripBigInt(data[prop]);
+		if (Object.prototype.toString.call(data) !== '[object Date]'){
+			if (Array.isArray(data)){
+				ret = [];
+				for(var x=0;x<data.length;x++){
+					ret.push(_stripBigInt(data[x]));
+				}
+			}else if (typeof data ==='bigint'){
+				ret = data.toString();
+			}else if (typeof data === 'object'){
+				ret={};
+				for(var prop in data){
+					if (prop!=='_hashCode'){
+						ret[prop] = _stripBigInt(data[prop]);
+					}
 				}
 			}
-		}else if (typeof data ==='bigint'){
-			ret = data.toString();
 		}
 	}
 	return ret;
