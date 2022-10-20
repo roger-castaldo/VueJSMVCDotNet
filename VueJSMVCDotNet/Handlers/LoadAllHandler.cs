@@ -25,7 +25,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _methods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle {0}:{1} inside the Load All Handler", new object[] { method, url });
             MethodInfo mi = null;
@@ -47,10 +47,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking if {0}:{1} is handled by the Load All Handler", new object[] { method, url });
-            if (method==RequestHandler.RequestMethods.GET)
+            if (method==ModelRequestHandler.RequestMethods.GET)
                 return _methods.ContainsKey(url);
             return false;
         }

@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _updateMethods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle {0}:{1} request in the Update Handler", new object[] { method, url });
             IModel model = null;
@@ -69,10 +69,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking if the request {0}:{1} is handled by the Update Handler", new object[] { method, url });
-            if (method == RequestHandler.RequestMethods.PATCH)
+            if (method == ModelRequestHandler.RequestMethods.PATCH)
                 return _updateMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")))&& _loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")));
             return false;
         }

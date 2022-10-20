@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _saveMethods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle the request {0}:{1} with the Save Handler", new object[] { method, url });
             IModel model = null;
@@ -64,10 +64,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { method, url });
-            if (method == RequestHandler.RequestMethods.PUT)
+            if (method == ModelRequestHandler.RequestMethods.PUT)
                 return _saveMethods.ContainsKey(url)&& _constructors.ContainsKey(url);
             return false;
         }

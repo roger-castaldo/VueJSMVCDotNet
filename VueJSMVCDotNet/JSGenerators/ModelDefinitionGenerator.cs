@@ -115,7 +115,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }},", new object[]{
                 urlRoot,
                 Constants.Events.MODEL_DESTROYED,
-                RequestHandler.RequestMethods.DELETE
+                ModelRequestHandler.RequestMethods.DELETE
             }));
         }
 
@@ -167,7 +167,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 Constants.Events.MODEL_UPDATED,
                 Constants.INITIAL_DATA_KEY,
-                RequestHandler.RequestMethods.PATCH,
+                ModelRequestHandler.RequestMethods.PATCH,
                 useJSON.ToString().ToLower()
             }));
         }
@@ -205,7 +205,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 Constants.INITIAL_DATA_KEY,
                 Constants.Events.MODEL_SAVED,
-                RequestHandler.RequestMethods.PUT,
+                ModelRequestHandler.RequestMethods.PUT,
                 useJSON.ToString().ToLower()
             }));
         }

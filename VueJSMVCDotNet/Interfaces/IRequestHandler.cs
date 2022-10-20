@@ -11,8 +11,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
     {
         void Init(List<Type> types);
         void ClearCache();
-        bool HandlesRequest(string url, RequestHandler.RequestMethods method);
-        Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context,ISecureSession session, IsValidCall securityCheck);
+        bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method);
+        Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context,ISecureSession session, IsValidCall securityCheck);
         #if NET
         void LoadTypes(List<Type> types);
         void UnloadTypes(List<Type> types);

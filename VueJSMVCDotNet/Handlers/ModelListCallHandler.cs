@@ -105,7 +105,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
             {
                 if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,formData))
                     throw new InsecureAccessException();
@@ -202,7 +202,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _calls.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle {0}:{1} in the Model List Call Handler", new object[] { method, url });
             sModelListCall? mlc = null;
@@ -223,10 +223,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { method, url });
-            if (method==RequestHandler.RequestMethods.GET)
+            if (method==ModelRequestHandler.RequestMethods.GET)
             {
                 bool ret = false;
                 lock (_calls)

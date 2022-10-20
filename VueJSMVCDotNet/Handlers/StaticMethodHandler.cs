@@ -60,7 +60,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck,RequestHandler handler)
+            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, ModelRequestHandler handler)
             {
                 Logger.Trace("Attempting to handle call {0}:{1} with a static method handler", new object[] { method, url });
                 Match m = _reg.Match(url);
@@ -122,9 +122,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         }
 
         private List<sMethodPatterns> _patterns;
-        private RequestHandler _handler;
+        private ModelRequestHandler _handler;
 
-        public StaticMethodHandler(RequestHandler handler)
+        public StaticMethodHandler(ModelRequestHandler handler)
         {
             _handler=handler;
             _patterns = new List<sMethodPatterns>();
@@ -135,7 +135,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             sMethodPatterns? patt = null;
             lock (_patterns)
@@ -154,11 +154,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking to see if the request {0}:{1} is handled by the static method handler", new object[] { method, url });
             bool ret = false;
-            if (method == RequestHandler.RequestMethods.SMETHOD)
+            if (method == ModelRequestHandler.RequestMethods.SMETHOD)
             {
                 lock (_patterns)
                 {

@@ -61,10 +61,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Trace("Checking if {0}:{1} is handled by the JS Handler", new object[] { method,url });
-            if (method != RequestHandler.RequestMethods.GET)
+            if (method != ModelRequestHandler.RequestMethods.GET)
                 return false;
             bool ret = false;
             lock (_cache)
@@ -91,7 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             return ret;
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle {0}:{1} with the JS Handler", new object[] { method, url });
             if (!HandlesRequest(url, method))
@@ -133,7 +133,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     }
                 }
                 if (modDate == DateTime.MinValue)
-                    modDate = RequestHandler.StartTime;
+                    modDate = ModelRequestHandler.StartTime;
                 if (context.Request.Headers.ContainsKey("If-Modified-Since"))
                 {
                     DateTime lastModified = DateTime.Parse(context.Request.Headers["If-Modified-Since"]);

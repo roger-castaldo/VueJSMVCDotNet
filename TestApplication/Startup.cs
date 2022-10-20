@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Org.Reddragonit.VueJSMVCDotNet;
+using TestApplication.Handlers;
 
 namespace TestApplication
 {
     public class Startup
     {
-        private RequestHandler _vueReqesthandler;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
@@ -30,23 +30,14 @@ namespace TestApplication
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            _vueReqesthandler = new RequestHandler(RequestHandler.StartTypes.ThrowInvalidExceptions, null, defaultModelNamespace: "Models",baseURL:"testing");
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseCookiePolicy();
-            
-            app.MapWhen(context => _vueReqesthandler.HandlesRequest(context), builder =>
-            {
-                builder.UseSession();
-                builder.Run(context => _vueReqesthandler.ProcessRequest(context, new SessionManager(context)));
-            });
+            app.UseSession();
+            app.UseVueHandler(new VueHandlerOptions(new SessionManager(), baseURL: "testing"));
+            app.UseVueComponentMiddleware(new VueComponentMiddlewareOptions(new System.IO.DirectoryInfo(env.WebRootPath), "/resources/components"));
         }
     }
 }

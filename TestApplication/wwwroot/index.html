@@ -1,6 +1,14 @@
 <html>
 <head>
     <script src="https://unpkg.com/vue@next/dist/vue.global.js"></script>
+    <script type="module">
+        import translator from './resources/scripts/Translator.js';
+
+        console.log(translator('Filtering'));
+        console.log(translator('Formatted', ['a single input from the array']));
+        console.log(translator('Name'));
+        console.log(translator('Name',null,'fr'));
+    </script>
 </head>
 <body>
     <script src="/testing/resources/scripts/mPerson.js"></script>

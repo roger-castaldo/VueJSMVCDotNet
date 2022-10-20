@@ -55,7 +55,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, RequestHandler handler)
+            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, ModelRequestHandler handler)
             {
                 if (!securityCheck(_loadMethod.DeclaringType,_loadMethod, session, null, url, formData))
                     throw new InsecureAccessException();
@@ -124,9 +124,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         }
 
         private List<sMethodPatterns> _patterns;
-        private RequestHandler _handler;
+        private ModelRequestHandler _handler;
 
-        public InstanceMethodHandler(RequestHandler handler)
+        public InstanceMethodHandler(ModelRequestHandler handler)
         {
             _handler=handler;
             _patterns = new List<sMethodPatterns>();
@@ -137,7 +137,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Trace("Attempting to handle request {0} with an Instance Method", new object[] { url });
             sMethodPatterns? patt = null;
@@ -157,11 +157,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
             Logger.Debug("Checking if the url {0} is handled by an instance method", new object[] { url });
             bool ret = false;
-            if (method == RequestHandler.RequestMethods.METHOD)
+            if (method == ModelRequestHandler.RequestMethods.METHOD)
             {
                 lock (_patterns)
                 {

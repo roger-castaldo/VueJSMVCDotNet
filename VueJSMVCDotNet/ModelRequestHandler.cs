@@ -17,29 +17,8 @@ using System.Timers;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
-    /// <summary>
-    /// This is the primary component for handling all requests within this library, and is 
-    /// therefore required to be created and passed web request appropriately
-    /// </summary>
-    public class RequestHandler : IDisposable
+    internal class ModelRequestHandler : IDisposable
     {
-        /// <summary>
-        /// how to startup the system as per their names, either disable invalid models or throw 
-        /// and exception about them
-        /// </summary>
-        public enum StartTypes
-        {
-            /// <summary>
-            /// Disable any models that were found to be invalid
-            /// </summary>
-            DisableInvalidModels,
-            /// <summary>
-            /// Throw a contained exception that will list all the errors
-            /// and the models associated with them.
-            /// </summary>
-            ThrowInvalidExceptions
-        }
-
         internal enum RequestMethods
         {
             GET,
@@ -60,13 +39,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             return !_invalidModels.Contains(type);
         }
-        private StartTypes _startType = StartTypes.DisableInvalidModels;
 
         private Dictionary<Type, ASecurityCheck[]> _typeChecks;
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
-        private string _defaultModelNamespace;
+        private string _defaultModelNamespace="App.Models";
         private string _urlBase;
         internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
         {
@@ -92,19 +70,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
 
-        /// <summary>
-        /// Create an isntance of the Request Handler, specifying what to do on the start up and attaching a 
-        /// log writer if desired
-        /// </summary>
-        /// <param name="startType">The type of startup to use (either disable models or throw exception)</param>
-        /// <param name="logWriter">A log writer instance to write the log messages to</param>
-        /// <param name="defaultModelNamespace">Optional: The namespace to build all javascript models into.  The default is App.Models</param>
-        /// <param name="baseURL">Optional: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")</param>
-        public RequestHandler(StartTypes startType,ILogWriter logWriter,
-            string defaultModelNamespace = "App.Models",
-            string baseURL=null)
+        public ModelRequestHandler(ILogWriter logWriter,
+            string baseURL)
         {
-            _defaultModelNamespace=defaultModelNamespace;
             _urlBase=baseURL;
             if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
             {
@@ -128,7 +96,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             };
             Logger.Setup(logWriter);
             Logger.Debug("Starting up VueJS Request Handler");
-            _startType = startType;
             _typeChecks = new Dictionary<Type, ASecurityCheck[]>();
             _methodChecks = new Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>>();
             _methodInstances= new Dictionary<string, SlowMethodInstance>();
@@ -465,7 +432,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 foreach (Type t in _invalidModels)
                     Logger.Error(t.FullName);
             }
-            if (_startType == StartTypes.ThrowInvalidExceptions && errors.Count > 0)
+            if (errors.Count > 0)
                 throw new ModelValidationException(errors);
             for(int x = 0; x < models.Count; x++)
             {
@@ -532,7 +499,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 foreach (Type t in _invalidModels)
                     Logger.Error(t.FullName);
             }
-            if (_startType == StartTypes.ThrowInvalidExceptions && errors.Count > 0)
+            if (errors.Count > 0)
                 throw new ModelValidationException(errors);
             for(int x = 0; x < models.Count; x++)
             {

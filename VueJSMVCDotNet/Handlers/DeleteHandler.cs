@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _deleteMethods.Clear();
         }
 
-        public Task HandleRequest(string url, RequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
         {
             Logger.Debug("Attempting to execute the Delete Handler for the path {0}", new object[] { url });
             IModel model = null;
@@ -73,9 +73,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        public bool HandlesRequest(string url, RequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
         {
-            if (method == RequestHandler.RequestMethods.DELETE)
+            if (method == ModelRequestHandler.RequestMethods.DELETE)
                 return _deleteMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")))&& _loadMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/")));
             return false;
         }
