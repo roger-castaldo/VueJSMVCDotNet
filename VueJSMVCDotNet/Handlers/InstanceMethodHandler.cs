@@ -44,7 +44,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 _reg = new Regex(string.Format("^{0}/([^/]+)/({1})$", new object[] { baseURL, sb.ToString() }), RegexOptions.Compiled | RegexOptions.ECMAScript);
             }
 
-            #if NETCOREAPP3_1
+            #if NET
             public bool IsForType(Type type){
                 return _loadMethod.DeclaringType == type;
             }
@@ -213,7 +213,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        #if NETCOREAPP3_1
+        #if NET
         public void LoadTypes(List<Type> types){
             lock(_patterns){
                 _LoadTypes(types);

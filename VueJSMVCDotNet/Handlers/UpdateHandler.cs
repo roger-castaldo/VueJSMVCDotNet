@@ -109,7 +109,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        #if NETCOREAPP3_1
+        #if NET
         public void LoadTypes(List<Type> types){
             lock(_updateMethods){
                 _LoadTypes(types);

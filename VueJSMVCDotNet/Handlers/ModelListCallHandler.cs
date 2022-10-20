@@ -94,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 _method = mi;
             }
 
-            #if NETCOREAPP3_1
+            #if NET
             public bool IsForType(Type type){
                 return _method.DeclaringType == type;
             }
@@ -265,7 +265,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
-        #if NETCOREAPP3_1
+        #if NET
         public void LoadTypes(List<Type> types){
             lock(_calls){
                 _LoadTypes(types);

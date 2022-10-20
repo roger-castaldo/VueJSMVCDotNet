@@ -58,7 +58,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
          * 9.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
          * 10.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void)
          */
-#if NETCOREAPP3_1
+#if NET
         internal static List<Exception> Validate(AssemblyLoadContext alc,out List<Type> invalidModels,out List<Type> models)
         {
             Logger.Debug("Attempting to load and validate the models found in the Assembly Load Context {0}", new object[] { alc.Name });

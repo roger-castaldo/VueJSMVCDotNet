@@ -53,7 +53,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
-#if NETCOREAPP3_1
+#if NET
         private bool _isInitialized=false;
 #endif
         internal bool IsTypeAllowed(Type type)
@@ -376,7 +376,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return true;
         }
 
-#if NETCOREAPP3_1
+#if NET
         /// <summary>
         /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
         /// that load context to allow for an unload

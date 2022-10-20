@@ -54,7 +54,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 t = Type.GetType(typeName, false, true);
                 if (t == null)
                 {
-                    #if NETCOREAPP3_1
+                    #if NET
                     foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                         foreach (Assembly ass in alc.Assemblies)
                     #else 
@@ -67,7 +67,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 {
                                     t = ass.GetType(typeName, false, true);
                                     if (t != null){
-                                        #if NETCOREAPP3_1
+                                        #if NET
                                         _MarkTypeSource(alc.Name,t);
                                         #endif
                                         break;
@@ -82,7 +82,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }
                             }
                         }
-                    #if NETCOREAPP3_1
+                    #if NET
                     }
                     #endif
                 }
@@ -461,7 +461,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 _TYPE_CACHE.Clear();
             }
-            #if NETCOREAPP3_1
+            #if NET
             lock(_LOAD_CONTEXT_TYPE_SOURCES){
                 _LOAD_CONTEXT_TYPE_SOURCES.Clear();
             }
