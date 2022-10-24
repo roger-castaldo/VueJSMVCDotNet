@@ -1,4 +1,5 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
 using Jint;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,25 +15,25 @@ namespace AutomatedTesting
     [TestClass]
     public  class LoadCall
     {
-        private RequestHandler _handler;
+        private VueHandlerMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
         public void TestLoadPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET",String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }),_handler,out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET",String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.AreEqual(mPerson.Persons[0].id, ((Hashtable)result)["id"]);
@@ -42,7 +43,7 @@ namespace AutomatedTesting
         public void TestInvalidIDLoadPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson/0",_handler,out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson/0", _middleware, out status));
             Assert.IsNull(result);
         }
 
@@ -50,7 +51,7 @@ namespace AutomatedTesting
         public void TestLoadAllPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson", _handler,out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
             Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)result).Count);

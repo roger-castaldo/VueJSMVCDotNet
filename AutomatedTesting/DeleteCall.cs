@@ -1,4 +1,6 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
+using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
@@ -10,18 +12,18 @@ namespace AutomatedTesting
     [TestClass]
     public class DeleteCall
     {
-        private RequestHandler _handler;
+        private VueHandlerMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(),ignoreInvalidModels:true));
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
@@ -29,7 +31,7 @@ namespace AutomatedTesting
         {
             int personCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);

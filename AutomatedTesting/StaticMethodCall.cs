@@ -1,4 +1,5 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
@@ -12,18 +13,18 @@ namespace AutomatedTesting
     [TestClass]
     public class StaticMethodCall
     {
-        private RequestHandler _handler;
+        private VueHandlerMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
@@ -32,7 +33,7 @@ namespace AutomatedTesting
             string firstName = "Testing123";
             string lastName = "Testing1234";
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _handler, out status, parameters: new Hashtable() { 
+            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() { 
                 { "firstName", firstName }, 
                 { "lastName", lastName } 
             })).ReadToEnd();

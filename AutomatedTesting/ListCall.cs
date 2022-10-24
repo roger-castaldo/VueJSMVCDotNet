@@ -1,4 +1,5 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
 using Jint;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,25 +15,25 @@ namespace AutomatedTesting
     [TestClass]
     public  class ListCall
     {
-        private RequestHandler _handler;
+        private VueHandlerMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
         public void TestList()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _handler,out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -52,7 +53,7 @@ namespace AutomatedTesting
                     cnt++;
             }
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=b&PageStartIndex=0&PageSize=10", _handler, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=b&PageStartIndex=0&PageSize=10", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -66,7 +67,7 @@ namespace AutomatedTesting
         public void TestListPageSize()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=2", _handler, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=2", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -80,7 +81,7 @@ namespace AutomatedTesting
         public void TestListPageStartIndex()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=1&PageSize=2", _handler, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=1&PageSize=2", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));

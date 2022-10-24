@@ -67,13 +67,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
+        private bool _ignoreInvalidModels;
 
         private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
 
         public ModelRequestHandler(ILogWriter logWriter,
-            string baseURL)
+            string baseURL,
+            bool ignoreInvalidModels)
         {
             _urlBase=baseURL;
+            _ignoreInvalidModels=ignoreInvalidModels;
             if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
             {
                 if (!_urlBase.EndsWith("/"))
@@ -432,7 +435,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 foreach (Type t in _invalidModels)
                     Logger.Error(t.FullName);
             }
-            if (errors.Count > 0)
+            if (errors.Count > 0 && !_ignoreInvalidModels)
                 throw new ModelValidationException(errors);
             for(int x = 0; x < models.Count; x++)
             {
@@ -499,7 +502,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 foreach (Type t in _invalidModels)
                     Logger.Error(t.FullName);
             }
-            if (errors.Count > 0)
+            if (errors.Count > 0 && !_ignoreInvalidModels)
                 throw new ModelValidationException(errors);
             for(int x = 0; x < models.Count; x++)
             {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TestApplication
 {
-    public interface ISessionManager : ISecureSession
+    public interface ISessionManager : ISecureSession, ISecureSessionFactory
     {
         DateTime Start { get; }
     }

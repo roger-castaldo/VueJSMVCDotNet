@@ -1,4 +1,5 @@
-﻿using Jint;
+﻿using AutomatedTesting.Security;
+using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
@@ -17,9 +18,9 @@ namespace AutomatedTesting
         [TestInitialize]
         public void Init()
         {
-            RequestHandler handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            VueHandlerMiddleware middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
             int status;
-            _content = Constants.JAVASCRIPT_BASE + new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", handler,out status)).ReadToEnd() + @"
+            _content = Constants.JAVASCRIPT_BASE + new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware, out status)).ReadToEnd() + @"
 
 var mdl = App.Models.mDataTypes.createInstance();
 ";

@@ -11,13 +11,15 @@ namespace AutomatedTesting
     internal static class Utility
     {
 
-        public static MemoryStream ExecuteRequest(string method,string path, RequestHandler handler,out int responseStatus,SecureSession session=null,object parameters=null)
+        public static MemoryStream ExecuteRequest(string method,string path, VueHandlerMiddleware middleware,out int responseStatus,SecureSession session=null,object parameters=null)
         {
             MemoryStream ms = new MemoryStream();
             HttpContext context = new DefaultHttpContext();
             context.Request.Method = method;
             context.Request.Host = new HostString("localhost");
             context.Request.IsHttps = false;
+            if (session!=null)
+                session.LinkToRequest(context);
             if (path.Contains("?"))
             {
                 context.Request.Path = new PathString(path.Substring(0,path.IndexOf("?")));
@@ -36,9 +38,7 @@ namespace AutomatedTesting
                 sw.Flush();
                 context.Request.Body.Position = 0;
             }
-
-            Assert.IsTrue(handler.HandlesRequest(context));
-            handler.ProcessRequest(context,(session==null ? new SecureSession() : session)).Wait();
+            middleware.InvokeAsync(context).Wait();
             responseStatus = context.Response.StatusCode;
             ms.Position = 0;
             return ms;

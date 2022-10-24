@@ -1,4 +1,5 @@
-﻿using Jint;
+﻿using AutomatedTesting.Security;
+using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
@@ -13,18 +14,18 @@ namespace AutomatedTesting
     [TestClass]
     public class Javascript
     {
-        private RequestHandler _handler;
+        private VueHandlerMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         private delegate object _delCreateWeakMap();
@@ -33,7 +34,7 @@ namespace AutomatedTesting
         public void JavascriptGenerationValidation()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _handler,out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             Engine eng = new Engine();
             try
@@ -53,7 +54,7 @@ namespace AutomatedTesting
         public void JavascriptCompressedGenerationValidation()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _handler, out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             Engine eng = new Engine();
             try
@@ -75,9 +76,9 @@ namespace AutomatedTesting
         public void JavascriptCompressionPerformance()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _handler,out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _handler,out status)).ReadToEnd();
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }

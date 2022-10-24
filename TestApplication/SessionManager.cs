@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication{
-    internal class SessionManager : ISessionManager, ISecureSessionFactory
+    internal class SessionManager : ISessionManager
     {
         [ThreadStatic()]
         private static HttpContext _current;
