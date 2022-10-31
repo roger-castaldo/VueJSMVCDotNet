@@ -15,41 +15,37 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
     {
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
             new HeaderGenerator(),
-            new TypingHeader()
+            new TypingHeader(),
+            new ParsersGenerator()
         };
 
         private static readonly IBasicJSGenerator[] _oneTimeFinishGenerators = new IBasicJSGenerator[]{
             new FooterGenerator()
         };
 
-        private static readonly IJSGenerator[] _instanceGenerators = new IJSGenerator[]
+        private static readonly IJSGenerator[] _classGenerators = new IJSGenerator[]
         {
-            new ParsersGenerator(),
             new ModelInstanceHeaderGenerator(),
+            new ModelClassHeaderGenerator(),
             new JSONGenerator(),
-            new ModelDataDefinitionGenerator(),
+            new ModelDefaultMethodsGenerator(),
+            new ModelInstanceMethodsGenerator(),
             new ParseGenerator(),
-            new ModelDefinitionGenerator(),
-            new ModelInstanceFooterGenerator()
-        };
-
-        private static readonly IJSGenerator[] _globalGenerators = new IJSGenerator[]
-        {
+            new ModelInstanceFooterGenerator(),
             new ModelLoadAllGenerator(),
             new ModelLoadGenerator(),
             new StaticMethodGenerator(),
-            new ModelListCallGenerator()
+            new ModelListCallGenerator(),
+            new ModelClassFooterGenerator()
         };
 
         private Dictionary<string, string> _cache;
         private Dictionary<Type,ModelJSFilePath[]> _types;
-        private string _defaultModelNamespace;
         private string _urlBase;
-        public JSHandler(string defaultModelNamespace, string urlBase)
+        public JSHandler(string urlBase)
         {
             _cache = new Dictionary<string, string>();
             _types = new Dictionary<Type, ModelJSFilePath[]>();
-            _defaultModelNamespace=defaultModelNamespace;
             _urlBase=urlBase;
         }
 
@@ -156,16 +152,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
-                        gen.GeneratorJS(ref builder,_defaultModelNamespace,_urlBase);
+                    {
+                        builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
+                        gen.GeneratorJS(ref builder, _urlBase,models.ToArray());
+                        builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                    }
                     foreach (Type model in models) {
                         Logger.Trace("Processing module {0} for js url {1}", new object[] { model.FullName, url });
-                        foreach (IJSGenerator gen in _instanceGenerators)
-                            gen.GeneratorJS(ref builder, model, (((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? _defaultModelNamespace : ((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace), _urlBase);
-                        foreach (IJSGenerator gen in _globalGenerators)
-                            gen.GeneratorJS(ref builder, model, (((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? _defaultModelNamespace : ((ModelJSFilePath)model.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace), _urlBase);
+                        foreach (IJSGenerator gen in _classGenerators)
+                        {
+                            builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
+                            gen.GeneratorJS(ref builder, model, _urlBase);
+                            builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                        }
                     }
                     foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
-                        gen.GeneratorJS(ref builder,_defaultModelNamespace, _urlBase);
+                    {
+                        builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
+                        gen.GeneratorJS(ref builder, _urlBase, models.ToArray());
+                        builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                    }
                     ret = builder.ToString();
                     lock (_cache)
                     {

@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -8,69 +9,94 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     class ModelInstanceFooterGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             Logger.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.FullName });
-            builder.AppendLine(string.Format(@"     {0}.{1} = {0}.{1}||{{}};
-        {0}.{1}.{2} = function(){{ ", modelNamespace, modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
-            builder.AppendLine(@"         if (Vue.version.indexOf('2')==0){
-                return new Vue({data:function(){return data;},methods:methods,computed:computed});
-            }else if (Vue.version.indexOf('3')==0){
-                var ret = {
-                    $on:function(event,callback){
-                        if (this._$events==undefined){this._$events={};}
-                        if (Array.isArray(event)){
-                            for(var x=0;x<event.length;x++){
-                                if (this._$events[event[x]]==undefined){this._$events[event[x]]=[];}
-                                this._$events[event[x]].push(callback);
-                            }
-                        }else{
-                            if (this._$events[event]==undefined){this._$events[event]=[];}
-                            this._$events[event].push(callback);
+            //    builder.AppendLine(string.Format(@"     class {0} {{
+            //static {1}(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
+            builder.Append(@"
+        $on(event,callback){
+            if (this.#events===undefined){this.#events={};}
+            if (Array.isArray(event)){
+                for(let x=0;x<event.length;x++){
+                    if (this.#events[event[x]]===undefined){this.#events[event[x]]=[];}
+                    this.#events[event[x]].push(callback);
+                }
+            }else{
+                if (this.#events[event]===undefined){this.#events[event]=[];}
+                this.#events[event].push(callback);
+            }
+        }
+        $off(callback){
+            if (this.#events!=undefined){
+                for(let evt in this.#events){
+                    for(let x=0;x<this.#events[evt].length;x++){
+                        if (this.#events[evt][x]==callback){
+                            this.#events[evt].splice(x,1);
+                            break;
                         }
-                    },
-                    $off:function(callback){
-                        if (this._$events!=undefined){
-                            for(var evt in this._$events){
-                                for(var x=0;x<this._$events[evt].length;x++){
-                                    if (this._$events[evt][x]==callback){
-                                        this._$events[evt].splice(x,1);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    $emit:function(event,data){
-                        if (this._$events!=undefined){
-                            if (this._$events[event]!=undefined){
-                                for(var x=0;x<this._$events[event].length;x++){
-                                    this._$events[event][x]((data==undefined ? this : data));
-                                }
-                            }
-                        }
-                    },
-                    toVue:function(options){
-                        if (options.mixins==undefined){options.mixins=[];}
-                        options.mixins.push(this.toMixin());
-                        return Vue.createApp(options);
-                    },
-                    toMixin:function(){
-                        var tmp = {};
-                        for(var prop in data){
-                            tmp[prop] = this[prop];
-                        }
-                        if (tmp.id!=undefined)
-                            delete tmp.id;
-                        var og = this;
-                        Object.defineProperty(tmp,'id',{get:function(){return (getMap(this)==undefined ? undefined : getMap(this).id);}});
-                        return {
-                            data:function(){return tmp;},
-                            methods:extend({$on:ret.$on,$off:ret.$off},methods),
-                            computed:computed,
-                            created:function(){
-                                var view=this;
-                                this.$on([");
+                    }
+                }
+            }
+        }
+        $emit(event,data){
+            if (this.#events!=undefined){
+                if (this.#events[event]!=undefined){
+                    for(let x=0;x<this.#events[event].length;x++){
+                        this.#events[event][x]((data==undefined ? this : data));
+                    }
+                }
+            }
+        }
+        static createInstance(){
+            console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Name+@"' function instead!"");
+        }
+        toVue(options){
+            if (options.mixins==undefined){options.mixins=[];}
+            options.mixins.push(this.toMixins());
+            return Vue.createApp(options);
+        }
+        toMixins(){
+            if (Vue===undefined || Vue.version.indexOf('3')!==0){ throw 'Unable to operate without Vue version 3.0'; }
+            let curObj = this;
+            let data = {};
+            let methods={
+                $on:function(event,callback){curObj.$on(event,callback);},
+                $off:function(callback){curObj.$off(callback);}
+            };");
+            foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
+            {
+                if (pi.CanWrite)
+                    builder.AppendLine(string.Format("              Object.defineProperty(data,'{0}',{{get:function(){{return curObj.#{0};}},set:function(val){{curObj.{0} = val;}}}});", new object[] { pi.Name }));
+                else
+                    builder.AppendLine(string.Format("              Object.defineProperty(data,'{0}',{{get:function(){{return curObj.#{0};}}}});", new object[] { pi.Name }));
+            }
+            builder.AppendLine(@"           Object.defineProperty(data,'id',{get:function(){return curObj.id;}});");
+            foreach (MethodInfo mi in modelType.GetMethods(Constants.INSTANCE_METHOD_FLAGS))
+            {
+                if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                {
+                    ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
+                    Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
+                    builder.AppendFormat("          methods.{0} = function(", mi.Name);
+                    foreach (ParameterInfo pi in mi.GetParameters())
+                        builder.AppendFormat("{0},", pi.Name);
+                    if (mi.GetParameters().Length > 0)
+                        builder.Length = builder.Length-1;
+                    builder.AppendFormat("){{ {0} curObj.{1}(", (returnType == typeof(void) ? "" : "return"), mi.Name);
+                    foreach (ParameterInfo pi in mi.GetParameters())
+                        builder.AppendFormat("{0},", pi.Name);
+                    if (mi.GetParameters().Length > 0)
+                        builder.Length = builder.Length-1;
+                    builder.AppendLine("); };");
+                }
+            }
+            builder.AppendLine(@"       return {
+                data:function(){return data;},
+                methods:methods,
+                created:function(){
+                    let view=this;
+                    this.$on([");
                 builder.AppendFormat("'{0}','{1}','{2}','parsed'",new object[]{
                     Constants.Events.MODEL_LOADED,
                     Constants.Events.MODEL_SAVED,
@@ -79,35 +105,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 builder.AppendLine(@"],function(){view.$forceUpdate();});
                             }
                         };
-                    }
-                };
-                var tmp = _defineTypedObject(extend({_hashCode:'System.String?'},data._definition));
-                Object.defineProperty(ret,'_hashCode',{ get:function(){return tmp._hashCode;},set:function(hash){tmp._hashCode=null;H(JSON.stringify(_stripBigInt(ret))).then(hash=>{tmp._hashCode=hash;});}});");
-                foreach (PropertyInfo pi in Utility.GetModelProperties(modelType))
-                {
-                    if (pi.CanRead && pi.CanWrite)
-                    {
-                    builder.AppendLine(string.Format(@"                Object.defineProperty(ret,'{0}',{{
-                    get:function(){{return tmp.{0};}},
-                    set:function(value){{
-                        tmp.{0}=value;
-                        ret._hashCode='';
-                    }},
-                    enumerable: true,
-                    configurable: false
-                }});", pi.Name));
-                    }
-                }
-            builder.AppendLine(@"                ret = extend(ret,methods);
-                for(var prop in computed){
-                    Object.defineProperty(ret,prop,computed[prop]);
-                }
-                setMap(ret,getMap(this));
-                return ret;
-            }else{
-                throw 'unsupported version of VueJS found.';
-            }
-        };");
+                    }");
         }
     }
 }

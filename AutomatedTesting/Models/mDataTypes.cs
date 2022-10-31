@@ -8,7 +8,7 @@ using System.Text;
 namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mDataTypes")]
-    [ModelJSFilePath("/resources/scripts/mDataTypes.js", modelNamespace: "App.Models")]
+    [ModelJSFilePath("/resources/scripts/mDataTypes.js")]
     internal class mDataTypes : IModel
     {
         public string id

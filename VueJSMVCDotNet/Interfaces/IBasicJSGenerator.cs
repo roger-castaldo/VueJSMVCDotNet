@@ -6,6 +6,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
 {
     internal interface IBasicJSGenerator
     {
-        void GeneratorJS(ref WrappedStringBuilder builder,string modelNamespace,string urlBase);
+        void GeneratorJS(ref WrappedStringBuilder builder,string urlBase, Type[] models);
     }
 }

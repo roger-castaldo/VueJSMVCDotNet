@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mPerson")]
-    [ModelJSFilePath("/resources/scripts/mPerson.js", modelNamespace: "App.Models")]
+    [ModelJSFilePath("/resources/scripts/mPerson.js")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
     public class mPerson : IModel
     {

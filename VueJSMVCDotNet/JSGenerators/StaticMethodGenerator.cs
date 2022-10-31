@@ -9,7 +9,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class StaticMethodGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType,string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             string urlRoot = Utility.GetModelUrlRoot(modelType, urlBase);
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
@@ -47,12 +47,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             }
                         }
                     }
-                    builder.AppendFormat("{0}.{1}=extend({0}.{1},{{{2}:function(",new object[] { modelNamespace,modelType.Name, mi.Name });
+                    builder.AppendFormat("      static {0}(",new object[] { mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     for (int x = 0; x < pars.Length; x++)
                         builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
                     builder.AppendLine(@"){
-                        var function_data = {};");
+                        let function_data = {};");
                     NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
                     foreach (ParameterInfo par in pars)
                     {
@@ -83,7 +83,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             if (parray)
                             {
                                 builder.AppendLine(string.Format(@"function_data.{0}=[];
-for(var x=0;x<{0}.length;x++){{
+for(let x=0;x<{0}.length;x++){{
     function_data.{0}.push({{id:{0}[x].id}});
 }}", par.Name));
                             }
@@ -115,7 +115,7 @@ for(var x=0;x<{0}.length;x++){{
                         urlRoot,
                         mi.Name,
                         (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
-                        (returnType == typeof(void) ? "" : @"var ret=response.json();
+                        (returnType == typeof(void) ? "" : @"let ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;"),
                         (em.IsSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")
@@ -133,7 +133,7 @@ for(var x=0;x<{0}.length;x++){{
                             if (array)
                             {
                                 builder.AppendLine(string.Format(@"         ret=[];
-        for (var x=0;x<response.length;x++){{
+        for (let x=0;x<response.length;x++){{
             ret.push(_{0}(response[x]));
         }}
         response = ret;", new object[]{
@@ -158,7 +158,7 @@ for(var x=0;x<{0}.length;x++){{
                         reject(response);
                     });
     });
-}});");
+}");
                 }
             }
         }

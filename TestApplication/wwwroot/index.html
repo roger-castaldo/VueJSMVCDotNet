@@ -11,8 +11,6 @@
     </script>
 </head>
 <body>
-    <script src="/testing/resources/scripts/mPerson.js"></script>
-    <script src="/testing/resources/scripts/models/User.js"></script>
     <table id="dvList">
         <thead>
             <tr>
@@ -120,8 +118,11 @@
             </tr>
         </tfoot>
     </table>
-    <script>
-        var person = App.Models.mPerson.createInstance();
+    <script type="module">
+        import { mPerson } from "/testing/resources/scripts/mPerson.js";
+        import { User } from "/testing/resources/scripts/models/User.js";
+
+        var person =mPerson.createInstance();
         console.log(person);
         var frm = Vue.createApp({
             data: function () {
@@ -210,7 +211,7 @@
                 }
             }
         };
-        window.lst = App.Models.mPerson.LoadAll().toVue({
+        window.lst =mPerson.LoadAll().toVue({
             components: {
                 asynccomp
             },
@@ -228,11 +229,11 @@
                 },
                 CreateNew: function () {
                     frm.lst = this.Items;
-                    frm.person = App.Models.mPerson.createInstance();
+                    frm.person =mPerson.createInstance();
                 }
             }
         }).mount('#dvList');
-        window.lstFiltered = App.Models.mPerson.Search(null).toVue({
+        window.lstFiltered =mPerson.Search(null).toVue({
             data: function () {
                 return { current_filter: null };
             },
@@ -243,7 +244,7 @@
                 }
             }
         }).mount('#dvListFiltered');
-        App.Models.mPerson.TestNull().then(result => { alert(result == null); });
+       mPerson.TestNull().then(result => { alert(result == null); });
     </script>
 </body>
 </html>

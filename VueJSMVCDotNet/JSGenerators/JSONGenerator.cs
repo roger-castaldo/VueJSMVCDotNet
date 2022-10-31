@@ -9,12 +9,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             Logger.Trace("Generating toJSON method for {0}", new object[] { modelType.FullName });
-            builder.AppendLine(string.Format(@"   methods = extend(methods,{{{0}:function(){{
-        var attrs={{}};
-        var prop=null;", Constants.TO_JSON_VARIABLE));
+            builder.AppendLine(string.Format(@"     {0}(){{
+        let attrs={{}};
+        let prop=null;", Constants.TO_JSON_VARIABLE));
             foreach (PropertyInfo p in Utility.GetModelProperties(modelType))
             {
                 if (p.CanWrite)
@@ -42,17 +42,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                     if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
-                        builder.AppendLine(string.Format("            prop = (this.{1}==undefined ? (this.{0}!=undefined ? this.{0} : null) : (this.{1}.{0}!=undefined ? this.{1}.{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
+                        builder.AppendLine(string.Format("            prop = (this.{1}===undefined||this.#{0}===null ? (this.#{0}!==undefined ? this.#{0} : null) : (this.{1}.{0}!==undefined ? this.{1}.{0} : null));", p.Name,Constants.INITIAL_DATA_KEY));
                     else
-                        builder.AppendLine(string.Format("            prop = (this.{0}!=undefined ? this.{0} : null);", p.Name));
+                        builder.AppendLine(string.Format("            prop = (this.#{0}!==undefined ? this.#{0} : null);", p.Name));
                     if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
                     {
-                        builder.AppendLine(string.Format(@"     if (prop==null) {{
+                        builder.AppendLine(string.Format(@"     if (prop===null) {{
                 attrs.{0} = null;
             }} else {{", p.Name));
                         if (array)
                         {
-                            builder.AppendLine(string.Format(@"         for(var x=0;x<prop.length;x++){{
+                            builder.AppendLine(string.Format(@"         for(let x=0;x<prop.length;x++){{
                             attrs.{0}.push({{id:prop[x].id}});
                         }}", p.Name));
                         }
@@ -64,16 +64,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(string.Format("        attrs.{0}=prop;",p.Name));
                 }
             }
-            builder.AppendLine(string.Format(@"     var idata = (getMap(this)==undefined ? undefined : getMap(this).{0});
-        if (idata!=undefined){{
-            for(prop in idata){{
-                if (isEqual(idata[prop],attrs[prop])){{
+            builder.AppendLine(string.Format(@"     if (this.{0}!==undefined && this.{0}!==null){{
+            for(prop in this.{0}){{
+                if (isEqual(this.{0}[prop],attrs[prop])){{
                     delete attrs[prop];
                 }}
             }}
         }}
         return _stripBigInt(cloneData(attrs));
-    }}}});", Constants.INITIAL_DATA_KEY));
+    }}", Constants.INITIAL_DATA_KEY));
         }
     }
 }

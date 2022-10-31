@@ -16,9 +16,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
             get { return _path; }
         }
 
-        private string _modelNamespace;
-        internal string ModelNamespace { get { return _modelNamespace; } }
-
         internal string MinPath
         {
             get { return (_path.EndsWith(".min.js") ? _path : _path.Substring(0, _path.LastIndexOf(".")) + ".min.js"); }
@@ -28,11 +25,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
         /// Constructor for tagging the ModelJSPath
         /// </summary>
         /// <param name="path">The url path to identify what url to provide the javascript definition of this model to.</param>
-        /// <param name="modelNamespace">Optional:  The namespace to build this model into on the javascript side.  Default is the default passed to the handler.</param>
-        public ModelJSFilePath(string path, string modelNamespace = null)
+        public ModelJSFilePath(string path)
         {
             _path = (!path.EndsWith(".js") ? path+".js" : path).ToLower();
-            _modelNamespace= modelNamespace;
         }
 
         internal bool IsMatch(string url)

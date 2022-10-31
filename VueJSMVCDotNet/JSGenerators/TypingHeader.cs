@@ -7,7 +7,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class TypingHeader : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
         {
             builder.Append(@"const _numberRanges = {
     'Int16': { low:-32768, high:32767,hasDecimal:false},
@@ -35,23 +35,23 @@ const _b64toBlob = function(b64Data, contentType, sliceSize) {
     contentType = contentType || '';
     sliceSize = sliceSize || 512;
 
-    var byteCharacters = atob(b64Data);
-    var byteArrays = [];
+    let byteCharacters = atob(b64Data);
+    let byteArrays = [];
 
-    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        var slice = byteCharacters.slice(offset, offset + sliceSize);
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        let slice = byteCharacters.slice(offset, offset + sliceSize);
 
-        var byteNumbers = new Array(slice.length);
-        for (var i = 0; i < slice.length; i++) {
+        let byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
             byteNumbers[i] = slice.charCodeAt(i);
         }
 
-        var byteArray = new Uint8Array(byteNumbers);
+        let byteArray = new Uint8Array(byteNumbers);
 
         byteArrays.push(byteArray);
     }
 
-    var blob = new Blob(byteArrays, { type: contentType });
+    let blob = new Blob(byteArrays, { type: contentType });
     return blob;
 };
 
@@ -77,7 +77,7 @@ const _checkDataType = function(type, value,enumlist) {
 		if (type.indexOf('[]') < 0) {
 			type = type + '?';
         }
-		for (var x = 0; x < value.length; x++) {
+		for (let x = 0; x < value.length; x++) {
 			try {
 				value[x] = _checkDataType(type, value[x]);
 			} catch (err) {
@@ -232,8 +232,8 @@ const _checkProperty = function(name,type, value,enumlist) {
 };
 
 const _defineTypedObject = function(definition) {
-	var target = {};
-	for (var prop in definition)
+	let target = {};
+	for (let prop in definition)
 		target[prop] = (definition[prop].initial !== undefined ? definition[prop].initial : null);
 	return new Proxy(target, {
 		set(target, property, value) {
@@ -253,19 +253,19 @@ const _defineTypedObject = function(definition) {
 };
 
 const _stripBigInt = function(data){
-	var ret = data;
+	let ret = data;
 	if (data!==null && data!==undefined){
 		if (Object.prototype.toString.call(data) !== '[object Date]'){
 			if (Array.isArray(data)){
 				ret = [];
-				for(var x=0;x<data.length;x++){
+				for(let x=0;x<data.length;x++){
 					ret.push(_stripBigInt(data[x]));
 				}
 			}else if (typeof data ==='bigint'){
 				ret = data.toString();
 			}else if (typeof data === 'object'){
 				ret={};
-				for(var prop in data){
+				for(let prop in data){
 					if (prop!=='_hashCode'){
 						ret[prop] = _stripBigInt(data[prop]);
 					}

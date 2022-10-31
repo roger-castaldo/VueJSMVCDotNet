@@ -8,111 +8,116 @@ using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
-    internal class ParsersGenerator : IJSGenerator
+    internal class ParsersGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType,string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
         {
-            builder.AppendLine(string.Format(@"     var _{1} = function(data){{
-            var ret=null;
+            List<Type> types = new List<Type>();
+            foreach (Type modelType in models)
+            {
+                builder.AppendLine(string.Format(@"     const _{0} = function(data){{
+            let ret=null;
             if (data!=null){{
-                ret = {0}.{1}.{2}();
-                ret.{3}(data);
+                ret = new {0}();
+                ret.{1}(data);
             }}
             return ret;
         }};", new object[]{
-                                                 modelNamespace,
                                                  modelType.Name,
-                                                 Constants.CREATE_INSTANCE_FUNCTION_NAME,
                                                  Constants.PARSE_FUNCTION_NAME
             }));
-            List<Type> types = new List<Type>();
-            _RecurLocateLinkedTypes(ref types,modelType);
-            types.Remove(modelType);
+                _RecurLocateLinkedTypes(ref types, modelType);
+            }
+            foreach (Type modelType in models)
+                types.Remove(modelType);
             foreach (Type type in types)
             {
-                Logger.Trace("Appending Parser Call for Linked Type[{0}] for Model Definition[{1}]", new object[]
+                if (type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
+                    builder.AppendLine(string.Format("        import {{ {0} }} from '{1}';", new object[] { type.Name, ((ModelJSFilePath)type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path }));
+            }
+            foreach (Type type in types)
+            {
+                Logger.Trace("Appending Parser Call for Linked Type[{0}]", new object[]
                 {
-                    type.FullName,
-                    modelType.FullName
+                    type.FullName
                 });
-                builder.AppendLine(string.Format(@"     var _{0} = function(data){{
-            var ret=null;
-            if (data!=null){{
-                if ({0}.{1}!=undefined){{
-                    ret = {0}.{1}.{2}();
-                    ret.{2}(data);
-                }}
-                else {{
-                    ret = {{}};
-                    Object.defineProperty(ret,'id',{{get:function(){{return data.id}}}});", new object[] {
-                    (((ModelJSFilePath)type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? modelNamespace : ((ModelJSFilePath)type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace),
-                    type.Name, 
-                    Constants.CREATE_INSTANCE_FUNCTION_NAME, 
-                    Constants.PARSE_FUNCTION_NAME }));
-                List<PropertyInfo> props = Utility.GetModelProperties(type);
-                foreach (PropertyInfo pi in props)
+                if (type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
                 {
-                    Type t = pi.PropertyType;
-                    if (t.IsArray)
-                        t = t.GetElementType();
-                    else if (t.IsGenericType)
-                        t = t.GetGenericArguments()[0];
-                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                    builder.AppendLine(string.Format(@"     const _{0} = function(data){{
+            let ret=null;
+            if (data!=null){{
+                ret = new {0}();
+                ret.{1}(data);
+            }}
+            return ret;
+        }};", new object[]{
+                        type.Name,
+                        Constants.PARSE_FUNCTION_NAME
+                    }));
+                }
+                else
+                {
+                    builder.AppendLine(string.Format(@"     const _{0} = function(data){{
+            let ret=null;
+            if (data!=null){{
+                ret = {{}};
+                Object.defineProperty(ret,'id',{{get:function(){{return data.id}}}});", new object[] {
+                    type.Name,
+                    Constants.PARSE_FUNCTION_NAME }));
+                    List<PropertyInfo> props = Utility.GetModelProperties(type);
+                    foreach (PropertyInfo pi in props)
                     {
-                        if (Utility.IsArrayType(pi.PropertyType))
+                        Type t = pi.PropertyType;
+                        if (t.IsArray)
+                            t = t.GetElementType();
+                        else if (t.IsGenericType)
+                            t = t.GetGenericArguments()[0];
+                        if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                         {
-                            builder.AppendLine(string.Format(@"      if (data.{2}!=null){{
-                var tmp = [];
-                for(var x=0;x<data.{2}.length;x++){{
-                    if ({0}.{1}!=undefined){{
-                        tmp.push(new {0}.{1}.{3}());
-                        tmp[x].{4}(data.{2}[x]);
-                    }}else{{
-                        tmp[x]=_{1}(data.{2}[x]);
-                    }}
-                }}
-                Object.defineProperty(ret,'{2}',{{get:function(){{return tmp;}}}});
+                            if (Utility.IsArrayType(pi.PropertyType))
+                            {
+                                builder.AppendLine(string.Format(@"      if (data.{0}!=null){{
+                let tmp = [];
+                for(let x=0;x<data.{0}.length;x++){{", new object[] { pi.Name }));
+                                if (t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
+                                    builder.AppendLine(string.Format(@"                 tmp.push(new {0}());
+                    tmp[x].{1}(data.{2}[x]);", new object[]
+                                    {
+                                        t.Name,
+                                        Constants.PARSE_FUNCTION_NAME,
+                                        pi.Name
+                                    }));
+                                else
+                                    builder.AppendLine(string.Format("                    tmp.push(_{0}(data.{1}[x]);", new object[] { t.Name, pi.Name }));
+                                builder.AppendLine(string.Format(@"               }}
+                ret.{0}=tmp;
             }}else{{
-                Object.defineProperty(ret,'{2}',{{get:function(){{return null;}}}});
+                ret.{0}=null;
             }}", new object[]{
-                                (((ModelJSFilePath)t.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? modelNamespace : ((ModelJSFilePath)t.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace),
-                                t.Name,
-                                pi.Name,
-                                Constants.CREATE_INSTANCE_FUNCTION_NAME,
-                                Constants.PARSE_FUNCTION_NAME,
+                                pi.Name
                             }));
+                            }
+                            else
+                            {
+                                builder.AppendLine(string.Format("          if (data.{0}!=null){{", new object[] { pi.Name }));
+                                if (t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
+                                    builder.AppendLine(string.Format(@"              ret.{0} = new {1}();
+                ret.{0}.{1}(data{0});", new object[] { pi.Name, t.Name }));
+                                else
+                                    builder.AppendLine(string.Format("              ret.{0} = data.{0}", new object[] { pi.Name }));
+                                builder.AppendLine(string.Format(@"          }}else{{
+                ret.{0}=null;
+            }}", new object[] { pi.Name }));
+                            }
                         }
                         else
-                        {
-                            builder.AppendLine(string.Format(@"      if (data.{2}!=null){{
-                if ({0}.{1}!=undefined){{
-                    var tmp = {0}.{1}.{3}();
-                    tmp.{4}(data.{2});
-                    Object.defineProperty(ret,'{2}',{{get:function(){{return tmp;}}}});
-                }}else{{
-                    var tmp = _{1}(data.{2});
-                    Object.defineProperty(ret,'{3}',{{get:function(){{return tmp;}}}});
-                }}
-            }}else{{
-                Object.defineProperty(ret,'{2}',{{get:function(){{return null;}}}});
-            }}", new object[]{
-                                (((ModelJSFilePath)t.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace==null ? modelNamespace : ((ModelJSFilePath)t.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).ModelNamespace),
-                                t.Name,
-                                pi.Name,
-                                Constants.CREATE_INSTANCE_FUNCTION_NAME,
-                                Constants.PARSE_FUNCTION_NAME,
-                            }));
-                        }
-                    }
-                    else
-                    {
-                        builder.AppendLine(string.Format("          Object.defineProperty(ret,'{0}',{{get:function(){{return data.{0};}}}});", pi.Name));
-                    }
-                }
-                builder.AppendLine(@"           }
+                            builder.AppendLine(string.Format("          ret.{0} = data.{0};", pi.Name));
+                        builder.AppendLine(@"           }
             }
             return ret;
         };");
+                    }
+                }
             }
         }
 

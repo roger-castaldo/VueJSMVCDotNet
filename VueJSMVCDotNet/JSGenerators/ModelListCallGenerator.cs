@@ -33,7 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 return "'"  + (urlBase==null ? null : urlBase)+ (mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/') + "'";
         }
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string modelNamespace, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             foreach (MethodInfo mi in modelType.GetMethods(Constants.LOAD_METHOD_FLAGS))
             {
@@ -46,8 +46,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     });
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                     NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
-                    builder.AppendFormat(@"{0}.{1}=extend({0}.{1},{{
-    {2}:function(", new object[] { modelNamespace,modelType.Name, mi.Name });
+                    builder.AppendFormat(@"     static {0}(", new object[] { mi.Name });
                     ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                     string url = _CreateJavacriptUrlCode(mlm, pars, modelType,urlBase);
                     if (mlm.Paged)
@@ -67,7 +66,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     if (mlm.Paged) { 
                         builder.AppendLine(@"       pageStartIndex = (pageStartIndex == undefined ? 0 : (pageStartIndex == null ? 0 : pageStartIndex));
         pageSize = (pageSize == undefined ? 10 : (pageSize == null ? 10 : pageSize));
-        var ret = secureArray(extend([],{
+        let ret = secureArray(extend([],{
             currentIndex:function(){return pageStartIndex;},
             currentPageSize:function(){return pageSize;},
             currentPage:function(){return Math.floor(this.currentIndex()/this.currentPageSize());},
@@ -100,11 +99,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             },");
                     }
                     else
-                        builder.AppendLine(@"        var ret = secureArray(extend([],{");
+                        builder.AppendLine(@"        let ret = secureArray(extend([],{");
                     builder.Append(string.Format("url:function(){{ return {0};}},", url));
                     builder.Append(Constants._LIST_EVENTS_CODE);
                     builder.Append(Constants.ARRAY_TO_VUE_METHOD);
-                    builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name).Replace("$nspace$",modelNamespace));
+                    builder.Append(Constants._LIST_RELOAD_CODE.Replace("$url$", "this.url()").Replace("$type$", modelType.Name));
                     if ((mlm.Paged&&pars.Length > 3)||(!mlm.Paged&&pars.Length>0))
                     {
                         builder.AppendLine(@",
@@ -120,7 +119,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         builder.AppendLine(@"){
                 if (arguments.length!=0){
                     if (Array.isArray(arguments[0]) && arguments.length==1){
-                        var args = arguments[0];");
+                        let args = arguments[0];");
                         for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                             builder.AppendLine(string.Format("                      {0} = _checkProperty('{0}','{2}',(args.length>{1} ? args[{1}] : undefined),{3});", new object[]{
                                 pars[x].Name,
@@ -143,8 +142,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     builder.AppendLine(@"        }));
         ret.reload();
         return ret;
-    }
-});");
+    }");
                 }
             }
         }

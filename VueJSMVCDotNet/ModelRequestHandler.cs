@@ -44,7 +44,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
-        private string _defaultModelNamespace="App.Models";
         private string _urlBase;
         internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
         {
@@ -87,7 +86,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _startTime = DateTime.Now;
             _Handlers = new IRequestHandler[]
             {
-                new JSHandler(_defaultModelNamespace,_urlBase),
+                new JSHandler(_urlBase),
                 new LoadAllHandler(),
                 new StaticMethodHandler(this),
                 new LoadHandler(),
