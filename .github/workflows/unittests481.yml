@@ -2,9 +2,9 @@ name: .NET-Test-Framework-4.8.1
 
 on:
   push:
-    branches: [ 'master' ]
+    branches: [ 'version_3' ]
   pull_request:
-    branches: [ 'master' ]
+    branches: [ 'version_3' ]
 
 jobs:
   build:

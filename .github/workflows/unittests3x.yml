@@ -2,9 +2,9 @@ name: .NET-Test-3x
 
 on:
   push:
-    branches: [ 'master' ]
+    branches: [ 'version_3' ]
   pull_request:
-    branches: [ 'master' ]
+    branches: [ 'version_3' ]
 
 jobs:
   build:
