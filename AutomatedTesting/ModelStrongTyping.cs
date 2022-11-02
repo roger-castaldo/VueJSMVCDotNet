@@ -22,7 +22,7 @@ namespace AutomatedTesting
             int status;
             _content = Constants.JAVASCRIPT_BASE+new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware,out status)).ReadToEnd()+@"
 
-var mdl = App.Models.mDataTypes.createInstance();
+var mdl = new mDataTypes();
 ";
         }
 
@@ -32,16 +32,13 @@ var mdl = App.Models.mDataTypes.createInstance();
             _content = null;
         }
 
-        [TestMethod]
-        public void TestStringProperty()
+        private void _ExecuteTest(string additionalCode, string errorMessage)
         {
             Engine eng = new Engine();
             try
             {
-                eng.Execute(_content + "mdl.StringField='A string';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.StringField={};");
-                Assert.IsTrue(false);
+                eng.Execute(_content + additionalCode);
+                Assert.IsTrue((errorMessage!=null ? false : true));
             }
             catch (Esprima.ParserException e)
             {
@@ -49,1561 +46,355 @@ var mdl = App.Models.mDataTypes.createInstance();
             }
             catch (Exception e)
             {
-                Assert.AreEqual(e.Message, "Cannot set StringField: invalid type: Value not a string and cannot be converted");
+                if (errorMessage!=null)
+                    Assert.AreEqual(e.Message, errorMessage);
+                else
+                    Assert.Fail(e.Message);
             }
-            try
+            finally
             {
-                eng.Execute(_content + "mdl.StringField=null;");
-                Assert.IsTrue(false);
+                eng.Dispose();
             }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set StringField: invalid type: Value is not allowed to be null");
-            }
+        }
+
+        [TestMethod]
+        public void TestStringProperty()
+        {
+            _ExecuteTest("mdl.StringField='A string';", null);
+            _ExecuteTest("mdl.StringField={};", "Cannot set StringField: invalid type: Value not a string and cannot be converted");
+            _ExecuteTest("mdl.StringField=null;", "Cannot set StringField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullStringProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullStringField='A string';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullStringField={};");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullStringField: invalid type: Value not a string and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullStringField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullStringField='A string';", null);
+            _ExecuteTest("mdl.NullStringField={};", "Cannot set NullStringField: invalid type: Value not a string and cannot be converted");
+            _ExecuteTest("mdl.NullStringField=null;", null);
         }
 
         [TestMethod]
         public void TestCharProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content+"mdl.CharField='A';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.CharField='AB';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message,"Cannot set CharField: invalid type: Value not a char");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.CharField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set CharField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.CharField='A';", null);
+            _ExecuteTest("mdl.CharField='AB';", "Cannot set CharField: invalid type: Value not a char");
+            _ExecuteTest("mdl.CharField=null;", "Cannot set CharField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullCharProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullCharField='A';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullCharField='AB';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullCharField: invalid type: Value not a char");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullCharField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullCharField='A';", null);
+            _ExecuteTest("mdl.NullCharField='AB';", "Cannot set NullCharField: invalid type: Value not a char");
+            _ExecuteTest("mdl.NullCharField=null;", null);
         }
 
         [TestMethod]
         public void TestShortProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.ShortField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.ShortField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ShortField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.ShortField={0};", (int)short.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ShortField: invalid type: Value is a number, but is too large for a Int16");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.ShortField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ShortField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.ShortField=10;", null);
+            _ExecuteTest("mdl.ShortField='testing';", "Cannot set ShortField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.ShortField={0};", (int)short.MaxValue + 1), "Cannot set ShortField: invalid type: Value is a number, but is too large for a Int16");
+            _ExecuteTest("mdl.ShortField=null;", "Cannot set ShortField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullShortProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullShortField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullShortField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullShortField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullShortField={0};", (int)short.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullShortField: invalid type: Value is a number, but is too large for a Int16");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullShortField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullShortField=10;", null);
+            _ExecuteTest("mdl.NullShortField='testing';", "Cannot set NullShortField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullShortField={0};", (int)short.MaxValue + 1), "Cannot set NullShortField: invalid type: Value is a number, but is too large for a Int16");
+            _ExecuteTest("mdl.NullShortField=null;", null);
         }
 
         [TestMethod]
         public void TestUShortProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.UShortField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.UShortField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UShortField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.UShortField={0};", (int)ushort.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UShortField: invalid type: Value is a number, but is too large for a UInt16");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.UShortField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UShortField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.UShortField=10;", null);
+            _ExecuteTest("mdl.UShortField='testing';", "Cannot set UShortField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.UShortField={0};", (int)ushort.MaxValue + 1), "Cannot set UShortField: invalid type: Value is a number, but is too large for a UInt16");
+            _ExecuteTest("mdl.UShortField=null;", "Cannot set UShortField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullUShortProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullUShortField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullUShortField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullUShortField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullUShortField={0};", (int)ushort.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullUShortField: invalid type: Value is a number, but is too large for a UInt16");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullUShortField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullUShortField=10;", null);
+            _ExecuteTest("mdl.NullUShortField='testing';", "Cannot set NullUShortField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullUShortField={0};", (int)ushort.MaxValue + 1), "Cannot set NullUShortField: invalid type: Value is a number, but is too large for a UInt16");
+            _ExecuteTest("mdl.NullUShortField=null;", null);
         }
 
         [TestMethod]
         public void TestByteProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.ByteField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.ByteField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ByteField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.ByteField={0};", (int)byte.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ByteField: invalid type: Value is a number, but is too large for a Byte");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.ByteField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ByteField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.ByteField=10;", null);
+            _ExecuteTest("mdl.ByteField='testing';", "Cannot set ByteField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.ByteField={0};", (int)byte.MaxValue + 1), "Cannot set ByteField: invalid type: Value is a number, but is too large for a Byte");
+            _ExecuteTest("mdl.ByteField=null;", "Cannot set ByteField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullByteProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullByteField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullByteField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullByteField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullByteField={0};", (int)byte.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullByteField: invalid type: Value is a number, but is too large for a Byte");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullByteField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullByteField=10;", null);
+            _ExecuteTest("mdl.NullByteField='testing';", "Cannot set NullByteField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullByteField={0};", (int)byte.MaxValue + 1), "Cannot set NullByteField: invalid type: Value is a number, but is too large for a Byte");
+            _ExecuteTest("mdl.NullByteField=null;", null);
         }
 
         [TestMethod]
         public void TestBooleanProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.BooleanField=false;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.BooleanField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set BooleanField: invalid type: Value not boolean and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.BooleanField=null;
-if (mdl.BooleanField!==false){ throw 'unable to set null boolean to convert to false'; }");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.BooleanField=false;", null);
+            _ExecuteTest("mdl.BooleanField='testing';", "Cannot set BooleanField: invalid type: Value not boolean and cannot be converted");
+            _ExecuteTest(@"mdl.BooleanField=null;
+if (mdl.BooleanField!==false){ throw 'unable to set null boolean to convert to false'; }", null);
         }
 
         [TestMethod]
         public void TestNullBooleanProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullBooleanField=false;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullBooleanField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullBooleanField: invalid type: Value not boolean and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullBooleanField=null;
-if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullBooleanField=false;", null);
+            _ExecuteTest("mdl.NullBooleanField='testing';", "Cannot set NullBooleanField: invalid type: Value not boolean and cannot be converted");
+            _ExecuteTest(@"mdl.NullBooleanField=null;
+if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }", null);
         }
 
         [TestMethod]
         public void TestIntProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.IntField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.IntField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set IntField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.IntField={0};", (long)int.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set IntField: invalid type: Value is a number, but is too large for a Int32");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.IntField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set IntField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.IntField=10;", null);
+            _ExecuteTest("mdl.IntField='testing';", "Cannot set IntField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.IntField={0};", (long)int.MaxValue + 1), "Cannot set IntField: invalid type: Value is a number, but is too large for a Int32");
+            _ExecuteTest("mdl.IntField=null;", "Cannot set IntField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullIntProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullIntField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullIntField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullIntField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullIntField={0};", (long)int.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullIntField: invalid type: Value is a number, but is too large for a Int32");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullIntField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullIntField=10;", null);
+            _ExecuteTest("mdl.NullIntField='testing';", "Cannot set NullIntField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullIntField={0};", (long)int.MaxValue + 1), "Cannot set NullIntField: invalid type: Value is a number, but is too large for a Int32");
+            _ExecuteTest("mdl.NullIntField=null;", null);
         }
 
         [TestMethod]
         public void TestUIntProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.UIntField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.UIntField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UIntField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.UIntField={0};", (long)uint.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UIntField: invalid type: Value is a number, but is too large for a UInt32");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.UIntField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set UIntField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.UIntField=10;", null);
+            _ExecuteTest("mdl.UIntField='testing';", "Cannot set UIntField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.UIntField={0};", (long)uint.MaxValue + 1), "Cannot set UIntField: invalid type: Value is a number, but is too large for a UInt32");
+            _ExecuteTest("mdl.UIntField=null;", "Cannot set UIntField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullUIntProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullUIntField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullUIntField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullUIntField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullUIntField={0};", (long)uint.MaxValue + 1));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullUIntField: invalid type: Value is a number, but is too large for a UInt32");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullUIntField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullUIntField=10;", null);
+            _ExecuteTest("mdl.NullUIntField='testing';", "Cannot set NullUIntField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullUIntField={0};", (long)uint.MaxValue + 1), "Cannot set NullUIntField: invalid type: Value is a number, but is too large for a UInt32");
+            _ExecuteTest("mdl.NullUIntField=null;", null);
         }
 
         [TestMethod]
         public void TestLongProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.LongField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.LongField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set LongField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.LongField=BigInt('{0}')+BigInt('1');", long.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set LongField: invalid type: Value is a number, but is too large for a Int64");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.LongField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set LongField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.LongField=10;", null);
+            _ExecuteTest("mdl.LongField='testing';", "Cannot set LongField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.LongField=BigInt('{0}')+BigInt('1');", long.MaxValue), "Cannot set LongField: invalid type: Value is a number, but is too large for a Int64");
+            _ExecuteTest("mdl.LongField=null;", "Cannot set LongField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullLongProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullLongField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullLongField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullLongField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullLongField=BigInt('{0}')+BigInt('1');", long.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullLongField: invalid type: Value is a number, but is too large for a Int64");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullLongField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullLongField=10;", null);
+            _ExecuteTest("mdl.NullLongField='testing';", "Cannot set NullLongField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullLongField=BigInt('{0}')+BigInt('1');", long.MaxValue), "Cannot set NullLongField: invalid type: Value is a number, but is too large for a Int64");
+            _ExecuteTest("mdl.NullLongField=null;", null);
         }
 
         [TestMethod]
         public void TestULongProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.ULongField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.ULongField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ULongField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.ULongField=BigInt('{0}')+BigInt('1');", ulong.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ULongField: invalid type: Value is a number, but is too large for a UInt64");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.ULongField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ULongField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.ULongField=10;", null);
+            _ExecuteTest("mdl.ULongField='testing';", "Cannot set ULongField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.ULongField=BigInt('{0}')+BigInt('1');", ulong.MaxValue), "Cannot set ULongField: invalid type: Value is a number, but is too large for a UInt64");
+            _ExecuteTest("mdl.ULongField=null;", "Cannot set ULongField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullULongProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullULongField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullULongField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullULongField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullULongField=BigInt('{0}')+BigInt('1');", ulong.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullULongField: invalid type: Value is a number, but is too large for a UInt64");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullULongField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullULongField=10;", null);
+            _ExecuteTest("mdl.NullULongField='testing';", "Cannot set NullULongField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullULongField=BigInt('{0}')+BigInt('1');", ulong.MaxValue), "Cannot set NullULongField: invalid type: Value is a number, but is too large for a UInt64");
+            _ExecuteTest("mdl.NullULongField=null;", null);
         }
 
         [TestMethod]
         public void TestFloatProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.FloatField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.FloatField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set FloatField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.FloatField=Number('{0}')+Number('1e38');", float.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set FloatField: invalid type: Value is a number, but is too large for a Single");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.FloatField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set FloatField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.FloatField=10;", null);
+            _ExecuteTest("mdl.FloatField='testing';", "Cannot set FloatField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.FloatField=Number('{0}')+Number('1e38');", float.MaxValue), "Cannot set FloatField: invalid type: Value is a number, but is too large for a Single");
+            _ExecuteTest("mdl.FloatField=null;", "Cannot set FloatField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullFloatProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullFloatField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullFloatField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullFloatField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullFloatField=Number('{0}')+Number('1e38');", float.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullFloatField: invalid type: Value is a number, but is too large for a Single");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullFloatField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullFloatField=10;", null);
+            _ExecuteTest("mdl.NullFloatField='testing';", "Cannot set NullFloatField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullFloatField=Number('{0}')+Number('1e38');", float.MaxValue), "Cannot set NullFloatField: invalid type: Value is a number, but is too large for a Single");
+            _ExecuteTest("mdl.NullFloatField=null;", null);
         }
 
         [TestMethod]
         public void TestDecimalProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.DecimalField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.DecimalField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DecimalField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.DecimalField=Number('{0}')+Number('1e58');", decimal.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DecimalField: invalid type: Value is a number, but is too large for a Decimal");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.DecimalField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DecimalField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.DecimalField=10;", null);
+            _ExecuteTest("mdl.DecimalField='testing';", "Cannot set DecimalField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.DecimalField=Number('{0}')+Number('1e58');", decimal.MaxValue), "Cannot set DecimalField: invalid type: Value is a number, but is too large for a Decimal");
+            _ExecuteTest("mdl.DecimalField=null;", "Cannot set DecimalField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullDecimalProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullDecimalField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullDecimalField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullDecimalField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullDecimalField=Number('{0}')+Number('1e58');", decimal.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullDecimalField: invalid type: Value is a number, but is too large for a Decimal");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullDecimalField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullDecimalField=10;", null);
+            _ExecuteTest("mdl.NullDecimalField='testing';", "Cannot set NullDecimalField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullDecimalField=Number('{0}')+Number('1e58');", decimal.MaxValue), "Cannot set NullDecimalField: invalid type: Value is a number, but is too large for a Decimal");
+            _ExecuteTest("mdl.NullDecimalField=null;", null);
         }
 
         [TestMethod]
         public void TestDoubleProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.DoubleField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.DoubleField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DoubleField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.DoubleField=Number('{0}')+Number('1e308');", double.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DoubleField: invalid type: Value is a number, but is too large for a Double");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.DoubleField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DoubleField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.DoubleField=10;", null);
+            _ExecuteTest("mdl.DoubleField='testing';", "Cannot set DoubleField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.DoubleField=Number('{0}')+Number('1e308');", double.MaxValue), "Cannot set DoubleField: invalid type: Value is a number, but is too large for a Double");
+            _ExecuteTest("mdl.DoubleField=null;", "Cannot set DoubleField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullDoubleProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullDoubleField=10;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullDoubleField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullDoubleField: invalid type: Value not a number and cannot be converted");
-            }
-            try
-            {
-                eng.Execute(_content + string.Format("mdl.NullDoubleField=Number('{0}')+Number('1e308');", double.MaxValue));
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullDoubleField: invalid type: Value is a number, but is too large for a Double");
-            }
-            try
-            {
-                eng.Execute(_content + "mdl.NullDoubleField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullDoubleField=10;", null);
+            _ExecuteTest("mdl.NullDoubleField='testing';", "Cannot set NullDoubleField: invalid type: Value not a number and cannot be converted");
+            _ExecuteTest(string.Format("mdl.NullDoubleField=Number('{0}')+Number('1e308');", double.MaxValue), "Cannot set NullDoubleField: invalid type: Value is a number, but is too large for a Double");
+            _ExecuteTest("mdl.NullDoubleField=null;", null);
         }
 
         [TestMethod]
         public void TestEnumProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.EnumField='Test1';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.EnumField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set EnumField: invalid type: Value is not in the list of enumarators");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.EnumField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set EnumField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.EnumField='Test1';", null);
+            _ExecuteTest("mdl.EnumField='testing';", "Cannot set EnumField: invalid type: Value is not in the list of enumarators");
+            _ExecuteTest("mdl.EnumField=null;", "Cannot set EnumField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullEnumProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullEnumField=false;");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullEnumField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullEnumField: invalid type: Value is not in the list of enumarators");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullEnumField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullEnumField='Test1';", null);
+            _ExecuteTest("mdl.NullEnumField='testing';", "Cannot set NullEnumField: invalid type: Value is not in the list of enumarators");
+            _ExecuteTest("mdl.NullEnumField=null;", null);
         }
 
         [TestMethod]
         public void TestDateTimeProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.DateTimeField=new Date();");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.DateTimeField='2022-09-01';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.DateTimeField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DateTimeField: invalid type: Value is not a Date and cannot be converted to one");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.DateTimeField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set DateTimeField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.DateTimeField=new Date();", null);
+            _ExecuteTest("mdl.DateTimeField='2022-09-01';", null);
+            _ExecuteTest("mdl.DateTimeField='testing';", "Cannot set DateTimeField: invalid type: Value is not a Date and cannot be converted to one");
+            _ExecuteTest("mdl.DateTimeField=null;", "Cannot set DateTimeField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullDateTimeProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullDateTimeField=new Date();");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullDateTimeField='2022-09-01';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullDateTimeField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullDateTimeField: invalid type: Value is not a Date and cannot be converted to one");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullDateTimeField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullDateTimeField=new Date();", null);
+            _ExecuteTest("mdl.NullDateTimeField='2022-09-01';", null);
+            _ExecuteTest("mdl.NullDateTimeField='testing';", "Cannot set NullDateTimeField: invalid type: Value is not a Date and cannot be converted to one");
+            _ExecuteTest("mdl.NullDateTimeField=null;", null);
         }
 
         [TestMethod]
         public void TestByteArrayProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.ByteArrayField='"+Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123"))+"'");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.ByteArrayField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ByteArrayField: invalid type: Value is not a Byte[] and cannot be converted to one");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.ByteArrayField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ByteArrayField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.ByteArrayField='"+Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123"))+"'", null);
+            _ExecuteTest("mdl.ByteArrayField='testing';", "Cannot set ByteArrayField: invalid type: Value is not a Byte[] and cannot be converted to one");
+            _ExecuteTest("mdl.ByteArrayField=null;", "Cannot set ByteArrayField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullByteArrayProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullByteArrayField='" + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123")) + "'");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullByteArrayField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullByteArrayField: invalid type: Value is not a Byte[] and cannot be converted to one");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullByteArrayField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullByteArrayField='"+Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123"))+"'", null);
+            _ExecuteTest("mdl.NullByteArrayField='testing';", "Cannot set NullByteArrayField: invalid type: Value is not a Byte[] and cannot be converted to one");
+            _ExecuteTest("mdl.NullByteArrayField=null;", null);
         }
 
         [TestMethod]
         public void TestIPAddressProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + String.Format("mdl.IPAddressField='{0}';",IPAddress.Loopback));
-                Assert.IsTrue(true);
-                eng.Execute(_content + String.Format("mdl.IPAddressField='{0}';", IPAddress.IPv6Loopback));
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.IPAddressField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set IPAddressField: invalid type: Value is not an IPAddress");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.IPAddressField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set IPAddressField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest(String.Format("mdl.IPAddressField='{0}';", IPAddress.Loopback), null);
+            _ExecuteTest(String.Format("mdl.IPAddressField='{0}';", IPAddress.IPv6Loopback), null);
+            _ExecuteTest("mdl.IPAddressField='testing';", "Cannot set IPAddressField: invalid type: Value is not an IPAddress");
+            _ExecuteTest("mdl.IPAddressField=null;", "Cannot set IPAddressField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullIPAddressProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + String.Format("mdl.NullIPAddressField='{0}';", IPAddress.Loopback));
-                Assert.IsTrue(true);
-                eng.Execute(_content + String.Format("mdl.NullIPAddressField='{0}';", IPAddress.IPv6Loopback));
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullIPAddressField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullIPAddressField: invalid type: Value is not an IPAddress");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullIPAddressField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest(String.Format("mdl.NullIPAddressField='{0}';", IPAddress.Loopback), null);
+            _ExecuteTest(String.Format("mdl.NullIPAddressField='{0}';", IPAddress.IPv6Loopback), null);
+            _ExecuteTest("mdl.NullIPAddressField='testing';", "Cannot set NullIPAddressField: invalid type: Value is not an IPAddress");
+            _ExecuteTest("mdl.NullIPAddressField=null;", null);
         }
 
         [TestMethod]
         public void TestVersionProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.VersionField='0.0.0';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.VersionField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set VersionField: invalid type: Value is not a Version");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.VersionField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set VersionField: invalid type: Value is not allowed to be null");
-            }
+            _ExecuteTest("mdl.VersionField='0.0.0';", null);
+            _ExecuteTest("mdl.VersionField='testing';", "Cannot set VersionField: invalid type: Value is not a Version");
+            _ExecuteTest("mdl.VersionField=null;", "Cannot set VersionField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullVersionProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullVersionField='0.0.0';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullVersionField='testing';");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullVersionField: invalid type: Value is not a Version");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullVersionField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.NullVersionField='0.0.0';", null);
+            _ExecuteTest("mdl.NullVersionField='testing';", "Cannot set NullVersionField: invalid type: Value is not a Version");
+            _ExecuteTest("mdl.NullVersionField=null;",null);
         }
 
         [TestMethod]
         public void TestExceptionProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.ExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + @"try{
+            _ExecuteTest("mdl.ExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';", null);
+            _ExecuteTest(@"try{
     throw 'Testing';
 }catch(err){
     mdl.ExceptionField=err;
-}");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.ExceptionField={};");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ExceptionField: invalid type: Value is not an Exception");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.ExceptionField=null;");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set ExceptionField: invalid type: Value is not allowed to be null");
-            }
+}", null);
+            _ExecuteTest("mdl.ExceptionField={};", "Cannot set ExceptionField: invalid type: Value is not an Exception");
+            _ExecuteTest("mdl.ExceptionField=null;", "Cannot set ExceptionField: invalid type: Value is not allowed to be null");
         }
 
         [TestMethod]
         public void TestNullExceptionProperty()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_content + "mdl.NullExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';");
-                Assert.IsTrue(true);
-                eng.Execute(_content + @"try{
+            _ExecuteTest("mdl.NullExceptionField='{\"Message\":\"Testing\",\"StackTrace\":\"123\\n456\\n789\",\"Source\":\"Testing.cs\"}';", null);
+            _ExecuteTest(@"try{
     throw 'Testing';
 }catch(err){
     mdl.NullExceptionField=err;
-}");
-                Assert.IsTrue(true);
-                eng.Execute(_content + "mdl.NullExceptionField={};");
-                Assert.IsTrue(false);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(e.Message, "Cannot set NullExceptionField: invalid type: Value is not an Exception");
-            }
-            try
-            {
-                eng.Execute(_content + @"mdl.NullExceptionField=null;");
-                Assert.IsTrue(true);
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+}", null);
+            _ExecuteTest("mdl.NullExceptionField={};", "Cannot set NullExceptionField: invalid type: Value is not an Exception");
+            _ExecuteTest("mdl.NullExceptionField=null;", null);
         }
     }
 }

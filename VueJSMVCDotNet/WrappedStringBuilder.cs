@@ -55,7 +55,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private void _Append(string value)
         {
-            _sb.Append((_minimize ? value.Trim() : value));
+            _sb.Append((_minimize ? JSMinifier.StripComments(value.Trim()) : value));
         }
 
         public int Length

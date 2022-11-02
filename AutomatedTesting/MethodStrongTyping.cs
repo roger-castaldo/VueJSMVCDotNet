@@ -22,7 +22,7 @@ namespace AutomatedTesting
             int status;
             _content = Constants.JAVASCRIPT_BASE + new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware, out status)).ReadToEnd() + @"
 
-var mdl = App.Models.mDataTypes.createInstance();
+var mdl = new mDataTypes();
 ";
         }
 

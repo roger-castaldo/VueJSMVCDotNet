@@ -27,14 +27,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
             builder.AppendLine(@"       #hashCode=undefined;
         async #setHash(){
-            this.#hashCode = await H(JSON.stringify(_stripBigInt({");
+            let tmp = this;
+            H(JSON.stringify(_stripBigInt({");
             bool isFirst = true;
             foreach (PropertyInfo p in props)
             {
                 builder.AppendLine(string.Format("      {1}{0}:this.#{0}", p.Name,(isFirst?"":",")));
                 isFirst = false;
             }
-            builder.AppendLine(@"})));
+            builder.AppendLine(@"}))).then(hash=>{tmp.#hashCode=hash;});
         }");
 
             builder.AppendLine(string.Format(@"    constructor(){{
@@ -72,7 +73,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     builder.AppendLine(string.Format("      set {0}(val){{ this.#{0} = _checkProperty('{0}','{1}',val,{2}); this.#setHash(); }}", new object[] {
                         p.Name,
-                        Utility.GetTypeString(p.PropertyType,false),
+                        Utility.GetTypeString(p.PropertyType,p.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
                         Utility.GetEnumList(p.PropertyType)
                     }));
                 }
