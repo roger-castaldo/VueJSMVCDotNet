@@ -482,6 +482,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return props;
         }
 
+        internal static List<MethodInfo> GetModelMethods(Type modelType,bool staticOnly)
+        {
+            List<MethodInfo> ret  = new List<MethodInfo>();
+            foreach (MethodInfo mi in modelType.GetMethods((staticOnly ? Constants.STATIC_INSTANCE_METHOD_FLAGS : Constants.INSTANCE_METHOD_FLAGS))){
+                if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                    ret.Add(mi);
+            }
+            return ret;
+        }
+
         internal static string GetModelUrlRoot(Type modelType)
         {
             return GetModelUrlRoot(modelType, null);

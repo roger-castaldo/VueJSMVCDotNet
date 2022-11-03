@@ -37,7 +37,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         private void _AppendReloadMethod(Type modelType, string urlRoot, ref WrappedStringBuilder builder)
         {
             Logger.Trace("Adding reload method for Model Definition[{0}]", new object[] { modelType.FullName });
-            builder.AppendLine(string.Format(@"     reload(){{
+            builder.AppendLine(string.Format(@"     #reload(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
                     if (model.isNew()){{
@@ -74,7 +74,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendDelete(string urlRoot, ref WrappedStringBuilder builder)
         {
-            builder.AppendLine(string.Format(@"         destroy(){{
+            builder.AppendLine(string.Format(@"         #destroy(){{
                 let model = this;
                 return new Promise((resolve,reject)=>{{
                     if (model.isNew()){{
@@ -111,7 +111,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendUpdate(string urlRoot, ref WrappedStringBuilder builder,bool useJSON)
         {
-            builder.AppendLine(string.Format(@"         update(){{
+            builder.AppendLine(string.Format(@"         #update(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
                     if (!model.isValid){{
@@ -133,7 +133,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                 if (response.ok){{                 
                                     let data = response.json();
                                     if (data){{
-                                        data=getMap(model).{3};
+                                        data=model.{3};
                                         for(let prop in data){{
                                             if (prop!='id'){{
                                                 data[prop]=model[prop];
@@ -164,7 +164,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 
         private void _AppendSave(string urlRoot, ref WrappedStringBuilder builder,bool useJSON)
         {
-            builder.AppendLine(string.Format(@"             save(){{
+            builder.AppendLine(string.Format(@"             #save(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
                     if (!model.isValid){{

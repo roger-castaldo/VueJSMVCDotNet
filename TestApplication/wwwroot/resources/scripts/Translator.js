@@ -3,7 +3,7 @@
         return str;
     }
     return str.replace(/{(\d+)}/g, function (match, number) {
-        return (typeof args[number] != 'undefined' ? (args[number] == null ? '' : args[number]) : '');
+        return (typeof args[number] !== 'undefined' && args[number] == null ? '' : args[number]);
     });
 };
 
@@ -33,9 +33,9 @@ export default function (message,args,language) {
     let splt = message.split('.');
     let ret = null;
     let langs = [language, 'en'];
-    for (let x = 0; x < langs.length; x++) {
-        ret = messages[langs[x]];
-        var idx = 0;
+    langs.forEach((lang) => {
+        ret = messages[lang];
+        let idx = 0;
         while (ret != undefined && ret != null) {
             ret = ret[splt[idx]];
             idx++;
@@ -46,6 +46,6 @@ export default function (message,args,language) {
         if (ret != undefined && ret != null) {
             break;
         }
-    }
+    });
     return (ret == null || ret == undefined ? message : _format(ret,args));
 }
