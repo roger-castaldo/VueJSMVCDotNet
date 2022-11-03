@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet;
 using TestApplication.Handlers;
 
@@ -36,7 +37,7 @@ namespace TestApplication
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseSession();
-            app.UseVueHandler(new VueHandlerOptions(new SessionManager(), baseURL: "testing"));
+            app.UseVueHandler(new VueHandlerOptions(new SessionManager(), baseURL: "testing",fileProvider:env.ContentRootFileProvider));
             app.UseVueComponentMiddleware(new VueComponentMiddlewareOptions(new System.IO.DirectoryInfo(env.WebRootPath), "/resources/components"));
         }
     }

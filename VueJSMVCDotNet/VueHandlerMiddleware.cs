@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -21,8 +22,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         internal ILogWriter LogWriter { get { return _logWriter; } }
         private readonly string _baseURL;
         internal string BaseURL { get { return _baseURL; } }
-        private bool _ignoreInvalidModels;
+        private readonly bool _ignoreInvalidModels;
         internal bool IgnoreInvalidModels { get { return _ignoreInvalidModels; } }
+        private readonly IFileProvider _fileProvider;
+        internal IFileProvider FileProvider { get { return _fileProvider; } }
 
         /// <summary>
         /// default constructor used to supply the middleware options
@@ -31,12 +34,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="logWriter">(optional)An instance of a log writer class to write the logging information to</param>
         /// <param name="baseURL">Optional: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")</param>
         /// <param name="ignoreInvalidModels">Optional: If flagged as true it will ignore/disable invalid models</param>
-        public VueHandlerOptions(ISecureSessionFactory sessionFactory, ILogWriter logWriter=null, string baseURL=null,bool ignoreInvalidModels=false)
+        /// <param name="fileProvider"></param>
+        public VueHandlerOptions(ISecureSessionFactory sessionFactory, ILogWriter logWriter=null, string baseURL=null,bool ignoreInvalidModels=false, IFileProvider fileProvider=null)
         {
             _sessionFactory=sessionFactory;
             _logWriter=logWriter;
             _baseURL=baseURL;
             _ignoreInvalidModels=ignoreInvalidModels;
+            _fileProvider=fileProvider;
         }
     }
 
@@ -48,6 +53,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private readonly RequestDelegate _next;
         private readonly VueHandlerOptions _options;
         private readonly ModelRequestHandler _handler;
+        private readonly IFileProvider _fileProvider;
 
         /// <summary>
         /// default constructor as per dotnet standards
@@ -59,6 +65,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _next=next;
             _options=options;
             _handler = new ModelRequestHandler(_options.LogWriter,options.BaseURL,options.IgnoreInvalidModels);
+            _fileProvider = options.FileProvider;
         }
 
         /// <summary>
@@ -67,6 +74,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void Dispose()
         {
             _handler.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
