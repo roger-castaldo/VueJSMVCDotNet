@@ -1,0 +1,12 @@
+{
+  "Name": "Name",
+  "DOB": "Date Of Birth",
+  "Registered": "Registered",
+  "CurrentGrade": "Current Grade",
+  "Details": "Details",
+  "Filtering": "Filtering...",
+  "Dashboard": "Dashboard",
+  "Addresses": "Addresses",
+  "Search": "Search",
+  "Formatted": "This is a formatted message {0} was the argument"
+}

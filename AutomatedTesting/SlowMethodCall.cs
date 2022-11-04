@@ -13,12 +13,12 @@ namespace AutomatedTesting
     [TestClass]
     public class SlowMethodCall
     {
-        private VueHandlerMiddleware _middleware;
+        private VueMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
+            _middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
         }
 
         [TestCleanup]

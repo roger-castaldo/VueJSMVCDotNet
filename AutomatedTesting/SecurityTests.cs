@@ -16,12 +16,12 @@ namespace AutomatedTesting
     {
         private const string _NOT_ALLOWED_MESSAGE = "Not Authorized";
         private const int _NOT_ALLOWED_STATUS = 403;
-        private VueHandlerMiddleware _middleware;
+        private VueMiddleware _middleware;
 
         [TestInitialize]
         public void Init()
         {
-            _middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
+            _middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
         }
 
         [TestCleanup]

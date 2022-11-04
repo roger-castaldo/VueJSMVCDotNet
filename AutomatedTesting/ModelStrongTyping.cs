@@ -18,7 +18,7 @@ namespace AutomatedTesting
         [TestInitialize]
         public void Init()
         {
-            VueHandlerMiddleware middleware = new VueHandlerMiddleware(null, new VueHandlerOptions(new SecureSession(), ignoreInvalidModels: true));
+            VueMiddleware middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
             int status;
             _content = Constants.JAVASCRIPT_BASE+new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware,out status)).ReadToEnd()+@"
 

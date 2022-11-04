@@ -11,7 +11,7 @@ namespace AutomatedTesting
     internal static class Utility
     {
 
-        public static MemoryStream ExecuteRequest(string method,string path, VueHandlerMiddleware middleware,out int responseStatus,SecureSession session=null,object parameters=null)
+        public static MemoryStream ExecuteRequest(string method,string path, VueMiddleware middleware,out int responseStatus,SecureSession session=null,object parameters=null)
         {
             MemoryStream ms = new MemoryStream();
             HttpContext context = new DefaultHttpContext();

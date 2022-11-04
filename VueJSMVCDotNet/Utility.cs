@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Reflection;
 #if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
@@ -673,6 +675,36 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             else
                 return "undefined";
+        }
+
+        internal static IDirectoryContents SearchPath(IFileProvider fileProvider, string baseURL, string path)
+        {
+            string[] split = path.ToLower().Split('/');
+            string curPath = "";
+            foreach (string sub in split)
+            {
+                if (sub!="")
+                {
+                    bool changed = false;
+                    foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
+                    {
+                        if (ifi.IsDirectory && ifi.Name.ToLower()==sub.Trim())
+                        {
+                            curPath+=(curPath=="" ? "" : Path.DirectorySeparatorChar.ToString())+ifi.Name;
+                            changed=true;
+                            break;
+                        }
+                    }
+                    if (!changed)
+                    {
+                        curPath=null;
+                        break;
+                    }
+                }
+            }
+            if (curPath==null && baseURL!=null)
+                return SearchPath(fileProvider, null, path.Substring(baseURL.Length));
+            return fileProvider.GetDirectoryContents(curPath);
         }
     }
 }
