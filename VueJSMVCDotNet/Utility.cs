@@ -677,7 +677,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 return "undefined";
         }
 
-        internal static IDirectoryContents SearchPath(IFileProvider fileProvider, string baseURL, string path)
+        internal static string TranslatePath(IFileProvider fileProvider, string baseURL, string path)
         {
             string[] split = path.ToLower().Split('/');
             string curPath = "";
@@ -703,8 +703,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
             }
             if (curPath==null && baseURL!=null)
-                return SearchPath(fileProvider, null, path.Substring(baseURL.Length));
-            return fileProvider.GetDirectoryContents(curPath);
+                return TranslatePath(fileProvider, null, path.Substring(baseURL.Length));
+            return (curPath==null || curPath=="" ? null : curPath);
         }
     }
 }

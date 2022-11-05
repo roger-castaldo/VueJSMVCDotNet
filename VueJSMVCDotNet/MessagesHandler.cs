@@ -113,10 +113,11 @@ export default function (message,args,language) {{
             {
                 if (!cc.HasValue)
                 {
-                    IDirectoryContents contents = Utility.SearchPath(_fileProvider,_baseURL, spath.Substring(0, spath.Length-(spath.EndsWith(".min.js") ? 7 : 3)));
-                    if (contents!=null && contents.Exists)
+                    string fpath = Utility.TranslatePath(_fileProvider,_baseURL, spath.Substring(0, spath.Length-(spath.EndsWith(".min.js") ? 7 : 3)));
+                    if (fpath!=null)
                     {
                         StringBuilder sb = new StringBuilder();
+                        IDirectoryContents contents = _fileProvider.GetDirectoryContents(fpath);
                         foreach (IFileInfo f in contents.Where(f => f.Name.ToLower().EndsWith(".json")))
                         {
                             StreamReader sr = new StreamReader(f.CreateReadStream());
@@ -129,6 +130,11 @@ export default function (message,args,language) {{
                         {
                             sb.Length=sb.Length-2;
                             cc = new CachedContent(contents, sb.ToString());
+                            _fileProvider.Watch(fpath).RegisterChangeCallback(state =>
+                            {
+                                CachedContent ctemp;
+                                _cache.TryRemove((string)state, out ctemp);
+                            }, spath);
                             _cache.TryAdd(spath, cc.Value);
                         }
                     }
