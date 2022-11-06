@@ -19,7 +19,7 @@ namespace AutomatedTesting
         [TestInitialize]
         public void Init()
         {
-            _middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
+            _middleware = Utility.CreateMiddleware(true);
         }
 
         [TestCleanup]
@@ -36,11 +36,16 @@ namespace AutomatedTesting
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            Engine eng = new Engine();
+            Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Execute(Constants.JAVASCRIPT_BASE + content);
-            }catch(Esprima.ParserException e)
+                eng.AddModule("mPerson", content);
+                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch(Esprima.ParserException e)
             {
                 Assert.Fail(e.Message);
             }catch(Exception e)
@@ -56,10 +61,14 @@ namespace AutomatedTesting
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            Engine eng = new Engine();
+            Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Execute(Constants.JAVASCRIPT_BASE + content);
+                eng.AddModule("mPerson", content);
+                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
             {

@@ -44,7 +44,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
-        private string _urlBase;
         internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
@@ -66,16 +65,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
-        private bool _ignoreInvalidModels;
+        private readonly string _urlBase;
+        private readonly bool _ignoreInvalidModels;
+        private readonly string _vueImportPath;
 
         private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
 
         public ModelRequestHandler(ILogWriter logWriter,
             string baseURL,
-            bool ignoreInvalidModels)
+            bool ignoreInvalidModels,
+            string vueImportPath)
         {
             _urlBase=baseURL;
             _ignoreInvalidModels=ignoreInvalidModels;
+            _vueImportPath=(vueImportPath==null ? "https://unpkg.com/vue@3/dist/vue.esm-browser.js" : vueImportPath);
             if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
             {
                 if (!_urlBase.EndsWith("/"))
@@ -86,7 +89,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _startTime = DateTime.Now;
             _Handlers = new IRequestHandler[]
             {
-                new JSHandler(_urlBase),
+                new JSHandler(_urlBase,_vueImportPath),
                 new LoadAllHandler(),
                 new StaticMethodHandler(this),
                 new LoadHandler(),

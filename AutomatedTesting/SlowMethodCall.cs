@@ -18,7 +18,7 @@ namespace AutomatedTesting
         [TestInitialize]
         public void Init()
         {
-            _middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
+            _middleware = Utility.CreateMiddleware(true);
         }
 
         [TestCleanup]

@@ -18,7 +18,7 @@ namespace AutomatedTesting
             Exception e=null;
             try
             {
-                VueMiddleware middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: false)));
+                VueMiddleware middleware = Utility.CreateMiddleware(false);
             }
             catch(Exception ex)
             {
@@ -30,7 +30,7 @@ namespace AutomatedTesting
         [TestMethod]
         public void TestDisableInvalid()
         {
-            VueMiddleware middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
+            VueMiddleware middleware = Utility.CreateMiddleware(true);
             HttpContext context = new DefaultHttpContext();
             context.Request.Method = "GET";
             context.Request.Host = new HostString("localhost");

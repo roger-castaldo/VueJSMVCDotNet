@@ -18,12 +18,9 @@ namespace AutomatedTesting
         [TestInitialize]
         public void Init()
         {
-            VueMiddleware middleware = new VueMiddleware(null, new VueMiddlewareOptions(modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: true)));
+            VueMiddleware middleware = Utility.CreateMiddleware(true);
             int status;
-            _content = Constants.JAVASCRIPT_BASE+new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware,out status)).ReadToEnd()+@"
-
-var mdl = new mDataTypes();
-";
+            _content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware,out status)).ReadToEnd();
         }
 
         [TestCleanup]
@@ -34,11 +31,19 @@ var mdl = new mDataTypes();
 
         private void _ExecuteTest(string additionalCode, string errorMessage)
         {
-            Engine eng = new Engine();
+            Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Execute(_content + additionalCode);
-                Assert.IsTrue((errorMessage!=null ? false : true));
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.AddModule("mDataTypes", _content);
+                eng.AddModule("custom", string.Format(@"
+    import {{ mDataTypes }} from 'mDataTypes';
+    let mdl = new mDataTypes();
+    {0}
+    export const name = 'John';
+", additionalCode));
+                var ns = eng.ImportModule("custom");
+                Assert.IsTrue((errorMessage!=null ? false : ns.Get("name").AsString()=="John"));
             }
             catch (Esprima.ParserException e)
             {

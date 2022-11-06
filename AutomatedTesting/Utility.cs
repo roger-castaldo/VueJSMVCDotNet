@@ -1,5 +1,7 @@
 ﻿using AutomatedTesting.Models;
 using AutomatedTesting.Security;
+using Jint;
+using Jint.Native;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
@@ -49,6 +51,30 @@ namespace AutomatedTesting
             string content = new StreamReader(ms).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             return JSON.JsonDecode(content);
+        }
+
+        private const string _VUE_IMPORT_PATH = "vue";
+
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels)
+        {
+            return new VueMiddleware(null, new VueMiddlewareOptions(
+                modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
+                vueImportPath:_VUE_IMPORT_PATH)
+            );
+        }
+
+        public static Engine CreateEngine()
+        {
+            Options opt = new Options();
+            opt.EnableModules(typeof(Utility).Assembly.Location.Substring(0, typeof(Utility).Assembly.Location.LastIndexOf(Path.DirectorySeparatorChar)));
+            Engine engine = new Engine(opt);
+            engine.AddModule(_VUE_IMPORT_PATH, @"
+            const version = '3.0.0';
+            const createApp = function(){};
+            const isProxy = function(){};
+            const toRaw = function(){};
+            export {version,createApp,isProxy,toRaw};");
+            return engine;
         }
 
     }

@@ -41,12 +41,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private Dictionary<string, string> _cache;
         private Dictionary<Type,ModelJSFilePath[]> _types;
-        private string _urlBase;
-        public JSHandler(string urlBase)
+        private readonly string _urlBase;
+        private readonly string _vueImportPath;
+        public JSHandler(string urlBase,string vueImportPath)
         {
             _cache = new Dictionary<string, string>();
             _types = new Dictionary<Type, ModelJSFilePath[]>();
             _urlBase=urlBase;
+            _vueImportPath=vueImportPath;
         }
 
         public void ClearCache()
@@ -151,6 +153,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 {
                     Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
+                    builder.AppendLine(string.Format(@"import {{ version as Vversion, createApp as VcreateApp, isProxy as VisProxy, toRaw as VtoRaw }} from ""{0}"";
+const Vue = {{
+    version:Vversion,
+    createApp:VcreateApp,
+    isProxy:VisProxy,
+    toRaw:VtoRaw
+}};",_vueImportPath));
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
                     {
                         builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));

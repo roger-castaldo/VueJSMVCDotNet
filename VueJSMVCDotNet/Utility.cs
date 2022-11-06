@@ -683,7 +683,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             string curPath = "";
             foreach (string sub in split)
             {
-                if (sub!="")
+                if (sub=="..")
+                {
+                    if (curPath.Contains(Path.DirectorySeparatorChar.ToString()))
+                        curPath=curPath.Substring(0, curPath.LastIndexOf(Path.DirectorySeparatorChar));
+                }else if (sub!="" && sub!=".")
                 {
                     bool changed = false;
                     foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
