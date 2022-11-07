@@ -37,7 +37,11 @@ namespace TestApplication
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseSession();
-            app.UseVueMiddleware(new VueMiddlewareOptions(modelsOptions:new VueModelsOptions(new SessionManager(), baseURL: "testing"),messageOptions:new MessageHandlerOptions(env.WebRootFileProvider,"/resources/messages")));
+            app.UseVueMiddleware(new VueMiddlewareOptions(
+                vueImportPath: "vue",
+                modelsOptions:new VueModelsOptions(new SessionManager(), baseURL: "testing"),
+                messageOptions:new MessageHandlerOptions(env.WebRootFileProvider,"/resources/messages"))
+            );
             app.UseVueComponentMiddleware(new VueComponentMiddlewareOptions(new System.IO.DirectoryInfo(env.WebRootPath), "/resources/components"));
         }
     }

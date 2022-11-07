@@ -1,13 +1,19 @@
 <html>
 <head>
-    <script src="https://unpkg.com/vue@next/dist/vue.global.js"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "vue":"https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+          }
+        }
+    </script>
     <script type="module">
         import translator from './resources/messages/test.js';
 
         console.log(translator('Filtering'));
         console.log(translator('Formatted', ['a single input from the array']));
         console.log(translator('Name'));
-        console.log(translator('Name',null,'fr'));
+        console.log(translator('Name', null, 'fr'));
     </script>
 </head>
 <body>
@@ -118,13 +124,20 @@
             </tr>
         </tfoot>
     </table>
+
+    <ul id="list_items_module">
+        <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
+        <li v-on:click="append('NewItem')">Add New</li>
+    </ul>
     <script type="module">
         import { mPerson } from "/testing/resources/scripts/mPerson.js";
         import { User } from "/testing/resources/scripts/models/User.js";
+        import { createApp } from "vue";
+        import hiddenArray from "/resources/scripts/hiddenArray.js";
 
-        var person =mPerson.createInstance();
+        var person = mPerson.createInstance();
         console.log(person);
-        var frm = Vue.createApp({
+        var frm = createApp({
             data: function () {
                 return { person: null, lst: null, FirstName: null, LastName: null };
             },
@@ -211,7 +224,7 @@
                 }
             }
         };
-        window.lst =mPerson.LoadAll().toVue({
+        window.lst = mPerson.LoadAll().toVue({
             components: {
                 asynccomp
             },
@@ -229,11 +242,11 @@
                 },
                 CreateNew: function () {
                     frm.lst = this.Items;
-                    frm.person =mPerson.createInstance();
+                    frm.person = mPerson.createInstance();
                 }
             }
         }).mount('#dvList');
-        window.lstFiltered =mPerson.Search(null).toVue({
+        window.lstFiltered = mPerson.Search(null).toVue({
             data: function () {
                 return { current_filter: null };
             },
@@ -244,7 +257,13 @@
                 }
             }
         }).mount('#dvListFiltered');
-       mPerson.TestNull().then(result => { alert(result == null); });
+        mPerson.TestNull().then(result => { alert(result == null); });
+        let hiddenApp = createApp({
+            setup(props, { attrs, slots, emit, expose }) {
+                const { Items, append } = hiddenArray(props, { attrs, slots, emit, expose });
+                return { Items, append };
+            }
+        }).mount('#list_items_module');
     </script>
 </body>
 </html>
