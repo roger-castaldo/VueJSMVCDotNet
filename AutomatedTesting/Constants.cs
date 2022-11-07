@@ -53,6 +53,8 @@ namespace AutomatedTesting
         });
     }
 
+    const window = {navigator:{language:'en-us'}};
+
     /*class XMLHttpRequest {
         constructor() {
             this.withCredentials=false;

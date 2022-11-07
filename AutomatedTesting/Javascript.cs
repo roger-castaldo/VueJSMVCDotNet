@@ -91,5 +91,68 @@ export const name = 'John';");
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }
+
+        [TestMethod]
+        public void MessageScriptGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("Translate", content);
+                eng.AddModule("custom", @"import translator from 'Translate';
+export const name = translator('Name',null,'en');");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("Name", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void MessageScriptCompressedGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("Translate", content);
+                eng.AddModule("custom", @"import translator from 'Translate';
+export const name = translator('Name',null,'en');");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("Name", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void MessageScriptCompressionPerformance()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(minContent.Length > 0);
+            Assert.IsTrue(minContent.Length < content.Length);
+        }
     }
 }

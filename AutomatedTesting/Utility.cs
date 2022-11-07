@@ -1,4 +1,5 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.FileProvider;
+using AutomatedTesting.Models;
 using AutomatedTesting.Security;
 using Jint;
 using Jint.Native;
@@ -54,13 +55,17 @@ namespace AutomatedTesting
         }
 
         private const string _VUE_IMPORT_PATH = "vue";
+        private static readonly EmbeddedResourceFileProvider _fileProvider = new EmbeddedResourceFileProvider();
+
+        public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
         public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels)
         {
             return new VueMiddleware(null, new VueMiddlewareOptions(
                 modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
-                vueImportPath:_VUE_IMPORT_PATH)
-            );
+                vueImportPath: _VUE_IMPORT_PATH,
+                messageOptions: new MessageHandlerOptions(_fileProvider, "/resources/messages")
+            ));
         }
 
         public static Engine CreateEngine()

@@ -25,7 +25,7 @@ const messages = {{
     {0}
 }};
 
-export default function (message,args,language) {{
+function Translate(message,args,language) {{
     language = (language===undefined ? window.navigator.userLanguage || window.navigator.language : language);
     if (language.indexOf('-') >= 0) {{
         language = language.substring(0, language.indexOf('-'));
@@ -48,7 +48,9 @@ export default function (message,args,language) {{
         }}
     }});
     return (ret == null || ret == undefined ? message : _format(ret,args));
-}}";
+}}
+
+export default Translate;";
         private static readonly string _COMPRESS_BASE_CODE_TEMPLATE = JSMinifier.Minify(_BASE_CODE_TEMPLATE);
 
         private struct CachedContent
