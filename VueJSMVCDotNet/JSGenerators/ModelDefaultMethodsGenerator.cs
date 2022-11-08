@@ -44,7 +44,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         reject('Cannot reload unsaved model.');
                     }}else{{
                         ajax({{
-                            url:'{0}/'+model.id,
+                            url:'{0}/'+model.{3}.id,
                             type:'GET'
                         }}).then(
                             response=>{{
@@ -68,7 +68,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }}", new object[]{
                 urlRoot,
                 Constants.PARSE_FUNCTION_NAME,
-                Constants.Events.MODEL_LOADED
+                Constants.Events.MODEL_LOADED,
+                Constants.INITIAL_DATA_KEY
             }));
         }
 
@@ -82,7 +83,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }}else{{
                         ajax(
                         {{
-                            url:'{0}/'+model.id,
+                            url:'{0}/'+model.{3}.id,
                             type:'{2}'
                         }}).then(
                             response=>{{
@@ -105,7 +106,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }}", new object[]{
                 urlRoot,
                 Constants.Events.MODEL_DESTROYED,
-                ModelRequestHandler.RequestMethods.DELETE
+                ModelRequestHandler.RequestMethods.DELETE,
+                Constants.INITIAL_DATA_KEY
             }));
         }
 
@@ -125,7 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }}else{{
                             ajax(
                             {{
-                                url:'{0}/'+model.id,
+                                url:'{0}/'+model.{6}.id,
                                 type:'{4}',
                                 useJSON:{5},
                                 data:data
@@ -158,7 +160,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.Events.MODEL_UPDATED,
                 Constants.INITIAL_DATA_KEY,
                 ModelRequestHandler.RequestMethods.PATCH,
-                useJSON.ToString().ToLower()
+                useJSON.ToString().ToLower(),
+                Constants.INITIAL_DATA_KEY
             }));
         }
 

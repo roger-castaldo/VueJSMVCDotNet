@@ -50,8 +50,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }
             builder.AppendLine(string.Format("      this.{0} = jdata;", new object[] { Constants.INITIAL_DATA_KEY }));
             foreach (PropertyInfo pi in props)
-                builder.AppendLine(string.Format("    if (jdata.{0}!==undefined){{ this.{0}=(jdata.{0}===null ? null : (Array.isArray(jdata.{0}) ? jdata.{0}.slice() : jdata.{0})); }}", pi.Name));
-            builder.AppendLine(@"        if (this.$emit !== undefined) { this.$emit('parsed',this); }
+                builder.AppendLine(string.Format("    if (jdata.{0}!==undefined){{ this.#{0}=_checkProperty('{0}','{1}',(jdata.{0}===null ? null : (Array.isArray(jdata.{0}) ? jdata.{0}.slice() : jdata.{0})),'{2}'); }}", new object[]{
+                    pi.Name,
+                    Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
+                    Utility.GetEnumList(pi.PropertyType)
+                }));
+            builder.AppendLine(@"           this.#setHash();
+            if (this.$emit !== undefined) { this.$emit('parsed',this); }
         return this;
         }");
         }
