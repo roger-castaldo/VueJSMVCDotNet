@@ -66,5 +66,26 @@ export const name = "+additionalCode));
         {
             _ExecuteTest("translator('Name',null,'fr')", "Nome");
         }
+
+        [TestMethod]
+        public void TranslateFormattedWithInputs()
+        {
+            _ExecuteTest("translator('Formatted',['hello world'])", String.Format("This is a formatted message {0} was the argument",new object[] {"hello world"}));
+        }
+
+        [TestMethod]
+        public void FileChangeTriggers()
+        {
+            Utility.FileProvider.HidePath("AutomatedTesting.resources.messages.test.fr.json");
+            _ExecuteTest("translator('Name',null,'fr')", "Name");
+            Utility.FileProvider.ShowPath("AutomatedTesting.resources.messages.test.fr.json");
+            _ExecuteTest("translator('Name',null,'fr')", "Nome");
+        }
+
+        [TestMethod]
+        public void MissingMessage()
+        {
+            _ExecuteTest("translator('MissingMessage')", "MissingMessage");
+        }
     }
 }
