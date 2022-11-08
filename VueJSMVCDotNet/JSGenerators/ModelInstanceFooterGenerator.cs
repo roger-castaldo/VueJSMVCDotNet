@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security.Policy;
 using System.Text;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
@@ -50,14 +51,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }
         static createInstance(){
             console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Name+@"' function instead!"");
+            return new "+modelType.Name+@"();
         }
         toVue(options){
+            console.warn(""WARNING! Obsolete function called.Function 'toVue' has been deprecated, please use toVueComposition function instead!"");
             if (options.mixins==undefined){options.mixins=[];}
             options.mixins.push(this.toMixins());
-            return Vue.createApp(options);
+            return createApp(options);
         }
         toMixins(){
-            if (Vue===undefined || Vue.version.indexOf('3')!==0){ throw 'Unable to operate without Vue version 3.0'; }
+            console.warn(""WARNING! Obsolete function called.Function 'toMixins' has been deprecated, please use toVueComposition function instead!"");
             let curObj = this;
             let data = {};
             let methods={

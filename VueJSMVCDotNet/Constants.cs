@@ -150,10 +150,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }}
                 options.mixins.push(opts);
             }}
-            return Vue.createApp(options);
+            return createApp(options);
         }},
         toMixins:function(){{
-            if (Vue===undefined || Vue.version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}
             let items = this;
             let options={{
                 data : function(){{

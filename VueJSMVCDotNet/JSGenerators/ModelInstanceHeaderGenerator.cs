@@ -30,10 +30,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             let arrMap = new WeakMap();
             const getArrayMap = function(arr){
                 let t = arr;
-                if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
-                    if (Vue.isProxy(arr)){
-                        t = Vue.toRaw(arr);
-                    }
+                if (isProxy(arr)){
+                    t = toRaw(arr);
                 }
                 if (arrMap.get(t)!=undefined){
                     return arrMap.get(t);
@@ -42,10 +40,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             };
             const setArrayMap=function(arr){
                 let t = arr;
-                if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
-                    if (Vue.isProxy(arr)){
-                        t = Vue.toRaw(arr);
-                    }
+                if (isProxy(arr)){
+                    t = toRaw(arr);
                 }
                 arrMap.set(t,arr);
             };
@@ -53,10 +49,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             let arrSecMap = new WeakMap();
             const unlockArray=function(arr){
                 let t = arr;
-                if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
-                    if (Vue.isProxy(arr)){
-                        t = Vue.toRaw(arr);
-                    }
+                if (isProxy(arr)){
+                    t = toRaw(arr);
                 }
                 if (arrSecMap.get(t)==undefined){
                     arrSecMap.set(t,[]);
@@ -67,10 +61,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             };
             const lockArray=function(arr,id){
                 let t = arr;
-                if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
-                    if (Vue.isProxy(arr)){
-                        t = Vue.toRaw(arr);
-                    }
+                if (isProxy(arr)){
+                    t = toRaw(arr);
                 }
                 if (arrSecMap.get(t)!=undefined){
                     let index=arrSecMap.get(t).indexOf(id);
@@ -83,10 +75,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             };
             const isArrayLocked=function(arr){
                 let t = arr;
-                if (Vue!=undefined && Vue.isProxy!=undefined && Vue.toRaw!=undefined){
-                    if (Vue.isProxy(arr)){
-                        t = Vue.toRaw(arr);
-                    }
+                if (isProxy(arr)){
+                    t = toRaw(arr);
                 }
                 return (arrSecMap.get(t)==undefined ? [] : arrSecMap.get(t)).length==0;
             };
