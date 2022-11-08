@@ -52,7 +52,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             foreach (PropertyInfo p in props)
                 builder.AppendLine(string.Format("                  case '{0}': return (me.#{0}===undefined ? me.{1}.{0} : me.#{0}); break;", new object[] { p.Name, Constants.INITIAL_DATA_KEY }));
             foreach (MethodInfo m in methods)
-                builder.AppendLine(string.Format("                  case '{0}': return function(){{ return me.{0}.apply(me,arguments);}}; break;", m.Name));
+                builder.AppendLine(string.Format("                  case '{0}': return function(){{ return me.#{0}.apply(me,arguments);}}; break;", m.Name));
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
@@ -62,9 +62,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
                     builder.AppendLine("                  case 'destroy': return function(){{ return me.#destroy.apply(me,arguments);}}; break;");
             }
-            builder.AppendLine(@"                       case 'isNew': return function(){return me.isNew();}; break;
-                        case 'isValid': return function(){return me.isValid();}; break;
-                        case 'invalidFields': return function(){return me.invalidFields();}; break;
+            builder.AppendLine(string.Format(@"              case 'id': return (me.{0}===null || me.{0}===undefined ? null : me.{0}.id); break;
+                       case 'isNew': return function(){{return me.{0}===null || me.{0}.id===undefined || me.{0}.id===null;}}; break;", new object[] { Constants.INITIAL_DATA_KEY }));
+            _AppendValidations(props, ref builder);
+            builder.AppendLine(@"                        case 'invalidFields': return function(){return me.invalidFields();}; break;
                         case 'reload': return function(){return me.#reload();}; break;
                         default: 
                             if (me[prop]!==undefined && isFunction(me[prop]))
@@ -115,23 +116,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }
             });
         }");
-            //foreach (PropertyInfo p in props)
-            //{
-            //    builder.AppendLine(string.Format("     get {0}(){{ return (this.#{0}===undefined ? this.{1}.{0} : this.#{0}); }}", new object[] { p.Name,Constants.INITIAL_DATA_KEY }));
-            //    if (p.CanWrite)
-            //    {
-            //        builder.AppendLine(string.Format("      set {0}(val){{ this.#{0} = _checkProperty('{0}','{1}',val,{2}); this.#setHash(); }}", new object[] {
-            //            p.Name,
-            //            Utility.GetTypeString(p.PropertyType,p.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
-            //            Utility.GetEnumList(p.PropertyType)
-            //        }));
-            //    }
-            //}
-
-            builder.AppendLine(string.Format(@"      get id(){{ return (this.{0}===null || this.{0}===undefined ? null : this.{0}.id); }}
-      isNew(){{ return this.{0}===null || this.{0}.id===undefined || this.{0}.id===null;}}", Constants.INITIAL_DATA_KEY));
-
-            _AppendValidations(props, ref builder);
         }
 
         private void _AppendValidations(List<PropertyInfo> props, ref WrappedStringBuilder builder)
@@ -144,30 +128,32 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }
             if (requiredProps.Count > 0)
             {
-                builder.AppendLine(@"       get isValid(){
-            let ret=true;");
+                builder.AppendLine(@"                        case 'isValid': return function(){
+                    let ret=true;");
                 foreach (PropertyInfo pi in requiredProps)
                 {
                     Logger.Trace("Appending Required Propert[{0}] for Model Definition[{1}] validations", new object[]{
                         pi.Name,
                         pi.DeclaringType.FullName
                     });
-                    builder.AppendLine(string.Format("          ret=ret&&(this.{0}==undefined||this.{0}==null ? false : true);", pi.Name));
+                    builder.AppendLine(string.Format("          ret=ret&&(me.#{0}==undefined||me.#{0}==null ? false : true);", pi.Name));
                 }
                 builder.AppendLine(@"           return ret;
-        }
-        get invalidFields(){
+        };
+        break;
+        case 'invalidFields': return function(){
             let ret=[];");
                 foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(string.Format(@"         if (this.{0}==undefined||this.{0}==null){{
+                    builder.AppendLine(string.Format(@"         if (me.#{0}==undefined||me.#{0}==null){{
                 ret.push('{0}');
             }}", pi.Name));
                 builder.AppendLine(@"           return ret;
-        }");
+        };
+        break;");
             }
             else
-                builder.AppendLine(@"       get isValid(){return true;}
-        get invalidFields(){return [];}");
+                builder.AppendLine(@"       case 'isValid': return  function(){return true;}; break;
+        case 'invalidFields': return function(){return [];}; break;");
         }
     }
 }

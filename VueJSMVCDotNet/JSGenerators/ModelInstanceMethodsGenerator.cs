@@ -43,7 +43,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }
                     }
                 }
-                builder.AppendFormat("          {0}(", mi.Name);
+                builder.AppendFormat("          #{0}(", mi.Name);
                 ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                 for (int x = 0; x < pars.Length; x++)
                     builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
@@ -103,7 +103,7 @@ for(let x=0;x<{0}.length;x++){{
                 return new Promise((resolve,reject)=>{{
                     ajax(
                     {{
-                        url:'{0}/'+model.id+'/{1}',
+                        url:'{0}/'+model.{5}.id+'/{1}',
                         type:'METHOD',
                         useJSON:{2},
                         data:function_data{4}
@@ -115,7 +115,8 @@ for(let x=0;x<{0}.length;x++){{
                         (returnType == typeof(void) ? "" : @"let ret=response.json();
                     if (ret!=undefined||ret==null)
                         response = ret;"),
-                        (em.IsSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")
+                        (em.IsSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : ""),
+                        Constants.INITIAL_DATA_KEY
                     }));
                 if (returnType != typeof(void))
                 {
