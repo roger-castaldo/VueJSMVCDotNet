@@ -45,7 +45,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }}else{{
                         ajax({{
                             url:'{0}/'+model.{3}.id,
-                            type:'GET'
+                            method:'GET'
                         }}).then(
                             response=>{{
                                 if (response.ok){{
@@ -84,7 +84,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         ajax(
                         {{
                             url:'{0}/'+model.{3}.id,
-                            type:'{2}'
+                            method:'{2}'
                         }}).then(
                             response=>{{
                                 if (response.ok){{                 
@@ -128,7 +128,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             ajax(
                             {{
                                 url:'{0}/'+model.{6}.id,
-                                type:'{4}',
+                                method:'{4}',
                                 useJSON:{5},
                                 data:data
                             }}).then(response=>{{
@@ -179,7 +179,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         ajax(
                         {{
                             url:'{0}',
-                            type:'{4}',
+                            method:'{4}',
                             useJSON:{5},
                             data:data
                         }}).then(response=>{{

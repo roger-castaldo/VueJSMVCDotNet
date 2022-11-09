@@ -104,7 +104,7 @@ for(let x=0;x<{0}.length;x++){{
                     ajax(
                     {{
                         url:'{0}/'+model.{5}.id+'/{1}',
-                        type:'METHOD',
+                        method:'METHOD',
                         useJSON:{2},
                         data:function_data{4}
                     }}).then(response=>{{

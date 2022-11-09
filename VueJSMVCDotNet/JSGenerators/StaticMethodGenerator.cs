@@ -105,7 +105,7 @@ for(let x=0;x<{0}.length;x++){{
                     ajax(
                     {{
                         url:'{0}/{1}',
-                        type:'SMETHOD',
+                        method:'SMETHOD',
                         useJSON:{2},
                         data:function_data{4}
                     }}).then(response=>{{

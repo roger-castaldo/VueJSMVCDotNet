@@ -125,7 +125,7 @@ const ajax = function(options) {
                     let pullCall = function() {
                         ajax({
                             url: url,
-                            type: 'PULL',
+                            method:'PULL',
                             useJSON: true
                         }).then(
                             res => {
@@ -159,11 +159,16 @@ const ajax = function(options) {
         });
     } else {
         return new Promise((resolve, reject) => {
+            if (options.url === null || options.url===undefined || options.url==='') {
+                throw 'Unable to call empty url';
+            }
             options = extend(options, {
-                type: 'GET',
+                method:'GET',
                 credentials: false,
                 body: null,
-                headers: {},
+                credentials:'include',
+                headers: {
+                },
                 data: null,
                 url: null,
                 useJSON: true
@@ -171,41 +176,8 @@ const ajax = function(options) {
             if (options.useJSON) {
                 options.headers['Content-Type'] = 'application/json';
             }
-            if (options.url == null) {
-                throw 'Unable to call empty url';
-            }
             options.url += (options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
-            let xmlhttp = new XMLHttpRequest();
-            if (options.credentials) {
-                xmlhttp.withCredentials = true;
-            }
-            xmlhttp.onreadystatechange = function() {
-                if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-                    if (xmlhttp.status == 200) {
-                        resolve({
-                            ok: true,
-                            text: function() {
-                                return xmlhttp.responseText;
-                            },
-                            json: function() {
-                                return (xmlhttp.getResponseHeader('Content-Type') == 'text/text' ? xmlhttp.responseText : _fixDates(JSON.parse(xmlhttp.responseText)));
-                            }
-                        });
-                    } else {
-                        reject({
-                            ok: false,
-                            text: function() {
-                                return xmlhttp.responseText;
-                            }
-                        });
-                    }
-                }
-            };
-            xmlhttp.open(options.type, options.url, true);
-            for (let header in options.headers) {
-                xmlhttp.setRequestHeader(header, options.headers[header]);
-            }
-            let data = null;
+			let data = null;
             if (options.data !== null) {
                 if (options.useJSON) {
                     data = JSON.stringify(_stripBigInt(options.data));
@@ -232,7 +204,37 @@ const ajax = function(options) {
                     }
                 }
             }
-            xmlhttp.send(data);
+            if (options.method!=='GET'){
+			    options.body=data;
+            }else{
+                delete options.body;
+            }
+			let url = options.url;
+			delete options.url;
+			fetch(url,options).then(
+				response=>{
+					response.text().then(content=>{
+						if (response.ok){
+							resolve({
+								ok:true,
+								text:function(){return content;},
+								json:function(){return (response.headers.get('Content-Type')==='text/text' ? content : _fixDates(JSON.parse(content)));}
+							});
+						}else{
+							reject({
+								ok: false,
+								text: function() { return content; }
+							});
+						}
+					});
+				},
+				rejected=>{
+					reject({
+						ok:false,
+						text:function(){return rejected;}
+					});
+				}
+			);
         });
     }
 };

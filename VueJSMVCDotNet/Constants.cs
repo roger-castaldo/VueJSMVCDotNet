@@ -51,7 +51,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 return new Promise((resolve,reject)=>{{
                     ajax({{
                         url:$url$,
-                        type:'GET',
+                        method:'GET',
                         credentials: 'include'
                     }}).then(response=>{{
                         if (response.ok){{                 
