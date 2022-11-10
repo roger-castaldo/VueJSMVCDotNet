@@ -22,7 +22,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@" class {0} {{
         {1}=undefined;
         #isNew(){{ return this.{1}===undefined || this.{1}===null || this.{1}.id===undefined || this.{1}.id===null; }};
-        #events=undefined;", new object[] { modelType.Name,Constants.INITIAL_DATA_KEY }));
+        #events=undefined;
+        get #baseURL(){{return '{2}';}};", new object[] { modelType.Name,Constants.INITIAL_DATA_KEY, Utility.GetModelUrlRoot(modelType,urlBase)}));
 
             foreach (PropertyInfo p in props)
                 builder.AppendLine(string.Format("      #{0}=undefined;", p.Name));
@@ -31,7 +32,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             _AppendToProxy(ref builder,props, methods, modelType);
 
             builder.AppendLine(string.Format(@"    constructor(){{
-            this.{0} = null;
+            this.{0} = {{}};
             let data={1};
             for(let prop in data){{
                 this['#'+prop]=data[prop];
@@ -63,7 +64,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                    builder.AppendLine("                  case 'save': return function(){{ return me.save.apply(me,arguments);}}; break;");
+                    builder.AppendLine("                  case 'save': return function(){{ return me.#save.apply(me,arguments);}}; break;");
                 else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
                     builder.AppendLine("                  case 'update': return function(){{ return me.#update.apply(me,arguments);}}; break;");
                 else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
