@@ -28,6 +28,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 builder.AppendLine(string.Format("      #{0}=undefined;", p.Name));
 
             _AppendValidations(props, ref builder);
+            _AppendToProxy(ref builder,props, methods, modelType);
 
             builder.AppendLine(string.Format(@"    constructor(){{
             this.{0} = null;
@@ -36,10 +37,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 this['#'+prop]=data[prop];
             }}
             this.#events = new EventHandler(['{2}','{3}','{4}','{5}','{6}']);
-            let me = this;
-            return new Proxy(this,{{
-                get: function(target,prop,reciever){{
-                    switch(prop){{", new object[] {
+            return this.#toProxy();
+        }}", new object[] {
                 Constants.INITIAL_DATA_KEY, 
                 JSON.JsonEncode(modelType.GetConstructor(Type.EmptyTypes).Invoke(null)),
                 Constants.Events.MODEL_LOADED,
@@ -48,6 +47,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.Events.MODEL_DESTROYED,
                 Constants.Events.MODEL_PARSED
             }));
+        }
+
+        private void _AppendToProxy(ref WrappedStringBuilder builder, List<PropertyInfo> props, List<MethodInfo> methods, Type modelType)
+        {
+            builder.AppendLine(@"#toProxy(){
+    let me = this;
+    return new Proxy(this,{
+        get: function(target,prop,reciever){
+            switch(prop){");
             foreach (PropertyInfo p in props)
                 builder.AppendLine(string.Format("                  case '{0}': return (me.#{0}===undefined ? me.{1}.{0} : me.#{0}); break;", new object[] { p.Name, Constants.INITIAL_DATA_KEY }));
             foreach (MethodInfo m in methods)
@@ -119,7 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(@"];
                 }
             });
-        }");
+        };");
         }
 
         private void _AppendValidations(List<PropertyInfo> props, ref WrappedStringBuilder builder)

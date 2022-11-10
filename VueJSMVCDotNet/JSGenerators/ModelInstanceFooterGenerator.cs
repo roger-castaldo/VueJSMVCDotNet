@@ -13,42 +13,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             Logger.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.FullName });
-            //    builder.AppendLine(string.Format(@"     class {0} {{
-            //static {1}(){{ ", modelType.Name, Constants.CREATE_INSTANCE_FUNCTION_NAME));
             builder.Append(@"
-        $on(event,callback){
-            if (this.#events===undefined){this.#events={};}
-            if (Array.isArray(event)){
-                for(let x=0;x<event.length;x++){
-                    if (this.#events[event[x]]===undefined){this.#events[event[x]]=[];}
-                    this.#events[event[x]].push(callback);
-                }
-            }else{
-                if (this.#events[event]===undefined){this.#events[event]=[];}
-                this.#events[event].push(callback);
-            }
-        }
-        $off(callback){
-            if (this.#events!=undefined){
-                for(let evt in this.#events){
-                    for(let x=0;x<this.#events[evt].length;x++){
-                        if (this.#events[evt][x]==callback){
-                            this.#events[evt].splice(x,1);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        $emit(event,data){
-            if (this.#events!=undefined){
-                if (this.#events[event]!=undefined){
-                    for(let x=0;x<this.#events[event].length;x++){
-                        this.#events[event][x]((data==undefined ? this : data));
-                    }
-                }
-            }
-        }
         static createInstance(){
             console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Name+@"' function instead!"");
             return new "+modelType.Name+@"();

@@ -40,36 +40,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     #reload(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (model.#isNew()){{
-                        reject('Cannot reload unsaved model.');
-                    }}else{{
-                        ajax({{
-                            url:'{0}/'+model.{3}.id,
-                            method:'GET'
-                        }}).then(
-                            response=>{{
-                                if (response.ok){{
-                                    let data = response.json();
-                                    if (data==null){{
-                                        reject(null);
-                                    }}else{{
-                                        model.{1}(data);
-                                        model.#events.trigger('{2}',model);
-                                        resolve(model);
-                                    }}
-                                }}else{{
-                                    reject(response.text());
-                                }}
-                            }},
-                            response=>{{ reject(response.text()); }}
-                        );
-                    }}
+                    ModelMethods.reload('{0}',model.{1}.id,model.#isNew()).then(
+                        resolved=>{{
+                            model.{2}(data);
+                            let proxy = model.#toProxy();
+                            model.#events.trigger('{3}',proxy);
+                            resolve(proxy);
+                        }},
+                        rejected=>{{
+                            reject(rejected);
+                        }}
+                    );
                 }});
             }}", new object[]{
                 urlRoot,
+                Constants.INITIAL_DATA_KEY,
                 Constants.PARSE_FUNCTION_NAME,
-                Constants.Events.MODEL_LOADED,
-                Constants.INITIAL_DATA_KEY
+                Constants.Events.MODEL_LOADED
             }));
         }
 
@@ -78,36 +65,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"         #destroy(){{
                 let model = this;
                 return new Promise((resolve,reject)=>{{
-                    if (model.#isNew()){{
-                        reject('Cannot delete unsaved model.');
-                    }}else{{
-                        ajax(
-                        {{
-                            url:'{0}/'+model.{3}.id,
-                            method:'{2}'
-                        }}).then(
-                            response=>{{
-                                if (response.ok){{                 
-                                    let data = response.json();
-                                    if (data){{
-                                        model.#events.trigger('{1}',model);
-                                        resolve(model);
-                                    }}else{{
-                                        reject();
-                                    }}
-                                }}else{{
-                                    reject(response.text());
-                                }}
-                            }},
-                            response=>{{reject(response.text());}}
-                        );    
-                    }}
+                    ModelMethods.destroy('{0}',model.{1}.id,model.#isNew()).then(
+                        resolved=>{{
+                            let proxy = model.#toProxy();
+                            model.#events.trigger('{2}',proxy);
+                            resolve(proxy);
+                        }},
+                        rejected=>{{
+                            reject(rejected);
+                        }}
+                    );
                 }});
         }}", new object[]{
                 urlRoot,
-                Constants.Events.MODEL_DESTROYED,
-                ModelRequestHandler.RequestMethods.DELETE,
-                Constants.INITIAL_DATA_KEY
+                Constants.INITIAL_DATA_KEY,
+                Constants.Events.MODEL_DESTROYED
             }));
         }
 
@@ -116,52 +88,29 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"         #update(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (!model.#isValid()){{
-                        reject('Invalid model.');
-                    }}else if (model.#isNew()){{
-                        reject('Cannot update unsaved model, please call save instead.');
-                    }}else{{
-                        let data = model.{1}();
-                        if (JSON.stringify(data)===JSON.stringify({{}})){{
-                            resolve(model);
-                        }}else{{
-                            ajax(
-                            {{
-                                url:'{0}/'+model.{6}.id,
-                                method:'{4}',
-                                useJSON:{5},
-                                data:data
-                            }}).then(response=>{{
-                                if (response.ok){{                 
-                                    let data = response.json();
-                                    if (data){{
-                                        data=model.{3};
-                                        for(let prop in data){{
-                                            if (prop!='id'){{
-                                                data[prop]=model[prop];
-                                            }}
-                                        }}
-                                        model.{3}=data;
-                                        model.#events.trigger('{2}',model);
-                                        resolve(model);
-                                    }}else{{
-                                        reject();
-                                    }}
-                                }}else{{
-                                    reject(response.text());
+                    ModelMethods.update('{0}',model.{1}.id,model.#isNew(),model.#isValid(),model.{2}(),{3}).then(
+                        resolved=>{{
+                            let data=model.{2}();
+                            for(let prop in data){{
+                                if (prop!=='id'){{
+                                    model.{1}[prop]=data[prop];
                                 }}
-                            }},response=>{{reject(response.text());}});
+                            }}
+                            let proxy = model.#toProxy();
+                            model.#events.trigger('{4}',proxy);
+                            resolve(proxy);
+                        }},
+                        rejected=>{{
+                            reject(rejected);
                         }}
-                    }}
+                    );
                 }});
         }}", new object[]{
                 urlRoot,
-                Constants.TO_JSON_VARIABLE,
-                Constants.Events.MODEL_UPDATED,
                 Constants.INITIAL_DATA_KEY,
-                ModelRequestHandler.RequestMethods.PATCH,
+                Constants.TO_JSON_VARIABLE,
                 useJSON.ToString().ToLower(),
-                Constants.INITIAL_DATA_KEY
+                Constants.Events.MODEL_UPDATED
             }));
         }
 
@@ -170,36 +119,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"             #save(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (!model.#isValid()){{
-                        reject('Invalid model.');
-                    }}else if (!model.isNew()){{
-                        reject('Cannot save a saved model, please call update instead.');
-                    }}else{{
-                        let data = model.{1}();
-                        ajax(
-                        {{
-                            url:'{0}',
-                            method:'{4}',
-                            useJSON:{5},
-                            data:data
-                        }}).then(response=>{{
-                            if (response.ok){{                 
-                                model.{2}=extend(data,response.json());
-                                model.#events.trigger('{3}',model);
-                                resolve(model);
-                            }}else{{
-                                reject(response.text());
-                            }}
-                        }},response=>{{reject(response.text());}});    
-                    }}
+                    ModelMethods.save('{0}',model.#isNew(),model.#isValid(),model.{1}(),{2}).then(
+                        resolved=>{{
+                            model.{1}=extend(model.{1}(),resolved);
+                            let proxy = model.#toProxy();
+                            model.#events.trigger('{3}',proxy);
+                            resolve(proxy);
+                        }},
+                        rejected=>{{
+                            reject(rejected);
+                        }}
+                    );
                 }});
         }}", new object[]{
                 urlRoot,
                 Constants.TO_JSON_VARIABLE,
+                useJSON.ToString().ToLower(),
                 Constants.INITIAL_DATA_KEY,
-                Constants.Events.MODEL_SAVED,
-                ModelRequestHandler.RequestMethods.PUT,
-                useJSON.ToString().ToLower()
+                Constants.Events.MODEL_SAVED
             }));
         }
     }

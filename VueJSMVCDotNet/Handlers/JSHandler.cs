@@ -16,6 +16,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
             new HeaderGenerator(),
             new TypingHeader(),
+            new EventClassGenerator(),
+            new DefaultMethodsGenerator(),
             new ParsersGenerator()
         };
 
