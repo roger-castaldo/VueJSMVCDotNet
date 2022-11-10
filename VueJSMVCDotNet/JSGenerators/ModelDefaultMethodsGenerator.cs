@@ -40,7 +40,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     #reload(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (model.isNew()){{
+                    if (model.#isNew()){{
                         reject('Cannot reload unsaved model.');
                     }}else{{
                         ajax({{
@@ -54,7 +54,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                         reject(null);
                                     }}else{{
                                         model.{1}(data);
-                                        if (model.$emit!=undefined){{ model.$emit('{2}',model); }}
+                                        model.#events.trigger('{2}',model);
                                         resolve(model);
                                     }}
                                 }}else{{
@@ -78,7 +78,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"         #destroy(){{
                 let model = this;
                 return new Promise((resolve,reject)=>{{
-                    if (model.isNew()){{
+                    if (model.#isNew()){{
                         reject('Cannot delete unsaved model.');
                     }}else{{
                         ajax(
@@ -90,7 +90,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                 if (response.ok){{                 
                                     let data = response.json();
                                     if (data){{
-                                        if (model.$emit!=undefined){{model.$emit('{1}',model);}}
+                                        model.#events.trigger('{1}',model);
                                         resolve(model);
                                     }}else{{
                                         reject();
@@ -116,9 +116,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"         #update(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (!model.isValid){{
+                    if (!model.#isValid()){{
                         reject('Invalid model.');
-                    }}else if (model.isNew()){{
+                    }}else if (model.#isNew()){{
                         reject('Cannot update unsaved model, please call save instead.');
                     }}else{{
                         let data = model.{1}();
@@ -142,7 +142,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                                             }}
                                         }}
                                         model.{3}=data;
-                                        if (model.$emit!=undefined){{model.$emit('{2}',model);}}
+                                        model.#events.trigger('{2}',model);
                                         resolve(model);
                                     }}else{{
                                         reject();
@@ -170,7 +170,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"             #save(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    if (!model.isValid){{
+                    if (!model.#isValid()){{
                         reject('Invalid model.');
                     }}else if (!model.isNew()){{
                         reject('Cannot save a saved model, please call update instead.');
@@ -185,7 +185,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         }}).then(response=>{{
                             if (response.ok){{                 
                                 model.{2}=extend(data,response.json());
-                                if (model.$emit!=undefined){{model.$emit('{3}',model);}}
+                                model.#events.trigger('{3}',model);
                                 resolve(model);
                             }}else{{
                                 reject(response.text());

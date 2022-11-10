@@ -1,4 +1,4 @@
-﻿import { reactive,readonly } from 'vue';
+﻿import { reactive, readonly } from 'vue';
 
 export default function (props, { attrs, slots, emit, expose }) {
     const data = reactive([]);

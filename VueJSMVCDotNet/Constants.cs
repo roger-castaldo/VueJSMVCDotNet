@@ -216,6 +216,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             public const string MODEL_DESTROYED = "destroyed";
             public const string MODEL_UPDATED = "updated";
             public const string MODEL_SAVED = "saved";
+            public const string MODEL_PARSED = "parsed";
             public const string LIST_MODEL_LOADED = "model_loaded";
             public const string LIST_MODEL_DESTROYED = "model_destroyed";
             public const string LIST_MODEL_UPDATED = "model_updated";

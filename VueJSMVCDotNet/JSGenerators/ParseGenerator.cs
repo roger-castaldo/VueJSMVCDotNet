@@ -55,10 +55,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
                     Utility.GetEnumList(pi.PropertyType)
                 }));
-            builder.AppendLine(@"           this.#setHash();
-            if (this.$emit !== undefined) { this.$emit('parsed',this); }
+            builder.AppendLine(string.Format(@"           this.#events.trigger('{0}',this);
         return this;
-        }");
+        }}",new object[] {Constants.Events.MODEL_PARSED}));
         }
     }
 }

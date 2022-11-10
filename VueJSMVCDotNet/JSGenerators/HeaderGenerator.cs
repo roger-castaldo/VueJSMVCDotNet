@@ -9,21 +9,40 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
         {
-            builder.AppendLine(@"const H = function(m) {
-    let msgUint8 = new TextEncoder().encode(m);
-    return new Promise((resolve) => {
-        if (crypto.subtle == undefined) {
-            resolve(m);
-        } else {
-            crypto.subtle.digest('SHA-256', msgUint8).then(
-                hashBuffer => {
-                    let hashArray = Array.from(new Uint8Array(hashBuffer));
-                    resolve(hashArray.map(b => b.toString(16).padStart(2, '0')).join(''));
-                }
-            );
-        }
-    });
+            builder.AppendLine(@"
+class EventHandler{
+	#events;
+	constructor(events){
+		this.#events={};
+		for(let i in events){
+			this.#events[events[i]] = [];
+		}
+	}
+	
+	on(event,callback){
+		if (this.#events[event]===undefined){throw 'undefined event';}
+		this.#events[event].push(callback);
+	}
+	
+	off(callback){
+		for(let prop in this.#events){
+			for(let x=0;x<this.#events[prop].length;x++){
+				if (this.#events[prop][x]===callback){
+					this.#events[prop].splice(x,1);
+					break;
+				}
+			}
+		}
+	}
+	
+	trigger(event,data){
+		if (this.#events[event]===undefined){throw 'undefined event';}
+		for(let i in this.#events[event]){
+			this.#events[event][i](data);
+		}
+	}
 };
+
 const extractUTCDate = function(date) {
     let ret = date;
     if (!(date instanceof Date)) {
