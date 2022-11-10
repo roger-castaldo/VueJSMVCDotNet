@@ -132,7 +132,7 @@
     <script type="module">
         import { mPerson } from "/testing/resources/scripts/mPerson.js";
         import { User } from "/testing/resources/scripts/models/User.js";
-        import { createApp,watch } from "vue";
+        import { createApp,watch,reactive,ref } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
 
         var person = mPerson.createInstance();
@@ -240,12 +240,12 @@
                 );
 
                 return {
-                    Items:Items,
-                    reload:reload,
-                    EditPerson: function (index) {
+                    Items,
+                    reload,
+                    EditPerson(index) {
                         frm.person = getEditableItem(index);
                     },
-                    CreateNew: function () {
+                    CreateNew() {
                         frm.lst = this;
                         frm.person = mPerson.createInstance();
                     }
@@ -255,15 +255,22 @@
                 asynccomp
             }
         }).mount('#dvList');
-        window.lstFiltered = mPerson.Search(null).toVue({
-            data: function () {
-                return { current_filter: null };
-            },
-            watch: {
-                current_filter: function (val) {
-                    val = (val == '' ? null : val);
-                    this.changeParameters(val);
-                }
+        window.lstFiltered = createApp({
+            setup(){
+                const {Items,changeParameters} = mPerson.Search(null).toVueComposition();
+                let current_filter = ref('');
+
+                watch(
+                    current_filter,
+                    (newValue, oldValue) => {
+                        changeParameters((newValue===''?null:newValue));
+                    }
+                );
+
+                return {
+                    Items,
+                    current_filter
+                };
             }
         }).mount('#dvListFiltered');
         mPerson.TestNull().then(result => { alert(result == null); });
@@ -273,6 +280,18 @@
                 return { Items, append };
             }
         }).mount('#list_items_module');
+
+        mPerson.Search('b',0,1).reload().then(paged=>{
+            console.log(paged.currentPage);
+            console.log(paged.length);
+            console.log(paged.totalPages);
+            console.log(paged[0].FirstName);
+            paged.moveToNextPage().then(()=>{
+                console.log('page moved');
+                console.log(paged.currentPage);
+                console.log(paged[0].FirstName);
+            });
+        });
     </script>
 </body>
 </html>

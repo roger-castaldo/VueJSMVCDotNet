@@ -56,7 +56,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 		return this.#reload();
 	};
 
-	constructor(constructModel,constructURL,isPaged,setParameters){");
+	constructor(constructModel,constructURL,isPaged,setParameters,currentParams,currentIndex,currentPageSize){");
 			builder.AppendLine(string.Format("		this.#events = new EventHandler(['{0}','{1}','{2}','{3}']);",new object[]{
 				Constants.Events.LIST_MODEL_LOADED,
 				Constants.Events.LIST_MODEL_DESTROYED,
@@ -67,11 +67,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 		this.#constructURL = constructURL;
 		this.#isPaged=isPaged;
 		this.#setParameters=setParameters;
+		this.#params=currentParams;
 		this.#data = reactive([]);
 		if (isPaged){
-			this.#currentIndex=0;
-			this.#currentPage=0;
-			this.#currentPageSize=10;
+			this.#currentIndex=(currentIndex===undefined ? 0 : currentIndex);
+			this.#currentPageSize=(currentPageSize===undefined ? 10 : currentPageSize);
 		}
 		return this.#toProxy();
 	};
@@ -144,9 +144,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 					case '$on': ret = function(event,callback) { me.#events.on(event,callback); }; break;
                 	case '$off': ret =  function(callback) { me.#events.off(callback); }; break;
 					default:
-						if (isNaN(prop))
+						if (!isNaN(prop))
 							ret = me.#data[prop];
-						else
+						else if (me.#data[prop]!=undefined)
 							ret = function(){ return me.#data[prop].apply(me.#data,arguments); };
 						break;
 				}
@@ -168,7 +168,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 			let tmp = this;
 			return new Promise((resolve,reject)=>{
 				ajax({
-					url:tmp.#constructURL(tmp.#params),
+					url:tmp.#constructURL(tmp.#params,tmp.#currentIndex,tmp.#currentPageSize),
 					method:'GET',
 					credentials:'include'
 				}).then(
@@ -255,7 +255,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 		let me = this;
 		let ret = {
 			Items:readonly(me.#data),
-			reload:function(){ me.#reload(); },
+			reload:function(){ return me.#reload(); },
 			getEditableItem:function(index){ return me.#data[index]; }
 		};
 		if (this.#isPaged){
@@ -264,10 +264,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 				currentPage:readonly(me.#currentPage),
 				currentPageSize:readonly(me.#currentPageSize),
 				totalPages:readonly(me.#totalPages),
-				moveToPage:function(pageNumber){me.#moveToPage(pageNumber);},
-				moveToNextPage:function(){me.#moveToNextPage();},
-				moveToPreviousPage:function(){me.#moveToPreviousPage();},
-				changePageSize:function(size){me.#changePageSize(size);}
+				moveToPage:function(pageNumber){return me.#moveToPage(pageNumber);},
+				moveToNextPage:function(){return me.#moveToNextPage();},
+				moveToPreviousPage:function(){return me.#moveToPreviousPage();},
+				changePageSize:function(size){return me.#changePageSize(size);}
 			});
 		}
 		if (this.#setParameters!==undefined){
