@@ -10,13 +10,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
         {
             builder.AppendLine(@"
-const extractUTCDate = function(date) {
-    let ret = date;
-    if (!(date instanceof Date)) {
-        ret = new Date(date);
-    }
-    return Date.UTC(ret.getUTCFullYear(), ret.getUTCMonth(), ret.getUTCDate(), ret.getUTCHours(), ret.getUTCMinutes(), ret.getUTCSeconds());
-};
 const isString = function(value) {
     return typeof value === 'string' || value instanceof String;
 };

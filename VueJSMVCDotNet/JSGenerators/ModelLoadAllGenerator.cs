@@ -18,18 +18,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 {
                     Logger.Trace("Adding Load All Method for Model Definition[{0}]", new object[] { modelType.FullName });
                     builder.AppendLine(string.Format(@"     static LoadAll(){{
-        let ret = secureArray(extend([],{{
-            {0}
-            {1}
-            {2}
-        }}));
-        ret.reload();
-        return ret;
-    }}", new object[] {
-                        Constants._LIST_EVENTS_CODE,
-                        Constants.ARRAY_TO_VUE_METHOD,
-                        Constants._LIST_RELOAD_CODE.Replace("$url$", string.Format("'{0}'",urlRoot)).Replace("$type$", modelType.Name)
-                    }));
+                            var ret = new ModelList(
+                                function(){{ return new {0}(); }},
+                                function(){{ return {0}.#baseURL; }},
+                                false,
+                                undefined
+                            );
+                            ret.reload();
+                            return ret;
+                        }}",new object[]{
+                            modelType.Name
+                        }));
                     break;
                 }
             }

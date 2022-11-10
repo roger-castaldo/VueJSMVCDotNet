@@ -32,7 +32,7 @@
             </tr>
         </thead>
         <tbody v-if="Items!=null">
-            <tr v-for="person in Items">
+            <tr v-for="person,index in Items">
                 <td>{{person.FirstName}}</td>
                 <td>{{person.LastName}}</td>
                 <td>
@@ -47,7 +47,7 @@
                 </td>
                 <td>
                     <button v-on:click="person.destroy()">Delete</button>
-                    <button v-on:click="EditPerson(person)">Edit</button>
+                    <button v-on:click="EditPerson(index)">Edit</button>
                 </td>
             </tr>
         </tbody>
@@ -132,7 +132,7 @@
     <script type="module">
         import { mPerson } from "/testing/resources/scripts/mPerson.js";
         import { User } from "/testing/resources/scripts/models/User.js";
-        import { createApp } from "vue";
+        import { createApp,watch } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
 
         var person = mPerson.createInstance();
@@ -224,26 +224,35 @@
                 }
             }
         };
-        window.lst = mPerson.LoadAll().toVue({
-            components: {
-                asynccomp
-            },
-            watch: {
-                Items: {
-                    deep: true,
-                    handler: function () {
+        window.lst = createApp({
+            setup(props, {expose}){
+                const {Items,reload,getEditableItem} = mPerson.LoadAll().toVueComposition();
+                expose({
+                    reload:reload
+                });
+
+                watch(
+                    () => Items,
+                    (newValue, oldValue) => {
                         console.log('Items changed');
+                    },
+                    { deep: true }
+                );
+
+                return {
+                    Items:Items,
+                    reload:reload,
+                    EditPerson: function (index) {
+                        frm.person = getEditableItem(index);
+                    },
+                    CreateNew: function () {
+                        frm.lst = this;
+                        frm.person = mPerson.createInstance();
                     }
                 }
             },
-            methods: {
-                EditPerson: function (person) {
-                    frm.person = person;
-                },
-                CreateNew: function () {
-                    frm.lst = this.Items;
-                    frm.person = mPerson.createInstance();
-                }
+            components: {
+                asynccomp
             }
         }).mount('#dvList');
         window.lstFiltered = mPerson.Search(null).toVue({

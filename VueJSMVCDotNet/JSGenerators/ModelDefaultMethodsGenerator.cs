@@ -17,17 +17,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
                 {
                     Logger.Trace("Adding save method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendSave(ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                    _AppendSave(modelType,ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
                 }
                 else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
                 {
                     Logger.Trace("Adding update method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendUpdate( ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                    _AppendUpdate(modelType, ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
                 }
                 else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
                 {
                     Logger.Trace("Adding delete method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendDelete( ref builder);
+                    _AppendDelete(modelType, ref builder);
                 }
             }
             _AppendReloadMethod(modelType, ref builder);
@@ -39,7 +39,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             builder.AppendLine(string.Format(@"     #reload(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    ModelMethods.reload(model.#baseURL,model.{0}.id,model.#isNew()).then(
+                    ModelMethods.reload({3}.#baseURL,model.{0}.id,model.#isNew()).then(
                         resolved=>{{
                             model.{1}(data);
                             let proxy = model.#toProxy();
@@ -54,16 +54,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }}", new object[]{
                 Constants.INITIAL_DATA_KEY,
                 Constants.PARSE_FUNCTION_NAME,
-                Constants.Events.MODEL_LOADED
+                Constants.Events.MODEL_LOADED,
+                modelType.Name
             }));
         }
 
-        private void _AppendDelete(ref WrappedStringBuilder builder)
+        private void _AppendDelete(Type modelType,ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         #destroy(){{
                 let model = this;
                 return new Promise((resolve,reject)=>{{
-                    ModelMethods.destroy(model.#baseURL,model.{0}.id,model.#isNew()).then(
+                    ModelMethods.destroy({2}.#baseURL,model.{0}.id,model.#isNew()).then(
                         resolved=>{{
                             let proxy = model.#toProxy();
                             model.#events.trigger('{1}',proxy);
@@ -76,16 +77,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }});
         }}", new object[]{
                 Constants.INITIAL_DATA_KEY,
-                Constants.Events.MODEL_DESTROYED
+                Constants.Events.MODEL_DESTROYED,
+                modelType.Name
             }));
         }
 
-        private void _AppendUpdate(ref WrappedStringBuilder builder,bool useJSON)
+        private void _AppendUpdate(Type modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"         #update(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    ModelMethods.update(model.#baseURL,model.{0}.id,model.#isNew(),model.#isValid(),model.{1}(),{2}).then(
+                    ModelMethods.update({4}.#baseURL,model.{0}.id,model.#isNew(),model.#isValid(),model.{1}(),{2}).then(
                         resolved=>{{
                             let data=model.{1}();
                             for(let prop in data){{
@@ -106,16 +108,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.INITIAL_DATA_KEY,
                 Constants.TO_JSON_VARIABLE,
                 useJSON.ToString().ToLower(),
-                Constants.Events.MODEL_UPDATED
+                Constants.Events.MODEL_UPDATED,
+                modelType.Name
             }));
         }
 
-        private void _AppendSave(ref WrappedStringBuilder builder,bool useJSON)
+        private void _AppendSave(Type modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"             #save(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
-                    ModelMethods.save(model.#baseURL,model.#isNew(),model.#isValid(),model.{0}(),{1}).then(
+                    ModelMethods.save({4}.#baseURL,model.#isNew(),model.#isValid(),model.{0}(),{1}).then(
                         resolved=>{{
                             model.{2}=extend(model.{0}(),resolved);
                             let proxy = model.#toProxy();
@@ -131,7 +134,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 useJSON.ToString().ToLower(),
                 Constants.INITIAL_DATA_KEY,
-                Constants.Events.MODEL_SAVED
+                Constants.Events.MODEL_SAVED,
+                modelType.Name
             }));
         }
     }

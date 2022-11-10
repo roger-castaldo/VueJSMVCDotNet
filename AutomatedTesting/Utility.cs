@@ -78,7 +78,9 @@ namespace AutomatedTesting
             const createApp = function(){};
             const isProxy = function(){};
             const toRaw = function(){};
-            export {version,createApp,isProxy,toRaw};");
+            const reactive = function(){};
+            const readonly = function(){};
+            export {version,createApp,isProxy,toRaw,reactive,readonly};");
             return engine;
         }
 

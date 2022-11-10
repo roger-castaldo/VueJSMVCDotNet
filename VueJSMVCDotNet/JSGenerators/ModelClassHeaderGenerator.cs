@@ -23,7 +23,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         {1}=undefined;
         #isNew(){{ return this.{1}===undefined || this.{1}===null || this.{1}.id===undefined || this.{1}.id===null; }};
         #events=undefined;
-        get #baseURL(){{return '{2}';}};", new object[] { modelType.Name,Constants.INITIAL_DATA_KEY, Utility.GetModelUrlRoot(modelType,urlBase)}));
+        static get #baseURL(){{return '{2}';}};", new object[] { modelType.Name,Constants.INITIAL_DATA_KEY, Utility.GetModelUrlRoot(modelType,urlBase)}));
 
             foreach (PropertyInfo p in props)
                 builder.AppendLine(string.Format("      #{0}=undefined;", p.Name));
@@ -110,7 +110,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                     }
                     return Reflect.set(...arguments);
                 },
-                ownKeys(target){
+                ownKeys:function(target){
                     return ['id','isNew','isValid','invalidFields','reload','$on','$off'");
             foreach (PropertyInfo p in props)
                 builder.AppendFormat(",'{0}'", p.Name);
