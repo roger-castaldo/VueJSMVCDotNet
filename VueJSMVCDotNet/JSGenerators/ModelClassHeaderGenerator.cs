@@ -15,7 +15,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
         {
             Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.FullName });
-            string urlRoot = Utility.GetModelUrlRoot(modelType,urlBase);
             List<PropertyInfo> props = Utility.GetModelProperties(modelType);
             List<MethodInfo> methods = Utility.GetModelMethods(modelType, false);
 

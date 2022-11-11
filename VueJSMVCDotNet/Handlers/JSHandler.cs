@@ -32,12 +32,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             new ModelClassHeaderGenerator(),
             new JSONGenerator(),
             new ModelDefaultMethodsGenerator(),
-            new ModelInstanceMethodsGenerator(),
             new ParseGenerator(),
             new ModelInstanceFooterGenerator(),
             new ModelLoadAllGenerator(),
             new ModelLoadGenerator(),
-            new StaticMethodGenerator(),
+            new MethodsGenerator(),
             new ModelListCallGenerator(),
             new ModelClassFooterGenerator()
         };
