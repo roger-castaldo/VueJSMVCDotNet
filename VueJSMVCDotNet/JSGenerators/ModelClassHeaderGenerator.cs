@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
@@ -12,23 +13,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
     {
         
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.FullName });
-            List<PropertyInfo> props = Utility.GetModelProperties(modelType);
-            List<MethodInfo> methods = Utility.GetModelMethods(modelType, false);
+            Logger.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.Type.FullName });
 
             builder.AppendLine(string.Format(@" class {0} {{
         {1}=undefined;
         #isNew(){{ return this.{1}===undefined || this.{1}===null || this.{1}.id===undefined || this.{1}.id===null; }};
         #events=undefined;
-        static get #baseURL(){{return '{2}';}};", new object[] { modelType.Name,Constants.INITIAL_DATA_KEY, Utility.GetModelUrlRoot(modelType,urlBase)}));
+        static get #baseURL(){{return '{2}';}};", new object[] { modelType.Type.Name,Constants.INITIAL_DATA_KEY, Utility.GetModelUrlRoot(modelType.Type,urlBase)}));
 
-            foreach (PropertyInfo p in props)
+            foreach (PropertyInfo p in modelType.Properties)
                 builder.AppendLine(string.Format("      #{0}=undefined;", p.Name));
 
-            _AppendValidations(props, ref builder);
-            _AppendToProxy(ref builder,props, methods, modelType);
+            _AppendValidations(modelType.Properties, ref builder);
+            _AppendToProxy(ref builder,modelType.Properties, modelType.InstanceMethods, modelType);
 
             builder.AppendLine(string.Format(@"    constructor(){{
             this.{0} = {{}};
@@ -40,7 +39,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             return this.#toProxy();
         }}", new object[] {
                 Constants.INITIAL_DATA_KEY, 
-                JSON.JsonEncode(modelType.GetConstructor(Type.EmptyTypes).Invoke(null)),
+                JSON.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null)),
                 Constants.Events.MODEL_LOADED,
                 Constants.Events.MODEL_UPDATED,
                 Constants.Events.MODEL_SAVED,
@@ -49,7 +48,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
             }));
         }
 
-        private void _AppendToProxy(ref WrappedStringBuilder builder, List<PropertyInfo> props, List<MethodInfo> methods, Type modelType)
+        private void _AppendToProxy(ref WrappedStringBuilder builder, PropertyInfo[] props, MethodInfo[] methods, sModelType modelType)
         {
             builder.AppendLine(@"#toProxy(){
     let me = this;
@@ -60,15 +59,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 builder.AppendLine(string.Format("                  case '{0}': return (me.#{0}===undefined ? me.{1}.{0} : me.#{0}); break;", new object[] { p.Name, Constants.INITIAL_DATA_KEY }));
             foreach (MethodInfo m in methods)
                 builder.AppendLine(string.Format("                  case '{0}': return function(){{ return me.#{0}.apply(me,arguments);}}; break;", m.Name));
-            foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
-            {
-                if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                    builder.AppendLine("                  case 'save': return function(){{ return me.#save.apply(me,arguments);}}; break;");
-                else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                    builder.AppendLine("                  case 'update': return function(){{ return me.#update.apply(me,arguments);}}; break;");
-                else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
-                    builder.AppendLine("                  case 'destroy': return function(){{ return me.#destroy.apply(me,arguments);}}; break;");
-            }
+            if (modelType.HasSave)
+                builder.AppendLine("                  case 'save': return function(){{ return me.#save.apply(me,arguments);}}; break;");
+            if (modelType.HasUpdate)
+                builder.AppendLine("                  case 'update': return function(){{ return me.#update.apply(me,arguments);}}; break;");
+            if(modelType.HasDelete)
+                builder.AppendLine("                  case 'destroy': return function(){{ return me.#destroy.apply(me,arguments);}}; break;");
             builder.AppendLine(string.Format(@"              case 'id': return (me.{0}===null || me.{0}===undefined ? null : me.{0}.id); break;", new object[] { Constants.INITIAL_DATA_KEY }));
             builder.AppendLine(@"                        case 'isNew': return function(){return me.#isNew();}; break;
                         case 'isValid': return function(){return me.#isValid();}; break;
@@ -115,22 +111,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 builder.AppendFormat(",'{0}'", p.Name);
             foreach (MethodInfo mi in methods)
                 builder.AppendFormat(",'{0}'", mi.Name);
-            foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
-            {
-                if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                    builder.Append(",'save'");
-                else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                    builder.Append(",'update'");
-                else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
-                    builder.Append(",'destroy'");
-            }
+            if (modelType.HasSave)
+                builder.Append(",'save'");
+            if (modelType.HasUpdate)
+                builder.Append(",'update'");
+            if (modelType.HasDelete)
+                builder.Append(",'destroy'");
             builder.AppendLine(@"];
                 }
             });
         };");
         }
 
-        private void _AppendValidations(List<PropertyInfo> props, ref WrappedStringBuilder builder)
+        private void _AppendValidations(PropertyInfo[] props, ref WrappedStringBuilder builder)
         {
             List<PropertyInfo> requiredProps = new List<PropertyInfo>();
             foreach (PropertyInfo pi in props)

@@ -6,16 +6,17 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class MethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
             List<MethodInfo> methods = new List<MethodInfo>();
-            methods.AddRange(Utility.GetModelMethods(modelType, false));
-            methods.AddRange(Utility.GetModelMethods(modelType, true));
+            methods.AddRange(modelType.InstanceMethods);
+            methods.AddRange(modelType.StaticMethods);
             foreach (MethodInfo mi in methods)
             {
                 Type returnType;
@@ -37,7 +38,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                         {5}",
                         new object[]
                         {
-                            modelType.Name,
+                            modelType.Type.Name,
                             string.Format((mi.IsStatic ? "'{0}'" : "model.{1}.id+'/{0}'"),new object[]{mi.Name,Constants.INITIAL_DATA_KEY}),
                             (mi.IsStatic ? "S":""),
                             (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),

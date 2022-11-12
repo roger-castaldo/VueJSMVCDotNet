@@ -4,19 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelLoadAllGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            string urlRoot = Utility.GetModelUrlRoot(modelType,urlBase);
-            foreach (MethodInfo mi in modelType.GetMethods(Constants.LOAD_METHOD_FLAGS))
+            foreach (MethodInfo mi in modelType.Type.GetMethods(Constants.LOAD_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod), false).Length > 0)
                 {
-                    Logger.Trace("Adding Load All Method for Model Definition[{0}]", new object[] { modelType.FullName });
+                    Logger.Trace("Adding Load All Method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
                     builder.AppendLine(string.Format(@"     static LoadAll(){{
                             var ret = new ModelList(
                                 function(){{ return new {0}(); }},
@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             ret.reload();
                             return ret;
                         }}",new object[]{
-                            modelType.Name
+                            modelType.Type.Name
                         }));
                     break;
                 }

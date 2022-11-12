@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class HeaderGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, sModelType[] models)
         {
             builder.AppendLine(@"
 const isString = function(value) {
@@ -34,14 +35,6 @@ const isDate = function(obj) {
 const isObject = function(obj) {
     let type = typeof obj;
     return (type === 'function' || type === 'object' && !!obj) && !isDate(obj);
-};
-const extend = function(obj1, obj2) {
-    for (let prop in obj2) {
-        if (obj1[prop] == undefined) {
-            obj1[prop] = obj2[prop];
-        }
-    }
-    return obj1;
 };
 const cloneData = function(obj) {
     if (obj === null) {
@@ -141,7 +134,7 @@ const ajax = function(options) {
             if (options.url === null || options.url===undefined || options.url==='') {
                 throw 'Unable to call empty url';
             }
-            options = extend(options, {
+            options = Object.assign({},{
                 method:'GET',
                 credentials: false,
                 body: null,
@@ -151,7 +144,7 @@ const ajax = function(options) {
                 data: null,
                 url: null,
                 useJSON: true
-            });
+            },options);
             if (options.useJSON) {
                 options.headers['Content-Type'] = 'application/json';
             }

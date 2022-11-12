@@ -4,18 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            Logger.Trace("Generating toJSON method for {0}", new object[] { modelType.FullName });
+            Logger.Trace("Generating toJSON method for {0}", new object[] { modelType.Type.FullName });
             builder.AppendLine(string.Format(@"     {0}(){{
         let attrs={{}};
         let prop=null;", Constants.TO_JSON_VARIABLE));
-            foreach (PropertyInfo p in Utility.GetModelProperties(modelType))
+            foreach (PropertyInfo p in modelType.Properties)
             {
                 if (p.CanWrite)
                 {

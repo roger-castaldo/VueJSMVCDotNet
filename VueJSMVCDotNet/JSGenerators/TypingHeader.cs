@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class TypingHeader : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, sModelType[] models)
         {
             builder.Append(@"const _numberRanges = {
     'Int16': { low:-32768, high:32767,hasDecimal:false},

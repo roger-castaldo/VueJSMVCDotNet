@@ -4,12 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelListCallGenerator : IJSGenerator
     {
-        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, Type modelType,string urlBase)
+        private static string _CreateJavacriptUrlCode(ModelListMethod mlm, ParameterInfo[] pars, sModelType modelType,string urlBase)
         {
             Logger.Trace("Creating the javascript url call for the model list method at path {0}",new object[] { mlm.Path });
             if (pars.Length > 0)
@@ -33,16 +34,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 return "'"  + (urlBase==null ? null : urlBase)+ (mlm.Path.StartsWith("/") ? mlm.Path : "/" + mlm.Path).TrimEnd('/') + "'";
         }
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            foreach (MethodInfo mi in modelType.GetMethods(Constants.LOAD_METHOD_FLAGS))
+            foreach (MethodInfo mi in modelType.Type.GetMethods(Constants.LOAD_METHOD_FLAGS))
             {
                 if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                 {
                     Logger.Trace("Adding List Call[{0}] for Model Definition[{1}]", new object[]
                     {
                         mi.Name,
-                        modelType.FullName
+                        modelType.Type.FullName
                     });
                     ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                     NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
@@ -84,7 +85,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 pageSize
             );
         }}",new object[]{
-                modelType.Name,
+                modelType.Type.Name,
                 url,
                 mlm.Paged.ToString().ToLower()
             }));

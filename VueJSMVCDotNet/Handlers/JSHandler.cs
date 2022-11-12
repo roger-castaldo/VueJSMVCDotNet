@@ -6,13 +6,173 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
     internal class JSHandler : IRequestHandler
     {
+        public struct sModelType
+        {
+            private Type _type;
+            public Type Type { get { return _type; } }
+
+            private PropertyInfo[] _properties;
+            public PropertyInfo[] Properties { 
+                get { 
+                    if (_properties==null)
+                    {
+                        List<PropertyInfo> props = new List<PropertyInfo>();
+                        foreach (PropertyInfo pi in _type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                        {
+                            if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id")
+                            {
+                                if (!pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0)
+                                    props.Add(pi);
+                            }
+                        }
+                        _properties=props.ToArray();
+                    }
+                    return _properties; 
+                } 
+            }
+
+            private MethodInfo[] _instanceMethods;
+            public MethodInfo[] InstanceMethods { 
+                get { 
+                    if (_instanceMethods==null)
+                    {
+                        List<MethodInfo> methods = new List<MethodInfo>();
+                        foreach (MethodInfo mi in _type.GetMethods(Constants.INSTANCE_METHOD_FLAGS))
+                        {
+                            if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                                methods.Add(mi);
+                        }
+                        _instanceMethods = methods.ToArray();
+                    }
+                    return _instanceMethods; 
+                } 
+            }
+
+            private MethodInfo[] _staticMethods;
+            public MethodInfo[] StaticMethods { 
+                get { 
+                    if (_staticMethods==null){
+                        List<MethodInfo> methods = new List<MethodInfo>();
+                        foreach (MethodInfo mi in _type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
+                        {
+                            if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                                methods.Add(mi);
+                        }
+                        _staticMethods = methods.ToArray();
+                    }
+                    return _staticMethods; 
+                } 
+            }
+
+            private sModelType[] _linkedTypes;
+            public sModelType[] LinkedTypes
+            {
+                get
+                {
+                    if (_linkedTypes==null)
+                    {
+                        List<sModelType> types = new List<sModelType>();
+                        foreach (PropertyInfo pi in Properties)
+                        {
+                            if (pi.CanRead)
+                            {
+                                Type t = pi.PropertyType;
+                                if (t.IsArray)
+                                    t = t.GetElementType();
+                                else if (t.IsGenericType)
+                                    t = t.GetGenericArguments()[0];
+                                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                                {
+                                    if (!types.Contains(new sModelType(t)))
+                                    {
+                                        types.Add(new sModelType(t));
+                                    }
+                                }
+                            }
+                        }
+                        foreach (MethodInfo[] methods in new MethodInfo[][] { InstanceMethods, StaticMethods })
+                        {
+                            foreach (MethodInfo mi in methods)
+                            {
+                                Type t = mi.ReturnType;
+                                if (t.IsArray)
+                                    t = t.GetElementType();
+                                else if (t.IsGenericType)
+                                    t = t.GetGenericArguments()[0];
+                                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                                {
+                                    if (!types.Contains(new sModelType(t)))
+                                    {
+                                        types.Add(new sModelType(t));
+                                    }
+                                }
+                                t = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).ArrayElementType;
+                                if (t!=null)
+                                {
+                                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
+                                    {
+                                        if (!types.Contains(new sModelType(t)))
+                                        {
+                                            types.Add(new sModelType(t));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        _linkedTypes=types.ToArray();
+                    }
+                    return _linkedTypes;
+                }
+            }
+
+            private MethodInfo _saveMethod;
+            public bool HasSave { get { return _saveMethod!=null; } }
+            public MethodInfo SaveMethod { get { return _saveMethod; } }
+            private MethodInfo _updateMethod;
+            public bool HasUpdate { get { return _updateMethod!=null; } }
+            public MethodInfo UpdateMethod { get { return _updateMethod; } }
+            private MethodInfo _deleteMethod;
+            public bool HasDelete { get { return _deleteMethod!=null; } }
+            public MethodInfo DeleteMethod { get { return _deleteMethod; } }
+
+            public sModelType(Type type)
+            {
+                _type = type;
+                _properties=null;
+                _instanceMethods=null;
+                _staticMethods=null;
+                _linkedTypes=null;
+                _saveMethod=null;
+                _updateMethod=null;
+                _deleteMethod=null;
+                foreach (MethodInfo mi in _type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
+                {
+                    if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
+                        _saveMethod=mi;
+                    else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
+                        _updateMethod=mi;
+                    else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
+                        _deleteMethod=mi;
+                }
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is sModelType && _type.FullName==((sModelType)obj).Type.FullName)
+                    || (obj is Type && _type.FullName==((Type)obj).FullName);
+            }
+        }
+
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
             new HeaderGenerator(),
             new TypingHeader(),
@@ -28,7 +188,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private static readonly IJSGenerator[] _classGenerators = new IJSGenerator[]
         {
-            new ModelInstanceHeaderGenerator(),
             new ModelClassHeaderGenerator(),
             new JSONGenerator(),
             new ModelDefaultMethodsGenerator(),
@@ -153,6 +312,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
                 if (ret == null && models.Count>0)
                 {
+                    sModelType[] amodels = new sModelType[models.Count];
+                    for (int x = 0; x<models.Count; x++)
+                        amodels[x] = new sModelType(models[x]);
                     Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
                     builder.AppendLine(string.Format(@"import {{ version, createApp, isProxy, toRaw, reactive, readonly }} from ""{0}"";
@@ -160,11 +322,11 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
                     {
                         builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
-                        gen.GeneratorJS(ref builder, _urlBase,models.ToArray());
+                        gen.GeneratorJS(ref builder, _urlBase,amodels);
                         builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
                     }
-                    foreach (Type model in models) {
-                        Logger.Trace("Processing module {0} for js url {1}", new object[] { model.FullName, url });
+                    foreach (sModelType model in amodels) {
+                        Logger.Trace("Processing module {0} for js url {1}", new object[] { model.Type.FullName, url });
                         foreach (IJSGenerator gen in _classGenerators)
                         {
                             builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
@@ -175,7 +337,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                     foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
                     {
                         builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
-                        gen.GeneratorJS(ref builder, _urlBase, models.ToArray());
+                        gen.GeneratorJS(ref builder, _urlBase, amodels);
                         builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
                     }
                     ret = builder.ToString();

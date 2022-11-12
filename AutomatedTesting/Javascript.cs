@@ -34,7 +34,13 @@ namespace AutomatedTesting
         public void JavascriptGenerationValidation()
         {
             int status;
+            DateTime now = DateTime.Now;
             string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
+            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
+            {
+                DateTime.Now.Subtract(now).TotalMilliseconds,
+                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
+            });
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try

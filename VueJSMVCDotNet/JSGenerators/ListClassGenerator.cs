@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ListClassGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, Type[] models)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, sModelType[] models)
         {
             builder.AppendLine(@"class ModelList{
 	#events;
@@ -259,7 +260,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 			getEditableItem:function(index){ return me.#data[index]; }
 		};
 		if (this.#isPaged){
-			ret = extend(ret,{
+			Object.assign(ret,{
 				currentIndex:readonly(me.#currentIndex),
 				currentPage:readonly(me.#currentPage),
 				currentPageSize:readonly(me.#currentPageSize),
@@ -271,7 +272,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 			});
 		}
 		if (this.#setParameters!==undefined){
-			ret = extend(ret,{
+			Object.assign(ret,{
 				currentParameters:readonly(me.#params),
 				changeParameters:function(){
 					me.#setParameters.apply(me.#params,arguments);

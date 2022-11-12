@@ -470,30 +470,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             #endif
         }
 
-        internal static List<PropertyInfo> GetModelProperties(Type modelType)
-        {
-            List<PropertyInfo> props = new List<PropertyInfo>();
-            foreach (PropertyInfo pi in modelType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id")
-                {
-                    if (!pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0)
-                        props.Add(pi);
-                }
-            }
-            return props;
-        }
-
-        internal static List<MethodInfo> GetModelMethods(Type modelType,bool staticOnly)
-        {
-            List<MethodInfo> ret  = new List<MethodInfo>();
-            foreach (MethodInfo mi in modelType.GetMethods((staticOnly ? Constants.STATIC_INSTANCE_METHOD_FLAGS : Constants.INSTANCE_METHOD_FLAGS))){
-                if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                    ret.Add(mi);
-            }
-            return ret;
-        }
-
         internal static string GetModelUrlRoot(Type modelType)
         {
             return GetModelUrlRoot(modelType, null);

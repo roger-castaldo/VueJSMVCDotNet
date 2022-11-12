@@ -4,38 +4,36 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ModelDefaultMethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            Logger.Trace("Generating Model Default Methods Definition javascript for {0}", new object[] { modelType.FullName });
-            foreach (MethodInfo mi in modelType.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
+            Logger.Trace("Generating Model Default Methods Definition javascript for {0}", new object[] { modelType.Type.FullName });
+            if (modelType.HasSave)
             {
-                if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                {
-                    Logger.Trace("Adding save method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendSave(modelType,ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
-                }
-                else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                {
-                    Logger.Trace("Adding update method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendUpdate(modelType, ref builder, (mi.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
-                }
-                else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
-                {
-                    Logger.Trace("Adding delete method for Model Definition[{0}]", new object[] { modelType.FullName });
-                    _AppendDelete(modelType, ref builder);
-                }
+                Logger.Trace("Adding save method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+                _AppendSave(modelType,ref builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+            }
+            if (modelType.HasUpdate)
+            {
+                Logger.Trace("Adding update method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+                _AppendUpdate(modelType, ref builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+            }
+            if(modelType.HasDelete)
+            {
+                Logger.Trace("Adding delete method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+                _AppendDelete(modelType, ref builder);
             }
             _AppendReloadMethod(modelType, ref builder);
         }
 
-        private void _AppendReloadMethod(Type modelType, ref WrappedStringBuilder builder)
+        private void _AppendReloadMethod(sModelType modelType, ref WrappedStringBuilder builder)
         {
-            Logger.Trace("Adding reload method for Model Definition[{0}]", new object[] { modelType.FullName });
+            Logger.Trace("Adding reload method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
             builder.AppendLine(string.Format(@"     #reload(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
@@ -55,11 +53,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.INITIAL_DATA_KEY,
                 Constants.PARSE_FUNCTION_NAME,
                 Constants.Events.MODEL_LOADED,
-                modelType.Name
+                modelType.Type.Name
             }));
         }
 
-        private void _AppendDelete(Type modelType,ref WrappedStringBuilder builder)
+        private void _AppendDelete(sModelType modelType,ref WrappedStringBuilder builder)
         {
             builder.AppendLine(string.Format(@"         #destroy(){{
                 let model = this;
@@ -78,11 +76,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         }}", new object[]{
                 Constants.INITIAL_DATA_KEY,
                 Constants.Events.MODEL_DESTROYED,
-                modelType.Name
+                modelType.Type.Name
             }));
         }
 
-        private void _AppendUpdate(Type modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private void _AppendUpdate(sModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"         #update(){{
                 let model=this;
@@ -109,18 +107,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 Constants.TO_JSON_VARIABLE,
                 useJSON.ToString().ToLower(),
                 Constants.Events.MODEL_UPDATED,
-                modelType.Name
+                modelType.Type.Name
             }));
         }
 
-        private void _AppendSave(Type modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private void _AppendSave(sModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(string.Format(@"             #save(){{
                 let model=this;
                 return new Promise((resolve,reject)=>{{
                     ModelMethods.save({4}.#baseURL,model.#isNew(),model.#isValid(),model.{0}(),{1}).then(
                         resolved=>{{
-                            model.{2}=extend(model.{0}(),resolved);
+                            model.{2}=Object.assign({{}},model.{0}(),resolved);
                             let proxy = model.#toProxy();
                             model.#events.trigger('{3}',proxy);
                             resolve(proxy);
@@ -135,7 +133,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 useJSON.ToString().ToLower(),
                 Constants.INITIAL_DATA_KEY,
                 Constants.Events.MODEL_SAVED,
-                modelType.Name
+                modelType.Type.Name
             }));
         }
     }

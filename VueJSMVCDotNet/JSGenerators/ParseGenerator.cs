@@ -5,14 +5,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, Type modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
         {
-            Logger.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.FullName });
+            Logger.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
             builder.AppendLine(string.Format(@"         {0}(jdata){{
         if (jdata==null) {{
             throw 'Unable to parse null result for a model';
@@ -20,8 +21,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
         if (isString(jdata)){{
             jdata=JSON.parse(jdata);
         }}", Constants.PARSE_FUNCTION_NAME));
-            List<PropertyInfo> props = Utility.GetModelProperties(modelType);
-            foreach (PropertyInfo pi in props)
+            foreach (PropertyInfo pi in modelType.Properties)
             {
                 Type t = pi.PropertyType;
                 if (t.IsArray)
@@ -49,7 +49,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                 }
             }
             builder.AppendLine(string.Format("      this.{0} = jdata;", new object[] { Constants.INITIAL_DATA_KEY }));
-            foreach (PropertyInfo pi in props)
+            foreach (PropertyInfo pi in modelType.Properties)
                 builder.AppendLine(string.Format("    if (jdata.{0}!==undefined){{ this.#{0}=_checkProperty('{0}','{1}',(jdata.{0}===null ? null : (Array.isArray(jdata.{0}) ? jdata.{0}.slice() : jdata.{0})),'{2}'); }}", new object[]{
                     pi.Name,
                     Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
