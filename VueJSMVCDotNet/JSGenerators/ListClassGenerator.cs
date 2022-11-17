@@ -261,10 +261,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
 		};
 		if (this.#isPaged){
 			Object.assign(ret,{
-				currentIndex:readonly(me.#currentIndex),
-				currentPage:readonly(me.#currentPage),
-				currentPageSize:readonly(me.#currentPageSize),
-				totalPages:readonly(me.#totalPages),
+				currentIndex:readonly(ref(me.#currentIndex)),
+				currentPage:readonly(ref(me.#currentPage)),
+				currentPageSize:readonly(ref(me.#currentPageSize)),
+				totalPages:readonly(ref(me.#totalPages)),
 				moveToPage:function(pageNumber){return me.#moveToPage(pageNumber);},
 				moveToNextPage:function(){return me.#moveToNextPage();},
 				moveToPreviousPage:function(){return me.#moveToPreviousPage();},

@@ -75,6 +75,29 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSGenerators
                             }
                         };
                     }");
+
+            //composition code
+            builder.AppendLine(@"   toVueComposition(){
+        let me = this.#toProxy();
+        return {");
+            foreach (PropertyInfo p in modelType.Properties)
+                builder.AppendLine(string.Format("          {0}:{1}(me.{0}),", new object[] { p.Name, (p.CanWrite ? "readonly" : "ref") }));
+            foreach (MethodInfo m in modelType.InstanceMethods)
+                builder.AppendLine(string.Format("          {0}:function(){{ return me.{0}.apply(me,arguments); }},", new object[] { m.Name }));
+            if (modelType.HasSave)
+                builder.AppendLine("            save:function(){ return me.save.apply(me,arguments); },");
+            if (modelType.HasDelete)
+                builder.AppendLine("            destroy:function(){ return me.destroy.apply(me,arguments); },");
+            if(modelType.HasUpdate)
+                builder.AppendLine("            update:function(){ return me.update.apply(me,arguments); },");
+            builder.AppendLine(@"           isNew: function(){return me.isNew(); },
+            isValid: function(){return me.isValid();},
+            invalidFields: function(){return me.invalidFields();},
+            reload: function(){return me.reload();},
+            $on: function(event,callback) { me.$on(event,callback); },
+            $off: function(callback) { me.$off(callback); }
+        };
+    }");
         }
     }
 }
