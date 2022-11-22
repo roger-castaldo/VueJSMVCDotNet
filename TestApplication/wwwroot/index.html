@@ -126,13 +126,14 @@
     </table>
 
     <ul id="list_items_module">
+        <li><icon :iconType="'test'"/></li>
         <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
         <li v-on:click="append('NewItem')">Add New</li>
     </ul>
     <script type="module">
         import { mPerson } from "/testing/resources/scripts/mPerson.js";
         import { User } from "/testing/resources/scripts/models/User.js";
-        import { createApp,watch,reactive,ref } from "vue";
+        import { createApp, watch, ref, defineComponent,toRef,h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
 
         var person = mPerson.createInstance();
@@ -275,6 +276,22 @@
         }).mount('#dvListFiltered');
         mPerson.TestNull().then(result => { alert(result == null); });
         let hiddenApp = createApp({
+            components: {
+                icon:defineComponent({
+                    setup(props,context) {
+                        const icontype = toRef(context.attrs, 'icontype');
+                        return { icontype };
+                    },
+                    render() {
+                        return h(
+                            'i',
+                            {
+                                'class': 'icon '+this.icontype
+                            }
+                        );
+                    }
+                })
+            },
             setup(props, { attrs, slots, emit, expose }) {
                 const { Items, append } = hiddenArray(props, { attrs, slots, emit, expose });
                 return { Items, append };

@@ -22,6 +22,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="VueFiles\ComponentsHandler.cs" />
+    <Compile Remove="VueFiles\FileParser.cs" />
+    <Compile Remove="VueFiles\Handler.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
