@@ -104,11 +104,50 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                 _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}", prop.Trim()));
         }
 
+        internal void ProcessMethodsValue(string content)
+        {
+            content=content.Trim().TrimStart('{').TrimEnd('}');
+            string prop = "";
+            int bracketCount = 0;
+            foreach (char c in content)
+            {
+                switch (c)
+                {
+                    case ' ':
+                    case '\r':
+                    case '\t':
+                    case '\n':
+                    case ',':
+                        break;
+                    case '{':
+                        prop="";
+                        bracketCount++;
+                        break;
+                    case '}':
+                        bracketCount--;
+                        break;
+                    case ':':
+                        if (prop!="")
+                        {
+                            _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}()", prop.Trim()));
+                            prop="";
+                        }
+                        break;
+                    default:
+                        if (bracketCount==0)
+                            prop+=c;
+                        break;
+                }
+            }
+            if (prop.Trim()!="")
+                _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}()", prop.Trim()));
+        }
+
         public string ProcessContent(string content)
         {
             if (_valueMaps.ContainsKey(content))
                 return _valueMaps[content];
-            return content;
+            return "_ctx."+content;
         }
 
         public int CompareTo(object obj)

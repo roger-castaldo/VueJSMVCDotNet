@@ -77,6 +77,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                         case "data":
                             ret.ProcessDataValue(((ClassProperty)ipc).Content);
                             break;
+                        case "methods":
+                            ret.ProcessMethodsValue(((ClassProperty)ipc).Content);
+                            break;
                     }
                 }
             }

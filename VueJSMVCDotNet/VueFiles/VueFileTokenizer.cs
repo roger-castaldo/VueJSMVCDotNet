@@ -224,7 +224,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                                     if (_regVueDirective.IsMatch(_curChunk))
                                     {
                                         Match m = _regVueDirective.Match(_curChunk);
-                                        ret.Add(new VueDirective(m.Groups[1].Value, m.Groups[3].Value));
+                                        ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
                                     }
                                     else
                                         ret.Add(new HTMLAttribute(_curChunk));
@@ -250,7 +250,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                             if (_regVueDirective.IsMatch(_curChunk))
                             {
                                 Match m = _regVueDirective.Match(_curChunk);
-                                ret.Add(new VueDirective(m.Groups[1].Value, m.Groups[3].Value));
+                                ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
                             }
                             else
                                 ret.Add(new HTMLAttribute(_curChunk));
@@ -264,7 +264,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                             if (_regVueDirective.IsMatch(_curChunk))
                             {
                                 Match m = _regVueDirective.Match(_curChunk);
-                                ret.Add(new VueDirective(m.Groups[1].Value, m.Groups[3].Value));
+                                ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
                             }
                             else
                                 ret.Add(new HTMLAttribute(_curChunk));
