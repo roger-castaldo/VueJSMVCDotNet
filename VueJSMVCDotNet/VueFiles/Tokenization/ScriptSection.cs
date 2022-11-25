@@ -102,7 +102,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             return ret.ToArray();
         }
 
-        private static readonly Regex _RegImportStatement = new Regex("^\\s*import\\s+(\\{[^\\}]+\\}|[^\\s]+)\\s+from\\s+(\"[^\"]+\"|'[^']+')\\s*;\\s*$", RegexOptions.Compiled|RegexOptions.Multiline);
+        private static readonly Regex _RegImportStatement = new Regex("^\\s*import\\s+((\\{[^\\}]+\\}|[^\\s]+)\\s+from\\s+)?(\"[^\"]+\"|'[^']+')\\s*;\\s*$", RegexOptions.Compiled|RegexOptions.Multiline);
 
         public IParsedComponent[] Parse()
         {
@@ -114,7 +114,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                 Match m = _RegImportStatement.Match(content);
                 while (m.Success)
                 {
-                    ret.Add(new Import(m.Groups[1].Value.Split(','), m.Groups[2].Value));
+                    ret.Add(new Import((m.Groups[1].Value!="" ? m.Groups[2].Value.Split(',') : new string[] { }), m.Groups[3].Value));
                     content = content.Replace(m.Value, "");
                     m = _RegImportStatement.Match(content);
                 }
@@ -129,6 +129,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                     content = content.Substring(content.IndexOf("export default")+"export default".Length);
                     content = content.Substring(content.IndexOf("{"));
                     content = _ProcessDefaultExport(content, ref ret);
+                    if (content.Trim()==";")
+                        content="";
                 }
                 if (content.Trim()!="")
                     stripped.Add(new TextToken(content));

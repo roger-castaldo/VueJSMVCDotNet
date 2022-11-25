@@ -48,7 +48,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
                     sb.AppendFormat("style:_normalizeStyle({0})", new object[] { VueFileCompiler.ProcessClassProperties(components, _value) });
                     break;
                 default:
-                    sb.AppendFormat("{0}:{1}", new object[] { _command.Split(':')[1], VueFileCompiler.ProcessClassProperties(components, _value) });
+                    sb.AppendFormat("{0}:{1}", new object[] { _command, VueFileCompiler.ProcessClassProperties(components, _value) });
                     break;
             }
         }

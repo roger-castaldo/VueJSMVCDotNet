@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using VueFileParser.Tokenization.ParsedComponents.VueDirectives;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 {
@@ -37,6 +38,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                     break;
                 case "v-bind:key":
                     directive=new KeyDirective(value);
+                    break;
+                case "v-show":
+                    directive=new ShowDirective(value);
                     break;
                 default:
                     if (command.StartsWith("v-bind:"))

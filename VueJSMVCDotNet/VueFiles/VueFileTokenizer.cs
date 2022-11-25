@@ -172,14 +172,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                         }
                         break;
                     case '>':
-                        if (inTag)
+                        if (_curChunk.Trim().ToLower()==String.Format("</{0}", tag).ToLower())
                         {
-                            if (_curChunk.Trim().ToLower()==String.Format("</{0}", tag).ToLower())
-                            {
-                                Consume();
-                                _curChunk="";
-                                return ret.ToArray();
-                            }
+                            Consume();
+                            _curChunk="";
+                            return ret.ToArray();
                         }
                         break;
                     case '}':

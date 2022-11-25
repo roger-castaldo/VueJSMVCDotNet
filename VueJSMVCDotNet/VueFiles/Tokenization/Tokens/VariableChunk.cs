@@ -20,7 +20,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
         {
-            sb.Append(_value);
+            sb.Append(VueFileCompiler.ProcessClassProperties(components,_value));
         }
     }
 }

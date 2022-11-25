@@ -37,9 +37,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                 sb.Length=sb.Length-1;
                 sb.Append("}");
             }
-            else
+            else if (_importedElements.Length==1)
                 sb.Append(_importedElements[0]);
-            sb.AppendLine(string.Format(" from '{0}';", _importPath));
+            sb.AppendLine(string.Format("{0}'{1}';", new object[] { (_importedElements.Length!=0 ? " from " : ""), _importPath }));
         }
     }
 }
