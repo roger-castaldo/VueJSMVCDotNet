@@ -15,7 +15,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
 
         public int Cost => 0;
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount)
         {
             sb.AppendFormat("key:{0}", new object[] { VueFileCompiler.ProcessClassProperties(components, _value) });
         }

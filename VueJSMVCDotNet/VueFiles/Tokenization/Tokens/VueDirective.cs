@@ -42,6 +42,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                 case "v-show":
                     directive=new ShowDirective(value);
                     break;
+                case "v-model":
+                    directive=new ModelDirective(value);
+                    break;
                 default:
                     if (command.StartsWith("v-bind:"))
                         directive = new BindDirective(command.Split(':')[1], value);

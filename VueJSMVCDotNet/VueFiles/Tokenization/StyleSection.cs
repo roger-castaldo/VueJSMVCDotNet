@@ -29,12 +29,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             _content=content;
         }
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
             foreach (IToken child in _content)
             {
                 if (child is ICompileable)
-                    ((ICompileable)child).Compile(ref sb, components,name);
+                    ((ICompileable)child).Compile(ref sb, components,name,ref cacheCount);
                 else
                     sb.AppendLine(child.AsString);
             }

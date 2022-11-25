@@ -8,6 +8,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
 {
     internal interface ICompileable
     {
-        void Compile(ref StringBuilder sb, IParsedComponent[] components,string name);
+        void Compile(ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount);
     }
 }

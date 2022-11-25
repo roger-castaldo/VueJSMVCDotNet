@@ -7,7 +7,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
     internal class BindDirective : IVueDirective, ICompileable, IParsableComponent
     {
         private string _command;
+        public string Command { get { return _command; } }
         private string _value;
+        public string Value { get { return _value; } }
 
         public BindDirective(string command, string value)
         {
@@ -37,7 +39,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
             }
         }
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount)
         {
             switch (_command.ToLower())
             {

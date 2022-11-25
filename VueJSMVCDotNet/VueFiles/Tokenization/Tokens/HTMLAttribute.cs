@@ -20,7 +20,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             if (content.Contains("="))
             {
                 _name = content.Substring(0, content.IndexOf('='));
-                _value=content.Substring(content.IndexOf('=')+1);
+                _value=content.Substring(content.IndexOf('=')+1).Trim('\"');
             }
             else
                 _name= content;
@@ -30,13 +30,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
         {
             get
             {
-                return (_value==null ? _name : string.Format("{0}={1}", new object[] { _name, _value }));
+                return (_value==null ? _name : string.Format("{0}=\"{1}\"", new object[] { _name, _value }));
             }
         }
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         { 
-            sb.AppendFormat("{0}:{1}", new object[] { _name, (_value==null ? true.ToString().ToLower() : _value) });
+            sb.AppendFormat("{0}:\"{1}\"", new object[] { _name, (_value==null ? true.ToString().ToLower() : _value) });
         }
     }
 }

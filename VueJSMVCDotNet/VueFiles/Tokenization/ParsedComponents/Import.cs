@@ -26,7 +26,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                 _importPath=_importPath.Trim('"');
         }
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
             sb.Append("import ");
             if (_importedElements.Length>1)

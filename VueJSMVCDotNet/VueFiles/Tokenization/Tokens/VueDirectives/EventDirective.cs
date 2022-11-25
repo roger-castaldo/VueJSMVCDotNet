@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirectives
 {
-    internal class EventDirective : IVueDirective
+    internal class EventDirective : IEventDirective
     {
         string _event;
         string _callback;
@@ -26,7 +26,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
 
         public int Cost => 0;
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name,int idx)
+        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, HTMLElement owner)
         {
             switch (_event)
             {
@@ -36,18 +36,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
                     {
                         _event[0].ToString().ToUpper(),
                         _event.Substring(1),
-                        idx
+                        cacheCount
                     });
                     break;
                 default:
                     sb.AppendFormat("\"on:{0}\": _cache[{1}] || (_cache[{1}] = $event => (", new object[]
                     {
                         _event,
-                        idx
+                        cacheCount
                     });
                     break;
             }
             sb.AppendFormat("{0}))", VueFileCompiler.ProcessClassProperties(components, _callback));
+            cacheCount++;
         }
     }
 }

@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
 {
-    internal interface IWithVueDirective : IVueDirective,IParsableComponent
+    internal interface IEventDirective : IVueDirective
     {
-        void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,HTMLElement owner);
+        void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, HTMLElement owner);
     }
 }

@@ -39,25 +39,25 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
 
         private IToken[] _strippedComponents;
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount)
         {
             components = _MergeImports(components);
             foreach (IParsedComponent component in components)
             {
                 if (component is ICompileable && component is IScriptHeader)
-                    ((ICompileable)component).Compile(ref sb, components,name);
+                    ((ICompileable)component).Compile(ref sb, components,name,ref cacheCount);
             }
             foreach (IToken child in _strippedComponents)
             {
                 if (child is ICompileable)
-                    ((ICompileable)child).Compile(ref sb, components, name);
+                    ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
                 else
                     sb.AppendLine(child.AsString);
             }
             foreach (IParsedComponent component in components)
             {
                 if (component is ICompileable && !(component is IScriptHeader) && !(component is IComponentProperty))
-                    ((ICompileable)component).Compile(ref sb, components,name);
+                    ((ICompileable)component).Compile(ref sb, components,name, ref cacheCount);
             }
             sb.AppendLine(string.Format("const __{0}__ = {{", name));
             foreach (IParsedComponent component in components)
@@ -65,7 +65,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                 if (component is IComponentProperty && component is ICompileable)
                 {
                     sb.Append("\t");
-                    ((ICompileable)component).Compile(ref sb, components, name);
+                    ((ICompileable)component).Compile(ref sb, components, name, ref cacheCount);
                     sb.AppendLine(",");
                 }
             }

@@ -1,4 +1,5 @@
 ﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
+using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 {
-    internal class VariableChunk : IToken, ICompileable
+    internal class VariableChunk : IToken, ICompileable,IParsableComponent
     {
         private string _value;
 
@@ -18,9 +19,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         public string AsString => string.Format("{{{{{0}}}}}", _value);
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
-            sb.Append(VueFileCompiler.ProcessClassProperties(components,_value));
+            sb.AppendFormat("_toDisplayString({0})",VueFileCompiler.ProcessClassProperties(components,_value));
+        }
+
+        public IParsedComponent[] Parse()
+        {
+            return new IParsedComponent[]
+            {
+                new Import(new string[]{"toDisplayString as _toDisplayString"},"vue")
+            };
         }
     }
 }

@@ -15,11 +15,33 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
         private List<IToken> _children;
         private IToken[] _attributes => _children.Where(it => it is HTMLAttribute).ToArray();
         private IToken[] _directives => _children.Where(it => it is IVueDirective).ToArray();
-        private IToken[] _eventDirectives => _directives.Where(it => it is EventDirective).ToArray();
+        private IToken[] _eventDirectives => _directives.Where(it => it is IEventDirective).ToArray();
         private IToken[] _withDirectives => _directives.Where(it => it is IWithVueDirective).ToArray();
         private IToken[] _content => _children.Where(it => !(it is HTMLAttribute || it is IVueDirective)).ToArray();
         private string _tag;
         public string Tag { get { return _tag; } }
+
+        public string InputType
+        {
+            get
+            {
+                foreach (HTMLAttribute att in _attributes)
+                {
+                    if (att.Name=="type")
+                        return att.Value;
+                }
+                foreach (IVueDirective directive in _directives)
+                {
+                    if (directive is BindDirective)
+                    {
+                        BindDirective bd = (BindDirective)directive;
+                        if (bd.Command=="type")
+                            return bd.Value;
+                    }
+                }
+                return "unknown";
+            }
+        }
 
         public HTMLElement(string tag)
         {
@@ -81,14 +103,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         private static readonly Regex _regVFor = new Regex("^\\{?([^,]+),?([^\\s]+)?\\}?\\sin\\s(.+)$", RegexOptions.Compiled|RegexOptions.ECMAScript);
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
             if (_withDirectives.Length>0)
                 sb.Append("_withDirectives(_createElementVNode(");
             else
                 sb.Append("_createElementBlock(");
             sb.AppendFormat("'{0}',\n", _tag);
-            string bindValue = "";
+            string bindValue = null;
             foreach (IVueDirective directive in _directives)
             {
                 if (directive is FullBindDirective)
@@ -97,18 +119,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             sb.AppendLine((bindValue==null ? "{" : "_mergeProps({"));
             foreach (HTMLAttribute ha in _attributes)
             {
-                ha.Compile(ref sb, components,name);
+                ha.Compile(ref sb, components,name,ref cacheCount);
                 sb.AppendLine(",");
             }
             foreach (IVueDirective directive in _directives)
             {
                 if (directive is ICompileable)
                 {
-                    ((ICompileable)directive).Compile(ref sb, components, name);
+                    ((ICompileable)directive).Compile(ref sb, components, name,ref cacheCount);
                     sb.AppendLine(",");
                 }
             }
-            if (_directives.Length+_attributes.Length>0)
+            if (_directives.Count(t=>t is IComparable)+_attributes.Length>0)
                 sb.Length=sb.Length-3;
             if (bindValue!=null)
                 sb.AppendFormat(@"
@@ -116,12 +138,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 {0},
 {{
 ",VueFileCompiler.ProcessClassProperties(components,bindValue));
-            int idx = 0;
-            foreach (EventDirective ev in _eventDirectives)
+            foreach (IEventDirective ev in _eventDirectives)
             {
-                ev.Compile(ref sb, components, name,idx);
+                ev.ProduceEvent(ref sb, components, name,ref cacheCount,this);
                 sb.AppendLine(",");
-                idx++;
             }
             if (_eventDirectives.Length>0)
                 sb.Length=sb.Length-3;
@@ -142,14 +162,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                             if (vd is IfDirective)
                             {
                                 add=false;
-                                _ProcessIfDirective(ref x, ((IfDirective)vd).Value, ref sb, components, name);
+                                _ProcessIfDirective(ref x, ((IfDirective)vd).Value, ref sb, components, name,ref cacheCount);
                             }else if (vd is ForDirective)
                             {
                                 add=false;
                                 Match m = _regVFor.Match(((ForDirective)vd).Value);
                                 sb.AppendFormat("(_openBlock(true, _createElementBlock(_Fragment,null,_renderList({0},({{1},{2}})=>{{ return (_openBlock(), ", new object[] { m.Groups[3].Value, (m.Groups[1].Value=="" ? "idx" : m.Groups[1].Value), m.Groups[2].Value });
                                 if (_content[x] is ICompileable)
-                                    ((ICompileable)_content[x]).Compile(ref sb, components, name);
+                                    ((ICompileable)_content[x]).Compile(ref sb, components, name,ref cacheCount);
                                 else
                                     sb.Append(_content[x].AsString);
                                 sb.AppendFormat(@");
@@ -161,7 +181,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                     if (add)
                     {
                         if (_content[x] is ICompileable)
-                            ((ICompileable)_content[x]).Compile(ref sb, components, name);
+                            ((ICompileable)_content[x]).Compile(ref sb, components, name,ref cacheCount);
                         else
                             sb.Append(_content[x].AsString);
                     }
@@ -177,7 +197,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                 sb.AppendLine(",[");
                 foreach (IWithVueDirective directive in _withDirectives)
                 {
-                    directive.Compile(ref sb, components, name);
+                    directive.ProduceDirective(ref sb, components, name,this);
                     sb.AppendLine(",");
                 }
                 sb.Length-=3;
@@ -185,14 +205,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             }
         }
 
-        private void _ProcessIfDirective(ref int x, string value, ref StringBuilder sb, IParsedComponent[] components,string name)
+        private void _ProcessIfDirective(ref int x, string value, ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount)
         {
             sb.AppendFormat("({0} ? ", value);
             int bracketCount = 1;
             bool hadElse = false;
             bool changed = true;
             if (_content[x] is ICompileable)
-                ((ICompileable)_content[x]).Compile(ref sb, components,name);
+                ((ICompileable)_content[x]).Compile(ref sb, components,name,ref cacheCount);
             else
                 sb.Append(_content[x].AsString);
             while (x+1<_content.Length && _content[x+1] is HTMLElement && ((HTMLElement)_content[x])._directives.Length>0 && changed)
@@ -206,7 +226,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                         hadElse=true;
                         sb.Append(" : ");
                         if (_content[x] is ICompileable)
-                            ((ICompileable)_content[x]).Compile(ref sb, components, name);
+                            ((ICompileable)_content[x]).Compile(ref sb, components, name,ref cacheCount);
                         else
                             sb.Append(_content[x].AsString);
                         x++;
@@ -217,7 +237,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                         changed=true;
                         sb.AppendFormat(" : ({0} ? ", ((ElseIfDirective)vd).Value);
                         if (_content[x] is ICompileable)
-                            ((ICompileable)_content[x]).Compile(ref sb, components, name);
+                            ((ICompileable)_content[x]).Compile(ref sb, components, name,ref cacheCount);
                         else
                             sb.Append(_content[x].AsString);
                         x++;

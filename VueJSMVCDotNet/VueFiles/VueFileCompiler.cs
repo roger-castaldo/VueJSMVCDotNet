@@ -35,6 +35,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                 StringBuilder sb = new StringBuilder();
                 if (_parsedElements==null)
                 {
+                    int cacheCount = 0;
                     _parsedElements = new List<IParsedComponent>();
                     _sections = _tokenizer.Tokenize();
                     for(int x = 0; x<_sections.Length; x++)
@@ -51,7 +52,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                     foreach (ITokenSection its in _sections)
                     {
                         if (!(its is IParsedComponent))
-                            its.Compile(ref sb, _parsedElements.ToArray(), _name);
+                            its.Compile(ref sb, _parsedElements.ToArray(), _name,ref cacheCount);
                     }
                 }
                 sb.AppendLine(string.Format("export default __{0}__", _name));

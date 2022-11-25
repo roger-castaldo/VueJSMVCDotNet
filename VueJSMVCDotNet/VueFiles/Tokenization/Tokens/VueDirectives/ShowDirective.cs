@@ -1,6 +1,7 @@
 ﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents;
+using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace VueFileParser.Tokenization.ParsedComponents.VueDirectives
 
         public int Cost => 0;
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name)
+        public void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,HTMLElement owner)
         {
             sb.AppendFormat("[_vShow,{0}]", VueFileCompiler.ProcessClassProperties(components, _value));
         }

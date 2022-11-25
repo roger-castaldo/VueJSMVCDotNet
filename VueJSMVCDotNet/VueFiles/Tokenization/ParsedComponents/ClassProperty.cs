@@ -37,7 +37,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
             return ret;
         }
 
-        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name)
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
             sb.AppendFormat("{0}:{1}", new object[] { _name, _content });
         }
