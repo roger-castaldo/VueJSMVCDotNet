@@ -1,4 +1,5 @@
 ﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
+using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,20 +25,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             }
         }
 
-        public StyleSection(IToken[] content)
+        public StyleSection(string content)
         {
-            _content=content;
+            _content=new IToken[] {new TextToken(content)};
         }
 
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
-            foreach (IToken child in _content)
-            {
-                if (child is ICompileable)
-                    ((ICompileable)child).Compile(ref sb, components,name,ref cacheCount);
-                else
-                    sb.AppendLine(child.AsString);
-            }
+            sb.Append(_content[0].AsString);
         }
 
         public int CompareTo(object obj)

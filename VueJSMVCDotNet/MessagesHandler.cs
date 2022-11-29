@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
+using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -53,33 +54,18 @@ function Translate(message,args,language) {{
 export default Translate;";
         private static readonly string _COMPRESS_BASE_CODE_TEMPLATE = JSMinifier.Minify(_BASE_CODE_TEMPLATE);
 
-        private struct CachedContent
-        {
-            private DateTime _timestamp;
-            public DateTime Timestamp { get { return _timestamp; } }
-            private string _content;
-            public string Content { get { return _content; } }
-
-            public CachedContent(Microsoft.Extensions.FileProviders.IDirectoryContents contents, string content)
-            {
-                _timestamp=new DateTime(contents
-                    .OrderByDescending(f => f.LastModified)
-                    .FirstOrDefault()
-                    .LastModified.Ticks);
-                _content = content;
-            }
-        }
-
         private readonly IFileProvider _fileProvider;
-        private string _baseURL;
+        private readonly string _baseURL;
+        private readonly ILogWriter _log;
         private ConcurrentDictionary<string, CachedContent> _cache;
 
 
-        public MessagesHandler(IFileProvider fileProvider, string baseURL)
+        public MessagesHandler(IFileProvider fileProvider, string baseURL,ILogWriter log)
         {
             _fileProvider=fileProvider;
-            _cache = new ConcurrentDictionary<string, CachedContent>();
             _baseURL=baseURL;
+            _log=log;
+            _cache = new ConcurrentDictionary<string, CachedContent>();
         }
 
         public bool HandlesRequest(HttpContext context)

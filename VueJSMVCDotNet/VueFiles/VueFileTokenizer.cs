@@ -13,269 +13,140 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
 {
     internal class VueFileTokenizer
     {
-        private const char EOF = (char)0;
-
-        private string _template;
-        private int _index;
-        private char _lastChar;
-        private char _curChar = EOF;
-        private char _nextChar;
-        private string _curChunk;
-
+        private string _content;
+        
         public VueFileTokenizer(TextReader tr)
         {
-            _template = tr.ReadToEnd();
+            _content = tr.ReadToEnd();
         }
 
         public VueFileTokenizer(string content)
         {
-            _template = content;
+            _content = content;
         }
 
-        private void Next()
-        {
-            if (_index==_template.Length)
-            {
-                _curChar = EOF;
-                return;
-            }
-            _lastChar = _curChar;
-            _curChar = _template[_index];
-            _index++;
-            if (_index == _template.Length)
-                _nextChar = EOF;
-            else
-                _nextChar = _template[_index];
-        }
-
-        private void Consume()
-        {
-            _curChunk += _curChar;
-            Next();
-        }
-
-        private void ConsumeBracket(char startBracket)
-        {
-            Consume();
-            char exitChar = '}';
-            switch (startBracket)
-            {
-                case '[':
-                    exitChar=']';
-                    break;
-                case '(':
-                    exitChar=')';
-                    break;
-            }
-            while ((_curChar!=exitChar)&&(_curChar!=EOF))
-            {
-                if ((_curChar == '(') || (_curChar == '{') || (_curChar == '['))
-                    ConsumeBracket(_curChar);
-                else
-                    Consume();
-            }
-            if (_curChar!=EOF || _curChar==exitChar)
-                Consume();
-        }
+        private static readonly Regex _regTag = new Regex(@"\<(/?)([^\s/>]+)(\s+([^\s=/>]+)\s*(=\s*""([^""]+)""))*(/?)\>", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         public ITokenSection[] Tokenize()
         {
             List<ITokenSection> ret = new List<ITokenSection>();
-            _curChunk = "";
-            _index = 0;
-            Next();
-            while (_curChar != EOF)
+            MatchCollection matches = _regTag.Matches(_content);
+            int sidx = 0;
+            for(int x = 0; x<matches.Count; x++)
             {
-                if (_curChar!='>')
-                    Consume();
-                else
+                switch (matches[x].Value)
                 {
-                    Consume();
-                    switch (_curChunk.Trim().ToLower())
-                    {
-                        case "<template>":
-                            _curChunk="";
-                            ret.Add(new TemplateSection(_ProcessHtmlTagContent("template")));
-                            break;
-                        case "<script>":
-                            _curChunk="";
-                            ret.Add(new ScriptSection(false,_ProcessTextContent("script")));
-                            break;
-                        case "<script setup>":
-                            _curChunk="";
-                            ret.Add(new ScriptSection(true, _ProcessTextContent("script")));
-                            break;
-                        case "<style>":
-                            _curChunk="";
-                            ret.Add(new StyleSection(_ProcessTextContent("style")));
-                            break;
-                    }
+                    case "<template>":
+                        ret.Add(new TemplateSection(_ProcessTemplate(matches,ref x)));
+                        break;
+                    case "<script>":
+                        sidx = matches[x].Index+matches[x].Length;
+                        x++;
+                        while (matches[x].Value!="</script>")
+                            x++;
+                        ret.Add(new ScriptSection(false, _content.Substring(sidx, matches[x].Index-sidx)));
+                        break;
+                    case "<script setup>":
+                        sidx = matches[x].Index+matches[x].Length;
+                        x++;
+                        while (matches[x].Value!="</script>")
+                            x++;
+                        ret.Add(new ScriptSection(true, _content.Substring(sidx, matches[x].Index-sidx)));
+                        break;
+                    case "<style>":
+                        sidx = matches[x].Index+matches[x].Length;
+                        x++;
+                        while (matches[x].Value!="</style>")
+                            x++;
+                        ret.Add(new StyleSection(_content.Substring(sidx, matches[x].Index-sidx)));
+                        break;
                 }
-
             }
             ret.Sort();
             return ret.ToArray();
         }
 
-        private IToken[] _ProcessTextContent(string tag)
+        private IToken[] _ProcessTemplate(MatchCollection matches, ref int x)
         {
+            x++;
             List<IToken> ret = new List<IToken>();
-            bool exit = false;
-            while (_curChar!=EOF && !exit)
+            while (x<matches.Count)
             {
-                if (_curChar=='<')
+
+                if (matches[x].Value=="</template>")
+                    break;
+                ret.Add(_ProcessHtmlTag(matches, ref x));
+            }
+            return ret.ToArray();
+        }
+
+        private IToken _ProcessHtmlTag(MatchCollection matches, ref int x)
+        {
+            HTMLElement elem = new HTMLElement(matches[x].Groups[2].Value);
+            if (matches[x].Groups[3].Value!="")
+            {
+                for (int y = 3; y<matches[x].Groups.Count-1; y+=4)
                 {
-                    int idx = _index;
-                    while (_curChar!=EOF && _curChar!=' ' && _curChar!='>' && _curChar!='\n')
-                        Consume();
-                    if (_curChunk.Trim().EndsWith(string.Format("</{0}>", tag)))
+                    if (matches[x].Groups[y+1].Value.StartsWith("v-")||matches[x].Groups[y+1].Value.StartsWith(":"))
+                        elem.Add(VueDirective.ConstructDirective(matches[x].Groups[y+1].Value, matches[x].Groups[y+3].Value));
+                    else
+                        elem.Add(new HTMLAttribute(matches[x].Groups[y+1].Value));
+                }
+            }
+            if (matches[x].Groups[matches[x].Groups.Count-1].Value!="/")
+            {
+                int sidx = matches[x].Index+matches[x].Length;
+                x++;
+                while (matches[x].Value!="</"+elem.Tag+">")
+                {
+                    elem.Add(_ProcessTextContent(_content.Substring(sidx, matches[x].Index-sidx).Trim()));
+                    elem.Add(_ProcessHtmlTag(matches, ref x));
+                }
+                x++;
+            }
+            else
+                x++;
+            return elem;
+        }
+
+        private IToken[] _ProcessTextContent(string content)
+        {
+            List<IToken> tokens = new List<IToken>();
+            if (content!="")
+            {
+                string chunk = "";
+                for (int y = 0; y<content.Length; y++)
+                {
+                    switch (content[y])
                     {
-                        _curChunk = _curChunk.Substring(0, idx).Trim();
-                        exit=true;
+                        case '{':
+                            if (y+1<content.Length && content[y+1]=='{')
+                            {
+                                if (chunk.Trim()!="")
+                                    tokens.Add(new TextToken(chunk.Trim()));
+                                chunk="";
+                                y+=2;
+                                while (!(content[y]=='}'&&content[y+1]=='}'))
+                                {
+                                    chunk+=content[y];
+                                    y++;
+                                }
+                                tokens.Add(new VariableChunk(chunk));
+                                y+=2;
+                                chunk="";
+                            }
+                            else
+                                chunk+=content[y];
+                            break;
+                        default:
+                            chunk+=content[y];
+                            break;
                     }
                 }
-                else
-                    Consume();
+                if (chunk.Trim()!="")
+                    tokens.Add(new TextToken(chunk));
             }
-            if (_curChunk.Trim().EndsWith(String.Format("</{0}>", tag)))
-                _curChunk = _curChunk.Substring(0, _curChunk.IndexOf(String.Format("</{0}>", tag)));
-            if (_curChunk.Trim()!="")
-                ret.Add(new TextToken(_curChunk.Trim()));
-            return ret.ToArray();
-
-        }
-
-        private IToken[] _ProcessHtmlTagContent(string tag)
-        {
-            List<IToken> ret = new List<IToken>();
-            bool inTag = false;
-            bool exit = false;
-            while (_curChar != EOF && !exit)
-            {
-                switch (_curChar)
-                {
-                    case '<':
-                        if (!inTag && _curChunk.Trim().Length>0)
-                        {
-                            ret.Add(new TextToken(_curChunk.Trim()));
-                            _curChunk="";
-                        }
-                        else if (_curChunk.Length>0)
-                            _curChunk="";
-                        inTag = true;
-                        break;
-                    case ' ':
-                        if (inTag)
-                        {
-                            ret.Add(_ProcessHtmlTag());
-                            inTag=false;
-                        }
-                        break;
-                    case '>':
-                        if (_curChunk.Trim().ToLower()==String.Format("</{0}", tag).ToLower())
-                        {
-                            Consume();
-                            _curChunk="";
-                            return ret.ToArray();
-                        }
-                        break;
-                    case '}':
-                        if (_nextChar=='}' && _curChunk.Contains("{{"))
-                        {
-                            Consume();
-                            Consume();
-                            string variable = _curChunk.Substring(_curChunk.IndexOf("{{"));
-                            _curChunk=_curChunk.Substring(0, _curChunk.Length-variable.Length);
-                            if (_curChunk.Trim()!="")
-                                ret.Add(new TextToken(_curChunk.Trim()));
-                            ret.Add(new VariableChunk(variable));
-                            _curChunk="";
-                        }
-                        break;
-                }
-                Consume();
-            }
-            return ret.ToArray();
-        }
-
-        private readonly static Regex _regVueDirective = new Regex("^((v-|#|:)[^=]+)\\s*=\\s*\"(.+)\"$", RegexOptions.Compiled|RegexOptions.ECMAScript);
-
-        private HTMLElement _ProcessHtmlTag()
-        {
-            HTMLElement ret = new HTMLElement(_curChunk.Substring(1));
-            _curChunk="";
-            bool exit = false;
-            while (_curChar != EOF && !exit)
-            {
-                switch (_curChar)
-                {
-                    case '/':
-                        if (_nextChar=='>')
-                        {
-                            _curChunk=_curChunk.Trim();
-                            if (_curChunk.Trim()!="/")
-                            {
-                                _curChunk=_curChunk.TrimEnd('/');
-                                if (_curChunk.Trim()!="")
-                                {
-                                    if (_regVueDirective.IsMatch(_curChunk))
-                                    {
-                                        Match m = _regVueDirective.Match(_curChunk);
-                                        ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
-                                    }
-                                    else
-                                        ret.Add(new HTMLAttribute(_curChunk));
-                                }
-                            }
-                            Next();
-                            Next();
-                            _curChunk="";
-                            exit=true;
-                        }
-                        break;
-                    case '"':
-                    case '\'':
-                        char endQuote = _curChar;
-                        Consume();
-                        while (_curChar!=EOF && _curChar!=endQuote)
-                            Consume();
-                        break;
-                    case ' ':
-                        if (_curChunk.Contains("="))
-                        {
-                            _curChunk = _curChunk.Trim();
-                            if (_regVueDirective.IsMatch(_curChunk))
-                            {
-                                Match m = _regVueDirective.Match(_curChunk);
-                                ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
-                            }
-                            else
-                                ret.Add(new HTMLAttribute(_curChunk));
-                            _curChunk="";
-                        }
-                        break;
-                    case '>':
-                        _curChunk=_curChunk.Trim();
-                        if (_curChunk!="/")
-                        {
-                            if (_regVueDirective.IsMatch(_curChunk))
-                            {
-                                Match m = _regVueDirective.Match(_curChunk);
-                                ret.Add(VueDirective.ConstructDirective(m.Groups[1].Value, m.Groups[3].Value));
-                            }
-                            else
-                                ret.Add(new HTMLAttribute(_curChunk));
-                        }
-                            Next();
-                        _curChunk="";
-                        ret.Add(_ProcessHtmlTagContent(ret.Tag));
-                        exit=true;
-                        break;
-                }
-                if (!exit)
-                    Consume();
-            }
-            return ret;
+            return tokens.ToArray();
         }
     }
 }

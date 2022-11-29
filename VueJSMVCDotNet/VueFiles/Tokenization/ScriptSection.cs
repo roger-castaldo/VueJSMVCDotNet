@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -31,13 +32,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             }
         }
 
-        public ScriptSection(bool isSetup,IToken[] content)
+        public ScriptSection(bool isSetup,string content)
         {
             _isSetup = isSetup;
-            _content=content;
+            _content = new IToken[] { new TextToken(content) };
         }
 
         private IToken[] _strippedComponents;
+        private string vueImportPath;
+
+        public void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount,string vueImportPath)
+        {
+            this.vueImportPath=vueImportPath;
+            Compile(ref sb, components, name, ref cacheCount);
+        }
 
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount)
         {
@@ -49,7 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             }
             foreach (IToken child in _strippedComponents)
             {
-                if (child is ICompileable)
+                if (child is ICompileable && !(child is TextToken))
                     ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
                 else
                     sb.AppendLine(child.AsString);
@@ -95,6 +103,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                         }
                     }
                     string path = ((Import)ret[x]).ImportPath;
+                    if (path=="vue" && this.vueImportPath!=null)
+                        path=this.vueImportPath;
                     ret.RemoveAt(x);
                     ret.Insert(x, new Import(tmp.GroupBy(g=>g.ToString()).Select(g=>g.First()).ToArray(), path));
                 }
@@ -121,7 +131,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
 
                 if (_isSetup)
                 {
-
+                    throw new NotImplementedException("script of the type setup is not implemented yet");
                 }
                 else if (content.Contains("export default"))
                 {

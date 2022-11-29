@@ -130,11 +130,17 @@
         <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
         <li v-on:click="append('NewItem')">Add New</li>
     </ul>
+
+    <section id="notification_container"/>
+
     <script type="module">
         import { mPerson } from "/testing/resources/scripts/mPerson.js";
         import { User } from "/testing/resources/scripts/models/User.js";
         import { createApp, watch, ref, defineComponent,toRef,h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
+        import notification from "/resources/vueFiles/notification.js";
+
+        createApp(notification).mount('#notification_container');
 
         var person = mPerson.createInstance();
         console.log(person);

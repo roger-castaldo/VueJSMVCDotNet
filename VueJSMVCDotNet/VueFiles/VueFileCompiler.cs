@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
+﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization;
+using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents;
 using System;
 using System.Collections.Generic;
@@ -11,21 +12,28 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
 {
     internal class VueFileCompiler
     {
-        private VueFileTokenizer _tokenizer;
-        private ITokenSection[] _sections;
-        private List<IParsedComponent> _parsedElements;
-        private string _name;
+        private VueFileTokenizer tokenizer;
+        private ITokenSection[] sections;
+        private List<IParsedComponent> parsedElements;
+        private readonly string name;
+        private readonly string vuePath;
 
-        public VueFileCompiler(TextReader tr,string name)
+        public VueFileCompiler(TextReader tr,string name,string vuePath)
+            : this(name, vuePath)
         {
-            _tokenizer = new VueFileTokenizer(tr);
-            _name=name;
+            this.tokenizer = new VueFileTokenizer(tr);
         }
 
-        public VueFileCompiler(string content, string name)
+        public VueFileCompiler(string content, string name, string vuePath)
+            : this(name,vuePath)
         {
-            _tokenizer = new VueFileTokenizer(content);
-            _name=name;
+            this.tokenizer = new VueFileTokenizer(content);
+        }
+
+        private VueFileCompiler(string name, string vuePath)
+        {
+            this.name=(name.EndsWith(".vue") ? name.Substring(0,name.Length-4) : name);
+            this.vuePath=vuePath;
         }
 
         public string AsCompiled
@@ -33,29 +41,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
             get
             {
                 StringBuilder sb = new StringBuilder();
-                if (_parsedElements==null)
+                if (this.parsedElements==null)
                 {
                     int cacheCount = 0;
-                    _parsedElements = new List<IParsedComponent>();
-                    _sections = _tokenizer.Tokenize();
-                    for(int x = 0; x<_sections.Length; x++)
+                    this.parsedElements = new List<IParsedComponent>();
+                    this.sections = this.tokenizer.Tokenize();
+                    for(int x = 0; x<this.sections.Length; x++)
                     {
-                        if (_sections[x] is IParsableComponent)
+                        if (this.sections[x] is IParsableComponent)
                         {
-                            IParsedComponent[] tmp = ((IParsableComponent)_sections[x]).Parse();
+                            IParsedComponent[] tmp = ((IParsableComponent)this.sections[x]).Parse();
                             if (tmp!=null)
-                                _parsedElements.AddRange(tmp);
+                                this.parsedElements.AddRange(tmp);
                         }
                     }
-                    ClassPropertiesMap cpm = _ExtractPropertiesMap(_parsedElements.ToArray());
-                    _parsedElements.Add(cpm);
-                    foreach (ITokenSection its in _sections)
+                    ClassPropertiesMap cpm = _ExtractPropertiesMap(this.parsedElements.ToArray());
+                    this.parsedElements.Add(cpm);
+                    foreach (ITokenSection its in this.sections)
                     {
                         if (!(its is IParsedComponent))
-                            its.Compile(ref sb, _parsedElements.ToArray(), _name,ref cacheCount);
+                        {
+                            if (its is ScriptSection)
+                                ((ScriptSection)its).Compile(ref sb, this.parsedElements.ToArray(), this.name, ref cacheCount,this.vuePath);
+                            else 
+                                its.Compile(ref sb, this.parsedElements.ToArray(), this.name, ref cacheCount);
+                        }
                     }
                 }
-                sb.AppendLine(string.Format("export default __{0}__", _name));
+                sb.AppendLine(string.Format("export default __{0}__", this.name));
                 return sb.ToString();
             }
         }

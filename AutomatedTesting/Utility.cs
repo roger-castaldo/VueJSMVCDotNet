@@ -64,7 +64,8 @@ namespace AutomatedTesting
             return new VueMiddleware(null, new VueMiddlewareOptions(
                 modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
                 vueImportPath: _VUE_IMPORT_PATH,
-                messageOptions: new MessageHandlerOptions(_fileProvider, "/resources/messages")
+                fileProvider:_fileProvider,
+                messageOptions: new MessageHandlerOptions("/resources/messages")
             ));
         }
 

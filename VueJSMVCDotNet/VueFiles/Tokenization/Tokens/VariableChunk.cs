@@ -21,14 +21,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
-            sb.AppendFormat("_toDisplayString({0})",VueFileCompiler.ProcessClassProperties(components,_value));
+            sb.AppendFormat("_createTextVNode(_toDisplayString({0}),1)", VueFileCompiler.ProcessClassProperties(components,_value));
         }
 
         public IParsedComponent[] Parse()
         {
             return new IParsedComponent[]
             {
-                new Import(new string[]{"toDisplayString as _toDisplayString"},"vue")
+                new Import(new string[]{"toDisplayString as _toDisplayString","createTextVNode as _createTextVNode"},"vue")
             };
         }
     }

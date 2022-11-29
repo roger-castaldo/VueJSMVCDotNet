@@ -14,7 +14,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
 
         public ClassPropertiesMap()
         {
-            _valueMaps= new Dictionary<string, string>();
+            _valueMaps= new Dictionary<string, string>()
+            {
+                {"null","null" },
+                {"undefined","undefined" }
+            };
         }
 
         private static readonly Regex _regInvalidChars = new Regex("[^A-Za-z0-9$_]", RegexOptions.Compiled|RegexOptions.ECMAScript);

@@ -49,14 +49,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             _children = new List<IToken>();
         }
 
-        public void Add(HTMLAttribute attribute)
+        public void Add(IToken child)
         {
-            _children.Add(attribute);
-        }
-
-        public void Add(IVueDirective directive)
-        {
-            _children.Add(directive);
+            _children.Add(child);
         }
 
         public void Add(IToken[] children)
