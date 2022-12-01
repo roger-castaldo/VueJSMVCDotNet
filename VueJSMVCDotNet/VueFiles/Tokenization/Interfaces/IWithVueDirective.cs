@@ -9,6 +9,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
 {
     internal interface IWithVueDirective : IVueDirective,IParsableComponent
     {
-        void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,HTMLElement owner);
+        void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,IHTMLElement owner);
     }
 }

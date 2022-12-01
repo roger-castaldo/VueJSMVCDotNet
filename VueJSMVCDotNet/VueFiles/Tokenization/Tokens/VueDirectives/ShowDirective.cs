@@ -23,7 +23,7 @@ namespace VueFileParser.Tokenization.ParsedComponents.VueDirectives
 
         public int Cost => 0;
 
-        public void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,HTMLElement owner)
+        public void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,IHTMLElement owner)
         {
             sb.AppendFormat("[_vShow,{0}]", VueFileCompiler.ProcessClassProperties(components, _value));
         }

@@ -9,6 +9,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
 {
     internal interface IEventDirective : IVueDirective
     {
-        void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, HTMLElement owner);
+        void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner);
     }
 }

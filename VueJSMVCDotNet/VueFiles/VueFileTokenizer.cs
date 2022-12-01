@@ -80,9 +80,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
             return ret.ToArray();
         }
 
-        private IToken _ProcessHtmlTag(MatchCollection matches, ref int x)
+        private IHTMLElement _ProcessHtmlTag(MatchCollection matches, ref int x)
         {
-            HTMLElement elem = new HTMLElement(matches[x].Groups[2].Value);
+            IHTMLElement elem = ElementConstructor.ConstructElement(matches[x].Groups[2].Value);
             if (matches[x].Groups[3].Value!="")
             {
                 for (int y = 3; y<matches[x].Groups.Count-1; y+=4)
@@ -101,7 +101,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                 {
                     elem.Add(_ProcessTextContent(_content.Substring(sidx, matches[x].Index-sidx).Trim()));
                     elem.Add(_ProcessHtmlTag(matches, ref x));
+                    sidx = matches[x-1].Index+matches[x-1].Length;
                 }
+                elem.Add(_ProcessTextContent(_content.Substring(sidx, matches[x].Index-sidx).Trim()));
                 x++;
             }
             else

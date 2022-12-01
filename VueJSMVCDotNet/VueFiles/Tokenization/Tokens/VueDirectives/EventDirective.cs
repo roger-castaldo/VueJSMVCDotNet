@@ -26,7 +26,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
 
         public int Cost => 0;
 
-        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, HTMLElement owner)
+        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner)
         {
             switch (_event)
             {

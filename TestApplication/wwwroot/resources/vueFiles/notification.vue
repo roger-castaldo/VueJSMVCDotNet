@@ -1,7 +1,8 @@
 <template>
     <div v-bind:class="['notification','is-'+(type==null ? 'primary' : type),(light ? 'is-light' : '')]">
-        {{Message}}
-        <slot/>
+        <slot>
+            {{Message}}
+        </slot>
     </div>
 </template>
 

@@ -37,44 +37,47 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
             };
         }
 
-        public void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name,HTMLElement owner)
+        public void ProduceDirective(ref StringBuilder sb, IParsedComponent[] components, string name, IHTMLElement owner)
         {
             sb.Append("[");
-            switch (owner.InputType)
+            if (owner.InputType!=null)
             {
-                case "text":
-                case "color":
-                case "date":
-                case "datetime-local":
-                case "email":
-                case "hidden":
-                case "month":
-                case "number":
-                case "password":
-                case "search":
-                case "tel":
-                case "time":
-                case "url":
-                case "week":
-                    sb.Append("_vModelText");
-                    break;
-                case "checkbox":
-                    sb.Append("_vModelCheckbox");
-                    break;
-                case "radio":
-                    sb.Append("_vModelRadio");
-                    break;
-                default:
-                    if (owner.Tag=="select")
-                        sb.Append("_vModelSelect");
-                    else
-                        sb.Append("_vModelDynamic");
-                    break;
+                switch (owner.InputType)
+                {
+                    case "text":
+                    case "color":
+                    case "date":
+                    case "datetime-local":
+                    case "email":
+                    case "hidden":
+                    case "month":
+                    case "number":
+                    case "password":
+                    case "search":
+                    case "tel":
+                    case "time":
+                    case "url":
+                    case "week":
+                        sb.Append("_vModelText");
+                        break;
+                    case "checkbox":
+                        sb.Append("_vModelCheckbox");
+                        break;
+                    case "radio":
+                        sb.Append("_vModelRadio");
+                        break;
+                    default:
+                        if (owner.Tag=="select")
+                            sb.Append("_vModelSelect");
+                        else
+                            sb.Append("_vModelDynamic");
+                        break;
+                }
             }
             sb.AppendFormat(",{0}]", VueFileCompiler.ProcessClassProperties(components, _value));
         }
 
-        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount,HTMLElement owner)
+        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner)
         {
             sb.AppendFormat("\"onUpdate:modelValue\": _cache[{0}] || (_cache[{0}] = $event => ({1} = $event))", new object[]
             {
