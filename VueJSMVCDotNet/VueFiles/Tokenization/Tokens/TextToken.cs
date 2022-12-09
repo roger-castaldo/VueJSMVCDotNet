@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         public IParsedComponent[] Parse()
         {
-            return new IParsedComponent[] { new Import(new string[] { "createTextVNode as _createTextVNode" }, "vue") };
+            return new IParsedComponent[] { new Import(new string[] { "createTextVNode as _createTextVNode" }, Constants.VUE_IMPORT_NAME) };
         }
     }
 }

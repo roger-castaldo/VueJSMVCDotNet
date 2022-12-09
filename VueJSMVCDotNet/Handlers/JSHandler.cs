@@ -317,7 +317,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         amodels[x] = new sModelType(models[x]);
                     Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
                     WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
-                    builder.AppendLine(string.Format(@"import {{ version, createApp, isProxy, toRaw, reactive, readonly }} from ""{0}"";
+                    builder.AppendLine(string.Format(@"import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from ""{0}"";
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}", _vueImportPath));
                     foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
                     {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
 {
-    internal interface IHTMLElement : IToken, ICompileable, IParsableComponent, IPatchable
+    internal interface IHTMLElement : IToken, IParsableComponent, IPatchable
     {
         IVueDirective[] Directives { get; }
 
@@ -16,5 +16,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces
         void Add(IToken child);
 
         void Add(IToken[] children);
+
+        void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount,bool isSetup);
     }
 }

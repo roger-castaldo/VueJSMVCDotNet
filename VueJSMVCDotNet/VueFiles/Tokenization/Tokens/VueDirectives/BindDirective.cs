@@ -60,10 +60,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
             switch (_command.ToLower())
             {
                 case "class":
-                    return new IParsedComponent[] { new Import(new string[] { "normalizeClass as _normalizeClass" }, "vue") };
+                    return new IParsedComponent[] { new Import(new string[] { "normalizeClass as _normalizeClass" }, Constants.VUE_IMPORT_NAME) };
                     break;
                 case "style":
-                    return new IParsedComponent[] { new Import(new string[] { "normalizeStyle as _normalizeStyle" }, "vue") };
+                    return new IParsedComponent[] { new Import(new string[] { "normalizeStyle as _normalizeStyle" }, Constants.VUE_IMPORT_NAME) };
                     break;
                 default:
                     return null;

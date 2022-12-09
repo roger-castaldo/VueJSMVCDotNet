@@ -56,7 +56,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
                         }
                     }
                     ClassPropertiesMap cpm = _ExtractPropertiesMap(this.parsedElements.ToArray());
-                    this.parsedElements.Add(cpm);
+                    if (cpm!=null)
+                        this.parsedElements.Add(cpm);
                     foreach (ITokenSection its in this.sections)
                     {
                         if (!(its is IParsedComponent))
@@ -75,6 +76,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
 
         private static ClassPropertiesMap _ExtractPropertiesMap(IParsedComponent[] components)
         {
+            if (components.Count(comp => comp is ClassPropertiesMap)>0)
+                return null;
             ClassPropertiesMap ret = new ClassPropertiesMap();
             foreach (IParsedComponent ipc in components)
             {

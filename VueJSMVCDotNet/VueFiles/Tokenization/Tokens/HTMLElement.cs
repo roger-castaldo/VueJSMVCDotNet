@@ -57,7 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         private static readonly Regex _regVFor = new Regex("^\\{?([^,]+),?([^\\s]+)?\\}?\\sin\\s(.+)$", RegexOptions.Compiled|RegexOptions.ECMAScript);
 
-        public override void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
+        public override void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount,bool isSetup)
         {
             if (_withDirectives.Length>0)
                 sb.Append("_withDirectives(_createElementVNode(");
@@ -94,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 ",VueFileCompiler.ProcessClassProperties(components,bindValue));
             foreach (IEventDirective ev in _eventDirectives)
             {
-                ev.ProduceEvent(ref sb, components, name,ref cacheCount,this);
+                ev.ProduceEvent(ref sb, components, name,ref cacheCount,this,isSetup);
                 sb.AppendLine(",");
             }
             if (_eventDirectives.Length>0)
@@ -116,7 +116,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                             if (vd is IfDirective)
                             {
                                 add=false;
-                                _ProcessIfDirective(ref x, ((IfDirective)vd).Value, ref sb, components, name,ref cacheCount);
+                                _ProcessIfDirective(ref x, ((IfDirective)vd).Value, ref sb, components, name,ref cacheCount,isSetup);
                             }else if (vd is ForDirective)
                             {
                                 add=false;
@@ -124,6 +124,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                                 sb.AppendFormat("(_openBlock(true, _createElementBlock(_Fragment,null,_renderList({0},({{1},{2}})=>{{ return (_openBlock(), ", new object[] { m.Groups[3].Value, (m.Groups[1].Value=="" ? "idx" : m.Groups[1].Value), m.Groups[2].Value });
                                 if (Content[x] is ICompileable)
                                     ((ICompileable)Content[x]).Compile(ref sb, components, name,ref cacheCount);
+                                else if (Content[x] is IHTMLElement)
+                                    ((IHTMLElement)Content[x]).Compile(ref sb, components, name, ref cacheCount, isSetup);
                                 else
                                     sb.Append(Content[x].AsString);
                                 sb.AppendFormat(@");
@@ -135,7 +137,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                     if (add)
                     {
                         if (Content[x] is ICompileable)
-                            ((ICompileable)Content[x]).Compile(ref sb, components, name,ref cacheCount);
+                            ((ICompileable)Content[x]).Compile(ref sb, components, name, ref cacheCount);
+                        else if (Content[x] is IHTMLElement)
+                            ((IHTMLElement)Content[x]).Compile(ref sb, components, name, ref cacheCount, isSetup);
                         else
                             sb.Append(Content[x].AsString);
                     }
@@ -159,7 +163,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             }
         }
 
-        private void _ProcessIfDirective(ref int x, string value, ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount)
+        private void _ProcessIfDirective(ref int x, string value, ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount,bool isSetup)
         {
             sb.AppendFormat("({0} ? ", value);
             int bracketCount = 1;
@@ -167,6 +171,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
             bool changed = true;
             if (Content[x] is ICompileable)
                 ((ICompileable)Content[x]).Compile(ref sb, components,name,ref cacheCount);
+            else if (Content[x] is IHTMLElement)
+                ((IHTMLElement)Content[x]).Compile(ref sb, components, name, ref cacheCount, isSetup);
             else
                 sb.Append(Content[x].AsString);
             while (x+1<Content.Length && Content[x+1] is IHTMLElement && ((IHTMLElement)Content[x]).Directives.Length>0 && changed)
@@ -181,6 +187,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                         sb.Append(" : ");
                         if (Content[x] is ICompileable)
                             ((ICompileable)Content[x]).Compile(ref sb, components, name,ref cacheCount);
+                        else if (Content[x] is IHTMLElement)
+                            ((IHTMLElement)Content[x]).Compile(ref sb, components, name, ref cacheCount, isSetup);
                         else
                             sb.Append(Content[x].AsString);
                         x++;
@@ -192,6 +200,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                         sb.AppendFormat(" : ({0} ? ", ((ElseIfDirective)vd).Value);
                         if (Content[x] is ICompileable)
                             ((ICompileable)Content[x]).Compile(ref sb, components, name,ref cacheCount);
+                        else if (Content[x] is IHTMLElement)
+                            ((IHTMLElement)Content[x]).Compile(ref sb, components, name, ref cacheCount, isSetup);
                         else
                             sb.Append(Content[x].AsString);
                         x++;
@@ -212,13 +222,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
         {
             get
             {
-                List<IParsedComponent> ret = new List<IParsedComponent>(new IParsedComponent[] { new Import(new string[] { "createElementBlock as _createElementBlock" }, "vue") });
+                List<IParsedComponent> ret = new List<IParsedComponent>(new IParsedComponent[] { new Import(new string[] { "createElementBlock as _createElementBlock" }, Constants.VUE_IMPORT_NAME) });
                 if (_withDirectives.Length>0)
-                    ret.Add(new Import(new string[] { "withDirectives as _withDirectives", "createElementVNode as _createElementVNode" }, "vue"));
+                    ret.Add(new Import(new string[] { "withDirectives as _withDirectives", "createElementVNode as _createElementVNode" }, Constants.VUE_IMPORT_NAME));
                 if (Directives.Count(di=>di is FullBindDirective)>0)
-                    ret.Add(new Import(new string[] { "mergeProps as _mergeProps" }, "vue"));
+                    ret.Add(new Import(new string[] { "mergeProps as _mergeProps" }, Constants.VUE_IMPORT_NAME));
                 if (Directives.Count(di=>di is ForDirective)>0)
-                    ret.Add(new Import(new string[] { "renderList as _renderList", "Fragment as _Fragment" }, "vue"));
+                    ret.Add(new Import(new string[] { "renderList as _renderList", "Fragment as _Fragment" }, Constants.VUE_IMPORT_NAME));
                 return ret.ToArray();
             }
         }

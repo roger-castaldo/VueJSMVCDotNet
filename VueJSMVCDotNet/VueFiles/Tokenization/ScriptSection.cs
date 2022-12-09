@@ -49,36 +49,66 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
 
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name,ref int cacheCount)
         {
-            components = _MergeImports(components);
+            components = _StripDuplicateConstants(_MergeImports(components));
             foreach (IParsedComponent component in components)
             {
                 if (component is ICompileable && component is IScriptHeader)
                     ((ICompileable)component).Compile(ref sb, components,name,ref cacheCount);
             }
-            foreach (IToken child in _strippedComponents)
+            if (!_isSetup)
             {
-                if (child is ICompileable && !(child is TextToken))
-                    ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
-                else
-                    sb.AppendLine(child.AsString);
+                foreach (IToken child in _strippedComponents)
+                {
+                    if (child is ICompileable && !(child is TextToken))
+                        ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
+                    else
+                        sb.AppendLine(child.AsString);
+                }
+                foreach (IParsedComponent component in components)
+                {
+                    if (component is ICompileable && !(component is IScriptHeader) && !(component is IComponentProperty))
+                        ((ICompileable)component).Compile(ref sb, components, name, ref cacheCount);
+                }
+                sb.AppendLine(string.Format("const __{0}__ = {{", name));
+                foreach (IParsedComponent component in components)
+                {
+                    if (component is IComponentProperty && component is ICompileable)
+                    {
+                        sb.Append("\t");
+                        ((ICompileable)component).Compile(ref sb, components, name, ref cacheCount);
+                        sb.AppendLine(",");
+                    }
+                }
+                sb.AppendLine(string.Format(@"__file: '{0}.vue'
+}};", name));
             }
-            foreach (IParsedComponent component in components)
+            else
             {
-                if (component is ICompileable && !(component is IScriptHeader) && !(component is IComponentProperty))
-                    ((ICompileable)component).Compile(ref sb, components,name, ref cacheCount);
-            }
-            sb.AppendLine(string.Format("const __{0}__ = {{", name));
-            foreach (IParsedComponent component in components)
-            {
-                if (component is IComponentProperty && component is ICompileable)
+                sb.AppendLine(string.Format(@"const __{0}__ = {{
+    __name: '{0}',", name));
+                foreach (ICompileable component in components.Where(comp=>comp is IComponentProperty && comp is ICompileable && !(comp is TemplateSection)).Select(comp=>(ICompileable)comp))
                 {
                     sb.Append("\t");
-                    ((ICompileable)component).Compile(ref sb, components, name, ref cacheCount);
+                    component.Compile(ref sb, components, name, ref cacheCount);
                     sb.AppendLine(",");
                 }
+                sb.AppendLine(" setup(__props){");
+                foreach (ICompileable component in components.Where(comp => !(comp is IComponentProperty || comp is IScriptHeader) && comp is ICompileable && !(comp is TemplateSection)).Select(comp => (ICompileable)comp))
+                    component.Compile(ref sb, components, name, ref cacheCount);
+                foreach (IToken child in _strippedComponents)
+                {
+                    if (child is ICompileable && !(child is TextToken))
+                        ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
+                    else
+                        sb.AppendLine(child.AsString);
+                }
+                TemplateSection ts = (TemplateSection)components.Where(comp => comp is TemplateSection).FirstOrDefault();
+                if (ts!=null)
+                    ts.Compile(true, ref sb, components, name, ref cacheCount);
+                sb.AppendLine(string.Format(@"}},
+__file: '{0}.vue'
+}};", name));
             }
-            sb.AppendLine(string.Format(@"__file: '{0}.vue'
-}};",name));
         }
 
         private IParsedComponent[] _MergeImports(IParsedComponent[] components)
@@ -103,7 +133,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                         }
                     }
                     string path = ((Import)ret[x]).ImportPath;
-                    if (path=="vue" && this.vueImportPath!=null)
+                    if (path==Constants.VUE_IMPORT_NAME && this.vueImportPath!=null)
                         path=this.vueImportPath;
                     ret.RemoveAt(x);
                     ret.Insert(x, new Import(tmp.GroupBy(g=>g.ToString()).Select(g=>g.First()).ToArray(), path));
@@ -112,26 +142,50 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             return ret.ToArray();
         }
 
-        private static readonly Regex _RegImportStatement = new Regex("^\\s*import\\s+((\\{[^\\}]+\\}|[^\\s]+)\\s+from\\s+)?(\"[^\"]+\"|'[^']+')\\s*;\\s*$", RegexOptions.Compiled|RegexOptions.Multiline);
+        private IParsedComponent[] _StripDuplicateConstants(IParsedComponent[] components)
+        {
+            List<IParsedComponent> ret = new List<IParsedComponent>(components);
+            for (int x = 0; x<ret.Count; x++)
+            {
+                if (ret[x] is DeclaredConstant)
+                {
+                    for(int y = x+1; y<ret.Count; y++)
+                    {
+                        if (ret[x].Equals(ret[y]))
+                        {
+                            ret.RemoveAt(y);
+                            y--;
+                        }
+                    }
+                }
+            }
+            return ret.ToArray();
+        }
+
+        private static readonly Regex _RegImportStatement = new Regex("^\\s*import\\s+((\\{([^\\}]+)\\}|[^\\s]+)\\s+from\\s+)?(\"[^\"]+\"|'[^']+')\\s*;\\s*$", RegexOptions.Compiled|RegexOptions.Multiline);
 
         public IParsedComponent[] Parse()
         {
             List<IParsedComponent> ret = new List<IParsedComponent>();
             List<IToken> stripped = new List<IToken>();
+            ClassPropertiesMap cpm = null;
+            if (_isSetup)
+                cpm=new ClassPropertiesMap();
             foreach (IToken child in _content)
             {
                 string content = child.AsString;
                 Match m = _RegImportStatement.Match(content);
                 while (m.Success)
                 {
-                    ret.Add(new Import((m.Groups[1].Value!="" ? m.Groups[2].Value.Split(',') : new string[] { }), m.Groups[3].Value));
+                    ret.Add(new Import((m.Groups[3].Value!="" ? m.Groups[3].Value.Split(',') : new string[] { }), m.Groups[4].Value));
                     content = content.Replace(m.Value, "");
                     m = _RegImportStatement.Match(content);
                 }
 
                 if (_isSetup)
                 {
-                    throw new NotImplementedException("script of the type setup is not implemented yet");
+                    content = cpm.ProcessSetupScript(content,ref ret);
+                    ret.Add(cpm);
                 }
                 else if (content.Contains("export default"))
                 {
@@ -146,6 +200,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
                     stripped.Add(new TextToken(content));
             }
             _strippedComponents=stripped.ToArray();
+            if (cpm!=null)
+                ret.Add(cpm);
             return ret.ToArray();
         }
 

@@ -10,6 +10,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
 {
     internal class ClassPropertiesMap : IComponentProperty
     {
+        private bool _useSetup;
         private Dictionary<string, string> _valueMaps;
 
         public ClassPropertiesMap()
@@ -22,16 +23,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
         }
 
         private static readonly Regex _regInvalidChars = new Regex("[^A-Za-z0-9$_]", RegexOptions.Compiled|RegexOptions.ECMAScript);
-        public void ProcessPropsValue(string value)
-        {
-            foreach (string str in value.Split(','))
-            {
-                string tmp = _regInvalidChars.Replace(str, "");
-                _valueMaps.Add(tmp, string.Format("$props.{0}", tmp));
-            }
-        }
 
-        internal void ProcessComputedValue(string content)
+        private void ProcessJsonProps(string content, string attribute, string ending = null)
         {
             content=content.Trim().TrimStart('{').TrimEnd('}');
             string prop = "";
@@ -56,7 +49,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                     case ':':
                         if (prop!="")
                         {
-                            _valueMaps.Add(prop.Trim(), string.Format("$options.{0}", prop.Trim()));
+                            _valueMaps.Add(prop.Trim(), string.Format("{0}.{1}{2}", new object[] { attribute, prop.Trim(), ending }));
                             prop="";
                         }
                         break;
@@ -67,86 +60,72 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                 }
             }
             if (prop.Trim()!="")
-                _valueMaps.Add(prop.Trim(), string.Format("$options.{0}", prop.Trim()));
+                _valueMaps.Add(prop.Trim(), string.Format("{0}.{1}{2}", new object[] { attribute, prop.Trim(), ending }));
+        }
+
+        public void ProcessPropsValue(string value)
+        {
+            if (value.StartsWith("["))
+            {
+                foreach (string str in value.Split(','))
+                {
+                    string tmp = _regInvalidChars.Replace(str, "");
+                    _valueMaps.Add(tmp, string.Format("$props.{0}", tmp));
+                }
+            }
+            else
+                ProcessJsonProps(value, "$props");
+                
+        }
+
+        internal void ProcessComputedValue(string content)
+        {
+            ProcessJsonProps(content, "$options");
         }
 
         internal void ProcessDataValue(string content)
         {
             content = content.Substring(content.IndexOf("return")+"return".Length).Trim().TrimEnd('}');
             content = content.Trim().TrimStart('{').TrimEnd("};".ToArray());
-            string prop = "";
-            int bracketCount = 0;
-            foreach (char c in content)
-            {
-                switch (c)
-                {
-                    case ' ':
-                    case '\r':
-                    case '\t':
-                    case '\n':
-                    case ',':
-                        break;
-                    case '{':
-                        prop="";
-                        bracketCount++;
-                        break;
-                    case '}':
-                        bracketCount--;
-                        break;
-                    case ':':
-                        if (prop!="")
-                        {
-                            _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}", prop.Trim()));
-                            prop="";
-                        }
-                        break;
-                    default:
-                        if (bracketCount==0)
-                            prop+=c;
-                        break;
-                }
-            }
-            if (prop.Trim()!="")
-                _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}", prop.Trim()));
+            ProcessJsonProps(content, "_ctx");
         }
 
         internal void ProcessMethodsValue(string content)
         {
-            content=content.Trim().TrimStart('{').TrimEnd('}');
-            string prop = "";
-            int bracketCount = 0;
-            foreach (char c in content)
+            ProcessJsonProps(content, "$options");
+        }
+
+        private static readonly Regex _regRefs = new Regex("const\\s+([A-Za-z0-9$_]+)\\s*=\\s*(ref|reactive)\\(", RegexOptions.Compiled|RegexOptions.ECMAScript);
+        private static readonly Regex _regDefineProps = new Regex("const\\s+([A-Za-z0-9$_]+)\\s*=\\s*defineProps\\(", RegexOptions.Compiled|RegexOptions.ECMAScript);
+        internal string ProcessSetupScript(string content,ref List<IParsedComponent> components)
+        {
+            _useSetup=true;
+            foreach (Match m in _regRefs.Matches(content))
+                _valueMaps.Add(m.Groups[1].Value, String.Format("{0}.value", m.Groups[1].Value));
+            if (_regDefineProps.IsMatch(content))
             {
-                switch (c)
+                Match m = _regDefineProps.Match(content);
+                string props = "";
+                int bracketCount = 1;
+                for(int x = m.Index+m.Length; x<content.Length; x++)
                 {
-                    case ' ':
-                    case '\r':
-                    case '\t':
-                    case '\n':
-                    case ',':
-                        break;
-                    case '{':
-                        prop="";
-                        bracketCount++;
-                        break;
-                    case '}':
+                    if (content[x]==')')
                         bracketCount--;
+                    else
+                        props+=content[x];
+                    if (bracketCount==0)
+                    {
+                        if (content[x+1]==';')
+                            x++;
+                        content = content.Substring(0, m.Index)+content.Substring(x+1);
+                        ProcessJsonProps(props, m.Groups[1].Value);
+                        components.Add(new ClassProperty("props", props));
+                        components.Add(new DeclaredConstant(m.Groups[1].Value, "__props"));
                         break;
-                    case ':':
-                        if (prop!="")
-                        {
-                            _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}()", prop.Trim()));
-                            prop="";
-                        }
-                        break;
-                    default:
-                        if (bracketCount==0)
-                            prop+=c;
-                        break;
+                    }
                 }
             }
-            if (prop.Trim()!="")
-                _valueMaps.Add(prop.Trim(), string.Format("_ctx.{0}()", prop.Trim()));
+            return content;
         }
 
         const string _VALID_FIRST_VARIABLE_CHARACTERS = "abcedfghijklmnopqrstuvwxyz$_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -159,7 +138,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
             {
                 char c = content[x];
                 if ((variable=="" && _VALID_FIRST_VARIABLE_CHARACTERS.Contains(c))
-                    ||(variable!="" && _VALID_FIRST_VARIABLE_CHARACTERS.Contains(c)))
+                    ||(variable!="" && _VALID_VARIABLE_CHARACTERS.Contains(c)))
                     variable+=c;
                 else
                 {
@@ -168,7 +147,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                         if (_valueMaps.ContainsKey(variable))
                             ret+=_valueMaps[variable];
                         else
-                            ret+="_ctx."+variable;
+                            ret+=(_useSetup ? "" : "_ctx.")+variable;
                         variable="";
                     }
                     switch (c)
@@ -195,7 +174,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents
                 if (_valueMaps.ContainsKey(variable))
                     ret+=_valueMaps[variable];
                 else
-                    ret+="_ctx."+variable;
+                    ret+=(_useSetup ? "" : "_ctx.")+variable;
             }
             return ret;
         }

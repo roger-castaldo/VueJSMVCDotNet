@@ -26,28 +26,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
 
         public int Cost => 0;
 
-        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner)
+        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner,bool isSetup)
         {
             switch (_event)
             {
                 case "click":
                 case "focus":
-                    sb.AppendFormat("on{0}{1}: _cache[{2}] || (_cache[{2}] = $event => (", new object[]
+                    sb.AppendFormat("on{0}{1}", new object[]
                     {
                         _event[0].ToString().ToUpper(),
-                        _event.Substring(1),
-                        cacheCount
+                        _event.Substring(1)
                     });
                     break;
                 default:
-                    sb.AppendFormat("\"on:{0}\": _cache[{1}] || (_cache[{1}] = $event => (", new object[]
+                    sb.AppendFormat("\"on:{0}\"", new object[]
                     {
                         _event,
                         cacheCount
                     });
                     break;
             }
-            sb.AppendFormat("{0}))", VueFileCompiler.ProcessClassProperties(components, _callback));
+            if (!isSetup)
+                sb.AppendFormat(": _cache[{0}] || (_cache[{0}] = (...args) => ({1} && {1}(...args)))", new object[] { cacheCount, VueFileCompiler.ProcessClassProperties(components, _callback) });
+            else
+                sb.AppendFormat(": {0}", new object[] { _callback });
             cacheCount++;
         }
     }

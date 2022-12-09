@@ -18,6 +18,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
         public VueFileTokenizer(TextReader tr)
         {
             _content = tr.ReadToEnd();
+            tr.Close();
         }
 
         public VueFileTokenizer(string content)
@@ -25,7 +26,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
             _content = content;
         }
 
-        private static readonly Regex _regTag = new Regex(@"\<(/?)([^\s/>]+)(\s+([^\s=/>]+)\s*(=\s*""([^""]+)""))*(/?)\>", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        private static readonly Regex _regTag = new Regex(@"\<(/?)([^\s/>]+)(\s+([^\s=/>]+)\s*(=\s*""([^""]+)"")?)*(/?)\>", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         public ITokenSection[] Tokenize()
         {
@@ -87,7 +88,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles
             {
                 for (int y = 3; y<matches[x].Groups.Count-1; y+=4)
                 {
-                    if (matches[x].Groups[y+1].Value.StartsWith("v-")||matches[x].Groups[y+1].Value.StartsWith(":"))
+                    if (matches[x].Groups[y+1].Value.StartsWith("v-")||matches[x].Groups[y+1].Value.StartsWith(":")||matches[x].Groups[y+1].Value.StartsWith("@"))
                         elem.Add(VueDirective.ConstructDirective(matches[x].Groups[y+1].Value, matches[x].Groups[y+3].Value));
                     else
                         elem.Add(new HTMLAttribute(matches[x].Groups[y+1].Value));

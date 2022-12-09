@@ -13,7 +13,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
     {
         private List<IToken> _children;
 
-        protected List<IToken> Children { get { return _children; } }
+        public List<IToken> Children { get { return _children; } }
 
         public AElement(string tag)
         {
@@ -77,7 +77,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
 
         public abstract int Cost { get; }
 
-        public abstract void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount);
+        public abstract void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount,bool isSetup);
 
         protected abstract IParsedComponent[] ParsedComponents { get; }
     }

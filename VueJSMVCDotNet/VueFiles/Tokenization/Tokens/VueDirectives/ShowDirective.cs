@@ -1,4 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.VueFiles;
+﻿using Org.Reddragonit.VueJSMVCDotNet;
+using Org.Reddragonit.VueJSMVCDotNet.VueFiles;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Interfaces;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.ParsedComponents;
 using Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens;
@@ -30,7 +31,7 @@ namespace VueFileParser.Tokenization.ParsedComponents.VueDirectives
 
         public IParsedComponent[] Parse()
         {
-            return new IParsedComponent[] { new Import(new string[] { "vShow as _vShow" }, "vue") };
+            return new IParsedComponent[] { new Import(new string[] { "vShow as _vShow" }, Constants.VUE_IMPORT_NAME) };
         }
     }
 }

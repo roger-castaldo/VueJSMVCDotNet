@@ -50,6 +50,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens
                         directive = new BindDirective(command.Split(':')[1], value);
                     else if (command.StartsWith("v-on:"))
                         directive=new EventDirective(command.Split(':')[1], value);
+                    else if (command.StartsWith("@"))
+                        directive=new EventDirective(command.Substring(1), value);
                     break;
             }
             return directive;

@@ -33,17 +33,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization
             _content=content;
         }
 
+        private bool _useSetup;
+
+        public void Compile(bool useSetup,ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount)
+        {
+            _useSetup=useSetup;
+            Compile(ref sb, components, name, ref cacheCount);
+        }
+
         public void Compile(ref StringBuilder sb, IParsedComponent[] components,string name, ref int cacheCount)
         {
-            sb.AppendLine(@"render:function(_ctx, _cache, $props, $setup, $data, $options) {
-return (_openBlock(),");
+            if (_useSetup)
+                sb.AppendLine(@"return (_ctx, _cache) => {");
+            else
+                sb.AppendLine(@"render:function(_ctx, _cache, $props, $setup, $data, $options) {");
+sb.AppendLine("return (_openBlock(),");
             if (_content.Length>1)
             {
                 sb.Append("[");
                 foreach (IToken child in _content)
                 {
                     if (child is ICompileable)
-                        ((ICompileable)child).Compile(ref sb, components, name,ref cacheCount);
+                        ((ICompileable)child).Compile(ref sb, components, name, ref cacheCount);
+                    else if (child is IHTMLElement)
+                        ((IHTMLElement)child).Compile(ref sb, components, name, ref cacheCount, _useSetup);
                     else
                         sb.AppendLine(child.AsString);
                 }
@@ -53,6 +66,8 @@ return (_openBlock(),");
             {
                 if (_content[0] is ICompileable)
                     ((ICompileable)_content[0]).Compile(ref sb, components, name,ref cacheCount);
+                else if (_content[0] is IHTMLElement)
+                    ((IHTMLElement)_content[0]).Compile(ref sb, components, name, ref cacheCount,_useSetup);
                 else
                     sb.AppendLine(_content[0].AsString);
             }
@@ -65,7 +80,7 @@ return (_openBlock(),");
             List<IParsedComponent> ret = new List<IParsedComponent>(
                 new IParsedComponent[]
                 {
-                    new Import(new string[]{ "openBlock as _openBlock"},"vue"),
+                    new Import(new string[]{ "openBlock as _openBlock"},Constants.VUE_IMPORT_NAME),
                     this
                 }
             );

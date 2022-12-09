@@ -17,7 +17,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueElement
 
         public override int Cost => 0;
 
-        public override void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount)
+        public override void Compile(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount,bool isSetup)
         {
             var attName = Children.Where(it => it is HTMLAttribute && ((HTMLAttribute)it).Name=="name").FirstOrDefault();
             sb.AppendFormat("_renderSlot(_ctx.$slots,\"{0}\"",new object[]
@@ -36,7 +36,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueElement
 
         protected override IParsedComponent[] ParsedComponents => new IParsedComponent[]
                 {
-                    new Import(new string[]{"renderSlot as _renderSlot"},"vue")
+                    new Import(new string[]{"renderSlot as _renderSlot"},Constants.VUE_IMPORT_NAME)
                 };
     }
 }

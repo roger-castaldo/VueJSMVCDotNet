@@ -33,7 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
                     "vModelSelect as _vModelSelect",
                     "vModelText as _vModelText"
                 },
-                "vue")
+                Constants.VUE_IMPORT_NAME)
             };
         }
 
@@ -77,7 +77,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.VueFiles.Tokenization.Tokens.VueDirecti
             sb.AppendFormat(",{0}]", VueFileCompiler.ProcessClassProperties(components, _value));
         }
 
-        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner)
+        public void ProduceEvent(ref StringBuilder sb, IParsedComponent[] components, string name, ref int cacheCount, IHTMLElement owner, bool isSetup)
         {
             sb.AppendFormat("\"onUpdate:modelValue\": _cache[{0}] || (_cache[{0}] = $event => ({1} = $event))", new object[]
             {
