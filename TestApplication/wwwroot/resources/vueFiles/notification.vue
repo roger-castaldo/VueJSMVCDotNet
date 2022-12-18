@@ -1,26 +1,23 @@
-<template>
-    <div v-bind:class="['notification','is-'+(type==null ? 'primary' : type),(light ? 'is-light' : '')]">
-        <slot>
-            {{Message}}
-        </slot>
-    </div>
-</template>
+<script setup>
+    import { ref, watch } from 'vue';
+    // variable
+    const msg = ref('Hello!');
 
-<script>
-export default {
-    props:['type','message','light'],
-    computed:{
-        Message:{
-            get:function(){
-                if (this.message==null){
-                    return this.message;
-                }else if (this.message.contains('.')){
-                    return this.Translate(this.message);
-                }else{
-                    return this.message;
-                }
-            }
-        }
+    const props = defineProps({
+        foo: String
+    });
+
+    // functions
+    function log() {
+        console.log(msg)
     }
-};
+
+    watch(() => props.foo, (currentValue, oldValue) => {
+        console.log(currentValue);
+        console.log(oldValue);
+    });
 </script>
+
+<template>
+    <button @click="log">{{ msg }},{{foo}}</button>
+</template>
