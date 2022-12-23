@@ -136,5 +136,44 @@ export const name = 'John';");
         {
             _ExecuteTest("mDataType.TestListInputs", true);
         }
+
+        [TestMethod]
+        public void TestSingleNotNullArgument()
+        {
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.AddModule("mDataTypes", _content);
+                eng.AddModule("custom", @"
+        import { mDataTypes } from 'mDataTypes';
+        try{
+            mDataTypes.TestSingleNotNullInput(' ',null);
+        }catch(err){
+            if (err.message.toString()!='fetch is not defined'){
+                throw 'error';
+            }
+        }
+        try{
+            mDataTypes.TestSingleNotNullInput(null,null);    
+        }catch(err){
+            if (err.indexOf('Cannot set stringArg')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on stringArg: '+err;
+            }
+        }
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
     }
 }

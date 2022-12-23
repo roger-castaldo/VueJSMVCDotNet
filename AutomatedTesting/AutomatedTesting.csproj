@@ -2,8 +2,10 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netcoreapp3.1;net481;net6.0;</TargetFrameworks>
-
 		<IsPackable>false</IsPackable>
+		<AnalysisLevel>none</AnalysisLevel>
+		<RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
+		<RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -43,4 +45,12 @@
     <ProjectReference Include="..\VueJSMVCDotNet\VueJSMVCDotNet.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+	  <None Update="resources\vue.esm-browser.prod.js">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="resources\vue3-sfc-loader.esm.js">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
 </Project>

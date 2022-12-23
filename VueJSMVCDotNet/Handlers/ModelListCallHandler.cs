@@ -13,11 +13,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
     internal class ModelListCallHandler : IRequestHandler
     {
-        private struct sModelListCall
+        private struct sModelListCall : IComparable<sModelListCall>
         {
             private static readonly Regex _regParameter = new Regex("\\{(\\d+)\\}", RegexOptions.Compiled | RegexOptions.ECMAScript);
 
             private Regex _reg;
+            private string _url;
             private MethodInfo _method;
             private Dictionary<int,int> _groupIndexes;
             private bool _isPaged;
@@ -34,7 +35,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 if (pars.Length > 0)
                 {
                     string[] regexs = new string[pars.Length];
-                    reg = (mlm.Path + (mlm.Paged ? (mlm.Path.Contains("?") ? "&" : "?") + "PageStartIndex={" + (regexs.Length - 3).ToString() + "}&PageSize={" + (regexs.Length - 2).ToString() + "}" : "")).Replace("?", "\\?");
+                    _url = (mlm.Path + (mlm.Paged ? (mlm.Path.Contains("?") ? "&" : "?") + "PageStartIndex={" + (regexs.Length - 3).ToString() + "}&PageSize={" + (regexs.Length - 2).ToString() + "}" : ""));
+                    reg = _url.Replace("?", "\\?");
                     for (int x = 0; x < pars.Length; x++)
                     {
                         Type ptype = pars[x].ParameterType;
@@ -71,25 +73,32 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             foreach (string str in Enum.GetNames(ptype))
                                 regexs[x] += str + "|";
                             regexs[x] = regexs[x].Substring(0, regexs[x].Length - 1) + (nullable ? "|NULL" : "") + ")";
-                        }else if (ptype == typeof(Guid)){
+                        }
+                        else if (ptype == typeof(Guid))
+                        {
                             regexs[x] = "([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"+(nullable ? "|NULL" : "")+")";
                         }
                     }
                     _groupIndexes = new Dictionary<int, int>();
                     MatchCollection matches = _regParameter.Matches(reg);
-                    for (int x = 0; x < matches.Count; x++){
+                    for (int x = 0; x < matches.Count; x++)
+                    {
                         int idx = int.Parse(matches[x].Groups[1].Value);
-                        if (_usesSession){
+                        if (_usesSession)
+                        {
                             if (idx>=_sessionIndex)
                                 idx++;
                         }
-                        _groupIndexes.Add(idx,x);
+                        _groupIndexes.Add(idx, x);
                     }
                     reg = string.Format(reg, regexs);
                     reg = (reg.StartsWith("/") ? reg : "/" + reg).TrimEnd('/');
                 }
                 else
-                    reg = mlm.Path.Replace("?", "\\?");
+                {
+                    _url = mlm.Path;
+                    reg = _url.Replace("?", "\\?");
+                }
                 _reg = new Regex(reg, RegexOptions.Compiled|RegexOptions.ECMAScript);
                 _method = mi;
             }
@@ -188,6 +197,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 else
                     return p;
             }
+
+            public int CompareTo(sModelListCall other)
+            {
+                if (_url.ToLower().StartsWith(other._url.ToLower()))
+                    return -1;
+                else if (other._url.ToLower().StartsWith(_url.ToLower()))
+                    return 1;
+                return _url.CompareTo(other._url);
+            }
         }
 
         private List<sModelListCall> _calls;
@@ -263,6 +281,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         _calls.Add(new sModelListCall((ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0], mi));
                 }
             }
+            _calls.Sort();
         }
 
         #if NET
@@ -281,6 +300,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         }
                     }
                 }
+                _calls.Sort();
             }
         }
         #endif

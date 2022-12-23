@@ -38,11 +38,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _Append(string.Format(format, arg0,arg1));
         }
 
-        internal void AppendFormat(string format,object arg0,object arg1,object arg2)
-        {
-            _Append(string.Format(format, arg0,arg1,arg2));
-        }
-
         internal void AppendFormat(string format,object[] args)
         {
             _Append(string.Format(format, args));

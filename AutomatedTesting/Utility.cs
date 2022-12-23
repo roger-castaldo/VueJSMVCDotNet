@@ -55,6 +55,7 @@ namespace AutomatedTesting
         }
 
         private const string _VUE_IMPORT_PATH = "vue";
+        private const string _VUE_LOADER_PATH = "vue-loader";
         private static readonly EmbeddedResourceFileProvider _fileProvider = new EmbeddedResourceFileProvider();
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
@@ -64,6 +65,7 @@ namespace AutomatedTesting
             return new VueMiddleware(null, new VueMiddlewareOptions(
                 modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
                 vueImportPath: _VUE_IMPORT_PATH,
+                vueLoaderImportPath: _VUE_LOADER_PATH,
                 fileProvider:_fileProvider,
                 messageOptions: new MessageHandlerOptions("/resources/messages")
             ));
@@ -74,15 +76,18 @@ namespace AutomatedTesting
             Options opt = new Options();
             opt.EnableModules(typeof(Utility).Assembly.Location.Substring(0, typeof(Utility).Assembly.Location.LastIndexOf(Path.DirectorySeparatorChar)));
             Engine engine = new Engine(opt);
-            engine.AddModule(_VUE_IMPORT_PATH, @"
-            const version = '3.0.0';
-            const createApp = function(){};
-            const isProxy = function(){};
-            const toRaw = function(){};
-            const reactive = function(){};
-            const readonly = function(){};
-            const ref = function(obj){return obj;};
-            export {version,createApp,isProxy,toRaw,reactive,readonly,ref};");
+            StreamReader sr = new StreamReader(new FileStream("./resources/vue.esm-browser.prod.js", FileMode.Open, FileAccess.Read, FileShare.Read));
+            engine.AddModule(
+                _VUE_IMPORT_PATH, 
+                sr.ReadToEnd()
+            );
+            sr.Close();
+            sr = new StreamReader(new FileStream("./resources/vue3-sfc-loader.esm.js", FileMode.Open, FileAccess.Read, FileShare.Read));
+            engine.AddModule(
+                _VUE_LOADER_PATH,
+                sr.ReadToEnd()
+            );
+            sr.Close();
             return engine;
         }
 

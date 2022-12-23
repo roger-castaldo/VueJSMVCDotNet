@@ -119,6 +119,10 @@ namespace AutomatedTesting.Models
         }
 
         [ExposedMethod()]
+        [NotNullArguement("stringArg")]
+        public static void TestSingleNotNullInput(string stringArg, string nullStringArg) { }
+
+        [ExposedMethod()]
         [NotNullArguement(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
         public void TestInputs(
             string stringArg, string nullStringArg, 

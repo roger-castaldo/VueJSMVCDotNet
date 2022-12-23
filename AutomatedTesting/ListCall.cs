@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace AutomatedTesting
@@ -89,6 +90,30 @@ namespace AutomatedTesting
             Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Length / (decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
             Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
             Assert.AreEqual((int)Math.Min(mPerson.Persons.Length-2,2), ((ArrayList)((Hashtable)result)["response"]).Count);
+        }
+
+        [TestMethod]
+        public void TestParameterlessList()
+        {
+            int status;
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/list/mPerson/bob", _middleware, out status));
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(ArrayList));
+            Assert.AreEqual(mPerson.Persons.Count(p => p.FirstName.ToLower()=="bob"), ((ArrayList)result).Count);
+        }
+
+        [TestMethod]
+        public void TestPagedParameterlessList()
+        {
+            int status;
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/list/mPerson/bob/pages?PageStartIndex=0&PageSize=2", _middleware, out status));
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(Hashtable));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
+            Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Count(p => p.FirstName.ToLower()=="bob")/(decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
+            Assert.IsTrue(((ArrayList)((Hashtable)result)["response"]).Count<=2);
         }
     }
 }

@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -23,11 +24,19 @@ namespace AutomatedTesting.Models
         private string _lastName;
         [ModelRequiredField()]
         public string LastName { get { return _lastName; } set { _lastName = value; } }
-        private DateTime _birthday;
+        private DateTime _birthday = DateTime.Now.AddYears(-20);
         public DateTime BirthDay
         {
             get { return _birthday; }
             set { _birthday = value; }
+        }
+
+        public int Age
+        {
+            get
+            {
+                return (int)Math.Floor(DateTime.Now.Subtract(_birthday).TotalDays/365);
+            }
         }
 
 
@@ -116,6 +125,22 @@ namespace AutomatedTesting.Models
             this._id = new Random().Next(999999);
             _persons.Add(this);
             return true;
+        }
+
+        [ModelListMethod("/list/mPerson/bob")]
+        [SecurityRoleCheck(Constants.Rights.SEARCH)]
+        public static List<mPerson> ListBobs()
+        {
+            return _persons.Where(p => p.FirstName.ToLower()=="bob").ToList();
+        }
+
+        [ModelListMethod("/list/mPerson/bob/pages",paged:true)]
+        [SecurityRoleCheck(Constants.Rights.SEARCH)]
+        public static List<mPerson> ListBobsPaged(int pageStartIndex, int pageSize, out int totalPages)
+        {
+            mPerson[] bobs = _persons.Where(p => p.FirstName.ToLower()=="bob").ToArray();
+            totalPages=(int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
+            return bobs.Skip(pageStartIndex).Take(pageSize).ToList();
         }
 
         [ModelListMethod("/search/mPerson?q={0}", true)]
