@@ -4,6 +4,7 @@ using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -181,6 +182,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// Static Middleware Extension to allow for Dependency Inject to occur, allowing for app.UseVueHandler
     /// in order to cause the library to be active in the request process
     /// </summary>
+    [ExcludeFromCodeCoverage()]
     public static class VueMiddlewareExtension
     {
         /// <summary>

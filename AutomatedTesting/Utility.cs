@@ -47,11 +47,16 @@ namespace AutomatedTesting
             return ms;
         }
 
-        public static object ReadJSONResponse(MemoryStream ms)
+        internal static string ReadResponse(MemoryStream ms)
         {
             string content = new StreamReader(ms).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            return JSON.JsonDecode(content);
+            return content;
+        }
+
+        public static object ReadJSONResponse(MemoryStream ms)
+        {
+            return JSON.JsonDecode(ReadResponse(ms));
         }
 
         private const string _VUE_IMPORT_PATH = "vue";
@@ -60,14 +65,15 @@ namespace AutomatedTesting
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
-        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels)
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false)
         {
             return new VueMiddleware(null, new VueMiddlewareOptions(
                 modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
                 vueImportPath: _VUE_IMPORT_PATH,
                 vueLoaderImportPath: _VUE_LOADER_PATH,
-                fileProvider:_fileProvider,
-                messageOptions: new MessageHandlerOptions("/resources/messages")
+                fileProvider:(blockFileProvider ? null : _fileProvider),
+                messageOptions: new MessageHandlerOptions("/resources/messages"),
+                vueFilesOptions:new VueFilesHandlerOptions("/resources/vueFiles")
             ));
         }
 
@@ -90,6 +96,5 @@ namespace AutomatedTesting
             sr.Close();
             return engine;
         }
-
     }
 }

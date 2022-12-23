@@ -55,6 +55,22 @@ export const name = "+additionalCode));
             }
         }
 
+        [TestMethod()]
+        public void EstablishMiddlewareWithoutFileProviderError()
+        {
+            Exception e = null;
+            try
+            {
+                Utility.CreateMiddleware(true, true);
+            }catch(Exception ex)
+            {
+                e=ex;
+            }
+            Assert.IsNotNull(e);
+            Assert.IsInstanceOfType(e, typeof(ArgumentNullException));
+            Assert.AreEqual("fileProvider", ((ArgumentNullException)e).ParamName);
+        }
+
         [TestMethod]
         public void TranslateNameWithDefaults()
         {

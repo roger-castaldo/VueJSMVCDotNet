@@ -37,5 +37,18 @@ namespace AutomatedTesting
             Assert.IsTrue((bool)result);
             Assert.AreNotEqual(personCount, mPerson.Persons.Length);
         }
+
+        [TestMethod]
+        public void TestDeleteMethodWithMissingModel()
+        {
+            int personCount = mPerson.Persons.Length;
+            int status;
+            object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status));
+            Assert.IsNotNull(result);
+            Assert.AreEqual(400, status);
+            Assert.IsInstanceOfType(result, typeof(string));
+            Assert.AreEqual("Model Not Found", result);
+            Assert.AreEqual(personCount, mPerson.Persons.Length);
+        }
     }
 }
