@@ -6,6 +6,7 @@ using Jint.Native;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
+using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.IO;
 
@@ -65,7 +66,7 @@ namespace AutomatedTesting
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
-        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false)
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false,ILogWriter logWriter=null)
         {
             return new VueMiddleware(null, new VueMiddlewareOptions(
                 modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
@@ -73,7 +74,8 @@ namespace AutomatedTesting
                 vueLoaderImportPath: _VUE_LOADER_PATH,
                 fileProvider:(blockFileProvider ? null : _fileProvider),
                 messageOptions: new MessageHandlerOptions("/resources/messages"),
-                vueFilesOptions:new VueFilesHandlerOptions("/resources/vueFiles")
+                vueFilesOptions:new VueFilesHandlerOptions("/resources/vueFiles"),
+                logWriter: logWriter
             ));
         }
 

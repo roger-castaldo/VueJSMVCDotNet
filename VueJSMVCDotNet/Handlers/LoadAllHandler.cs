@@ -41,7 +41,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode = 200;
                 Logger.Trace("Invoking the Load All call {0}.{1} to handle {2}:{3}", new object[] { mi.DeclaringType.FullName, mi.Name, method, url });
-                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));
+                return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi,null,session:session)));
             }
             else
                 throw new CallNotFoundException();

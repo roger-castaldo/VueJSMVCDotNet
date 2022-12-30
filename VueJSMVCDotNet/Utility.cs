@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 #if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
@@ -127,26 +128,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             pars = null;
             int idx=-1;
             int sidx = -1;
+            int lidx = -1;
+            bool useSession = false;
+            bool useAddItem = false;
+            bool useLog = false;
             if (formData == null || formData.Count == 0)
             {
                 foreach (MethodInfo mi in methods)
                 {
-                    int parCount = mi.GetParameters().Length+(UsesSecureSession(mi, out idx) ? -1 : 0)+(UsesAddItem(mi, out sidx)?-1:0);
+                    useSession = UsesSecureSession(mi, out idx);
+                    useAddItem = UsesAddItem(mi, out sidx);
+                    useLog = UsesLog(mi, out lidx);
+                    int parCount = mi.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0)+(useLog ? -1 : 0);
                     if (parCount==0)
                     {
                         method = mi;
-                        if (idx==-1 && sidx==-1)
-                            pars = new object[] { };
-                        else if (idx!=-1&&sidx==-1)
-                            pars = new object[] { session };
-                        else if (idx==-1&&sidx!=-1)
-                            pars = new object[] { null };
-                        else
-                        {
-                            pars = new object[2];
-                            pars[idx]=session;
-                            pars[sidx]=null;
-                        }
                         return;
                     }
                 }
@@ -155,33 +151,25 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 foreach (MethodInfo m in methods)
                 {
-                    bool useSession = UsesSecureSession(m,out idx);
-                    bool useAddItem = UsesAddItem(m, out sidx);
-                    int parCount = m.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0);
+                    useSession = UsesSecureSession(m, out idx);
+                    useAddItem = UsesAddItem(m, out sidx);
+                    useLog = UsesLog(m, out lidx);
+                    int parCount = m.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0)+(useLog?-1:0);
                     if (parCount == formData.Count)
                     {
-                        pars = new object[formData.Count+(useSession ? 1 : 0)+(useAddItem ? 1 : 0)];
+                        pars = new object[formData.Count];
                         bool isMethod = true;
                         int index = 0;
-                        foreach (ParameterInfo pi in m.GetParameters())
+                        foreach (ParameterInfo pi in ExtractStrippedParameters(m))
                         {
-                            if (index==idx)
+                            if (formData.ContainsKey(pi.Name))
+                                pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
+                            else
                             {
-                                pars[idx]=session;
-                                index++;
+                                isMethod = false;
+                                break;
                             }
-                            else if (index==sidx)
-                                index++;
-                            else{
-                                if (formData.ContainsKey(pi.Name))
-                                    pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
-                                else
-                                {
-                                    isMethod = false;
-                                    break;
-                                }
-                                index++;
-                            }
+                            index++;
                         }
                         if (isMethod)
                         {
@@ -512,19 +500,46 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
         }
 
-        public static IModel InvokeLoad(MethodInfo mi,string id,ISecureSession session){
-            List<object> pars = new List<object>();
-            ParameterInfo[] mpars = mi.GetParameters();
-            if (mpars.Length==1)
-                pars.Add(id);
-            else{
-                if (mpars[0].ParameterType == typeof(string)){
-                    pars.AddRange(new object[]{id,session});
-                }else{
-                    pars.AddRange(new object[]{session,id});
+        public static object InvokeMethod(MethodInfo mi,object obj, object[] pars=null,ISecureSession session=null, AddItem addItem=null)
+        {
+            ParameterInfo[] parameters = mi.GetParameters();
+            object[] mpars = new object[parameters.Length];
+            int sidx = -1;
+            int aidx = -1;
+            int lidx = -1;
+            if (UsesSecureSession(mi, out sidx))
+                mpars[sidx]=session;
+            if (UsesAddItem(mi, out aidx))
+                mpars[aidx]=addItem;
+            if (UsesLog(mi, out lidx))
+                mpars[lidx]=Logger.Instance;
+            int index = 0;
+            for(int x = 0; x<mpars.Length; x++)
+            {
+                if (x!=sidx&&x!=aidx&&x!=sidx)
+                {
+                    mpars[x]=pars[index];
+                    index++;
                 }
             }
-            return (IModel)mi.Invoke(null,pars.ToArray());
+            object ret =  mi.Invoke(obj, mpars);
+            if (parameters.Count(p=>p.IsOut)>0)
+            {
+                index = 0;
+                for(int x = 0; x<parameters.Length; x++) {
+                    if (x!=sidx&&x!=aidx&&x!=sidx)
+                    {
+                        if (parameters[x].IsOut)
+                            pars[index]=mpars[x];
+                        index++;
+                    }
+                }
+            }
+            return ret;
+        }
+
+        public static IModel InvokeLoad(MethodInfo mi,string id,ISecureSession session){
+            return (IModel)InvokeMethod(mi, null, new object[] { id }, session: session);
         }
 
         public static bool UsesSecureSession(MethodInfo mi,out int index){
@@ -554,6 +569,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return false;
         }
 
+        public static bool UsesLog(MethodInfo mi,out int index)
+        {
+            index=-1;
+            ParameterInfo[] pars = mi.GetParameters();
+            for (int x = 0; x<pars.Length; x++)
+            {
+                if (pars[x].ParameterType==typeof(ILog))
+                {
+                    index=x;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static bool IsISecureSessionType(Type type)
         {
             return type == typeof(ISecureSession) ||
@@ -563,10 +593,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi){
             int idx;
             List<ParameterInfo> ret = new List<ParameterInfo>(mi.GetParameters());
-            if (UsesSecureSession(mi,out idx)){
+            if (UsesSecureSession(mi,out idx))
                 ret.RemoveAt(idx);
-            }
             if (UsesAddItem(mi, out idx))
+                ret.RemoveAt(idx);
+            if (UsesLog(mi, out idx))
                 ret.RemoveAt(idx);
             return ret.ToArray();
         }

@@ -24,6 +24,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             private bool _isPaged;
             private int _sessionIndex;
             private bool _usesSession;
+            private int _logIndex;
+            private bool _usesLog;
 
             public sModelListCall(ModelListMethod mlm,MethodInfo mi)
             {
@@ -31,6 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 string reg = "";
                 _groupIndexes = null;
                 _usesSession = Utility.UsesSecureSession(mi,out _sessionIndex);
+                _usesLog=Utility.UsesLog(mi, out _logIndex);
                 ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                 if (pars.Length > 0)
                 {
@@ -89,6 +92,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             if (idx>=_sessionIndex)
                                 idx++;
                         }
+                        if (_usesLog)
+                        {
+                            if (idx>=_logIndex)
+                                idx++;
+                        }
                         _groupIndexes.Add(idx, x);
                     }
                     reg = string.Format(reg, regexs);
@@ -99,7 +107,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     _url = mlm.Path;
                     reg = _url.Replace("?", "\\?");
                 }
-                _reg = new Regex(reg, RegexOptions.Compiled|RegexOptions.ECMAScript);
+                _reg = new Regex(string.Format("^{0}$",reg), RegexOptions.Compiled|RegexOptions.ECMAScript);
                 _method = mi;
             }
 
@@ -121,21 +129,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
                 Logger.Trace("Converting url parameters from {0} to be handled by the model list call {1}.{2}", new object[] { url, _method.GetType().FullName, _method.Name });
-                ParameterInfo[] pars = _method.GetParameters();
-                object[] opars = new object[] { };
+                ParameterInfo[] pars = Utility.ExtractStrippedParameters(_method);
+                object[] opars = null;
                 if (pars.Length > 0)
                 {
                     opars = new object[pars.Length];
-                    if (_usesSession)
-                        opars[_sessionIndex] = session;
-                    if (pars.Length>1 || !_usesSession){
-                        Match m = _reg.Match(url);
-                        foreach(int x in _groupIndexes.Keys)
-                            opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
-                    }
+                    Match m = _reg.Match(url);
+                    foreach(int x in _groupIndexes.Keys)
+                        opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
                 }
                 Logger.Trace("Invoking method {0}.{1} for {2}", new object[] { _method.GetType().FullName, _method.Name, url });
-                object ret = _method.Invoke(null, opars);
+                object ret = Utility.InvokeMethod(_method, null, pars: opars, session: session);
                 if (_isPaged)
                 {
                     int pageIndex = opars.Length-1;

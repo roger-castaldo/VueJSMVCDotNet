@@ -52,7 +52,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         throw new InsecureAccessException();
                     Logger.Trace("Attempting to handle a save request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
                     Utility.SetModelValues(formData, ref model, true);
-                    if ((bool)mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { })))
+                    if ((bool)Utility.InvokeMethod(mi,model,session:session))
                     {
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode= 200;

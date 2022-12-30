@@ -42,29 +42,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Task _execution;
         private CancellationTokenSource _token;
 
-        public SlowMethodInstance(MethodInfo method,object model,object[] pars)
+        public SlowMethodInstance(MethodInfo method,object model,object[] pars,ISecureSession session)
         {
             _data=new ConcurrentQueue<object>();
             _finished=false;
             _completed=false;
             _error=null;
             _lastCall=DateTime.Now;
-            int sidx = -1;
-            if (Utility.UsesAddItem(method,out sidx))
-                pars[sidx] = new AddItem(AddItem);
             _token = new CancellationTokenSource();
             _execution = new Task(() =>
             {
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                    {
-                        method.Invoke(model, pars);
-                    }
+                        Utility.InvokeMethod(method, model, pars: pars, session: session, addItem: new AddItem(AddItem));
                     else
-                    {
-                        AddItem(method.Invoke(model, pars), true);
-                    }
+                        AddItem(Utility.InvokeMethod(method, model, pars: pars, session: session, addItem: new AddItem(AddItem)), true);
                 }catch(Exception e)
                 {
                     Logger.LogError(e);

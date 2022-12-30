@@ -65,7 +65,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         Logger.Trace("Invoking the delete method {0}.{1} for the url {2}", new object[] { mi.DeclaringType.FullName,mi.Name,url });
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode = 200;
-                        return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, (mi.GetParameters().Length==1 ? new object[]{session} : new object[] { }))));
+                        return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi,model,session:session)));
                     }
                 }
                 else

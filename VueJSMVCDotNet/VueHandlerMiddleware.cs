@@ -173,8 +173,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 await _messageHandler.ProcessRequest(context);
             else if (_vueFileHandler!=null && _vueFileHandler.HandlesRequest(context))
                 await _vueFileHandler.ProcessRequest(context);
-            else
+            else if (_next!=null)
                 await _next(context);
+            else
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsync("Not Found");
+            }
         }
     }
 

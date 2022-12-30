@@ -115,5 +115,51 @@ namespace AutomatedTesting
             Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
             Assert.IsTrue(((ArrayList)((Hashtable)result)["response"]).Count<=2);
         }
+
+        private void _TestParameterListCall(string url,int? expectedStatus=null)
+        {
+            int status;
+            MemoryStream ms = Utility.ExecuteRequest("GET", url, _middleware, out status);
+            if (expectedStatus!=null)
+                Assert.AreEqual(expectedStatus.Value, status);
+            else
+            {
+                object result = Utility.ReadJSONResponse(ms);
+                Assert.IsNotNull(result);
+                Assert.IsInstanceOfType(result, typeof(ArrayList));
+                Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)result).Count);
+            }
+        }
+
+        [TestMethod()]
+        public void TestListDateTimeParameter()
+        {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", 50000));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", "p"), expectedStatus: 404);
+        }
+
+        [TestMethod()]
+        public void TestListIntegerParameter()
+        {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MinValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MaxValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", 0));
+        }
+
+        [TestMethod()]
+        public void TestListLongParameter()
+        {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MinValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MaxValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", 0));
+        }
+
+        [TestMethod()]
+        public void TestListShortParameter()
+        {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MinValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MaxValue));
+            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", 0));
+        }
     }
 }

@@ -63,7 +63,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     context.Response.StatusCode= 200;
                     Logger.Trace("Attempting to handle an update request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
                     Utility.SetModelValues(formData, ref model, false);
-                    return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(model, (mi.GetParameters().Length == 1 ? new object[]{session} : new object[] { }))));
+                    return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi,model,session:session)));
                 }
                 throw new CallNotFoundException();
             }

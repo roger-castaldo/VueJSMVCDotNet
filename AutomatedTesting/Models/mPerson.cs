@@ -128,20 +128,46 @@ namespace AutomatedTesting.Models
         }
 
         [ModelListMethod("/list/mPerson/bob")]
-        [SecurityRoleCheck(Constants.Rights.SEARCH)]
         public static List<mPerson> ListBobs()
         {
             return _persons.Where(p => p.FirstName.ToLower()=="bob").ToList();
         }
 
         [ModelListMethod("/list/mPerson/bob/pages",paged:true)]
-        [SecurityRoleCheck(Constants.Rights.SEARCH)]
         public static List<mPerson> ListBobsPaged(int pageStartIndex, int pageSize, out int totalPages)
         {
             mPerson[] bobs = _persons.Where(p => p.FirstName.ToLower()=="bob").ToArray();
             totalPages=(int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
             return bobs.Skip(pageStartIndex).Take(pageSize).ToList();
         }
+
+        #region List Pars
+
+        [ModelListMethod("/list/mPerson/bob/date?par={0}")]
+        public static List<mPerson> ListByDate(DateTime date)
+        {
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/int?par={0}")]
+        public static List<mPerson> ListByInt(int val)
+        {
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/long?par={0}")]
+        public static List<mPerson> ListByLong(long val)
+        {
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/short?par={0}")]
+        public static List<mPerson> ListByShort(short val)
+        {
+            return _persons;
+        }
+
+        #endregion
 
         [ModelListMethod("/search/mPerson?q={0}", true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]

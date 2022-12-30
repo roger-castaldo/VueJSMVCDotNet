@@ -80,7 +80,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         Logger.Trace("Attempting to call the method {0}.{1} to answer the static method call {2}:{3}", new object[] { mi.DeclaringType.Name, mi.Name, method, url });
                         if (_slowMethods.Contains(mi))
                         {
-                            string newPath = handler.RegisterSlowMethodInstance(url, mi, null, pars);
+                            string newPath = handler.RegisterSlowMethodInstance(url, mi, null, pars,session);
                             if (newPath!= null)
                             {
                                 context.Response.ContentType = "text/json";
@@ -94,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         {
                             if (mi.ReturnType == typeof(void))
                             {
-                                mi.Invoke(null, pars);
+                                Utility.InvokeMethod(mi, null, pars: pars, session: session);
                                 context.Response.ContentType = "text/json";
                                 context.Response.StatusCode = 200;
                                 return context.Response.WriteAsync("");
@@ -103,13 +103,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             {
                                 context.Response.ContentType = "text/text";
                                 context.Response.StatusCode = 200;
-                                return context.Response.WriteAsync((string)mi.Invoke(null, pars));
+                                return context.Response.WriteAsync((string)Utility.InvokeMethod(mi, null, pars: pars, session: session));
                             }
                             else
                             {
                                 context.Response.ContentType = "text/json";
                                 context.Response.StatusCode = 200;
-                                return context.Response.WriteAsync(JSON.JsonEncode(mi.Invoke(null, pars)));
+                                return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi, null, pars: pars, session: session)));
                             }
                         }
                     }

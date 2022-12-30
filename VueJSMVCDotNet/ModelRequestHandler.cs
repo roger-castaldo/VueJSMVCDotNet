@@ -44,12 +44,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
-        internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars)
+        internal string RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars,ISecureSession session)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
             try
             {
-                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars);
+                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars,session);
                 lock (_methodInstances)
                 {
                     _methodInstances.Add(ret, smi);
