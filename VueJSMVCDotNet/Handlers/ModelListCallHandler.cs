@@ -67,7 +67,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         else if (ptype == typeof(double) ||
                             ptype == typeof(decimal) ||
                             ptype == typeof(float))
-                            regexs[x] = "(-?\\d+(.\\d+)?" + (nullable ? "|NULL" : "") + ")";
+                            regexs[x] = "(-?\\d+(.\\d+)?([Ee][+-]\\d+)?" + (nullable ? "|NULL" : "") + ")";
                         else if (ptype == typeof(bool))
                             regexs[x] = "(true|false" + (nullable ? "|NULL" : "") + ")";
                         else if (ptype.IsEnum)
@@ -270,9 +270,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         {
             cachedItems = null;
             Logger.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { method, url });
+            bool ret = false;
             if (method==ModelRequestHandler.RequestMethods.GET)
             {
-                bool ret = false;
                 lock (_calls)
                 {
                     foreach (sModelListCall call in _calls)
@@ -289,9 +289,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         }
                     }
                 }
-                return ret;
             }
-            return false;
+            return ret;
         }
 
         public void Init(List<Type> types)

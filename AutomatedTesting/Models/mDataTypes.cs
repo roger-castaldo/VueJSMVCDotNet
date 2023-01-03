@@ -9,7 +9,7 @@ namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mDataTypes")]
     [ModelJSFilePath("/resources/scripts/mDataTypes.js")]
-    internal class mDataTypes : IModel
+    public class mDataTypes : IModel
     {
         public string id
         {

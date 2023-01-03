@@ -171,6 +171,69 @@ namespace AutomatedTesting.Models
             return _persons;
         }
 
+        [ModelListMethod("/list/mPerson/bob/byte?par={0}")]
+        public static List<mPerson> ListByByte(byte val, ILog log)
+        {
+            log.Trace("Called List By Byte");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/uint?par={0}")]
+        public static List<mPerson> ListByUInt(uint val, ILog log)
+        {
+            log.Trace("Called List By UInteger");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/ulong?par={0}")]
+        public static List<mPerson> ListByULong(ulong val, ILog log)
+        {
+            log.Trace("Called List By ULong");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/ushort?par={0}")]
+        public static List<mPerson> ListByUShort(ushort val, ILog log)
+        {
+            log.Trace("Called List By UShort");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/double?par={0}")]
+        public static List<mPerson> ListByDouble(double val, ILog log)
+        {
+            log.Trace("Called List By Double");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/float?par={0}")]
+        public static List<mPerson> ListByFloat(float val, ILog log)
+        {
+            log.Trace("Called List By Float");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/decimal?par={0}")]
+        public static List<mPerson> ListByDecimal(decimal val, ILog log)
+        {
+            log.Trace("Called List By Decimal");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/guid?par={0}")]
+        public static List<mPerson> ListByGuid(Guid val, ILog log)
+        {
+            log.Trace("Called List By Guid");
+            return _persons;
+        }
+
+        [ModelListMethod("/list/mPerson/bob/enum?par={0}")]
+        public static List<mPerson> ListByEnum(mDataTypes.TestEnums val, ILog log)
+        {
+            log.Trace("Called List By Enum");
+            return _persons;
+        }
+
         #endregion
 
         [ModelListMethod("/search/mPerson?q={0}", true)]
