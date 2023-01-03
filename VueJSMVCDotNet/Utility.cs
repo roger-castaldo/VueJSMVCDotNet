@@ -516,7 +516,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             int index = 0;
             for(int x = 0; x<mpars.Length; x++)
             {
-                if (x!=sidx&&x!=aidx&&x!=sidx)
+                if (x!=sidx&&x!=aidx&&x!=lidx)
                 {
                     mpars[x]=pars[index];
                     index++;
@@ -527,7 +527,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 index = 0;
                 for(int x = 0; x<parameters.Length; x++) {
-                    if (x!=sidx&&x!=aidx&&x!=sidx)
+                    if (x!=sidx&&x!=aidx&&x!=lidx)
                     {
                         if (parameters[x].IsOut)
                             pars[index]=mpars[x];

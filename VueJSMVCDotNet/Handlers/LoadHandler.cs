@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
-    internal class LoadHandler : IRequestHandler
+    internal class LoadHandler : INonCachingRequestHandler
     {
         private Dictionary<string, MethodInfo> _methods;
 

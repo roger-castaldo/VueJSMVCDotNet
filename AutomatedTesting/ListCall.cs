@@ -3,7 +3,9 @@ using AutomatedTesting.Security;
 using Jint;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Org.Reddragonit.VueJSMVCDotNet;
+using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,11 +19,14 @@ namespace AutomatedTesting
     public  class ListCall
     {
         private VueMiddleware _middleware;
+        private Mock<ILogWriter> _writer;
 
         [TestInitialize]
         public void Init()
         {
-            _middleware =Utility.CreateMiddleware(true);
+            _writer = new Mock<ILogWriter>();
+            _writer.Setup(w => w.LogLevel).Returns(LogLevels.Trace);
+            _middleware =Utility.CreateMiddleware(true,logWriter:_writer.Object);
         }
 
         [TestCleanup]
@@ -135,31 +140,50 @@ namespace AutomatedTesting
         public void TestListDateTimeParameter()
         {
             _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", 50000));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Date"), Times.Once);
             _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", "p"), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Date"), Times.Once);
         }
 
         [TestMethod()]
         public void TestListIntegerParameter()
         {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", "p"), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Never);
+            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", long.MinValue), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Never);
             _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MinValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Once);
             _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MaxValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Exactly(2));
             _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", 0));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListLongParameter()
         {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", "p"), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Never);
             _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MinValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Once);
             _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MaxValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Exactly(2));
             _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", 0));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListShortParameter()
         {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", "p"), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Never);
             _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MinValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Once);
             _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MaxValue));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Exactly(2));
             _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", 0));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Exactly(3));
         }
     }
 }

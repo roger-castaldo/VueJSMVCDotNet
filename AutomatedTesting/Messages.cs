@@ -26,6 +26,124 @@ namespace AutomatedTesting
             _middleware.Dispose();
         }
 
+        [TestMethod()]
+        public void EstablishMiddlewareWithoutFileProviderError()
+        {
+            Exception e = null;
+            try
+            {
+                Utility.CreateMiddleware(true, true);
+            }
+            catch (Exception ex)
+            {
+                e=ex;
+            }
+            Assert.IsNotNull(e);
+            Assert.IsInstanceOfType(e, typeof(ArgumentNullException));
+            Assert.AreEqual("fileProvider", ((ArgumentNullException)e).ParamName);
+        }
+
+        [TestMethod]
+        public void JavascriptGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("Translate", content);
+                eng.AddModule("custom", @"import translator from 'Translate';
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void JavascriptCompressedGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("Translate", content);
+                eng.AddModule("custom", @"import translator from 'Translate';
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void CachedPreviouslyGeneratedCode()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            string cachedContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(cachedContent.Length>0);
+            Assert.AreEqual(content, cachedContent);
+        }
+
+        [TestMethod]
+        public void NotModifiedStatus()
+        {
+            int status;
+            IHeaderDictionary responseHeaders;
+            Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status,out responseHeaders);
+            Assert.IsTrue(responseHeaders.ContainsKey("Cache-Control"));
+
+            string content = new StreamReader(Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out responseHeaders,headers:new Dictionary<string, string>()
+            {
+                {"If-Modified-Since",DateTime.Today.AddDays(-1).ToUniversalTime().ToString("R") }
+            })).ReadToEnd();
+
+            Assert.AreEqual(0, content.Length);
+            Assert.AreEqual(304, status);
+            Assert.IsTrue(responseHeaders.ContainsKey("date"));
+            Assert.IsTrue(responseHeaders.ContainsKey("etag"));
+            Assert.AreEqual(DateTime.Today.AddDays(-1).ToUniversalTime().ToString("R"), responseHeaders["date"].ToString());
+        }
+
+        [TestMethod]
+        public void ModifiedStatus()
+        {
+            int status;
+            IHeaderDictionary responseHeaders;
+            Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out responseHeaders);
+            Assert.IsTrue(responseHeaders.ContainsKey("Cache-Control"));
+
+            string content = new StreamReader(Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out responseHeaders, headers: new Dictionary<string, string>()
+            {
+                {"If-Modified-Since",DateTime.Today.ToUniversalTime().ToString("R") }
+            })).ReadToEnd();
+
+            Assert.AreNotEqual(0, content.Length);
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(responseHeaders.ContainsKey("Cache-Control"));
+        }
+
         private void _ExecuteTest(string additionalCode, string result)
         {
             Engine eng = Utility.CreateEngine();
@@ -56,19 +174,13 @@ export const name = "+additionalCode));
         }
 
         [TestMethod()]
-        public void EstablishMiddlewareWithoutFileProviderError()
+        public void TestMessageCallFileNotFound()
         {
-            Exception e = null;
-            try
-            {
-                Utility.CreateMiddleware(true, true);
-            }catch(Exception ex)
-            {
-                e=ex;
-            }
-            Assert.IsNotNull(e);
-            Assert.IsInstanceOfType(e, typeof(ArgumentNullException));
-            Assert.AreEqual("fileProvider", ((ArgumentNullException)e).ParamName);
+            Engine eng = Utility.CreateEngine();
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/not_found.js", _middleware, out status)).ReadToEnd();
+            Assert.AreEqual(404, status);
+            Assert.AreEqual("Unable to locate requested file.", content);
         }
 
         [TestMethod]

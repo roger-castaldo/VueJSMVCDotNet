@@ -144,26 +144,30 @@ namespace AutomatedTesting.Models
         #region List Pars
 
         [ModelListMethod("/list/mPerson/bob/date?par={0}")]
-        public static List<mPerson> ListByDate(DateTime date)
+        public static List<mPerson> ListByDate(DateTime date, ILog log)
         {
+            log.Trace("Called List By Date");
             return _persons;
         }
 
         [ModelListMethod("/list/mPerson/bob/int?par={0}")]
-        public static List<mPerson> ListByInt(int val)
+        public static List<mPerson> ListByInt(int val, ILog log)
         {
+            log.Trace("Called List By Integer");
             return _persons;
         }
 
         [ModelListMethod("/list/mPerson/bob/long?par={0}")]
-        public static List<mPerson> ListByLong(long val)
+        public static List<mPerson> ListByLong(long val, ILog log)
         {
+            log.Trace("Called List By Long");
             return _persons;
         }
 
         [ModelListMethod("/list/mPerson/bob/short?par={0}")]
-        public static List<mPerson> ListByShort(short val)
+        public static List<mPerson> ListByShort(short val, ILog log)
         {
+            log.Trace("Called List By Short");
             return _persons;
         }
 

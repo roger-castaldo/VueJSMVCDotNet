@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
-    internal class InstanceMethodHandler : IRequestHandler
+    internal class InstanceMethodHandler : ICachingRequestHandler
     {
         private struct sMethodPatterns
         {
@@ -137,28 +137,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck,object cachedItems)
         {
             Logger.Trace("Attempting to handle request {0} with an Instance Method", new object[] { url });
-            sMethodPatterns? patt = null;
-            lock (_patterns)
-            {
-                foreach (sMethodPatterns smp in _patterns)
-                {
-                    if (smp.IsValid(url))
-                    {
-                        patt = smp;
-                        break;
-                    }
-                }
-            }
+            sMethodPatterns? patt = (sMethodPatterns?)cachedItems;
             if (patt.HasValue)
                 return patt.Value.HandleRequest(url, method, formData, context, session, securityCheck,_handler);
             throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method,out object cachedItems)
         {
+            cachedItems = null;
             Logger.Debug("Checking if the url {0} is handled by an instance method", new object[] { url });
             bool ret = false;
             if (method == ModelRequestHandler.RequestMethods.METHOD)
@@ -169,6 +159,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     {
                         if (smp.IsValid(url))
                         {
+                            cachedItems=smp;
                             ret = true;
                             break;
                         }

@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace AutomatedTesting
@@ -15,7 +16,13 @@ namespace AutomatedTesting
     internal static class Utility
     {
 
-        public static MemoryStream ExecuteRequest(string method,string path, VueMiddleware middleware,out int responseStatus,SecureSession session=null,object parameters=null)
+        public static MemoryStream ExecuteRequest(string method, string path, VueMiddleware middleware, out int responseStatus, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null)
+        {
+            IHeaderDictionary responseHeaders;
+            return ExecuteRequestExportingHeaders(method, path, middleware, out responseStatus, out responseHeaders, session: session, parameters: parameters, headers: headers);
+        }
+
+        public static MemoryStream ExecuteRequestExportingHeaders(string method, string path, VueMiddleware middleware, out int responseStatus,out IHeaderDictionary responseHeaders, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null)
         {
             MemoryStream ms = new MemoryStream();
             HttpContext context = new DefaultHttpContext();
@@ -26,7 +33,7 @@ namespace AutomatedTesting
                 session.LinkToRequest(context);
             if (path.Contains("?"))
             {
-                context.Request.Path = new PathString(path.Substring(0,path.IndexOf("?")));
+                context.Request.Path = new PathString(path.Substring(0, path.IndexOf("?")));
                 context.Request.QueryString = new QueryString(path.Substring(path.IndexOf("?")));
             }
             else
@@ -42,9 +49,17 @@ namespace AutomatedTesting
                 sw.Flush();
                 context.Request.Body.Position = 0;
             }
+
+            if (headers != null)
+            {
+                foreach (string key in headers.Keys)
+                    context.Request.Headers.Add(key, headers[key]);
+            }
+
             middleware.InvokeAsync(context).Wait();
             responseStatus = context.Response.StatusCode;
             ms.Position = 0;
+            responseHeaders = context.Response.Headers;
             return ms;
         }
 

@@ -30,6 +30,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             PULL
         }
 
+        private const string _CACHED_ITEM_KEY = "Org.Reddragonit.VueJSMVCDotNet.ModelRequestHandler.CachedItem";
+        private const string _HANDLER_KEY = "Org.Reddragonit.VueJSMVCDotNet.ModelRequestHandler.SelectedHandler";
+
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
 #if NET
@@ -61,7 +64,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-        private IRequestHandler[] _Handlers;
+        private readonly IRequestHandlerBase[] _Handlers;
 
         private static DateTime _startTime;
         internal static DateTime StartTime { get { return _startTime; } }
@@ -87,7 +90,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     _urlBase="/"+_urlBase;
             }
             _startTime = DateTime.Now;
-            _Handlers = new IRequestHandler[]
+            _Handlers = new IRequestHandlerBase[]
             {
                 new JSHandler(_urlBase,_vueImportPath),
                 new LoadAllHandler(),
@@ -188,11 +191,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 else
                 {
-                    foreach (IRequestHandler handler in _Handlers)
+                    foreach (IRequestHandlerBase handler in _Handlers)
                     {
                         Logger.Trace("Checking if {0} handles {1}:{2}", new object[] { handler.GetType().FullName, method, url });
-                        if (handler.HandlesRequest(url, (RequestMethods)method))
+                        object cachedItem=null;
+                        if ((handler is INonCachingRequestHandler 
+                            ? ((INonCachingRequestHandler)handler).HandlesRequest(url, (RequestMethods)method) 
+                            : ((ICachingRequestHandler)handler).HandlesRequest(url,(RequestMethods)method,out cachedItem)))
+                        {
+                            context.Items.Add(_HANDLER_KEY, handler);
+                            if (cachedItem != null)
+                                context.Items.Add(_CACHED_ITEM_KEY, cachedItem);
                             return true;
+                        }
                     }
                 }
             }
@@ -279,37 +290,47 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             else
             {
-                foreach (IRequestHandler handler in _Handlers)
+                IRequestHandlerBase handler = (context.Items.ContainsKey(_HANDLER_KEY) ? (IRequestHandlerBase)context.Items[_HANDLER_KEY] : null);
+                object cachedItems = (context.Items.ContainsKey(_CACHED_ITEM_KEY) ? context.Items[_CACHED_ITEM_KEY] : null);
+
+                context.Items.Remove(_HANDLER_KEY);
+                context.Items.Remove(_CACHED_ITEM_KEY);
+
+                if (handler != null)
                 {
-                    if (handler.HandlesRequest(url, method))
+                    found=true;
+                    try
                     {
-                        found = true;
-                        try
-                        {
-                            await handler.HandleRequest(url, method, formData, context, session, new IsValidCall(_ValidCall));
-                        }
-                        catch (CallNotFoundException cnfe)
-                        {
-                            Logger.LogError(cnfe);
-                            context.Response.ContentType = "text/text";
-                            context.Response.StatusCode = 400;
-                            await context.Response.WriteAsync(cnfe.Message);
-                        }
-                        catch (InsecureAccessException iae)
-                        {
-                            Logger.LogError(iae);
-                            context.Response.ContentType = "text/text";
-                            context.Response.StatusCode = 403;
-                            await context.Response.WriteAsync(iae.Message);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.LogError(e);
-                            context.Response.ContentType= "text/text";
-                            context.Response.StatusCode = 500;
-                            await context.Response.WriteAsync("Error");
-                        }
+                        await (handler is INonCachingRequestHandler 
+                            ? ((INonCachingRequestHandler)handler).HandleRequest(url, method, formData, context, session, new IsValidCall(_ValidCall))
+                            : ((ICachingRequestHandler)handler).HandleRequest(url, method, formData, context, session, new IsValidCall(_ValidCall),cachedItems)
+                        );
                     }
+                    catch (CallNotFoundException cnfe)
+                    {
+                        Logger.LogError(cnfe);
+                        context.Response.ContentType = "text/text";
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsync(cnfe.Message);
+                    }
+                    catch (InsecureAccessException iae)
+                    {
+                        Logger.LogError(iae);
+                        context.Response.ContentType = "text/text";
+                        context.Response.StatusCode = 403;
+                        await context.Response.WriteAsync(iae.Message);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e);
+                        context.Response.ContentType= "text/text";
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync("Error");
+                    }
+                }
+                else
+                {
+                    found=false;
                 }
             }
             if (!found)
@@ -365,7 +386,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void UnloadAssemblyContext(string contextName){
             List<Type> types = Utility.UnloadAssemblyContext(contextName);
             if (types!=null){
-                foreach (IRequestHandler irh in _Handlers)
+                foreach (IRequestHandlerBase irh in _Handlers)
                     irh.UnloadTypes(types);
                 lock (_typeChecks)
                 {
@@ -391,7 +412,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             Logger.Debug("Assembly added called, rebuilding handlers...");
             _isInitialized=false;
             Utility.ClearCaches();
-            foreach (IRequestHandler irh in _Handlers)
+            foreach (IRequestHandlerBase irh in _Handlers)
             {
                 Logger.Debug("Clearing cache for handler {0}",new object[] { irh.GetType().Name });
                 irh.ClearCache();
@@ -447,7 +468,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     x--;
                 }
             }
-            foreach (IRequestHandler irh in _Handlers){
+            foreach (IRequestHandlerBase irh in _Handlers){
                 if (_isInitialized)
                     irh.LoadTypes(models);
                 else
@@ -491,7 +512,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void AssemblyAdded()
         {
             Utility.ClearCaches();
-            foreach (IRequestHandler irh in _Handlers)
+            foreach (IRequestHandlerBase irh in _Handlers)
                 irh.ClearCache();
             List<Type> models;
             List<Exception> errors = DefinitionValidator.Validate(out _invalidModels,out models);
@@ -514,7 +535,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     x--;
                 }
             }
-            foreach (IRequestHandler irh in _Handlers)
+            foreach (IRequestHandlerBase irh in _Handlers)
                 irh.Init(models);
             lock (_typeChecks)
             {

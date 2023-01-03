@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
-    internal class StaticMethodHandler : IRequestHandler
+    internal class StaticMethodHandler : ICachingRequestHandler
     {
         private struct sMethodPatterns
         {
@@ -135,27 +135,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _patterns.Clear();
         }
 
-        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck,object cachedItems)
         {
-            sMethodPatterns? patt = null;
-            lock (_patterns)
-            {
-                foreach (sMethodPatterns smp in _patterns)
-                {
-                    if (smp.IsValid(url))
-                    {
-                        patt = smp;
-                        break;
-                    }
-                }
-            }
+            sMethodPatterns? patt = (sMethodPatterns?)cachedItems;
             if (patt.HasValue)
                 return patt.Value.HandleRequest(url, method, formData, context, session, securityCheck,_handler);
             throw new CallNotFoundException();
         }
 
-        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method,out object cachedItems)
         {
+            cachedItems=null;
             Logger.Trace("Checking to see if the request {0}:{1} is handled by the static method handler", new object[] { method, url });
             bool ret = false;
             if (method == ModelRequestHandler.RequestMethods.SMETHOD)
@@ -166,6 +156,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     {
                         if (smp.IsValid(url))
                         {
+                            cachedItems=smp;
                             ret = true;
                             break;
                         }

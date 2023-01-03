@@ -50,7 +50,7 @@ namespace AutomatedTesting.FileProvider
 
         public string Name => (_isFile ? _regFileName.Match(_path).Groups[2].Value : _path.Substring(_path.LastIndexOf('.')+1));
 
-        public DateTimeOffset LastModified => new DateTimeOffset(DateTime.Now.AddDays(-1));
+        public DateTimeOffset LastModified => new DateTimeOffset(DateTime.Today.AddDays(-1));
 
         public bool IsDirectory => !_isFile;
 

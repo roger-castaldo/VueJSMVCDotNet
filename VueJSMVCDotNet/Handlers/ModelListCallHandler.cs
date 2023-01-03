@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
-    internal class ModelListCallHandler : IRequestHandler
+    internal class ModelListCallHandler : ICachingRequestHandler
     {
         private struct sModelListCall : IComparable<sModelListCall>
         {
@@ -63,7 +63,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                         else if (ptype == typeof(uint) ||
                             ptype == typeof(ulong) ||
                             ptype == typeof(ushort))
-                            regexs[x] = "(-?\\d+" + (nullable ? "|NULL" : "") + ")";
+                            regexs[x] = "(\\d+" + (nullable ? "|NULL" : "") + ")";
                         else if (ptype == typeof(double) ||
                             ptype == typeof(decimal) ||
                             ptype == typeof(float))
@@ -122,22 +122,38 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 return _reg.IsMatch(url);
             }
 
-            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            public bool ConvertParameters(string url,out object[] opars)
+            {
+                Logger.Trace("Converting url parameters from {0} to be handled by the model list call {1}.{2}", new object[] { url, _method.GetType().FullName, _method.Name });
+                ParameterInfo[] pars = Utility.ExtractStrippedParameters(_method);
+                opars = null;
+                if (pars.Length > 0)
+                {
+                    opars = new object[pars.Length];
+                    Match m = _reg.Match(url);
+                    foreach (int x in _groupIndexes.Keys)
+                    {
+                        try
+                        {
+                            opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex);
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, object[] opars)
             {
                 if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,formData))
                     throw new InsecureAccessException();
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
-                Logger.Trace("Converting url parameters from {0} to be handled by the model list call {1}.{2}", new object[] { url, _method.GetType().FullName, _method.Name });
                 ParameterInfo[] pars = Utility.ExtractStrippedParameters(_method);
-                object[] opars = null;
-                if (pars.Length > 0)
-                {
-                    opars = new object[pars.Length];
-                    Match m = _reg.Match(url);
-                    foreach(int x in _groupIndexes.Keys)
-                        opars[x] = _ConvertParameterValue(m.Groups[_groupIndexes[x] + 1].Value, pars[x].ParameterType);
-                }
                 Logger.Trace("Invoking method {0}.{1} for {2}", new object[] { _method.GetType().FullName, _method.Name, url });
                 object ret = Utility.InvokeMethod(_method, null, pars: opars, session: session);
                 if (_isPaged)
@@ -212,6 +228,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
         }
 
+        private struct sCachedCall
+        {
+            private sModelListCall _listCall;
+            private object[] _opars;
+
+            public sCachedCall(sModelListCall listCall, object[] opars)
+            {
+                _listCall=listCall;
+                _opars=opars;
+            }
+
+            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+            {
+                return _listCall.HandleRequest(url, method, formData, context, session, securityCheck, _opars);
+            }
+        }
+
         private List<sModelListCall> _calls;
 
         public ModelListCallHandler()
@@ -224,29 +257,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _calls.Clear();
         }
 
-        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
+        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck,object cachedItems)
         {
             Logger.Trace("Attempting to handle {0}:{1} in the Model List Call Handler", new object[] { method, url });
-            sModelListCall? mlc = null;
-            lock (_calls)
-            {
-                foreach (sModelListCall call in _calls)
-                {
-                    if (call.IsValid(url))
-                    {
-                        Logger.Trace("Valid model list call located for {0}:{1}", new object[] { method, url });
-                        mlc = call;
-                        break;
-                    }
-                }
-            }
-            if (mlc.HasValue)
-                return mlc.Value.HandleRequest(url,method,formData,context,session,securityCheck);
-            throw new CallNotFoundException();
+            if (cachedItems==null)
+                throw new CallNotFoundException();
+            sCachedCall cachedCall = (sCachedCall)cachedItems;
+            return cachedCall.HandleRequest(url,method,formData,context,session,securityCheck);
         }
 
-        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
+        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method,out object cachedItems)
         {
+            cachedItems = null;
             Logger.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { method, url });
             if (method==ModelRequestHandler.RequestMethods.GET)
             {
@@ -257,7 +279,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     {
                         if (call.IsValid(url))
                         {
-                            ret = true;
+                            object[] opars;
+                            if (call.ConvertParameters(url, out opars))
+                            { 
+                                cachedItems=new sCachedCall(call, opars);
+                                ret = true;
+                            }
                             break;
                         }
                     }

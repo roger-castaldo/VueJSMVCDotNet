@@ -14,7 +14,7 @@ using static Org.Reddragonit.VueJSMVCDotNet.Handlers.JSHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 {
-    internal class JSHandler : IRequestHandler
+    internal class JSHandler : INonCachingRequestHandler
     {
         public struct sModelType
         {
