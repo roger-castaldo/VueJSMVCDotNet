@@ -1,10 +1,12 @@
-﻿using AutomatedTesting.Security;
+﻿using AutomatedTesting.Models.InvalidModels;
+using AutomatedTesting.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace AutomatedTesting
@@ -12,19 +14,25 @@ namespace AutomatedTesting
     [TestClass]
     public class ModelValidation
     {
-        [TestMethod]
-        public void TestThrowInvalid()
+        private static ModelValidationException _LoadExceptions()
         {
-            Exception e=null;
+            ModelValidationException e = null;
             try
             {
                 VueMiddleware middleware = Utility.CreateMiddleware(false);
             }
-            catch(Exception ex)
+            catch (ModelValidationException ex)
             {
                 e = ex;
             }
             Assert.IsNotNull(e);
+            return e;
+        }
+
+        [TestMethod]
+        public void TestThrowInvalid()
+        {
+            _LoadExceptions();
         }
 
         [TestMethod]
@@ -39,6 +47,13 @@ namespace AutomatedTesting
             //Assert.IsFalse(handler.HandlesRequest(context));
             context.Request.Path = new PathString("/resources/scripts/mPerson.js");
             //Assert.IsTrue(handler.HandlesRequest(context));
+        }
+
+        [TestMethod]
+        public void TestModelWithNoRoute()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions.Count(e => e is NoRouteException && ((NoRouteException)e).ModelType==typeof(ModelWithNoRoute)));
         }
     }
 }

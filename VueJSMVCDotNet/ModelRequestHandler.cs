@@ -370,19 +370,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         }
 
 #if NET
-        /// <summary>
-        /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
-        /// that load context to allow for an unload
-        /// </summary>
-        /// <param name="context">The assembly context being unloaded</param>
         public void UnloadAssemblyContext(AssemblyLoadContext context){
             UnloadAssemblyContext(context.Name);
         }
-        /// <summary>
-        /// called when an assembly context needs to be unloaded without providing the context but its name
-        /// instead
-        /// </summary>
-        /// <param name="contextName">The name of the assembly load context to unload</param>
+        
         public void UnloadAssemblyContext(string contextName){
             List<Type> types = Utility.UnloadAssemblyContext(contextName);
             if (types!=null){
@@ -403,10 +394,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        /// <summary>
-        /// called when a new assembly has been loaded in the case of dynamic loading, in order 
-        /// to rescan for all new model types and add them accordingly.
-        /// </summary>
         public void AssemblyAdded()
         {
             Logger.Debug("Assembly added called, rebuilding handlers...");
@@ -423,10 +410,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        /// <summary>
-        /// Called when a new Assembly Load Context has been added
-        /// </summary>
-        /// <param name="contextName">The name of the context that was added</param>
         public void AsssemblyLoadContextAdded(string contextName){
             foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                 if (alc.Name==contextName){
@@ -436,11 +419,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        /// <summary>
-        /// Called when a new Assembly Load Context has been added
-        /// </summary>
-        /// <param name="alc">The assembly load context that was added</param>
-        /// <exception cref="ModelValidationException">Houses a set of exceptions if any newly loaded models fail validation</exception>
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
             Logger.Debug("Loading Assembly Load Context {0}", new object[] { alc.Name });
             List<Type> models;
@@ -505,10 +483,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _isInitialized=true;
         }
 #else
-        ///<summary>
-        ///called when a new assembly has been loaded in the case of dynamic loading, in order 
-        ///to rescan for all new model types and add them accordingly.
-        ///</summary>
         public void AssemblyAdded()
         {
             Utility.ClearCaches();

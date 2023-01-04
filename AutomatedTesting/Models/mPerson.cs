@@ -234,6 +234,13 @@ namespace AutomatedTesting.Models
             return _persons;
         }
 
+        [ModelListMethod("/list/mPerson/bob/boolean?par={0}")]
+        public static List<mPerson> ListByBoolean(bool val, ILog log)
+        {
+            log.Debug("Called List By Boolean");
+            return _persons;
+        }
+
         #endregion
 
         [ModelListMethod("/search/mPerson?q={0}", true)]
@@ -284,6 +291,8 @@ namespace AutomatedTesting.Models
             return string.Format("{0}, {1}", new object[] { firstName, lastName });
         }
 
+        #region SlowCalls
+
         [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
         public static void SlowAddCall(AddItem addCall)
         {
@@ -304,5 +313,6 @@ namespace AutomatedTesting.Models
             System.Threading.Thread.Sleep(3456);
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
+        #endregion
     }
 }

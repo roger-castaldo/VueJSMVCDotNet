@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
+#if !NETSTANDARD && !NET481
+using System.Runtime.Loader;
+#endif
 using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
@@ -98,6 +98,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private readonly VueFilesHandlerOptions _vueFilesOptions;
         internal VueFilesHandlerOptions VueFilesOptions { get { return _vueFilesOptions; } }
 
+        private VueMiddleware _middleWare;
+        internal VueMiddleware VueMiddleware { set { _middleWare = value; } }
+
         /// <summary>
         /// The constructor used to build the options for the middle ware components
         /// </summary>
@@ -120,6 +123,60 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if ((vueFilesOptions!=null||messageOptions!=null) && fileProvider==null)
                 throw new ArgumentNullException("fileProvider");
         }
+
+#if NET
+        /// <summary>
+        /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
+        /// that load context to allow for an unload
+        /// </summary>
+        /// <param name="context">The assembly context being unloaded</param>
+        public void UnloadAssemblyContext(AssemblyLoadContext context){
+            _middleWare.UnloadAssemblyContext(context);
+        }
+
+        /// <summary>
+        /// called when an assembly context needs to be unloaded without providing the context but its name
+        /// instead
+        /// </summary>
+        /// <param name="contextName">The name of the assembly load context to unload</param>
+        public void UnloadAssemblyContext(string contextName){
+            _middleWare.UnloadAssemblyContext(contextName);
+        }
+
+        /// <summary>
+        /// called when a new assembly has been loaded in the case of dynamic loading, in order 
+        /// to rescan for all new model types and add them accordingly.
+        /// </summary>
+        public void AssemblyAdded(){
+            _middleWare.AssemblyAdded();
+        }
+
+        /// <summary>
+        /// Called when a new Assembly Load Context has been added
+        /// </summary>
+        /// <param name="contextName">The name of the context that was added</param>
+        public void AsssemblyLoadContextAdded(string contextName){
+            _middleWare.AsssemblyLoadContextAdded(contextName);
+        }
+
+        /// <summary>
+        /// Called when a new Assembly Load Context has been added
+        /// </summary>
+        /// <param name="alc">The assembly load context that was added</param>
+        /// <exception cref="ModelValidationException">Houses a set of exceptions if any newly loaded models fail validation</exception>
+        public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
+            _middleWare.AsssemblyLoadContextAdded(alc);
+        }
+#else
+        ///<summary>
+        ///called when a new assembly has been loaded in the case of dynamic loading, in order 
+        ///to rescan for all new model types and add them accordingly.
+        ///</summary>
+        public void AssemblyAdded()
+        {
+            _middleWare.AssemblyAdded();
+        }
+#endif
     }
 
     /// <summary>
@@ -181,6 +238,44 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 await context.Response.WriteAsync("Not Found");
             }
         }
+#if NET
+        internal void UnloadAssemblyContext(AssemblyLoadContext context)
+        {
+            UnloadAssemblyContext(context.Name);
+        }
+
+        internal void UnloadAssemblyContext(string contextName){
+            if (_modelHandler!=null){
+                UnloadAssemblyContext(contextName);
+            }
+        }
+
+        internal void AssemblyAdded(){
+            if (_modelHandler!=null){
+                _modelHandler.AssemblyAdded();
+            }
+        }
+
+        internal void AsssemblyLoadContextAdded(string contextName){
+            if (_modelHandler!=null){
+                _modelHandler.AsssemblyLoadContextAdded(contextName);
+            }
+        }
+
+        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
+            if (_modelHandler!=null){
+                _modelHandler.AsssemblyLoadContextAdded(alc);
+            }
+        }
+#else
+        internal void AssemblyAdded()
+        {
+            if (_modelHandler!=null)
+            {
+                _modelHandler.AssemblyAdded();
+            }
+        }
+#endif
     }
 
     /// <summary>

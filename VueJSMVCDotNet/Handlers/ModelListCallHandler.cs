@@ -107,7 +107,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     _url = mlm.Path;
                     reg = _url.Replace("?", "\\?");
                 }
-                _reg = new Regex(string.Format("^{0}$",reg), RegexOptions.Compiled|RegexOptions.ECMAScript);
+                _reg = new Regex(string.Format("^{0}$",reg), RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
                 _method = mi;
             }
 

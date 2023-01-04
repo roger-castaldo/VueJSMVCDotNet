@@ -314,5 +314,14 @@ namespace AutomatedTesting
             _TestParameterListCall(string.Format("/list/mPerson/bob/enum?par={0}", mDataTypes.TestEnums.Test1));
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Enum"), Times.Once);
         }
+
+        [TestMethod()]
+        public void TestListBooleanParameter()
+        {
+            _TestParameterListCall(string.Format("/list/mPerson/bob/boolean?par={0}", "p"), expectedStatus: 404);
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Debug, "Called List By Boolean"), Times.Never);
+            _TestParameterListCall(string.Format("/list/mPerson/bob/boolean?par={0}", true));
+            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Debug, "Called List By Boolean"), Times.Once);
+        }
     }
 }
