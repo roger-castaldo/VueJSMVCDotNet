@@ -117,7 +117,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <summary>
         /// The second Model Type containg the second path
         /// </summary>
-        public Type SecondType => _secondType;
+        public Type SecondModel => _secondType;
 
         internal DuplicateRouteException(string path1, Type type1, string path2, Type type2)
             : base("The IModel type " + type2.FullName + " is not valid as its route " + path2 + " is a duplicate for the route " + path1 + " contained within the Model " + type1.FullName) { 
@@ -462,7 +462,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// </summary>
         public string Path => _path;
         internal InvalidModelListNotAllPagedException(Type t, MethodInfo mi, string path)
-            : base(t,mi.Name,"The IModel type " + t.FullName + " is not valid because ModelListMethod for the path " + path + " is not marked as paged likst the others.")
+            : base(t,mi.Name,"The IModel type " + t.FullName + " is not valid because ModelListMethod for the path " + path + " is not marked as paged like the others.")
         {
             _path=path;
         }

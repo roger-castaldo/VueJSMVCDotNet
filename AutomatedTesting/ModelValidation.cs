@@ -55,5 +55,98 @@ namespace AutomatedTesting
             ModelValidationException ex = _LoadExceptions();
             Assert.AreEqual(1, ex.InnerExceptions.Count(e => e is NoRouteException && ((NoRouteException)e).ModelType==typeof(ModelWithNoRoute)));
         }
+
+        [TestMethod]
+        public void TestModelWithDuplicateMethods()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateLoadMethodException)
+                .Select(e => (DuplicateLoadMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethods) && e.MethodName=="DuplicateLoadMethod"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateLoadAllMethodException)
+                .Select(e => (DuplicateLoadAllMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethods) && e.MethodName=="DuplicateLoadAllMethod"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateModelSaveMethodException)
+                .Select(e => (DuplicateModelSaveMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethods) && e.MethodName=="DuplicateSaveMethod"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateModelDeleteMethodException)
+                .Select(e => (DuplicateModelDeleteMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethods) && e.MethodName=="DuplicateDeleteMethod"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateModelUpdateMethodException)
+                .Select(e => (DuplicateModelUpdateMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethods) && e.MethodName=="DuplicateUpdateMethod"));
+        }
+
+        [TestMethod]
+        public void TestModelWithInvalidDataActionMethods()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelSaveMethodException)
+                .Select(e => (InvalidModelSaveMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="InvalidSave"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelDeleteMethodException)
+                .Select(e => (InvalidModelDeleteMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="InvalidDelete"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelUpdateMethodException)
+                .Select(e => (InvalidModelUpdateMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="InvalidUpdate"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadMethodArguements)
+                .Select(e => (InvalidLoadMethodArguements)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="NoArgumentLoad"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadMethodArguements)
+                .Select(e => (InvalidLoadMethodArguements)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="NotStringLoad"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadMethodReturnType)
+                .Select(e => (InvalidLoadMethodReturnType)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="InvalidReturnLoad"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadAllMethodReturnType)
+                .Select(e => (InvalidLoadAllMethodReturnType)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="NotArrayReturnAll"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadAllMethodReturnType)
+                .Select(e => (InvalidLoadAllMethodReturnType)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="WrongArrayTypeLoadAll"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadAllMethodReturnType)
+                .Select(e => (InvalidLoadAllMethodReturnType)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="WrongListTypeLoadAll"));
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidLoadAllArguements)
+                .Select(e => (InvalidLoadAllArguements)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethods) && e.MethodName=="LoadAllWithInvalidArguements"));
+        }
+
+        [TestMethod]
+        public void TestModelMissingEmptyConstructorForSave()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is NoEmptyConstructorException)
+                .Select(e => (NoEmptyConstructorException)e)
+                .Count(e => e.ModelType==typeof(ModelMissingEmptyConstructorForSave)));
+        }
+
+        [TestMethod]
+        public void TestModelWithDuplicateRoute()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateRouteException)
+                .Select(e => (DuplicateRouteException)e)
+                .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods") 
+                || (e.SecondModel==typeof(ModelWithDuplicateRoute) && e.SecondPath=="*/models/ModelWithDuplicateMethods")));
+        }
     }
 }
