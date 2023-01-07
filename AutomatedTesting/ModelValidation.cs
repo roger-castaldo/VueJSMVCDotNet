@@ -148,5 +148,52 @@ namespace AutomatedTesting
                 .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods") 
                 || (e.SecondModel==typeof(ModelWithDuplicateRoute) && e.SecondPath=="*/models/ModelWithDuplicateMethods")));
         }
+
+        [TestMethod]
+        public void TestModelWithInvalidListMethods()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            //nullable invalid return
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListMethodReturnException)
+                .Select(e => (InvalidModelListMethodReturnException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="SearchNullable"));
+
+            //array invalid return
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListMethodReturnException)
+                .Select(e => (InvalidModelListMethodReturnException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="SearchArray"));
+
+            //missing paging parameters
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListParameterCountException)
+                .Select(e => (InvalidModelListParameterCountException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="InvalidPagedSignature"));
+
+            //generic parameter
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListParameterTypeException)
+                .Select(e => (InvalidModelListParameterTypeException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithGenericTypeParameter"));
+
+            //array parameter
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListParameterTypeException)
+                .Select(e => (InvalidModelListParameterTypeException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithArrayTypeParameter"));
+
+            //out parameter
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListParameterOutException)
+                .Select(e => (InvalidModelListParameterOutException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithOutParameter"));
+
+            //invalid paged parameter type
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListPageParameterTypeException)
+                .Select(e => (InvalidModelListPageParameterTypeException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="PagedInvalidParameterType" && e.Parameter.Name=="pageStartIndex"));
+        }
     }
 }

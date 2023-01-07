@@ -451,30 +451,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     }
 
     /// <summary>
-    /// thrown when multiple ModelListMethod are delcared and 1 or more but not all are declared as paged
-    /// </summary>
-    [Serializable]
-    public class InvalidModelListNotAllPagedException : ModelTypeMethodException
-    {
-        private string _path;
-        /// <summary>
-        /// The path containing the error
-        /// </summary>
-        public string Path => _path;
-        internal InvalidModelListNotAllPagedException(Type t, MethodInfo mi, string path)
-            : base(t,mi.Name,"The IModel type " + t.FullName + " is not valid because ModelListMethod for the path " + path + " is not marked as paged like the others.")
-        {
-            _path=path;
-        }
-        /// <summary>
-        /// Used to serialize the excepion when necessary
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        protected InvalidModelListNotAllPagedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-    }
-
-    /// <summary>
     /// thrown when the ModelSaveMethod Attribute is specified more than once in the Model
     /// </summary>
     [Serializable]

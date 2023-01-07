@@ -237,14 +237,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     }
                     if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                     {
+                        ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
                         Type rtype = mi.ReturnType;
                         if (rtype.FullName.StartsWith("System.Nullable"))
-                        {
-                            if (rtype.IsGenericType)
-                                rtype = rtype.GetGenericArguments()[0];
-                            else
-                                rtype = rtype.GetElementType();
-                        }
+                            rtype = rtype.GetGenericArguments()[0];
                         if (rtype.IsArray)
                             rtype = rtype.GetElementType();
                         else if (rtype.IsGenericType)
@@ -258,30 +254,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             invalidModels.Add(t);
                             errors.Add(new InvalidModelListMethodReturnException(t, mi));
                         }
-                        bool isPaged = false;
-                        foreach (ModelListMethod mlm in mi.GetCustomAttributes(typeof(ModelListMethod), false))
+                        MatchCollection mc = _regListPars.Matches(mlm.Path);
+                        if (mc.Count != Utility.ExtractStrippedParameters(mi).Length - (mlm.Paged ? 3 : 0))
                         {
-                            if (mlm.Paged)
-                            {
-                                isPaged = true;
-                                break;
-                            }
-                        }
-                        foreach (ModelListMethod mlm in mi.GetCustomAttributes(typeof(ModelListMethod), false))
-                        {
-                            MatchCollection mc = _regListPars.Matches(mlm.Path);
-                            if (isPaged && !mlm.Paged)
-                            {
-                                Logger.Trace("Model {0} has a model list method using paging without indicating it {1}", new object[] { t.FullName, mi.Name });
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelListNotAllPagedException(t, mi, mlm.Path));
-                            }
-                            if (mc.Count != Utility.ExtractStrippedParameters(mi).Length - (isPaged ? 3 : 0))
-                            {
-                                Logger.Trace("Model {0} has missing parameters from the url for the list method {1}", new object[] { t.FullName, mi.Name });
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelListParameterCountException(t, mi, mlm.Path));
-                            }
+                            Logger.Trace("Model {0} has missing parameters from the url for the list method {1}", new object[] { t.FullName, mi.Name });
+                            invalidModels.Add(t);
+                            errors.Add(new InvalidModelListParameterCountException(t, mi, mlm.Path));
                         }
                         ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                         for (int x = 0; x < pars.Length; x++)
@@ -289,20 +267,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             ParameterInfo pi = pars[x];
                             if (pi.ParameterType.IsGenericType)
                             {
-                                if (pi.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                                {
-                                    if (Utility.IsArrayType(pi.ParameterType.GetGenericArguments()[0]))
-                                    {
-                                        Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name,pi.Name });
-                                        invalidModels.Add(t);
-                                        errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
-                                    }
-                                }
-                                else
-                                {
+                                if (pi.ParameterType.GetGenericTypeDefinition() != typeof(Nullable<>)) { 
                                     Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
-                                    if (!invalidModels.Contains(t))
-                                        invalidModels.Add(t);
+                                    invalidModels.Add(t);
                                     errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
                                 }
                             }
@@ -312,13 +279,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
                             }
-                            if (pi.IsOut && (!isPaged || x != pars.Length - 1))
+                            if (pi.IsOut && (!mlm.Paged || x != pars.Length - 1))
                             {
                                 Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterOutException(t, mi, pi));
                             }
-                            if (isPaged && x >= pars.Length - 3)
+                            if (mlm.Paged && x >= pars.Length - 3)
                             {
                                 Type ptype = pi.ParameterType;
                                 if (pi.IsOut)
@@ -335,7 +302,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     errors.Add(new InvalidModelListPageParameterTypeException(t, mi, pi));
                                 }
                             }
-                            if (isPaged && x == pars.Length - 1)
+                            if (mlm.Paged && x == pars.Length - 1)
                             {
                                 if (!pi.IsOut)
                                 {
