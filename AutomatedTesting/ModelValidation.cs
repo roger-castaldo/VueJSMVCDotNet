@@ -145,7 +145,7 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateRouteException)
                 .Select(e => (DuplicateRouteException)e)
-                .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods") 
+                .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods")
                 || (e.SecondModel==typeof(ModelWithDuplicateRoute) && e.SecondPath=="*/models/ModelWithDuplicateMethods")));
         }
 
@@ -194,6 +194,52 @@ namespace AutomatedTesting
                 .Where(e => e is InvalidModelListPageParameterTypeException)
                 .Select(e => (InvalidModelListPageParameterTypeException)e)
                 .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="PagedInvalidParameterType" && e.Parameter.Name=="pageStartIndex"));
+
+            //invalid total pages parameter
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidModelListPageTotalPagesNotOutException)
+                .Select(e => (InvalidModelListPageTotalPagesNotOutException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="PagedInvalidOutParameter" && e.Parameter.Name=="pageSize"));
+        }
+
+        [TestMethod]
+        public void TestModelWithBlockedID()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is ModelIDBlockedException)
+                .Select(e => (ModelIDBlockedException)e)
+                .Count(e => e.ModelType==typeof(ModelWithBlockedID)));
+        }
+
+        [TestMethod]
+        public void TestModelWithNoLoad()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is NoLoadMethodException)
+                .Select(e => (NoLoadMethodException)e)
+                .Count(e => e.ModelType==typeof(ModelWithNoLoad)));
+        }
+
+        [TestMethod]
+        public void TestModelWithInvalidExposedMethods()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is DuplicateMethodSignatureException)
+                .Select(e => (DuplicateMethodSignatureException)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethods) && e.MethodName=="DuplicateExposedStaticMethod"));
+
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is MethodNotMarkedAsSlow)
+                .Select(e => (MethodNotMarkedAsSlow)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethods) && e.MethodName=="NotSlowWithAddItem"));
+
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is MethodWithAddItemNotVoid)
+                .Select(e => (MethodWithAddItemNotVoid)e)
+                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethods) && e.MethodName=="SlowWithAddItemAndReturn"));
         }
     }
 }

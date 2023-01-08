@@ -314,27 +314,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         }
                     }
                 }
-                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                {
-                    if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0)
-                    {
-                        Type rtype = pi.PropertyType;
-                        if (rtype.FullName.StartsWith("System.Nullable"))
-                        {
-                            if (rtype.IsGenericType)
-                                rtype = rtype.GetGenericArguments()[0];
-                            else
-                                rtype = rtype.GetElementType();
-                        }
-                        if (rtype.IsArray)
-                            rtype = rtype.GetElementType();
-                        else if (rtype.IsGenericType)
-                        {
-                            if (rtype.GetGenericTypeDefinition() == typeof(List<>))
-                                rtype = rtype.GetGenericArguments()[0];
-                        }
-                    }
-                }
                 if (t.GetProperty("id").GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length > 0)
                 {
                     Logger.Trace("Model {0} is not valid because the id property is blocked by ModelIgnoreProperty", new object[] { t.FullName });
@@ -355,13 +334,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
-                            int parCount = 0;
-                            bool hasAddItem = false;
-                            foreach (ParameterInfo pi in mi.GetParameters())
-                            {
-                                parCount+=(pi.ParameterType.FullName==typeof(AddItem).FullName ? 0 : 1);
-                                hasAddItem|=pi.ParameterType.FullName==typeof(AddItem).FullName;
-                            }
+                            int parCount = mi.GetParameters().Count(pi=>pi.ParameterType.FullName!=typeof(AddItem).FullName);
+                            bool hasAddItem = mi.GetParameters().Count(pi => pi.ParameterType.FullName==typeof(AddItem).FullName)>0;
                             if (methods.Contains(mi.Name + "." + parCount.ToString()))
                             {
                                 Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName, mi.Name });
@@ -384,7 +358,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     {
                                         Logger.Trace("Model {0} is not valid because the method {1} is using the AddItem delegate requires a void response", new object[] { t.FullName, mi.Name });
                                         invalidModels.Add(t);
-                                        errors.Add(new DuplicateMethodSignatureException(t, mi));
+                                        errors.Add(new MethodWithAddItemNotVoid(t, mi));
                                         isValidCall = false;
                                     }
                                 }

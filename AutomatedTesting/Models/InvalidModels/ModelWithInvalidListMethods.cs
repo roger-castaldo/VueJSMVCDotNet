@@ -61,5 +61,12 @@ namespace AutomatedTesting.Models.InvalidModels
             totalPages=0;
             return null;
         }
+
+        [ModelListMethod("/search/pagedInvalidType", paged: true)]
+        public static List<ModelWithInvalidListMethods> PagedInvalidOutParameter(out int totalPages,int pageStartIndex, int pageSize)
+        {
+            totalPages=0;
+            return null;
+        }
     }
 }
