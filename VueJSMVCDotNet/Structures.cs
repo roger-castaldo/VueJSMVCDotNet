@@ -20,11 +20,5 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 .LastModified.Ticks);
             _content = content;
         }
-
-        public CachedContent(Microsoft.Extensions.FileProviders.IFileInfo fileInfo, string content)
-        {
-            _timestamp=new DateTime(fileInfo.LastModified.Ticks);
-            _content = content;
-        }
     }
 }

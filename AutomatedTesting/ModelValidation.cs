@@ -145,8 +145,8 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateRouteException)
                 .Select(e => (DuplicateRouteException)e)
-                .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods")
-                || (e.SecondModel==typeof(ModelWithDuplicateRoute) && e.SecondPath=="*/models/ModelWithDuplicateMethods")));
+                .Count(e => (e.FirstModel==typeof(ModelWithDuplicateRoute) && e.FirstPath=="*/models/ModelWithDuplicateMethods" && e.SecondModel==typeof(ModelWithDuplicateMethods) && e.SecondPath=="*/models/ModelWithDuplicateMethods")
+                || (e.FirstModel==typeof(ModelWithDuplicateMethods) && e.FirstPath=="*/models/ModelWithDuplicateMethods" && e.SecondModel==typeof(ModelWithDuplicateRoute) && e.SecondPath=="*/models/ModelWithDuplicateMethods")));
         }
 
         [TestMethod]
