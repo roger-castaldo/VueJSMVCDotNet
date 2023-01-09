@@ -334,8 +334,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
-                            int parCount = mi.GetParameters().Count(pi=>pi.ParameterType.FullName!=typeof(AddItem).FullName);
-                            bool hasAddItem = mi.GetParameters().Count(pi => pi.ParameterType.FullName==typeof(AddItem).FullName)>0;
+                            int aidx;
+                            bool hasAddItem = Utility.UsesAddItem(mi, out aidx);
+                            int parCount = Utility.ExtractStrippedParameters(mi).Length;
                             if (methods.Contains(mi.Name + "." + parCount.ToString()))
                             {
                                 Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName, mi.Name });

@@ -14,8 +14,8 @@ namespace AutomatedTesting
     [TestClass]
     public class SecurityTests
     {
-        private const string _NOT_ALLOWED_MESSAGE = "Not Authorized";
-        private const int _NOT_ALLOWED_STATUS = 403;
+        public const string _NOT_ALLOWED_MESSAGE = "Not Authorized";
+        public const int _NOT_ALLOWED_STATUS = 403;
         private VueMiddleware _middleware;
 
         [TestInitialize]

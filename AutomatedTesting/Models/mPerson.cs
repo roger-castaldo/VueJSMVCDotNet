@@ -285,6 +285,54 @@ namespace AutomatedTesting.Models
         }
 
         [ExposedMethod(false)]
+        [SecurityRoleCheck(Constants.Rights.METHOD)]
+        public string GetFullName(string middleName)
+        {
+            return string.Format("{0}, {1} {2}", new object[] { LastName, FirstName,middleName });
+        }
+
+        [ExposedMethod]
+        public void SetFullName(string fullName)
+        {
+            string[] tmp = fullName.Split(',');
+            _firstName=tmp[1].Trim();
+            _lastName=tmp[0].Trim();
+        }
+
+        [ExposedMethod]
+        public bool IsFullName(string fullName)
+        {
+            return fullName==string.Format("{0}, {1}", new object[] { LastName, FirstName });
+        }
+
+        [ExposedMethod]
+        public void ThrowInstanceException()
+        {
+            throw new Exception("Error in Instance Method");
+        }
+
+        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        public string GetInstanceSlowTimespan()
+        {
+            DateTime now = DateTime.Now;
+            System.Threading.Thread.Sleep(3456);
+            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+        }
+
+        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        public void InstanceSlowAddCall(AddItem addCall)
+        {
+            int idx = 0;
+            while (idx < 5)
+            {
+                System.Threading.Thread.Sleep(1000);
+                addCall(idx, false);
+                idx++;
+            }
+            addCall(idx, true);
+        }
+
+        [ExposedMethod(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
         public static string FormatName(ISecureSession session,string lastName,string firstName)
         {

@@ -187,7 +187,7 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListParameterOutException)
                 .Select(e => (InvalidModelListParameterOutException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithOutParameter"));
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithOutParameter" && e.Parameter.Name=="par1"));
 
             //invalid paged parameter type
             Assert.AreEqual(1, ex.InnerExceptions
