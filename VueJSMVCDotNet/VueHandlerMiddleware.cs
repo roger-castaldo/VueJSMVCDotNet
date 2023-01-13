@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
+using Org.Reddragonit.VueJSMVCDotNet.Handlers;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -184,8 +185,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class VueMiddleware : IDisposable
     {
-        private readonly RequestDelegate _next;
-        private readonly VueMiddlewareOptions _options;
         private readonly ModelRequestHandler _modelHandler;
         private readonly MessagesHandler _messageHandler;
         private readonly VueFilesHandler _vueFileHandler;
@@ -197,11 +196,22 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="options">the supplied options for creating the middle ware</param>
         public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options)
         {
-            _next=next;
-            _options=options;
-            _modelHandler = (_options.VueModelsOptions==null ? null : new ModelRequestHandler(_options.LogWriter,options.VueModelsOptions.BaseURL,options.VueModelsOptions.IgnoreInvalidModels,options.VueImportPath));
-            _messageHandler = (_options.MessageOptions==null ? null : new MessagesHandler(options.FileProvider, options.MessageOptions.BaseURL, options.LogWriter));
-            _vueFileHandler = (_options.VueFilesOptions==null ? null : new VueFilesHandler(options.FileProvider, options.VueFilesOptions.BaseURL, options.LogWriter,options.VueImportPath,options.VueLoaderImportPath));
+            next = (next==null ? new RequestDelegate(NotFound) : next);
+            if (options.VueFilesOptions!=null)
+            {
+                _vueFileHandler = new VueFilesHandler(options.FileProvider, options.VueFilesOptions.BaseURL, options.LogWriter, options.VueImportPath, options.VueLoaderImportPath, next);
+                next = new RequestDelegate(_vueFileHandler.ProcessRequest);
+            }
+            if (options.MessageOptions!=null)
+            {
+                _messageHandler = new MessagesHandler(options.FileProvider, options.MessageOptions.BaseURL, options.LogWriter, next);
+                next = new RequestDelegate(_messageHandler.ProcessRequest);
+            }
+            if (options.VueModelsOptions!=null)
+            {
+                _modelHandler = new ModelRequestHandler(options.LogWriter, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
+                options.VueModelsOptions.SessionFactory,next);
+            }
         }
 
         /// <summary>
@@ -224,19 +234,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="context">the current httpcontext</param>
         /// <returns>a task</returns>
         public async Task InvokeAsync(HttpContext context) {
-            if (_modelHandler!=null && _modelHandler.HandlesRequest(context))
-                await _modelHandler.ProcessRequest(context, _options.VueModelsOptions.SessionFactory.ProduceFromContext(context));
-            else if (_messageHandler!=null && _messageHandler.HandlesRequest(context))
+            if (_modelHandler!=null)
+                await _modelHandler.ProcessRequest(context);
+            else if (_messageHandler!=null)
                 await _messageHandler.ProcessRequest(context);
-            else if (_vueFileHandler!=null && _vueFileHandler.HandlesRequest(context))
-                await _vueFileHandler.ProcessRequest(context);
-            else if (_next!=null)
-                await _next(context);
             else
-            {
-                context.Response.StatusCode = 404;
-                await context.Response.WriteAsync("Not Found");
-            }
+                await _vueFileHandler.ProcessRequest(context);
+        }
+
+        private async Task NotFound(HttpContext context)
+        {
+            context.Response.StatusCode = 404;
+            await context.Response.WriteAsync("Not Found");
         }
 #if NET
         internal void UnloadAssemblyContext(AssemblyLoadContext context)
