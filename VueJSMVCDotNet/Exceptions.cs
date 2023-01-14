@@ -7,10 +7,6 @@ using System.Text;
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
     internal class CallNotFoundException : Exception {
-        public CallNotFoundException() :
-            this("Not Found")
-        { }
-
         public CallNotFoundException(string message) :
             base(message)
         { }
@@ -402,18 +398,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     {
         internal MethodWithAddItemNotVoid(Type t, MethodInfo mi)
             : base(t, mi.Name, string.Format("The IModel type {0} is not valid is not valid because the method {1} is using the AddItem delegate but is not void.",
-            t.FullName,
-            mi.Name))
-        { }
-    }
-
-    /// <summary>
-    /// thrown when an ExposedMethod uses the AddItem delegate but has a return value
-    /// </summary>
-    public class MethodUsesAddItemNotVoid : ModelTypeMethodException
-    {
-        internal MethodUsesAddItemNotVoid(Type t, MethodInfo mi)
-            : base(t,mi.Name,string.Format("The IModel type {0} is not valid because the method {1} is using the AddItem delegate requires a void response.",
             t.FullName,
             mi.Name))
         { }

@@ -56,36 +56,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 await _next(context);
         }
 
-        public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck)
-        {
-            Logger.Trace("Attempting to handle {0}:{1} inside the Load All Handler", new object[] { method, url });
-            MethodInfo mi = null;
-            lock (_methods)
-            {
-                if (_methods.ContainsKey(url))
-                    mi = _methods[url];
-            }
-            if (mi != null)
-            {
-                if (!securityCheck.Invoke(mi.DeclaringType, mi, session,null,url,null))
-                    throw new InsecureAccessException();
-                context.Response.ContentType = "text/json";
-                context.Response.StatusCode = 200;
-                Logger.Trace("Invoking the Load All call {0}.{1} to handle {2}:{3}", new object[] { mi.DeclaringType.FullName, mi.Name, method, url });
-                return context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi,null,session:session)));
-            }
-            else
-                throw new CallNotFoundException();
-        }
-
-        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
-        {
-            Logger.Trace("Checking if {0}:{1} is handled by the Load All Handler", new object[] { method, url });
-            if (method==ModelRequestHandler.RequestMethods.GET)
-                return _methods.ContainsKey(url);
-            return false;
-        }
-
         protected override void _LoadTypes(List<Type> types)
         {
             lock (_methods)

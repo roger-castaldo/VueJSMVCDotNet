@@ -160,5 +160,68 @@ export const name = translator('Name',null,'en');");
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }
+
+        [TestMethod]
+        public void VueFileScriptGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("notification", content);
+                eng.AddModule("custom", @"import notification from 'notification';
+export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual(true, ns.Get("check").AsBoolean());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void VueFileScriptCompressedGenerationValidation()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("notification", content);
+                eng.AddModule("custom", @"import notification from 'notification';
+export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual(true, ns.Get("check").AsBoolean());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void VueFileScriptCompressionPerformance()
+        {
+            int status;
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(content.Length > 0);
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
+            Assert.IsTrue(minContent.Length > 0);
+            Assert.IsTrue(minContent.Length < content.Length);
+        }
     }
 }

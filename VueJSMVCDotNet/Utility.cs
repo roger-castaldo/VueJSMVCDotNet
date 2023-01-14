@@ -133,49 +133,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             bool useAddItem = false;
             bool useLog = false;
             if (formData == null || formData.Count == 0)
-            {
-                foreach (MethodInfo mi in methods)
-                {
-                    useSession = UsesSecureSession(mi, out idx);
-                    useAddItem = UsesAddItem(mi, out sidx);
-                    useLog = UsesLog(mi, out lidx);
-                    int parCount = mi.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0)+(useLog ? -1 : 0);
-                    if (parCount==0)
-                    {
-                        method = mi;
-                        return;
-                    }
-                }
-            }
+                method = methods.Where(mi=>ExtractStrippedParameters(mi).Count()==0).FirstOrDefault();
             else
             {
-                foreach (MethodInfo m in methods)
+                foreach (MethodInfo m in methods.Where(mi=> ExtractStrippedParameters(mi).Count()==formData.Count))
                 {
-                    useSession = UsesSecureSession(m, out idx);
-                    useAddItem = UsesAddItem(m, out sidx);
-                    useLog = UsesLog(m, out lidx);
-                    int parCount = m.GetParameters().Length+(useSession ? -1 : 0)+(useAddItem ? -1 : 0)+(useLog?-1:0);
-                    if (parCount == formData.Count)
+                    var notNullArguement = (NotNullArguement)m.GetCustomAttribute(typeof(NotNullArguement));
+                    pars = new object[formData.Count];
+                    bool isMethod = true;
+                    int index = 0;
+                    foreach (ParameterInfo pi in ExtractStrippedParameters(m))
                     {
-                        pars = new object[formData.Count];
-                        bool isMethod = true;
-                        int index = 0;
-                        foreach (ParameterInfo pi in ExtractStrippedParameters(m))
+                        if (formData.ContainsKey(pi.Name) && (notNullArguement==null||!(!notNullArguement.IsParameterNullable(pi)&&formData[pi.Name]==null)))
+                            pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
+                        else
                         {
-                            if (formData.ContainsKey(pi.Name))
-                                pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
-                            else
-                            {
-                                isMethod = false;
-                                break;
-                            }
-                            index++;
+                            isMethod = false;
+                            break;
                         }
-                        if (isMethod)
-                        {
-                            method = m;
-                            return;
-                        }
+                        index++;
+                    }
+                    if (isMethod)
+                    {
+                        method = m;
+                        return;
                     }
                 }
             }

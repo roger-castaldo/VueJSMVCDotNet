@@ -11,6 +11,7 @@
 	<ItemGroup>
 	  <None Remove="resources\messages\test\en.json" />
 	  <None Remove="resources\messages\test\fr.json" />
+	  <None Remove="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -26,6 +27,7 @@
 	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 	  </EmbeddedResource>
+	  <EmbeddedResource Include="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
 	<ItemGroup>

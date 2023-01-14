@@ -361,6 +361,14 @@ namespace AutomatedTesting.Models
             System.Threading.Thread.Sleep(3456);
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
+
+        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        public static string GetSlowException()
+        {
+            DateTime now = DateTime.Now;
+            System.Threading.Thread.Sleep(3456);
+            throw new Exception("something error happened");
+        }
         #endregion
     }
 }

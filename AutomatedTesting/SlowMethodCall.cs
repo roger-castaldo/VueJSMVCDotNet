@@ -90,5 +90,50 @@ namespace AutomatedTesting
             Assert.IsTrue(data.Count == 6);
             Assert.AreEqual("5", data[5].ToString());
         }
+
+        [TestMethod]
+        public void TestSlowMethodWithError()
+        {
+            int status;
+            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/GetSlowException", _middleware, out status));
+            Assert.IsInstanceOfType(url, typeof(string));
+            bool done = false;
+            string result = null;
+            int cnt = 0;
+            while (!done && cnt < 5)
+            {
+                var memoryStream = Utility.ExecuteRequest("PULL", (string)url, _middleware, out status);
+                if (status==200)
+                {
+                    object content = Utility.ReadJSONResponse(memoryStream);
+                    Assert.IsInstanceOfType(content, typeof(Hashtable));
+                    Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
+                    Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
+                    Assert.IsTrue(((Hashtable)content).ContainsKey("Data"));
+                    if ((bool)((Hashtable)content)["IsFinished"])
+                    {
+                        done = true;
+                        Assert.IsInstanceOfType(((Hashtable)content)["Data"], typeof(ArrayList));
+                        Assert.IsTrue(((ArrayList)((Hashtable)content)["Data"]).Count == 1);
+                        Assert.IsInstanceOfType(((ArrayList)((Hashtable)content)["Data"])[0], typeof(string));
+                        result = (string)((ArrayList)((Hashtable)content)["Data"])[0];
+                    }
+                    else
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        cnt++;
+                    }
+                }
+                else
+                {
+                    result = new StreamReader(memoryStream).ReadToEnd();
+                    done=true;
+                }
+            }
+            Assert.IsTrue(done);
+            Assert.AreEqual(500, status);
+            Assert.IsNotNull(result);
+            Assert.AreEqual("Error", result);
+        }
     }
 }
