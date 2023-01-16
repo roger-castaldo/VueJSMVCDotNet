@@ -352,7 +352,11 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                 {
                     ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
                     if (paths != null && paths.Length > 0)
+                    {
+                        if (_types.ContainsKey(t))
+                            _types.Remove(t);
                         _types.Add(t, paths);
+                    }
                 }
             }
         }

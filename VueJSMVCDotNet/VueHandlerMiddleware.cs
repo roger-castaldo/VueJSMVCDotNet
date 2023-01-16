@@ -145,14 +145,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         }
 
         /// <summary>
-        /// called when a new assembly has been loaded in the case of dynamic loading, in order 
-        /// to rescan for all new model types and add them accordingly.
-        /// </summary>
-        public void AssemblyAdded(){
-            _middleWare.AssemblyAdded();
-        }
-
-        /// <summary>
         /// Called when a new Assembly Load Context has been added
         /// </summary>
         /// <param name="contextName">The name of the context that was added</param>
@@ -168,7 +160,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
             _middleWare.AsssemblyLoadContextAdded(alc);
         }
-#else
+#endif
         ///<summary>
         ///called when a new assembly has been loaded in the case of dynamic loading, in order 
         ///to rescan for all new model types and add them accordingly.
@@ -177,7 +169,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             _middleWare.AssemblyAdded();
         }
-#endif
     }
 
     /// <summary>
@@ -185,6 +176,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class VueMiddleware : IDisposable
     {
+        private readonly VueMiddlewareOptions _options;
+        /// <summary>
+        /// The Options that were supplied to construct the VueMiddleware
+        /// </summary>
+        public VueMiddlewareOptions Options => _options;
         private readonly ModelRequestHandler _modelHandler;
         private readonly MessagesHandler _messageHandler;
         private readonly VueFilesHandler _vueFileHandler;
@@ -196,6 +192,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="options">the supplied options for creating the middle ware</param>
         public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options)
         {
+            options.VueMiddleware=this;
+            _options = options;
             next = (next==null ? new RequestDelegate(NotFound) : next);
             if (options.VueFilesOptions!=null)
             {
@@ -255,7 +253,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         internal void UnloadAssemblyContext(string contextName){
             if (_modelHandler!=null){
-                UnloadAssemblyContext(contextName);
+                _modelHandler.UnloadAssemblyContext(contextName);
             }
         }
 
@@ -272,9 +270,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         }
 
         internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
-            if (_modelHandler!=null){
-                _modelHandler.AsssemblyLoadContextAdded(alc);
-            }
+            AsssemblyLoadContextAdded(alc.Name);
         }
 #else
         internal void AssemblyAdded()

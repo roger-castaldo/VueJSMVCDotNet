@@ -85,16 +85,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 await _next(context);
         }
 
-        public void Init(List<Type> types)
-        {
-            lock (_deleteMethods)
-            {
-                _loadMethods.Clear();
-                _deleteMethods.Clear();
-                _LoadTypes(types);
-            }
-        }
-
         protected override void _LoadTypes(List<Type> types)
         {
             foreach (Type t in types)

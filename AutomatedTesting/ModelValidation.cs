@@ -169,7 +169,7 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListParameterCountException)
                 .Select(e => (InvalidModelListParameterCountException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="InvalidPagedSignature"));
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="InvalidPagedSignature" && e.Path=="/search/paged"));
 
             //generic parameter
             Assert.AreEqual(1, ex.InnerExceptions
