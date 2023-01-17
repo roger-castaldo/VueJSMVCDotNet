@@ -158,12 +158,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 const options = {
     addStyle: () => {},
     moduleCache: {");
-                            foreach (string str in importMaps.Keys)
+                            foreach (string str in importMaps.Keys.Where(key=>key!="vue"))
                                 sb.AppendLine(string.Format("\t\t\t{0} : {0},", importMaps[str]));
-                            if (importMaps.Count>0)
-                                sb.Length-=3;
-
-                            sb.AppendLine(@"        },
+                            sb.AppendLine(@"            vue : vue        
+    },
     getFile: async (url) => { 
         switch(url) {");
                             foreach (sVueFile file in files)
