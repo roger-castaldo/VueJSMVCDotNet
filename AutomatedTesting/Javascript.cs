@@ -183,6 +183,8 @@ export const check = notification!==undefined && notification!==null && notifica
             catch (Exception e)
             {
                 Assert.Fail(e.Message);
+                Assert.Fail(e.StackTrace);
+                Assert.Fail(content);
             }
             Assert.IsTrue(true);
         }
