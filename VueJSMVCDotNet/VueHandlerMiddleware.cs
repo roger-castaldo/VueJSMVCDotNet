@@ -132,7 +132,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// </summary>
         /// <param name="context">The assembly context being unloaded</param>
         public void UnloadAssemblyContext(AssemblyLoadContext context){
-            _middleWare.UnloadAssemblyContext(context);
+            UnloadAssemblyContext(context.Name);
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="alc">The assembly load context that was added</param>
         /// <exception cref="ModelValidationException">Houses a set of exceptions if any newly loaded models fail validation</exception>
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
-            _middleWare.AsssemblyLoadContextAdded(alc);
+            AsssemblyLoadContextAdded(alc.Name);
         }
 #endif
         ///<summary>
@@ -246,12 +246,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             await context.Response.WriteAsync("Not Found");
         }
 #if NET
-        internal void UnloadAssemblyContext(AssemblyLoadContext context)
-        {
-            UnloadAssemblyContext(context.Name);
-        }
-
-        internal void UnloadAssemblyContext(string contextName){
+       internal void UnloadAssemblyContext(string contextName){
             if (_modelHandler!=null){
                 _modelHandler.UnloadAssemblyContext(contextName);
             }
@@ -267,10 +262,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (_modelHandler!=null){
                 _modelHandler.AsssemblyLoadContextAdded(contextName);
             }
-        }
-
-        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
-            AsssemblyLoadContextAdded(alc.Name);
         }
 #else
         internal void AssemblyAdded()
