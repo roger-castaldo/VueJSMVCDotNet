@@ -16,11 +16,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class StaticMethodHandler : ModelRequestHandlerBase
     {
-        private struct sMethodPatterns
+        private readonly struct sMethodPatterns
         {
-            private Regex _reg;
-            private Dictionary<string, List<MethodInfo>> _methods;
-            private List<MethodInfo> _slowMethods;
+            private readonly Regex _reg;
+            private readonly Dictionary<string, List<MethodInfo>> _methods;
+            private readonly List<MethodInfo> _slowMethods;
             public List<MethodInfo> SlowMethods => _slowMethods;
 
             public sMethodPatterns(string baseURL,List<MethodInfo> functions)
@@ -71,7 +71,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         }
 
         private List<sMethodPatterns> _patterns;
-        private ModelRequestHandler _handler;
 
         public StaticMethodHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
             : base(next,sessionFactory, registerSlowMethod, urlBase)
@@ -100,10 +99,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     Logger.Trace("Attempting to handle call {0}:{1} with a static method handler", new object[] { GetRequestMethod(context), url });
                     sRequestData requestData = await _ExtractParts(context);
                     List<MethodInfo> methods = patterns.Value.GetMethods(url);
-                    MethodInfo mi;
-                    object[] pars;
                     Logger.Trace("Attempting to locate method to handle the static method call at {0}:{1}", new object[] { GetRequestMethod(context), url });
-                    Utility.LocateMethod(requestData.FormData, methods, requestData.Session, out mi, out pars);
+                    Utility.LocateMethod(requestData.FormData, methods, out MethodInfo mi, out object[] pars);
                     if (mi == null)
                         throw new CallNotFoundException("Unable to locate requested method to invoke");
                     else

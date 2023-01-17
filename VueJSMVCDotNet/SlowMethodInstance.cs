@@ -120,7 +120,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     _token.Cancel();
                 }
-                catch (Exception ex) { }
+                catch (Exception ex) { 
+                    Logger.LogError(ex);
+                }
             }
         }
     }

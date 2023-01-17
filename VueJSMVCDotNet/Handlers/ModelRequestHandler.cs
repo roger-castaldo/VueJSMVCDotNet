@@ -57,6 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
             }catch(Exception e)
             {
+                Logger.LogError(e);
                 ret=null;
             }
             return ret;
@@ -69,7 +70,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         private readonly string _urlBase;
         private readonly bool _ignoreInvalidModels;
         private readonly string _vueImportPath;
-        private readonly ISecureSessionFactory _sessionFactory;
 
         private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
 
@@ -134,7 +134,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     if (_methodInstances[str].IsExpired)
                     {
                         SlowMethodInstance smi = _methodInstances[str];
-                        try { smi.Dispose(); } catch (Exception ex) { }
+                        try { smi.Dispose(); } catch (Exception ex) { Logger.LogError(ex); }
                         _methodInstances.Remove(str);
                     }else if (_methodInstances[str].IsFinished)
                     {
@@ -153,19 +153,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             {
                 _cleanupTimer.Stop();
             }
-            catch (Exception e) { }
+            catch (Exception e) { Logger.LogError(e); }
             try
             {
                 _cleanupTimer.Dispose();
             }
-            catch (Exception e) { }
+            catch (Exception e) { Logger.LogError(e); }
             lock (_methodInstances)
             {
                 string[] keys = new string[_methodInstances.Count];
                 _methodInstances.Keys.CopyTo(keys, 0);
                 foreach (string str in keys)
                 {
-                    try { _methodInstances[str].Dispose(); } catch (Exception e) { };
+                    try { _methodInstances[str].Dispose(); } catch (Exception e) { Logger.LogError(e); };
                     _methodInstances.Remove(str);
                 }
             }
@@ -175,7 +175,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         /// Called to handle a given request
         /// </summary>
         /// <param name="context">The context of the request</param>
-        /// <param name="session">The security session associated with the request</param>
         /// <returns>a task as a result of handling the request</returns>
         public override async Task ProcessRequest(HttpContext context)
         {

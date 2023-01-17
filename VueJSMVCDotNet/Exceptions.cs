@@ -331,7 +331,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
     /// <summary>
     /// thrown when the ModelUpdateMethod Attribute is specified more than once in the Model
-    /// </summary
+    /// </summary>
     public class DuplicateModelUpdateMethodException : ModelTypeMethodException
     {
         internal DuplicateModelUpdateMethodException(Type t, MethodInfo mi)

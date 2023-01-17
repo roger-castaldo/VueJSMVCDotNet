@@ -107,7 +107,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 MethodInfo mi;
                 object[] pars;
                 Logger.Trace("Attempting to locate the appropriate version of the instance method at {0} with the supplied parameters", new object[] { url });
-                Utility.LocateMethod(requestData.FormData, methodPattern.Value.Methods[smethod], requestData.Session, out mi, out pars);
+                Utility.LocateMethod(requestData.FormData, methodPattern.Value.Methods[smethod], out mi, out pars);
                 if (mi == null)
                     throw new CallNotFoundException("Unable to locate requested method to invoke");
                 else

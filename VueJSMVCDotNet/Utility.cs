@@ -122,16 +122,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,ISecureSession session,out MethodInfo method,out object[] pars)
+        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,out MethodInfo method,out object[] pars)
         {
             method = null;
             pars = null;
-            int idx=-1;
-            int sidx = -1;
-            int lidx = -1;
-            bool useSession = false;
-            bool useAddItem = false;
-            bool useLog = false;
             if (formData == null || formData.Count == 0)
                 method = methods.Where(mi=>ExtractStrippedParameters(mi).Count()==0).FirstOrDefault();
             else
@@ -305,6 +299,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             catch (Exception e)
             {
+                Logger.LogError(e);
             }
             return obj;
         }
@@ -609,7 +604,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     case "System.Version":
                     case "System.Exception":
                         return propertyType.FullName +(!notNullTagged ? "?" : "");
-                        break;
                     case "System.Char":
                     case "System.Int16":
                     case "System.Int32":
@@ -626,7 +620,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     case "System.DateTime":
                     case "System.Guid":
                         return propertyType.FullName;
-                        break;
                 }
             }
             return "System.Object" + (!notNullTagged ? "?" : "");

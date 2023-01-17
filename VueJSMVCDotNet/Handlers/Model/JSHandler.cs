@@ -173,6 +173,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 return (obj is sModelType && _type.FullName==((sModelType)obj).Type.FullName)
                     || (obj is Type && _type.FullName==((Type)obj).FullName);
             }
+
+            public override int GetHashCode()
+            {
+                return _type.FullName.GetHashCode();
+            }
         }
 
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
