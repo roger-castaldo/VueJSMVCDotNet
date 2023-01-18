@@ -55,13 +55,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             }
             await _next(context);
         }
-        public bool HandlesRequest(string url, ModelRequestHandler.RequestMethods method)
-        {
-            Logger.Trace("Checking if the Load Handler handles {0}:{1}", new object[] { method, url });
-            if (method == ModelRequestHandler.RequestMethods.GET)
-                return _methods.ContainsKey(url.Substring(0,url.LastIndexOf("/")));
-            return false;
-        }
 
         protected override void _LoadTypes(List<Type> types)
         {

@@ -21,10 +21,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private struct sVueFile
         {
-            private string _name;
+            private readonly string _name;
             public string Name => _name;
-            private string _content;
-            public string Content => _content;
+            private readonly string _content;
 
             public sVueFile(IFileInfo f)
             {
@@ -211,6 +210,7 @@ const options = {
                     if (cc.HasValue)
                     {
                         context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
+                        context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
                         await context.Response.WriteAsync((spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
                     }

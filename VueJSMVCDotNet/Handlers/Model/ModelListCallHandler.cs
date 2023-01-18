@@ -150,37 +150,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 return true;
             }
 
-            public Task HandleRequest(string url, ModelRequestHandler.RequestMethods method, Hashtable formData, HttpContext context, ISecureSession session, IsValidCall securityCheck, object[] opars)
-            {
-                if (!securityCheck.Invoke(_method.DeclaringType, _method, session,null,url,formData))
-                    throw new InsecureAccessException();
-                context.Response.ContentType = "text/json";
-                context.Response.StatusCode= 200;
-                ParameterInfo[] pars = Utility.ExtractStrippedParameters(_method);
-                Logger.Trace("Invoking method {0}.{1} for {2}", new object[] { _method.GetType().FullName, _method.Name, url });
-                object ret = Utility.InvokeMethod(_method, null, pars: opars, session: session);
-                if (_isPaged)
-                {
-                    int pageIndex = opars.Length-1;
-                    for(int x = 0; x<pars.Length; x++)
-                    {
-                        if (pars[x].IsOut)
-                        {
-                            pageIndex=x;
-                            break;
-                        }
-                    }
-                    Logger.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[pageIndex], method, url });
-                    return context.Response.WriteAsync(JSON.JsonEncode(new Hashtable()
-                        {
-                            {"response",ret },
-                            {"TotalPages",opars[pageIndex] }
-                        }));
-                }
-                else
-                    return context.Response.WriteAsync(JSON.JsonEncode(ret));
-            }
-
             private object _ConvertParameterValue(string p, Type type)
             {
                 Logger.Trace("Attempting to convert url parameter {0} to the type {1}", new object[] { p, type.FullName });

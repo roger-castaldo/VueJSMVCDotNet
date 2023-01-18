@@ -181,22 +181,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (expectedType.IsArray || (obj is ArrayList))
             {
                 int count = 1;
-                Type underlyingType = null;
+                Type underlyingType;
                 if (expectedType.IsGenericType)
                     underlyingType = expectedType.GetGenericArguments()[0];
                 else
                     underlyingType = expectedType.GetElementType();
-                if (obj is ArrayList)
-                    count = ((ArrayList)obj).Count;
+                if (obj is ArrayList list)
+                    count = list.Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
-                if (!(obj is ArrayList))
-                {
+                if (!(obj is ArrayList list1))
                     ret.SetValue(_ConvertObjectToType(obj, underlyingType), 0);
-                }
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(((ArrayList)obj)[x], underlyingType), x);
+                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType), x);
                 }
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
@@ -215,7 +213,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             if (expectedType.FullName.StartsWith("System.Nullable"))
             {
-                Type underlyingType = null;
+                Type underlyingType;
                 if (expectedType.IsGenericType)
                     underlyingType = expectedType.GetGenericArguments()[0];
                 else
@@ -228,7 +226,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                object ret = null;
                 MethodInfo loadMethod = null;
                 foreach (MethodInfo mi in expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS))
                 {
@@ -238,6 +235,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         break;
                     }
                 }
+                object ret;
                 if (loadMethod == null)
                 {
                     foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
@@ -441,8 +439,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         internal static string GetModelUrlRoot(Type modelType,string urlBase)
         {
-            string urlRoot = (urlBase==null ? "" : urlBase);
-            foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false))
+            string urlRoot = (urlBase??"");
+            foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false).Cast<ModelRoute>())
             {
                 urlRoot += mr.Path;
                 break;
@@ -450,7 +448,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return urlRoot.Replace("//","/");
         }
 
-        private static Regex _regNoCache = new Regex("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript);
+        private static readonly Regex _regNoCache = new Regex("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript);
 
         public static string CleanURL(Uri url)
         {
@@ -462,7 +460,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             UriBuilder builder = new UriBuilder(
                 context.Request.Scheme,
                 context.Request.Host.Host,
-                (context.Request.Host.Port.HasValue ? context.Request.Host.Port.Value : (context.Request.IsHttps ? 443 : 80)),
+                (context.Request.Host.Port??(context.Request.IsHttps ? 443 : 80)),
                 (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase,"/"))
             );
             if (context.Request.QueryString.HasValue)
@@ -567,9 +565,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         }
 
         public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi){
-            int idx;
             List<ParameterInfo> ret = new List<ParameterInfo>(mi.GetParameters());
-            if (UsesSecureSession(mi,out idx))
+            if (UsesSecureSession(mi,out int idx))
                 ret.RemoveAt(idx);
             if (UsesAddItem(mi, out idx))
                 ret.RemoveAt(idx);

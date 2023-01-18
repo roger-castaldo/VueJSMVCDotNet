@@ -68,7 +68,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                         throw new Exception("Failed");
                     }
                 }
-
             }
             await _next(context);
         }

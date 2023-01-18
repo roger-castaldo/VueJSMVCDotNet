@@ -38,11 +38,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 #if NET
         private bool _isInitialized=false;
 #endif
-        internal bool IsTypeAllowed(Type type)
-        {
-            return !_invalidModels.Contains(type);
-        }
-
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
         protected string _RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars,ISecureSession session)
@@ -252,10 +247,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         }
 
 #if NET
-        public void UnloadAssemblyContext(AssemblyLoadContext context){
-            UnloadAssemblyContext(context.Name);
-        }
-        
         public void UnloadAssemblyContext(string contextName){
             List<Type> types = Utility.UnloadAssemblyContext(contextName);
             if (types!=null){

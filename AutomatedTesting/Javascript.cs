@@ -1,5 +1,6 @@
 ﻿using AutomatedTesting.Security;
 using Jint;
+using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Org.Reddragonit.VueJSMVCDotNet;
 using System;
@@ -99,6 +100,28 @@ export const name = 'John';");
         }
 
         [TestMethod]
+        public void JavascriptCacheControlHeaders()
+        {
+            int status;
+            IHeaderDictionary headers;
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/scripts/mPerson.js", _middleware, out status, out headers);
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(stream.Length>0);
+            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
+            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
+
+            string lastModified = headers["Last-Modified"].ToString();
+
+            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status, headers: new Dictionary<string, string>()
+            {
+                { "If-Modified-Since",lastModified}
+            });
+
+            Assert.AreEqual(304, status);
+            Assert.AreEqual(0,stream.Length);
+        }
+
+        [TestMethod]
         public void MessageScriptGenerationValidation()
         {
             int status;
@@ -159,6 +182,32 @@ export const name = translator('Name',null,'en');");
             string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
+        }
+
+
+        [TestMethod]
+        public void MessageScriptCacheControlHeaders()
+        {
+            int status;
+            IHeaderDictionary headers;
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out headers);
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(stream.Length>0);
+            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
+            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
+
+            string lastModified = headers["Last-Modified"].ToString();
+
+            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status,out headers, headers: new Dictionary<string, string>()
+            {
+                { "If-Modified-Since",lastModified}
+            });
+
+            Assert.AreEqual(304, status);
+            Assert.AreEqual(0, stream.Length);
+            Assert.IsTrue(headers.ContainsKey("accept-ranges"));
+            Assert.IsTrue(headers.ContainsKey("date"));
+            Assert.IsTrue(headers.ContainsKey("etag"));
         }
 
         [TestMethod]
@@ -224,6 +273,31 @@ export const check = notification!==undefined && notification!==null && notifica
             string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
+        }
+
+        [TestMethod]
+        public void VueFileScriptCacheControlHeaders()
+        {
+            int status;
+            IHeaderDictionary headers;
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers);
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(stream.Length>0);
+            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
+            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
+
+            string lastModified = headers["Last-Modified"].ToString();
+
+            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers, headers: new Dictionary<string, string>()
+            {
+                { "If-Modified-Since",lastModified}
+            });
+
+            Assert.AreEqual(304, status);
+            Assert.AreEqual(0, stream.Length);
+            Assert.IsTrue(headers.ContainsKey("accept-ranges"));
+            Assert.IsTrue(headers.ContainsKey("date"));
+            Assert.IsTrue(headers.ContainsKey("etag"));
         }
     }
 }

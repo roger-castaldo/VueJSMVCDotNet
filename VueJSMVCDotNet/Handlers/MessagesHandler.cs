@@ -128,6 +128,7 @@ export default Translate;";
                     if (cc.HasValue)
                     {
                         context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
+                        context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
                         await context.Response.WriteAsync((spath.EndsWith(".min.js") ? string.Format(_COMPRESS_BASE_CODE_TEMPLATE, JSMinifier.Minify(cc.Value.Content)) : string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)));
                     }

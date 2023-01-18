@@ -175,13 +175,13 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListParameterTypeException)
                 .Select(e => (InvalidModelListParameterTypeException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithGenericTypeParameter"));
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithGenericTypeParameter" && e.Parameter.Name=="par1"));
 
             //array parameter
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListParameterTypeException)
                 .Select(e => (InvalidModelListParameterTypeException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithArrayTypeParameter"));
+                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethods) && e.MethodName=="WithArrayTypeParameter" && e.Parameter.Name=="par1"));
 
             //out parameter
             Assert.AreEqual(1, ex.InnerExceptions
