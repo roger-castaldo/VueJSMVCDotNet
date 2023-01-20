@@ -17,7 +17,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class DeleteHandler : ModelRequestHandlerBase
     {
-        struct sMethodPair
+        struct sDeleteMethodPair
         {
             private readonly MethodInfo _loadMethod;
             public MethodInfo LoadMethod => _loadMethod;
@@ -26,19 +26,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 
             public Type DeclaringType => _loadMethod.DeclaringType;
 
-            public sMethodPair(MethodInfo loadMethod,MethodInfo deleteMethod)
+            public sDeleteMethodPair(MethodInfo loadMethod,MethodInfo deleteMethod)
             {
                 _loadMethod= loadMethod;
                 _deleteMethod= deleteMethod;
             }
         }
 
-        private ConcurrentDictionary<string, sMethodPair> _methods;
+        private ConcurrentDictionary<string, sDeleteMethodPair> _methods;
 
         public DeleteHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
             :base(next,sessionFactory,registerSlowMethod,urlBase)
         {
-            _methods=new ConcurrentDictionary<string, sMethodPair>();
+            _methods=new ConcurrentDictionary<string, sDeleteMethodPair>();
         }
 
         public override void ClearCache()
@@ -56,7 +56,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 MethodInfo loadMethod = null;
                 MethodInfo deleteMethod = null;
                 Logger.Trace("Trying to find a load method matching the url {0}", new object[] { url });
-                sMethodPair pair;
+                sDeleteMethodPair pair;
                 if (_methods.TryGetValue(url.Substring(0, url.LastIndexOf("/")),out pair))
                 {
                     loadMethod=pair.LoadMethod;
@@ -97,7 +97,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 MethodInfo delMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length>0).FirstOrDefault();
                 if (delMethod != null)
                 {
-                    _methods.TryAdd(Utility.GetModelUrlRoot(t), new sMethodPair(
+                    _methods.TryAdd(Utility.GetModelUrlRoot(t), new sDeleteMethodPair(
                         t.GetMethods(Constants.LOAD_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length>0).FirstOrDefault(), 
                         delMethod
                     ));
@@ -109,7 +109,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         {
             var keys = new string[_methods.Count];
             _methods.Keys.CopyTo(keys, 0);
-            sMethodPair pair;
+            sDeleteMethodPair pair;
             foreach (string str in keys)
             {
                 if (types.Contains(_methods[str].DeclaringType))

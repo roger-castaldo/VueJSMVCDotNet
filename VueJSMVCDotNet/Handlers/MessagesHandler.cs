@@ -52,7 +52,6 @@ function Translate(message,args,language) {{
 }}
 
 export default Translate;";
-        private static readonly string _COMPRESS_BASE_CODE_TEMPLATE = JSMinifier.Minify(_BASE_CODE_TEMPLATE);
 
         private readonly IFileProvider _fileProvider;
         private readonly string _baseURL;
@@ -130,7 +129,7 @@ export default Translate;";
                         context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
                         context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((spath.EndsWith(".min.js") ? string.Format(_COMPRESS_BASE_CODE_TEMPLATE, JSMinifier.Minify(cc.Value.Content)) : string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)));
+                        await context.Response.WriteAsync((spath.EndsWith(".min.js") ? JSMinifier.Minify(string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)) : string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)));
                     }
                     else
                     {

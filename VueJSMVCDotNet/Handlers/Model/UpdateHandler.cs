@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,36 +16,48 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class UpdateHandler : ModelRequestHandlerBase
     {
-        private Dictionary<string, MethodInfo> _loadMethods;
-        private Dictionary<string, MethodInfo> _updateMethods;
+        struct sUpdateMethodPair
+        {
+            private readonly MethodInfo _loadMethod;
+            public MethodInfo LoadMethod => _loadMethod;
+            private readonly MethodInfo _updateMethod;
+            public MethodInfo UpdateMethod => _updateMethod;
+
+            public Type DeclaringType => _loadMethod.DeclaringType;
+
+            public sUpdateMethodPair(MethodInfo loadMethod, MethodInfo updateMethod)
+            {
+                _loadMethod= loadMethod;
+                _updateMethod= updateMethod;
+            }
+        }
+
+        private ConcurrentDictionary<string, sUpdateMethodPair> _methods;
 
         public UpdateHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
             : base(next,sessionFactory, registerSlowMethod, urlBase)
         {
-            _loadMethods = new Dictionary<string, MethodInfo>();
-            _updateMethods = new Dictionary<string, MethodInfo>();
+            _methods=new ConcurrentDictionary<string, sUpdateMethodPair>();
         }
 
         public override void ClearCache()
         {
-            _loadMethods.Clear();
-            _updateMethods.Clear();
+            _methods.Clear();
         }
 
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = _CleanURL(context);
             Logger.Trace("Checking if the request {0}:{1} is handled by the Update Handler", new object[] { GetRequestMethod(context), url });
-            if (GetRequestMethod(context)== ModelRequestHandler.RequestMethods.PATCH)
+            if (GetRequestMethod(context)== ModelRequestHandler.RequestMethods.PATCH && _methods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
             {
                 MethodInfo loadMethod = null;
                 MethodInfo updateMethod = null;
-                lock (_loadMethods)
+                sUpdateMethodPair pair;
+                if (_methods.TryGetValue(url.Substring(0, url.LastIndexOf("/")), out pair))
                 {
-                    loadMethod = _loadMethods.ContainsKey(url.Substring(0,url.LastIndexOf("/"))) ? _loadMethods[url.Substring(0, url.LastIndexOf("/"))] : null;
-                }
-                lock (_updateMethods){
-                    updateMethod = _updateMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))) ? _updateMethods[url.Substring(0, url.LastIndexOf("/"))] : null;
+                    loadMethod=pair.LoadMethod;
+                    updateMethod= pair.UpdateMethod;
                 }
                 if (loadMethod!= null && updateMethod!=null)
                 {
@@ -54,28 +67,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     if (!await _ValidCall(loadMethod.DeclaringType, loadMethod, model, context))
                         throw new InsecureAccessException();
                     Logger.Trace("Attempting to load model at url {0}", new object[] { url });
-                    model = Utility.InvokeLoad(_loadMethods[url.Substring(0, url.LastIndexOf("/"))], url.Substring(url.LastIndexOf("/") + 1), requestData.Session);
+                    model = Utility.InvokeLoad(loadMethod, url.Substring(url.LastIndexOf("/") + 1), requestData.Session);
                     if (model == null)
                         throw new CallNotFoundException("Model Not Found");
                     else
                     {
-                        MethodInfo mi = null;
-                        lock (_updateMethods)
-                        {
-                            if (_updateMethods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                                mi = _updateMethods[url.Substring(0, url.LastIndexOf("/"))];
-                        }
-                        if (mi != null)
-                        {
-                            if (!await _ValidCall(updateMethod.DeclaringType, updateMethod, model, context))
+                        if (!await _ValidCall(updateMethod.DeclaringType, updateMethod, model, context))
                                 throw new InsecureAccessException();
-                            context.Response.ContentType = "text/json";
-                            context.Response.StatusCode= 200;
-                            Logger.Trace("Attempting to handle an update request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
-                            Utility.SetModelValues(requestData.FormData, ref model, false);
-                            await context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(mi, model, session: requestData.Session)));
-                            return;
-                        }
+                        context.Response.ContentType = "text/json";
+                        context.Response.StatusCode= 200;
+                        Logger.Trace("Attempting to handle an update request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, updateMethod.Name, model.id });
+                        Utility.SetModelValues(requestData.FormData, ref model, false);
+                        await context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(updateMethod, model, session: requestData.Session)));
+                        return;
                     }
                 }
             }
@@ -88,38 +92,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 MethodInfo updateMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0).FirstOrDefault();
                 if (updateMethod != null)
                 {
-                    _updateMethods.Add(Utility.GetModelUrlRoot(t), updateMethod);
-                    _loadMethods.Add(Utility.GetModelUrlRoot(t), t.GetMethods(Constants.LOAD_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0).First());
+                    _methods.TryAdd(Utility.GetModelUrlRoot(t), new sUpdateMethodPair(
+                        t.GetMethods(Constants.LOAD_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length>0).FirstOrDefault(),
+                        updateMethod
+                    ));
                 }
             }
         }
 
         protected override void _UnloadTypes(List<Type> types)
         {
-            string[] keys;
-            lock (_updateMethods)
+            var keys = new string[_methods.Count];
+            _methods.Keys.CopyTo(keys, 0);
+            sUpdateMethodPair pair;
+            foreach (string str in keys)
             {
-                keys = new string[_updateMethods.Count];
-                _updateMethods.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
-                {
-                    if (types.Contains(_updateMethods[str].DeclaringType))
-                    {
-                        _updateMethods.Remove(str);
-                    }
-                }
-            }
-            lock (_loadMethods)
-            {
-                keys = new string[_loadMethods.Count];
-                _loadMethods.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
-                {
-                    if (types.Contains(_loadMethods[str].DeclaringType))
-                    {
-                        _loadMethods.Remove(str);
-                    }
-                }
+                if (types.Contains(_methods[str].DeclaringType))
+                    _methods.TryRemove(str, out pair);
             }
         }
     }

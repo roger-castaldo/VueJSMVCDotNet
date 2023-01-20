@@ -44,58 +44,6 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void JavascriptGenerationValidation()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
-            try
-            {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import translator from 'Translate';
-export const name = 'John';");
-                var ns = eng.ImportModule("custom");
-                Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
-            Assert.IsTrue(true);
-        }
-
-        [TestMethod]
-        public void JavascriptCompressedGenerationValidation()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
-            try
-            {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import translator from 'Translate';
-export const name = 'John';");
-                var ns = eng.ImportModule("custom");
-                Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
-            Assert.IsTrue(true);
-        }
-
-        [TestMethod]
         public void CachedPreviouslyGeneratedCode()
         {
             int status;

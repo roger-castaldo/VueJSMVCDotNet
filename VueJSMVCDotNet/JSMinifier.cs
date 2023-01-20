@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -90,6 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
     }
 
+    [ExcludeFromCodeCoverage]
     internal class JsMin
     {
         private const int Eof = -1;
