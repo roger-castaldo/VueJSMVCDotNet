@@ -1,8 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-#if NET
 using System.Runtime.Loader;
-#endif
 
 namespace AutomatedTesting
 {
@@ -24,7 +22,6 @@ namespace AutomatedTesting
             Assert.IsNull(error);
         }
 
-#if NET
         [TestMethod]
         public void ReloadingAssemblyContext(){
             var middleware = Utility.CreateMiddleware(true);
@@ -46,7 +43,5 @@ namespace AutomatedTesting
             }
             Assert.IsNull(error);
         }
-
-#endif
     }
 }

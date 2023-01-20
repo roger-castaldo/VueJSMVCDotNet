@@ -9,9 +9,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
-#endif
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -27,18 +25,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private static Dictionary<string, Type> _TYPE_CACHE;
         //houses a cache of Type instances through locate type instances, this is used to increate preformance
         private static Dictionary<string, List<Type>> _INSTANCES_CACHE;
-#if !NETSTANDARD && !NET481
         //houses the assembly load contexts for types
         private static Dictionary<string,List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
-#endif
 
         static Utility()
         {
             _TYPE_CACHE = new Dictionary<string, Type>();
             _INSTANCES_CACHE = new Dictionary<string, List<Type>>();
-#if !NETSTANDARD && !NET481
             _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
-#endif
         }
 
         //Called to locate a type by its name, this scans through all assemblies 
@@ -57,12 +51,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 t = Type.GetType(typeName, false, true);
                 if (t == null)
                 {
-                    #if NET
                     foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                         foreach (Assembly ass in alc.Assemblies)
-                    #else 
-                        foreach (Assembly ass in AppDomain.CurrentDomain.GetAssemblies())
-                    #endif
                         {
                             try
                             {
@@ -85,9 +75,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 }
                             }
                         }
-                    #if NET
                     }
-                    #endif
                 }
                 lock (_TYPE_CACHE)
                 {
@@ -312,15 +300,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 if (_INSTANCES_CACHE.ContainsKey(parent.FullName))
                     ret = _INSTANCES_CACHE[parent.FullName];
             }
-            if (ret==null){
-#if !NETSTANDARD && !NET481
-                ret = new List<Type>(); 
-                foreach (AssemblyLoadContext acl in AssemblyLoadContext.All){
-                        ret.AddRange(LocateTypeInstances(parent,acl));
-                    }
-#else
-                    ret = _LocateTypeInstances(parent,AppDomain.CurrentDomain.GetAssemblies());
-#endif 
+            if (ret==null)
+            {
+                ret = new List<Type>();
+                foreach (AssemblyLoadContext acl in AssemblyLoadContext.All)
+                    ret.AddRange(LocateTypeInstances(parent, acl));
             }
             lock (_INSTANCES_CACHE)
             {
@@ -330,7 +314,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-#if !NETSTANDARD && !NET481
         public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){
             Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
             List<Type> ret = _LocateTypeInstances(parent,alc.Assemblies);
@@ -339,7 +322,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             return ret;
         }
-#endif
 
         private static List<Type> _LocateTypeInstances(Type parent,IEnumerable<Assembly> assemblies)
         {
@@ -385,7 +367,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-#if !NETSTANDARD && !NET481
         private static void _MarkTypeSource(string contextName,Type type){
             Logger.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
             lock(_LOAD_CONTEXT_TYPE_SOURCES)
@@ -412,8 +393,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
             return ret;
         }
-#endif
-
         internal static void ClearCaches()
         {
             Logger.Trace("Clearing cached types from loaded contexts");
@@ -425,11 +404,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 _TYPE_CACHE.Clear();
             }
-            #if NET
             lock(_LOAD_CONTEXT_TYPE_SOURCES){
                 _LOAD_CONTEXT_TYPE_SOURCES.Clear();
             }
-            #endif
         }
 
         internal static string GetModelUrlRoot(Type modelType)

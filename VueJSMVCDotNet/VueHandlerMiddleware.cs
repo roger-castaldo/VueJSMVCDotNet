@@ -5,9 +5,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Handlers;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Diagnostics.CodeAnalysis;
-#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
-#endif
 using System.Threading.Tasks;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
@@ -125,7 +123,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 throw new ArgumentNullException("fileProvider");
         }
 
-#if NET
         /// <summary>
         /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
         /// that load context to allow for an unload
@@ -160,7 +157,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
             AsssemblyLoadContextAdded(alc.Name);
         }
-#endif
+
         ///<summary>
         ///called when a new assembly has been loaded in the case of dynamic loading, in order 
         ///to rescan for all new model types and add them accordingly.
@@ -245,7 +242,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             context.Response.StatusCode = 404;
             await context.Response.WriteAsync("Not Found");
         }
-#if NET
        internal void UnloadAssemblyContext(string contextName){
             if (_modelHandler!=null){
                 _modelHandler.UnloadAssemblyContext(contextName);
@@ -263,15 +259,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 _modelHandler.AsssemblyLoadContextAdded(contextName);
             }
         }
-#else
-        internal void AssemblyAdded()
-        {
-            if (_modelHandler!=null)
-            {
-                _modelHandler.AssemblyAdded();
-            }
-        }
-#endif
     }
 
     /// <summary>

@@ -194,16 +194,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 
         public void LoadTypes(List<Type> types)
         {
-#if !NET
-            _UnloadTypes(types);
-#endif
             _LoadTypes(types);
         }
-        public abstract void ClearCache();
-        public abstract Task ProcessRequest(HttpContext context);
-        protected abstract void _LoadTypes(List<Type> types);
-
-#if NET
         public void UnloadTypes(List<Type> types)
         {
             lock (_typeChecks)
@@ -218,7 +210,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             }
             _UnloadTypes(types);
         }
-#endif
+        public abstract void ClearCache();
+        public abstract Task ProcessRequest(HttpContext context);
+        protected abstract void _LoadTypes(List<Type> types);
         protected abstract void _UnloadTypes(List<Type> types);
     }
 }

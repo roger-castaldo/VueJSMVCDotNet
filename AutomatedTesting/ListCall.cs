@@ -256,17 +256,10 @@ namespace AutomatedTesting
         {
             _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", "p"), expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Never);
-#if NET481
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MinValue/2));
-            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MaxValue/2));
-            _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Exactly(2));
-#else
             _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MinValue));
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Once);
             _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MaxValue));
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Exactly(2));
-#endif
             _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", 0));
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Exactly(3));
         }

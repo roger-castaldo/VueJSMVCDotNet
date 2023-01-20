@@ -8,9 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
-#endif
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -35,9 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
-#if NET
         private bool _isInitialized=false;
-#endif
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private Timer _cleanupTimer;
         protected string _RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars,ISecureSession session)
@@ -174,15 +170,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         public override async Task ProcessRequest(HttpContext context)
         {
             Logger.Debug("Checking if {0} is handled by VueJS library", new object[] { context.Request.Path });
-#if !NET481
             object method;
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
             {
-#else
-            RequestMethods rm;
-            if (Enum.TryParse<RequestMethods>(context.Request.Method.ToUpper(),out rm))
-            {
-#endif
                 if (context.Request.Method.ToUpper()=="PULL")
                 {
                     SlowMethodInstance smi = null;
@@ -246,7 +236,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 await _next(context);
         }
 
-#if NET
         public void UnloadAssemblyContext(string contextName){
             List<Type> types = Utility.UnloadAssemblyContext(contextName);
             if (types!=null){
@@ -305,32 +294,5 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             }
             _isInitialized=true;
         }
-#else
-        public void AssemblyAdded()
-        {
-            Utility.ClearCaches();
-            foreach (ModelRequestHandlerBase irh in _Handlers)
-            {
-                Logger.Debug("Clearing cache for handler {0}",new object[] { irh.GetType().Name });
-                irh.ClearCache();
-            }
-            List<Type> models;
-            List<Exception> errors = DefinitionValidator.Validate(out _invalidModels,out models);
-            if (errors.Count > 0)
-            {
-                Logger.Error("Backbone validation errors:");
-                foreach (Exception e in errors)
-                    Logger.LogError(e);
-                Logger.Error("Invalid IModels:");
-                foreach (Type t in _invalidModels)
-                    Logger.Error(t.FullName);
-            }
-            if (errors.Count > 0 && !_ignoreInvalidModels)
-                throw new ModelValidationException(errors);
-            models.RemoveAll(m => _invalidModels.Contains(m));
-            foreach (ModelRequestHandlerBase mrhb in _Handlers)
-                mrhb.LoadTypes(models);
-        }
-#endif
     }
 }

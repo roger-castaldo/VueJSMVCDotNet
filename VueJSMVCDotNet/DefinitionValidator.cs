@@ -4,10 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-#if !NETSTANDARD && !NET481
 using System.Runtime.Loader;
-#endif
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
@@ -58,18 +55,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
          * 9.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
          * 10.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void)
          */
-#if NET
         internal static List<Exception> Validate(AssemblyLoadContext alc,out List<Type> invalidModels,out List<Type> models)
         {
             Logger.Debug("Attempting to load and validate the models found in the Assembly Load Context {0}", new object[] { alc.Name });
             models = Utility.LocateTypeInstances(typeof(IModel),alc);
             Logger.Debug("Located {0} models in Assembly Load Context {1}", new object[] { models.Count, alc.Name });
-#else
-        internal static List<Exception> Validate(out List<Type> invalidModels,out List<Type> models)
-        {
-            models = Utility.LocateTypeInstances(typeof(IModel));
-            Logger.Debug("Located {0} models in the system",new object[]{models.Count});
-#endif
             List<Exception> errors = new List<Exception>();
             invalidModels = new List<Type>();
             List<sPathTypePair> paths = new List<sPathTypePair>();
