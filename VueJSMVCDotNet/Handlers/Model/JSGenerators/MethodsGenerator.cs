@@ -162,7 +162,7 @@ for(let x=0;x<{0}.length;x++){{
 }}", par.Name));
                     }
                     else
-                        builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                        builder.AppendLine(string.Format("function_data.{0} = checkProperty('{0}','{1}',{0},{2});", new object[]
                         {
                                     par.Name,
                                     Utility.GetTypeString(par.ParameterType,(nna==null ? false : !nna.IsParameterNullable(par))),
@@ -170,7 +170,7 @@ for(let x=0;x<{0}.length;x++){{
                         }));
                 }
                 else
-                    builder.AppendLine(string.Format("function_data.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                    builder.AppendLine(string.Format("function_data.{0} = checkProperty('{0}','{1}',{0},{2});", new object[]
                     {
                                 par.Name,
                                 Utility.GetTypeString(par.ParameterType, (nna == null ? false : ! nna.IsParameterNullable(par))),

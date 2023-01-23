@@ -36,7 +36,7 @@ namespace AutomatedTesting
         {
             int status;
             DateTime now = DateTime.Now;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status));
             System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
             {
                 DateTime.Now.Subtract(now).TotalMilliseconds,
@@ -66,7 +66,7 @@ export const name = 'John';");
         public void JavascriptCompressedGenerationValidation()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status));
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try

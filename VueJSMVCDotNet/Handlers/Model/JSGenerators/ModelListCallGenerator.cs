@@ -64,7 +64,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                         builder.Append((x > 0 ? "," : "") + pars[x].Name);
                     builder.AppendLine("){");
                     for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
-                        builder.AppendLine(string.Format("      this.{0} = _checkProperty('{0}','{1}',{0},{2});", new object[]
+                        builder.AppendLine(string.Format("      this.{0} = checkProperty('{0}','{1}',{0},{2});", new object[]
                             {
                                 pars[x].Name,
                                 Utility.GetTypeString(pars[x].ParameterType,(nna==null ? false : !nna.IsParameterNullable(pars[x]))),

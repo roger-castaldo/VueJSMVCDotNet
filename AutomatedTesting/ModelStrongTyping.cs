@@ -20,7 +20,7 @@ namespace AutomatedTesting
         {
             VueMiddleware middleware = Utility.CreateMiddleware(true);
             int status;
-            _content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", middleware,out status)).ReadToEnd();
+            _content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mDataTypes.js", middleware, out status));
         }
 
         [TestCleanup]

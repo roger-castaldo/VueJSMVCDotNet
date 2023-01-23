@@ -22,6 +22,12 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Handlers\Model\JSGenerators\core.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Handlers\Model\JSGenerators\core.js" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

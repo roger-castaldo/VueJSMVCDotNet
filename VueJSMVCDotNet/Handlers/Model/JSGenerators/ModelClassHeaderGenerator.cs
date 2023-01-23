@@ -83,7 +83,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                 if (p.CanWrite)
                 {
                     builder.AppendLine(string.Format(@"      case '{0}':  
-                            me.#{0} = _checkProperty('{0}','{1}',value,{2}); 
+                            me.#{0} = checkProperty('{0}','{1}',value,{2}); 
                             return true;
                             break;", new object[] {
                         p.Name,

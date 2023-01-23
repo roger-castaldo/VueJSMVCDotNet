@@ -111,7 +111,21 @@ namespace AutomatedTesting
                 sr.ReadToEnd()
             );
             sr.Close();
+            sr = new StreamReader(typeof(MessageHandlerOptions).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
+            engine.AddModule(
+                "VueJSMVCDotNet_core",
+                sr.ReadToEnd()
+            );
+            sr.Close();
             return engine;
+        }
+
+        public static string ReadJavascriptResponse(MemoryStream stream)
+        {
+            StreamReader sr = new StreamReader(stream);
+            string content = sr.ReadToEnd();
+            sr.Close();
+            return content.Replace("'/VueJSMVCDotNet_core.min.js';", "'VueJSMVCDotNet_core';");
         }
     }
 }

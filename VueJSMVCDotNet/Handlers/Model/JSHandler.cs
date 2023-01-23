@@ -18,6 +18,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class JSHandler : ModelRequestHandlerBase
     {
+        public const string CORE_URL = "/VueJSMVCDotNet_core.min.js";
+
         public struct sModelType
         {
             private Type _type;
@@ -182,10 +184,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
             new HeaderGenerator(),
-            new TypingHeader(),
-            new EventClassGenerator(),
-            new ListClassGenerator(),
-            new DefaultMethodsGenerator(),
             new ParsersGenerator()
         };
 
@@ -211,6 +209,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private Dictionary<Type,ModelJSFilePath[]> _types;
         private readonly string _urlBase;
         private readonly string _vueImportPath;
+        private readonly string _compressedCore;
         public JSHandler(string urlBase,string vueImportPath,
             RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod)
             : base(next,sessionFactory,registerSlowMethod,urlBase)
@@ -219,6 +218,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             _types = new Dictionary<Type, ModelJSFilePath[]>();
             _urlBase=urlBase;
             _vueImportPath=vueImportPath;
+            StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
+            _compressedCore = JSMinifier.Minify(
+                string.Format("import {{reactive,readonly,ref}} from \"{0}\";\r\n",_vueImportPath)+
+                sr.ReadToEnd()
+            );
+            sr.Close();
         }
 
         public override void ClearCache()
@@ -235,6 +240,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             if (context.Request.Method.ToUpper()=="GET")
             {
                 string url = _CleanURL(context);
+                if (url.ToLower()==CORE_URL.ToLower())
+                {
+                    context.Response.ContentType="text/javascript";
+                    context.Response.StatusCode= 200;
+                    await context.Response.WriteAsync(_compressedCore);
+                    return;
+                }
                 List<Type> models = new List<Type>();
                 if (_types!=null)
                 {
