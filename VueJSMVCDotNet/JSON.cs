@@ -8,16 +8,19 @@ using System.Text.RegularExpressions;
 using System.Net;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
-	/// <summary>
-	/// This class encodes and decodes JSON strings.
-	/// Spec. details, see http://www.json.org/
-	/// 
-	/// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
-	/// All numbers are parsed to doubles.
-	/// </summary>
+    /// <summary>
+    /// This class encodes and decodes JSON strings.
+    /// Spec. details, see http://www.json.org/
+    /// 
+    /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
+    /// All numbers are parsed to doubles.
+    /// </summary>
+
+    [ExcludeFromCodeCoverage()]
 	internal class JSON
 	{
         public const int TOKEN_NONE = 0;

@@ -45,7 +45,7 @@ namespace AutomatedTesting
             int status;
             object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status));
             Assert.IsNotNull(result);
-            Assert.AreEqual(400, status);
+            Assert.AreEqual(404, status);
             Assert.IsInstanceOfType(result, typeof(string));
             Assert.AreEqual("Model Not Found", result);
             Assert.AreEqual(personCount, mPerson.Persons.Length);

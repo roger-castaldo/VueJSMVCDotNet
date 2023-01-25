@@ -57,5 +57,23 @@ namespace AutomatedTesting
             Assert.AreEqual(lastName, newPer.LastName);
             Assert.AreEqual(birthDay.ToString(), newPer.BirthDay.ToString());
         }
+
+        [TestMethod]
+        public void TestSaveMethodFailure ()
+        {
+            string firstName = "DoNotSave";
+            string lastName = "Testing321";
+            DateTime birthDay = DateTime.Now;
+            int currentCount = mPerson.Persons.Length;
+            int status;
+            var result = Utility.ReadResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() {
+                { "FirstName", firstName },
+                {"LastName",lastName },
+                {"BirthDay",birthDay }
+            }));
+            Assert.IsNotNull(result);
+            Assert.AreEqual(500, status);
+            Assert.AreEqual(currentCount, mPerson.Persons.Length);
+        }
     }
 }

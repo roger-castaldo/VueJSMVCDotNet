@@ -214,7 +214,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                     {
                         Logger.LogError(cnfe);
                         context.Response.ContentType = "text/text";
-                        context.Response.StatusCode = 400;
+                        context.Response.StatusCode = 404;
                         await context.Response.WriteAsync(cnfe.Message);
                     }
                     catch (InsecureAccessException iae)

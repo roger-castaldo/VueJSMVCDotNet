@@ -3,6 +3,7 @@ using Org.Reddragonit.VueJSMVCDotNet;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -123,6 +124,8 @@ namespace AutomatedTesting.Models
         [SecurityRoleCheck(Constants.Rights.SAVE)]
         public bool Save(ISecureSession session)
         {
+            if (this.FirstName=="DoNotSave")
+                return false;
             this._id = new Random().Next(999999);
             _persons.Add(this);
             return true;
@@ -339,6 +342,25 @@ namespace AutomatedTesting.Models
         {
             return string.Format("{0}, {1}", new object[] { firstName, lastName });
         }
+
+        [ExposedMethod(false)]
+        [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
+        public static string FormatName(ISecureSession session, string lastName,string middleName, string firstName)
+        {
+            return string.Format("{2}, {0} {1}", new object[] { firstName,middleName, lastName });
+        }
+
+        [ExposedMethod(true)]
+        public static object ProduceObject(bool isnull)
+        {
+            return (isnull ? null : new Hashtable()
+            {
+                {"key1","value1" }
+            });
+        }
+
+        [ExposedMethod]
+        public static void VoidMethodCall(string parameter) { }
 
         #region SlowCalls
 

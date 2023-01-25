@@ -51,7 +51,7 @@ namespace AutomatedTesting
         {
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("METHOD", "/models/mPerson/0/GetFullName", _middleware, out status)).ReadToEnd();
-            Assert.AreEqual(status, 400);
+            Assert.AreEqual(status, 404);
             Assert.IsTrue(content.Length>0);
             Assert.AreEqual("Model Not Found", content);
         }
@@ -88,7 +88,7 @@ namespace AutomatedTesting
                 {
                     {"Name","John" }
                 })).ReadToEnd();
-            Assert.AreEqual(status, 400);
+            Assert.AreEqual(status, 404);
             Assert.IsTrue(content.Length>0);
             Assert.AreEqual("Unable to locate requested method to invoke", content);
         }

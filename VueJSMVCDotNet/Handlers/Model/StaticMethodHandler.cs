@@ -128,7 +128,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                                 if (mi.ReturnType == typeof(void))
                                 {
                                     Utility.InvokeMethod(mi, null, pars: pars, session: requestData.Session);
-                                    context.Response.ContentType = "text/json";
+                                    context.Response.ContentType = "text/text";
                                     context.Response.StatusCode = 200;
                                     await context.Response.WriteAsync("");
                                     return;

@@ -37,5 +37,16 @@ namespace AutomatedTesting
             Assert.IsTrue((bool)result);
             Assert.AreEqual(firstName, mPerson.Persons[0].FirstName);
         }
+
+        [TestMethod]
+        public void TestUpdateMethodWithMissingModel()
+        {
+            int status;
+            object result = Utility.ReadResponse(Utility.ExecuteRequest("PATCH", "/models/mPerson/0", _middleware, out status, parameters: new Hashtable() { { "FirstName", "Testing123" } }));
+            Assert.IsNotNull(result);
+            Assert.AreEqual(404, status);
+            Assert.IsInstanceOfType(result, typeof(string));
+            Assert.AreEqual("Model Not Found", result);
+        }
     }
 }
