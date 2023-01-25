@@ -32,7 +32,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        private static readonly int _TIMEOUT_MILLISECONDS = 5*60*1000;
+        private static readonly int _TIMEOUT_MILLISECONDS = 60*1000;
 
         private ConcurrentQueue<object> _data;
         private bool _finished;

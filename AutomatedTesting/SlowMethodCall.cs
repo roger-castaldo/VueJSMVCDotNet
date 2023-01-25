@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
@@ -134,6 +135,19 @@ namespace AutomatedTesting
             Assert.AreEqual(500, status);
             Assert.IsNotNull(result);
             Assert.AreEqual("Error", result);
+        }
+
+        [TestMethod]
+        public void TestSlowMethodWithTimeout()
+        {
+            int status;
+            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/GetSlowTimeout", _middleware, out status));
+            Assert.IsInstanceOfType(url, typeof(string));
+            Task.Delay(TimeSpan.FromSeconds(61)).Wait();
+
+            var result = Utility.ExecuteRequest("PULL", (string)url, _middleware, out status);
+
+            Assert.AreEqual(404, status);
         }
     }
 }

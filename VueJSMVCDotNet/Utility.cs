@@ -35,57 +35,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
         }
 
-        //Called to locate a type by its name, this scans through all assemblies 
-        //which by default Type.Load does not perform.
-        public static Type LocateType(string typeName)
-        {
-            Logger.Trace("Attempting to locate type {0}",new object[] { typeName });
-            Type t = null;
-            lock (_TYPE_CACHE)
-            {
-                if (_TYPE_CACHE.ContainsKey(typeName))
-                    t = _TYPE_CACHE[typeName];
-            }
-            if (t == null)
-            {
-                t = Type.GetType(typeName, false, true);
-                if (t == null)
-                {
-                    foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
-                        foreach (Assembly ass in alc.Assemblies)
-                        {
-                            try
-                            {
-                                if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
-                                {
-                                    t = ass.GetType(typeName, false, true);
-                                    if (t != null){
-                                        #if NET
-                                        _MarkTypeSource(alc.Name,t);
-                                        #endif
-                                        break;
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                if (e.Message != "The invoked member is not supported in a dynamic assembly.")
-                                {
-                                    throw e;
-                                }
-                            }
-                        }
-                    }
-                }
-                lock (_TYPE_CACHE)
-                {
-                    if (!_TYPE_CACHE.ContainsKey(typeName))
-                        _TYPE_CACHE.Add(typeName, t);
-                }
-            }
-            return t;
-        }
-
         internal static void SetModelValues(Hashtable data, ref IModel model, bool isNew)
         {
             foreach (string str in data.Keys)
@@ -288,30 +237,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 Logger.LogError(e);
             }
             return obj;
-        }
-
-        //Called to locate all child classes of a given parent type
-        public static List<Type> LocateTypeInstances(Type parent)
-        {
-            Logger.Trace("Attempting to locate instances of type {0}",new object[] { parent.FullName });
-            List<Type> ret = null;
-            lock (_INSTANCES_CACHE)
-            {
-                if (_INSTANCES_CACHE.ContainsKey(parent.FullName))
-                    ret = _INSTANCES_CACHE[parent.FullName];
-            }
-            if (ret==null)
-            {
-                ret = new List<Type>();
-                foreach (AssemblyLoadContext acl in AssemblyLoadContext.All)
-                    ret.AddRange(LocateTypeInstances(parent, acl));
-            }
-            lock (_INSTANCES_CACHE)
-            {
-                if (!_INSTANCES_CACHE.ContainsKey(parent.FullName))
-                    _INSTANCES_CACHE.Add(parent.FullName, ret);
-            }
-            return ret;
         }
 
         public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){

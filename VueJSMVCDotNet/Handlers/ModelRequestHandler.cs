@@ -108,7 +108,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             Logger.Setup(logWriter);
             Logger.Debug("Starting up VueJS Request Handler");
             _methodInstances= new Dictionary<string, SlowMethodInstance>();
-            _cleanupTimer = new Timer(5*60*1000);
+            _cleanupTimer = new Timer(60*1000);
             _cleanupTimer.Elapsed+=_cleanupTimer_Elapsed;
             _cleanupTimer.Start();
             AssemblyAdded();
@@ -185,6 +185,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                             if (smi.IsExpired)
                             {
                                 _methodInstances.Remove(url.ToLower());
+                                try { smi.Dispose(); }catch(Exception e) { Logger.LogError(e);}
                                 smi=null;
                             }
                         }

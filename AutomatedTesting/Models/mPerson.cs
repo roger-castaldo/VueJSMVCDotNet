@@ -4,6 +4,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -359,6 +360,14 @@ namespace AutomatedTesting.Models
         {
             DateTime now = DateTime.Now;
             System.Threading.Thread.Sleep(3456);
+            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+        }
+
+        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        public static string GetSlowTimeout()
+        {
+            DateTime now = DateTime.Now;
+            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(120));
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 

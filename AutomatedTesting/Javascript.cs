@@ -32,6 +32,35 @@ namespace AutomatedTesting
         private delegate object _delCreateWeakMap();
 
         [TestMethod]
+        public void CoreJavascriptValidation()
+        {
+            int status;
+            string content = Utility.ReadResponse(Utility.ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", _middleware, out status));
+
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(content.Length>0);
+
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("core", content);
+                eng.AddModule("custom", @"import {isEqual} from 'core';
+export const testResult = isEqual('test','test');");
+                var ns = eng.ImportModule("custom");
+                Assert.IsTrue(ns.Get("testResult").AsBoolean());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
         public void JavascriptGenerationValidation()
         {
             int status;
