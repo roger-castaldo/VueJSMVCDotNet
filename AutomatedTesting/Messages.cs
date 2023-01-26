@@ -124,7 +124,6 @@ export const name = "+additionalCode));
         [TestMethod()]
         public void TestMessageCallFileNotFound()
         {
-            Engine eng = Utility.CreateEngine();
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/not_found.js", _middleware, out status)).ReadToEnd();
             Assert.AreEqual(404, status);

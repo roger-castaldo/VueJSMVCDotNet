@@ -11,6 +11,10 @@
 	<ItemGroup>
 	  <None Remove="resources\messages\test\en.json" />
 	  <None Remove="resources\messages\test\fr.json" />
+	  <None Remove="resources\vueFiles\buttons\button-add.vue" />
+	  <None Remove="resources\vueFiles\buttons\button-cancel.vue" />
+	  <None Remove="resources\vueFiles\buttons\button.vue" />
+	  <None Remove="resources\vueFiles\icon.vue" />
 	  <None Remove="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
@@ -27,6 +31,10 @@
 	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 	  </EmbeddedResource>
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button-add.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button-cancel.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\icon.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
