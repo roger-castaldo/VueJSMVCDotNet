@@ -16,34 +16,34 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class ModelListCallHandler : ModelRequestHandlerBase
     {
-        private struct sModelListCall : IComparable<sModelListCall>
+        private readonly struct sModelListCall : IComparable<sModelListCall>
         {
             private static readonly Regex _regParameter = new Regex("\\{(\\d+)\\}", RegexOptions.Compiled | RegexOptions.ECMAScript);
 
-            private Regex _reg;
-            private string _url;
-            private MethodInfo _method;
+            private readonly Regex _reg;
+            private readonly string _url;
+            private readonly MethodInfo _method;
             public MethodInfo Method => _method;
-            private Dictionary<int,int> _groupIndexes;
-            private bool _isPaged;
+            private readonly Dictionary<int,int> _groupIndexes;
+            private readonly bool _isPaged;
             public bool IsPaged => _isPaged;
-            private int _sessionIndex;
-            private bool _usesSession;
-            private int _logIndex;
-            private bool _usesLog;
 
             public sModelListCall(ModelListMethod mlm,MethodInfo mi)
             {
                 _isPaged = mlm.Paged;
                 string reg = "";
                 _groupIndexes = null;
-                _usesSession = Utility.UsesSecureSession(mi,out _sessionIndex);
-                _usesLog=Utility.UsesLog(mi, out _logIndex);
+                int sessionIndex;
+                bool usesSession = Utility.UsesSecureSession(mi,out sessionIndex);
+                int logIndex;
+                bool usesLog=Utility.UsesLog(mi, out logIndex);
                 ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
                 if (pars.Length > 0)
                 {
                     string[] regexs = new string[pars.Length];
-                    _url = (mlm.Path + (mlm.Paged ? (mlm.Path.Contains("?") ? "&" : "?") + "PageStartIndex={" + (regexs.Length - 3).ToString() + "}&PageSize={" + (regexs.Length - 2).ToString() + "}" : ""));
+                    _url = mlm.Path;
+                    if (mlm.Paged)
+                        _url += (mlm.Path.Contains("?") ? "&" : "?") + "PageStartIndex={" + (regexs.Length - 3).ToString() + "}&PageSize={" + (regexs.Length - 2).ToString() + "}";
                     reg = _url.Replace("?", "\\?");
                     for (int x = 0; x < pars.Length; x++)
                     {
@@ -80,7 +80,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                             regexs[x] = "(";
                             foreach (string str in Enum.GetNames(ptype))
                                 regexs[x] += str + "|";
-                            regexs[x] = regexs[x].Substring(0, regexs[x].Length - 1) + (nullable ? "|NULL" : "") + ")";
+                            regexs[x] = regexs[x][..^1] + (nullable ? "|NULL" : "") + ")";
                         }
                         else if (ptype == typeof(Guid))
                         {
@@ -92,16 +92,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     for (int x = 0; x < matches.Count; x++)
                     {
                         int idx = int.Parse(matches[x].Groups[1].Value);
-                        if (_usesSession)
-                        {
-                            if (idx>=_sessionIndex)
-                                idx++;
-                        }
-                        if (_usesLog)
-                        {
-                            if (idx>=_logIndex)
-                                idx++;
-                        }
+                        if (usesSession&&idx>=sessionIndex)
+                            idx++;
+                        if (usesLog&&idx>=logIndex)
+                            idx++;
                         _groupIndexes.Add(idx, x);
                     }
                     reg = string.Format(reg, regexs);

@@ -345,6 +345,19 @@ namespace AutomatedTesting.Models
 
         [ExposedMethod(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
+        public static string[] FormatNames(ISecureSession session, string[] lastName, string[] firstName)
+        {
+            List<string> result = new List<string>();
+            for(int x = 0; x<lastName.Length; x++)
+            {
+                result.Add(FormatName(session, lastName[x], firstName[x]));
+            }
+            return result.ToArray();
+        }
+        
+
+        [ExposedMethod(false)]
+        [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
         public static string FormatName(ISecureSession session, string lastName,string middleName, string firstName)
         {
             return string.Format("{2}, {0} {1}", new object[] { firstName,middleName, lastName });

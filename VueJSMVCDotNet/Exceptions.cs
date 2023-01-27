@@ -404,4 +404,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             mi.Name))
         { }
     }
+
+    public class SlowMethodRegistrationFailed : Exception
+    {
+        internal SlowMethodRegistrationFailed()
+            : base("An error occured attempting to register the slow method invocation") { }
+    }
 }

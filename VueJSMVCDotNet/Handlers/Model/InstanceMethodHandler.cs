@@ -127,7 +127,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                                 await context.Response.WriteAsync(JSON.JsonEncode(newPath));
                             }
                             else
-                                throw new Exception("Execution Error");
+                                throw new SlowMethodRegistrationFailed();
                         }
                         else
                         {

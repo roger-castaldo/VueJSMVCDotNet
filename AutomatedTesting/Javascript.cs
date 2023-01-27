@@ -151,6 +151,21 @@ export const name = 'John';");
         }
 
         [TestMethod]
+        public void JavascriptInternalCache()
+        {
+            int status;
+            var stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
+            Assert.AreEqual(200, status);
+            Assert.IsTrue(stream.Length>0);
+
+            var length = stream.Length;
+
+            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
+            Assert.AreEqual(200, status);
+            Assert.AreEqual(length, stream.Length);
+        }
+
+        [TestMethod]
         public void MessageScriptGenerationValidation()
         {
             int status;

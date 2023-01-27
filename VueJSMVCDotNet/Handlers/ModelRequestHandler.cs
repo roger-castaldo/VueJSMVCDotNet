@@ -35,7 +35,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         private List<Type> _invalidModels;
         private bool _isInitialized=false;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
-        private Timer _cleanupTimer;
+        private readonly Timer _cleanupTimer;
         protected string _RegisterSlowMethodInstance(string url,MethodInfo method,object model,object[] pars,ISecureSession session)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
@@ -56,11 +56,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
 
         private readonly ModelRequestHandlerBase[] _Handlers;
 
-        private static DateTime _startTime;
+        private static readonly DateTime _startTime = DateTime.Now;
         internal static DateTime StartTime { get { return _startTime; } }
+        
         private readonly string _urlBase;
         private readonly bool _ignoreInvalidModels;
-        private readonly string _vueImportPath;
 
         private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
 
@@ -74,7 +74,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         {
             _urlBase=baseURL;
             _ignoreInvalidModels=ignoreInvalidModels;
-            _vueImportPath=(vueImportPath==null ? "https://unpkg.com/vue@3/dist/vue.esm-browser.js" : vueImportPath);
+            vueImportPath=(vueImportPath==null ? "https://unpkg.com/vue@3/dist/vue.esm-browser.js" : vueImportPath);
             if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
             {
                 if (!_urlBase.EndsWith("/"))
@@ -82,7 +82,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 if (_urlBase!="/" && !_baseUrlRegex.IsMatch(_urlBase))
                     _urlBase="/"+_urlBase;
             }
-            _startTime = DateTime.Now;
             var registerSlowMethod = new delRegisterSlowMethodInstance(_RegisterSlowMethodInstance);
             var instanceMethodHandler = new InstanceMethodHandler(next, sessionFactory, registerSlowMethod, _urlBase);
             var deleteHandler = new DeleteHandler(new RequestDelegate(instanceMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod,_urlBase);
@@ -92,7 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             var loadAllHandler = new LoadAllHandler(new RequestDelegate(loadHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase);
             var staticMethodHandler = new StaticMethodHandler(new RequestDelegate(loadAllHandler.ProcessRequest), sessionFactory, registerSlowMethod, _urlBase);
             var modelListCallHandler = new ModelListCallHandler(new RequestDelegate(staticMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase);
-            var jsHandler = new JSHandler(_urlBase,_vueImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod);
+            var jsHandler = new JSHandler(_urlBase,vueImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod);
             _Handlers = new ModelRequestHandlerBase[]
             {
                 jsHandler,
