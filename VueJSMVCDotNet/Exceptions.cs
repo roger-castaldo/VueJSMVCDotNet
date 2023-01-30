@@ -410,4 +410,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         internal SlowMethodRegistrationFailed()
             : base("An error occured attempting to register the slow method invocation") { }
     }
+
+    public class SaveFailedException : ModelTypeMethodException
+    {
+        internal SaveFailedException(Type t, MethodInfo mi)
+            : base(t, mi.Name, string.Format("The save call for the model type {0} failed.", t.FullName)){ }
+    }
 }

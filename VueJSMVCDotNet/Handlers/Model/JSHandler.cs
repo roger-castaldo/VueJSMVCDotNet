@@ -274,16 +274,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     DateTime modDate = DateTime.MinValue;
                     foreach (Type model in models)
                     {
-                        try
-                        {
-                            FileInfo fi = new FileInfo(model.Assembly.Location);
-                            if (fi.Exists)
-                                modDate = new DateTime(Math.Max(modDate.Ticks, fi.LastWriteTime.Ticks));
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.LogError(e);
-                        }
+                        FileInfo fi = new FileInfo(model.Assembly.Location);
+                        if (fi.Exists)
+                            modDate = new DateTime(Math.Max(modDate.Ticks, fi.LastWriteTime.Ticks));
                     }
                     if (modDate == DateTime.MinValue)
                         modDate = ModelRequestHandler.StartTime;

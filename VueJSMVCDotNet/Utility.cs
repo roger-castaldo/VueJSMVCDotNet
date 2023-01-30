@@ -35,7 +35,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
         }
 
-        internal static void SetModelValues(Hashtable data, ref IModel model, bool isNew)
+        internal static void SetModelValues(Hashtable data, ref IModel model, bool isNew,ISecureSession session)
         {
             foreach (string str in data.Keys)
             {
@@ -49,7 +49,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty),true).Length==0 || isNew)
                             {
                                 Logger.Trace("Attempting to convert the value supplied for property {0}.{1} to {2}", new object[] { model.GetType().FullName, pi.Name, pi.PropertyType });
-                                var obj = _ConvertObjectToType(data[str], pi.PropertyType);
+                                var obj = _ConvertObjectToType(data[str], pi.PropertyType,session);
                                 Logger.Trace("Setting mode property {0}.{1} with converted value", new object[] { model.GetType(), pi.Name });
                                 pi.SetValue(model, obj);
                             }
@@ -59,7 +59,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,out MethodInfo method,out object[] pars)
+        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,out MethodInfo method,out object[] pars,ISecureSession session)
         {
             method = null;
             pars = null;
@@ -76,7 +76,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     foreach (ParameterInfo pi in ExtractStrippedParameters(m))
                     {
                         if (formData.ContainsKey(pi.Name) && (notNullArguement==null||!(!notNullArguement.IsParameterNullable(pi)&&formData[pi.Name]==null)))
-                            pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType);
+                            pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType,session);
                         else
                         {
                             isMethod = false;
@@ -96,7 +96,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /*
          * Called to convert a given json object to the expected type.
          */
-        private static object _ConvertObjectToType(object obj, Type expectedType)
+        private static object _ConvertObjectToType(object obj, Type expectedType,ISecureSession session)
         {
             Logger.Trace("Attempting to convert object of type {0} to {1}",new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
             if (expectedType.Equals(typeof(object)))
@@ -127,11 +127,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     count = list.Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
                 if (!(obj is ArrayList list1))
-                    ret.SetValue(_ConvertObjectToType(obj, underlyingType), 0);
+                    ret.SetValue(_ConvertObjectToType(obj, underlyingType,session), 0);
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType), x);
+                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType,session), x);
                 }
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
@@ -144,7 +144,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 Type valType = expectedType.GetGenericArguments()[1];
                 foreach (string str in ((Hashtable)obj).Keys)
                 {
-                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType), _ConvertObjectToType(((Hashtable)obj)[str], valType));
+                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType,session), _ConvertObjectToType(((Hashtable)obj)[str], valType,session));
                 }
                 return ret;
             }
@@ -157,20 +157,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return _ConvertObjectToType(obj, underlyingType);
+                return _ConvertObjectToType(obj, underlyingType,session);
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                MethodInfo loadMethod = null;
-                foreach (MethodInfo mi in expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS))
-                {
-                    if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
-                    {
-                        loadMethod = mi;
-                        break;
-                    }
-                }
+                MethodInfo loadMethod = expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi=>mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0);
                 object ret;
                 if (loadMethod == null)
                 {
@@ -195,12 +187,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         foreach (string str in ((Hashtable)obj).Keys)
                         {
                             PropertyInfo pi = expectedType.GetProperty(str);
-                            pi.SetValue(ret, _ConvertObjectToType(((Hashtable)obj)[str], pi.PropertyType), new object[0]);
+                            pi.SetValue(ret, _ConvertObjectToType(((Hashtable)obj)[str], pi.PropertyType,session), new object[0]);
                         }
                     }
                 }
                 else
-                    ret = loadMethod.Invoke(null, new object[] { (((Hashtable)obj)["id"]).ToString() });
+                    ret = Utility.InvokeLoad(loadMethod,((Hashtable)obj)["id"].ToString(),session);
                 return ret;
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))

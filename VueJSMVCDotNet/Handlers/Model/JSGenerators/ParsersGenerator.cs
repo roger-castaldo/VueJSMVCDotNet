@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSHandler;
+using System.Linq;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
@@ -12,7 +13,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
     {
         public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, sModelType[] models)
         {
-            List<object> types = new List<object>();
+            List<sModelType> types = new List<sModelType>();
             foreach (sModelType modelType in models)
             {
                 builder.AppendLine(string.Format(@"     const _{0} = function(data){{
@@ -30,12 +31,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
             foreach (sModelType modelType in models)
                 _RecurLocateLinkedTypes(ref types, modelType);
-            foreach (sModelType modelType in models)
-                types.Remove(modelType.Type);
-            foreach (Type type in types)
+            types.RemoveAll(t => models.Contains(t));
+            foreach (sModelType type in types)
             {
-                if (type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
-                    builder.AppendLine(string.Format("        import {{ {0} }} from '{1}';", new object[] { type.Name, ((ModelJSFilePath)type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path }));
+                if (type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
+                    builder.AppendLine(string.Format("        import {{ {0} }} from '{1}';", new object[] { type.Type.Name, ((ModelJSFilePath)type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path }));
             }
             foreach (sModelType type in types)
             {
@@ -122,14 +122,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
         }
 
-        private void _RecurLocateLinkedTypes(ref List<object> types,sModelType modelType)
+        private void _RecurLocateLinkedTypes(ref List<sModelType> types,sModelType modelType)
         {
             if (!types.Contains(modelType))
-            {
                 types.Add(modelType);
-                foreach (sModelType linked in modelType.LinkedTypes)
-                    _RecurLocateLinkedTypes(ref types, linked);
-            }
+            foreach (sModelType linked in modelType.LinkedTypes)
+                _RecurLocateLinkedTypes(ref types, linked);
         }
     }
 }

@@ -54,13 +54,18 @@ namespace AutomatedTesting.Models
         private int _id = 0;
         public string id { get { return _id.ToString(); } }
 
-        private static List<mPerson> _persons = new List<mPerson>(new mPerson[]{
-            new mPerson("Bob","Loblaw"),
-            new mPerson("Fred","Flinston"),
-            new mPerson("Barney","Rumble")
-        });
+        private static List<mPerson> _persons = new List<mPerson>();
 
         public static mPerson[] Persons { get { return _persons.ToArray(); } }
+
+        static mPerson()
+        {
+            _persons.AddRange(new mPerson[]{
+                new mPerson("Bob","Loblaw"),
+                new mPerson("Fred","Flinston"),
+                new mPerson("Barney","Rumble")
+            });
+        }
 
         [ModelLoadMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD)]

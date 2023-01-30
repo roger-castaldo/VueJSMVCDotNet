@@ -38,6 +38,72 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
+        public void TestModelListReturnInstanceMethod()
+        {
+            int status;
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/Search", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            {
+                {"name",mGroup.Groups[0].People[0].FirstName }
+            }));
+            Assert.AreEqual(200, status);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(ArrayList));
+            Assert.AreEqual(1, ((ArrayList)result).Count);
+        }
+
+        [TestMethod]
+        public void TestModelReturnInstanceMethod()
+        {
+            int status;
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/FindFirst", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            {
+                {"name",mGroup.Groups[0].People[0].FirstName }
+            }));
+            Assert.AreEqual(200, status);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(Hashtable));
+            Assert.AreEqual(mGroup.Groups[0].People[0].id, ((Hashtable)result)["id"]);
+        }
+
+        [TestMethod]
+        public void TestInstanceMethodWithModelParameter()
+        {
+            int status;
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/ContainsPerson", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            {
+                {
+                    "person",new Hashtable(){
+                        { "id",mGroup.Groups[0].People[0].id }
+                    }
+                }
+            }));
+            Assert.AreEqual(200, status);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(bool));
+            Assert.IsTrue((bool)result);
+        }
+
+        [TestMethod]
+        public void TestInstanceMethodWithModelListParameter()
+        {
+            int status;
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/ContainsPeople", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            {
+                {
+                    "persons",new ArrayList(){
+                        new Hashtable(){
+                            { "id",mGroup.Groups[0].People[0].id }
+                        }
+                    }
+                }
+            }));
+            Assert.AreEqual(200, status);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(bool));
+            Assert.IsTrue((bool)result);
+        }
+
+        [TestMethod]
         public void TestLoadSecurityBlocked()
         {
             int status;

@@ -77,7 +77,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                         context.Response.ContentType = "text/json";
                         context.Response.StatusCode= 200;
                         Logger.Trace("Attempting to handle an update request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, updateMethod.Name, model.id });
-                        Utility.SetModelValues(requestData.FormData, ref model, false);
+                        Utility.SetModelValues(requestData.FormData, ref model, false, requestData.Session);
                         await context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeMethod(updateMethod, model, session: requestData.Session)));
                         return;
                     }

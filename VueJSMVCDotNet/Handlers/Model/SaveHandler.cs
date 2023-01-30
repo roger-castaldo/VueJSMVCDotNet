@@ -57,7 +57,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                             throw new InsecureAccessException();
                         Logger.Trace("Attempting to handle a save request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
                         sRequestData requestData = await _ExtractParts(context);
-                        Utility.SetModelValues(requestData.FormData, ref model, true);
+                        Utility.SetModelValues(requestData.FormData, ref model, true,requestData.Session);
                         if ((bool)Utility.InvokeMethod(mi, model, session: requestData.Session))
                         {
                             context.Response.ContentType = "text/json";
@@ -65,7 +65,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                             await context.Response.WriteAsync(JSON.JsonEncode(new Hashtable() { { "id", model.id } }));
                             return;
                         }
-                        throw new Exception("Failed");
+                        throw new SaveFailedException(model.GetType(),mi);
                     }
                 }
             }

@@ -100,7 +100,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     sRequestData requestData = await _ExtractParts(context);
                     List<MethodInfo> methods = patterns.Value.GetMethods(url);
                     Logger.Trace("Attempting to locate method to handle the static method call at {0}:{1}", new object[] { GetRequestMethod(context), url });
-                    Utility.LocateMethod(requestData.FormData, methods, out MethodInfo mi, out object[] pars);
+                    Utility.LocateMethod(requestData.FormData, methods, out MethodInfo mi, out object[] pars,requestData.Session);
                     if (mi == null)
                         throw new CallNotFoundException("Unable to locate requested method to invoke");
                     else
