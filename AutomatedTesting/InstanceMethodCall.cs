@@ -188,6 +188,25 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
+        public void TestObjectInstanceMethodWithOpImplicitParameter()
+        {
+            int status;
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+                parameters: new Hashtable()
+                {
+                    {"name",
+                        new Hashtable(){
+                        {"FirstName", mPerson.Persons[0].FirstName},
+                        {"LastName", mPerson.Persons[0].LastName}
+                        }
+                    }
+                }));
+            Assert.AreEqual(status, 200);
+            Assert.IsInstanceOfType(result, typeof(bool));
+            Assert.AreEqual(true, result);
+        }
+
+        [TestMethod]
         public void TestException()
         {
             int status;

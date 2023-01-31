@@ -12,6 +12,32 @@ using System.Text.RegularExpressions;
 
 namespace AutomatedTesting.Models
 {
+    public struct sName
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+
+        public sName(string firstname,string lastname)
+        {
+            FirstName=firstname;
+            LastName=lastname;
+        }
+
+        public sName(mPerson person)
+        {
+            FirstName=person.FirstName;
+            LastName=person.LastName;
+        }
+
+        public static implicit operator sName(Hashtable data)
+        {
+            return new sName(
+                data["FirstName"].ToString(),
+                data["LastName"].ToString()
+            );
+        }
+    }
+
     [ModelRoute("/models/mPerson")]
     [ModelJSFilePath("/resources/scripts/mPerson.js")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
@@ -298,6 +324,12 @@ namespace AutomatedTesting.Models
         public string GetFullName(string middleName)
         {
             return string.Format("{0}, {1} {2}", new object[] { LastName, FirstName,middleName });
+        }
+
+        [ExposedMethod]
+        public bool IsNameMatch(sName name)
+        {
+            return FirstName==name.FirstName&&LastName==name.LastName;
         }
 
         [ExposedMethod]

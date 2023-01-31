@@ -103,7 +103,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                                 builder.AppendLine(string.Format("          if (data.{0}!=null){{", new object[] { pi.Name }));
                                 if (t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
                                     builder.AppendLine(string.Format(@"              ret.{0} = new {1}();
-                ret.{0}.{1}(data{0});", new object[] { pi.Name, t.Name }));
+                ret.{0}.{1}(data.{0});", new object[] { pi.Name, t.Name }));
                                 else
                                     builder.AppendLine(string.Format("              ret.{0} = data.{0}", new object[] { pi.Name }));
                                 builder.AppendLine(string.Format(@"          }}else{{
@@ -113,11 +113,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                         }
                         else
                             builder.AppendLine(string.Format("          ret.{0} = data.{0};", pi.Name));
-                        builder.AppendLine(@"           }
-            }
+                    }
+                    builder.AppendLine(@"            }
             return ret;
         };");
-                    }
                 }
             }
         }

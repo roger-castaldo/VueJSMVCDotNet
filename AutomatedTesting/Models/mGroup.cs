@@ -9,7 +9,6 @@ using System.Text;
 namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mGroup")]
-    [ModelJSFilePath("/resources/scripts/mGroup.js")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
     public class mGroup : IModel
     {
