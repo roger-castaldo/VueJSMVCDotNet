@@ -405,12 +405,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         { }
     }
 
+    /// <summary>
+    /// thrown when an a slow method fails to register properly
+    /// </summary>
     public class SlowMethodRegistrationFailed : Exception
     {
         internal SlowMethodRegistrationFailed()
             : base("An error occured attempting to register the slow method invocation") { }
     }
 
+    /// <summary>
+    /// thrown when a save model call fails
+    /// </summary>
     public class SaveFailedException : ModelTypeMethodException
     {
         internal SaveFailedException(Type t, MethodInfo mi)
