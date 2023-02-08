@@ -104,7 +104,7 @@ export const name = 'John';");
                 System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
             });
             Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
+            Engine eng = Utility.CreateEngine(middleware:_middleware);
             try
             {
                 eng.AddModule("mPerson", content);

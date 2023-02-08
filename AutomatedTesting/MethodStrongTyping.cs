@@ -151,7 +151,7 @@ export const name = 'John';");
             mDataTypes.TestSingleNotNullInput(' ',null);
         }catch(err){
             if (err.message.toString()!='fetch is not defined'){
-                throw 'error';
+                throw err.message;
             }
         }
         try{

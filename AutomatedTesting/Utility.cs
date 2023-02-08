@@ -112,8 +112,9 @@ namespace AutomatedTesting
             ));
         }
 
-        public static Engine CreateEngine()
+        public static Engine CreateEngine(VueMiddleware middleware=null)
         {
+            middleware = middleware?? CreateMiddleware(true);
             Options opt = new Options();
             opt.EnableModules(typeof(Utility).Assembly.Location.Substring(0, typeof(Utility).Assembly.Location.LastIndexOf(Path.DirectorySeparatorChar)));
             Engine engine = new Engine(opt);
@@ -129,12 +130,11 @@ namespace AutomatedTesting
                 sr.ReadToEnd()
             );
             sr.Close();
-            sr = new StreamReader(typeof(MessageHandlerOptions).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
+            int status;
             engine.AddModule(
                 "VueJSMVCDotNet_core",
-                sr.ReadToEnd()
+                ReadJavascriptResponse(ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", middleware,out status))
             );
-            sr.Close();
             return engine;
         }
 
