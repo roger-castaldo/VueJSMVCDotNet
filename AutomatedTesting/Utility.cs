@@ -99,10 +99,10 @@ namespace AutomatedTesting
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
-        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false,ILogWriter logWriter=null)
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false,ILogWriter logWriter = null, string[] securityHeaders=null)
         {
             return new VueMiddleware(null, new VueMiddlewareOptions(
-                modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels),
+                modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels,coreJSImport:"VueJSMVCDotNet_core",securityHeaders:securityHeaders),
                 vueImportPath: _VUE_IMPORT_PATH,
                 vueLoaderImportPath: _VUE_LOADER_PATH,
                 fileProvider:(blockFileProvider ? null : _fileProvider),
@@ -143,7 +143,7 @@ namespace AutomatedTesting
             StreamReader sr = new StreamReader(stream);
             string content = sr.ReadToEnd();
             sr.Close();
-            return content.Replace("'/VueJSMVCDotNet_core.min.js';", "'VueJSMVCDotNet_core';");
+            return content;
         }
     }
 }

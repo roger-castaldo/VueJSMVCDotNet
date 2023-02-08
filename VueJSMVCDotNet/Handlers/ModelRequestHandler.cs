@@ -68,6 +68,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             string baseURL,
             bool ignoreInvalidModels,
             string vueImportPath,
+            string coreJSURL, 
+            string coreImportPath,
+            string[] securityHeaders,
             ISecureSessionFactory sessionFactory,
             RequestDelegate next)
             : base(next)
@@ -91,7 +94,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             var loadAllHandler = new LoadAllHandler(new RequestDelegate(loadHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase);
             var staticMethodHandler = new StaticMethodHandler(new RequestDelegate(loadAllHandler.ProcessRequest), sessionFactory, registerSlowMethod, _urlBase);
             var modelListCallHandler = new ModelListCallHandler(new RequestDelegate(staticMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase);
-            var jsHandler = new JSHandler(_urlBase,vueImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod);
+            var jsHandler = new JSHandler(_urlBase,vueImportPath,coreJSURL,coreImportPath,securityHeaders,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod);
             _Handlers = new ModelRequestHandlerBase[]
             {
                 jsHandler,

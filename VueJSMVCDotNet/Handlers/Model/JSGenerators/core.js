@@ -81,8 +81,6 @@ const _fixDates = function (data) {
 	return data;
 };
 
-const securityHeaders = {};
-
 const ajax = function (options) {
 	if (options.isSlow !== undefined && options.isSlow) {
 		return new Promise((resolve, reject) => {
@@ -131,13 +129,6 @@ const ajax = function (options) {
 		return new Promise((resolve, reject) => {
 			if (options.url === null || options.url === undefined || options.url === '') {
 				throw 'Unable to call empty url';
-			}
-			if (options.securityHeaders !== undefined) {
-				for (let prop in options.securityHeaders) {
-					if (securityHeaders[prop] === undefined)
-						securityHeaders[prop] = options.securityHeaders[prop];
-				}
-				delete options.securityHeaders;
 			}
 			options = Object.assign({}, {
 				method: 'GET',

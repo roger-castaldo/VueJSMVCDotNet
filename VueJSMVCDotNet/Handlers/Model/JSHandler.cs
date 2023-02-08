@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.ObjectPool;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
 using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators;
 using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
@@ -183,7 +184,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         }
 
         private static readonly IBasicJSGenerator[] _oneTimeInitialGenerators = new IBasicJSGenerator[]{
-            new HeaderGenerator(),
             new ParsersGenerator()
         };
 
@@ -210,7 +210,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private readonly string _urlBase;
         private readonly string _vueImportPath;
         private readonly string _compressedCore;
-        public JSHandler(string urlBase,string vueImportPath,
+        private readonly string _coreJSURL;
+        private readonly string _coreImportPath;
+        public JSHandler(string urlBase,string vueImportPath,string coreJSURL,string coreImportPath, string[] securityHeaders,
             RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod)
             : base(next,sessionFactory,registerSlowMethod,urlBase)
         {
@@ -218,11 +220,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             _types = new Dictionary<Type, ModelJSFilePath[]>();
             _urlBase=urlBase;
             _vueImportPath=vueImportPath;
+            _coreJSURL=coreJSURL.ToLower();
+            _coreImportPath=coreImportPath ?? _coreJSURL;
             StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
-            _compressedCore = JSMinifier.Minify(
-                string.Format("import {{reactive,readonly,ref}} from \"{0}\";\r\n",_vueImportPath)+
-                sr.ReadToEnd()
-            );
+            var builder = new StringBuilder();
+            builder.AppendFormat(@"import {{reactive,readonly,ref}} from ""{0}"";
+const securityHeaders = {{", _vueImportPath);
+
+            if (securityHeaders!=null)
+            {
+                foreach (string key in securityHeaders)
+                    builder.AppendFormat("'{0}':null,", key.Replace("'","\\'"));
+                builder.Length-=1;
+            }
+
+            builder.AppendLine("};");
+            builder.AppendLine(sr.ReadToEnd());
+            _compressedCore = JSMinifier.Minify(builder.ToString());
             sr.Close();
         }
 
@@ -240,7 +254,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             if (context.Request.Method.ToUpper()=="GET")
             {
                 string url = _CleanURL(context);
-                if (url.ToLower()==CORE_URL.ToLower())
+                if (url.ToLower()==_coreJSURL)
                 {
                     context.Response.ContentType="text/javascript";
                     context.Response.StatusCode= 200;
@@ -327,8 +341,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 amodels[x] = new sModelType(models[x]);
             Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
             WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
-            builder.AppendLine(string.Format(@"import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from ""{0}"";
-if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}", _vueImportPath));
+            builder.AppendLine(string.Format(@"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{0}';
+import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from ""{1}"";
+if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}", new object[] { _coreImportPath, _vueImportPath }));
             foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
             {
                 builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));

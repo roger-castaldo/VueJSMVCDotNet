@@ -92,6 +92,39 @@ export const name = 'John';");
         }
 
         [TestMethod]
+        public void JavascriptGenerationWithSecurityHeadersValidation()
+        {
+            _middleware = Utility.CreateMiddleware(true,securityHeaders:new string[] {"sechead1","sec_head_2"});
+            int status;
+            DateTime now = DateTime.Now;
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status));
+            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
+            {
+                DateTime.Now.Subtract(now).TotalMilliseconds,
+                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
+            });
+            Assert.IsTrue(content.Length > 0);
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.AddModule("mPerson", content);
+                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
         public void JavascriptCompressedGenerationValidation()
         {
             int status;

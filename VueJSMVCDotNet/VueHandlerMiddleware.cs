@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Handlers;
+using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -17,11 +18,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     {
 
         private readonly ISecureSessionFactory _sessionFactory;
-        internal ISecureSessionFactory SessionFactory { get { return _sessionFactory; } }
+        internal ISecureSessionFactory SessionFactory =>_sessionFactory;
         private readonly string _baseURL;
-        internal string BaseURL { get { return _baseURL; } }
+        internal string BaseURL => _baseURL; 
         private readonly bool _ignoreInvalidModels;
-        internal bool IgnoreInvalidModels { get { return _ignoreInvalidModels; } }
+        internal bool IgnoreInvalidModels => _ignoreInvalidModels;
+        private readonly string _coreJSURL;
+        internal string CoreJSURL => _coreJSURL;
+        private readonly string _coreJSImport;
+        internal string CoreJSImport => _coreJSImport;
+        private readonly string[] _securityHeaders;
+        internal string[] SecurityHeaders => _securityHeaders;
+
 
         /// <summary>
         /// default constructor used to supply the middleware options
@@ -29,11 +37,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="sessionFactory">The secure session factory builder</param>
         /// <param name="baseURL">Optional: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")</param>
         /// <param name="ignoreInvalidModels">Optional: If flagged as true it will ignore/disable invalid models</param>
-        public VueModelsOptions(ISecureSessionFactory sessionFactory, string baseURL=null,bool ignoreInvalidModels=false)
+        /// <param name="coreJSURL">Optional: This will remap the core JS url that is imported by all classes to a different path</param>
+        /// <param name="coreJSImport">Optional:  This will change the import call from the core js url to the module name</param>
+        /// <param name="securityHeaders">Optional:  A list of header keys to read from and write to for all requests if using headers for security</param>
+        public VueModelsOptions(ISecureSessionFactory sessionFactory, string baseURL=null,bool ignoreInvalidModels=false,string coreJSURL=JSHandler.CORE_URL,string coreJSImport = null, string[] securityHeaders=null)
         {
             _sessionFactory=sessionFactory;
             _baseURL=baseURL;
             _ignoreInvalidModels=ignoreInvalidModels;
+            _coreJSURL=coreJSURL;
+            _coreJSImport=coreJSImport;
+            _securityHeaders=securityHeaders;
         }
     }
 
@@ -205,6 +219,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (options.VueModelsOptions!=null)
             {
                 _modelHandler = new ModelRequestHandler(options.LogWriter, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
+                    options.VueModelsOptions.CoreJSURL, options.VueModelsOptions.CoreJSImport,options.VueModelsOptions.SecurityHeaders,
                 options.VueModelsOptions.SessionFactory,next);
             }
         }
