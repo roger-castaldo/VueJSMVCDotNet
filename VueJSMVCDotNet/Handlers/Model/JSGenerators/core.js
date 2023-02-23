@@ -618,11 +618,13 @@ class ModelList {
 	#isPaged;
 	#totalPages = undefined;
 	#constructModel;
-	#constructURL;
+	#url;
+	#useGet;
 	#params = undefined;
 	#setParameters = undefined;
 	#currentIndex = undefined;
 	#currentPageSize = undefined;
+	#pageVariableNames = undefined;
 
 	get #currentPage() {
 		return (!this.#isPaged ? undefined : Math.floor(this.#currentIndex / this.#currentPageSize));
@@ -659,10 +661,11 @@ class ModelList {
 		return this.#reload();
 	};
 
-	constructor(constructModel, constructURL, isPaged, setParameters, currentParams, currentIndex, currentPageSize) {
-		this.#events = new EventHandler(['model_loaded', 'model_destroyed', 'model_updated', 'loaded']);
+	constructor(constructModel, url, isPaged, useGet, setParameters, currentParams, currentIndex, currentPageSize, pageVariableNames) {
 		this.#constructModel = constructModel;
-		this.#constructURL = constructURL;
+		this.#events = new EventHandler(['model_loaded', 'model_destroyed', 'model_updated', 'loaded']);
+		this.#url = url;
+		this.#useGet = useGet;
 		this.#isPaged = isPaged;
 		this.#setParameters = setParameters;
 		this.#params = currentParams;
@@ -670,6 +673,7 @@ class ModelList {
 		if (isPaged) {
 			this.#currentIndex = (currentIndex === undefined ? 0 : currentIndex);
 			this.#currentPageSize = (currentPageSize === undefined ? 10 : currentPageSize);
+			this.#pageVariableNames = pageVariableNames;
 		}
 		return this.#toProxy();
 	};
@@ -756,13 +760,24 @@ class ModelList {
 			ownKeys(target) { return ['length', '$on', '$off', 'reload', 'toVueComposition'].concat((me.#isPaged ? ['totalPages', 'currentPageSize', 'currentPage', 'moveToPage', 'moveToNextPage', 'moveToPreviousPage', 'changePageSize'] : []).concat((me.#setParameters !== undefined ? ['currentParameters', 'changeParameters'] : []))); }
 		});
 	};
+
 	#reload() {
 		let tmp = this;
+		let data = {};
+		if (tmp.#isPaged) {
+			data[tmp.#pageVariableNames["PageStartIndex"]] = tmp.#currentIndex;
+			data[tmp.#pageVariableNames["PageSize"]] = tmp.#currentPageSize;
+		}
+		for (let prop in tmp.#params) {
+			data[prop] = tmp.#params[prop];
+		}
 		return new Promise((resolve, reject) => {
 			ajax({
-				url: tmp.#constructURL(tmp.#params, tmp.#currentIndex, tmp.#currentPageSize),
-				method: 'GET',
-				credentials: 'include'
+				url: tmp.#url,
+				method: (tmp.#useGet ? 'GET' : 'LIST'),
+				credentials: 'include',
+				useJSON:true,
+				data: data
 			}).then(
 				response => {
 					if (response.ok) {

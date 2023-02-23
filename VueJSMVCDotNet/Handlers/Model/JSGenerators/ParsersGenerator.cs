@@ -27,16 +27,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                                                  modelType.Type.Name,
                                                  Constants.PARSE_FUNCTION_NAME
             }));
-                types.Add(modelType);
-            }
-            foreach (sModelType modelType in models)
                 _RecurLocateLinkedTypes(ref types, modelType);
-            types.RemoveAll(t => models.Contains(t));
-            foreach (sModelType type in types)
-            {
-                if (type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
-                    builder.AppendLine(string.Format("        import {{ {0} }} from '{1}';", new object[] { type.Type.Name, ((ModelJSFilePath)type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path }));
             }
+            types.RemoveAll(t => models.Contains(t));
+            foreach (var type in types.Where(t=>t.Type.GetCustomAttributes().Any(att=>att is ModelJSFilePath)))
+            {
+                builder.AppendLine(string.Format("        import {{ {0} }} from '{1}';", new object[] { type.Type.Name, ((ModelJSFilePath)type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path }));
+            }
+
             foreach (sModelType type in types)
             {
                 Logger.Trace("Appending Parser Call for Linked Type[{0}]", new object[]
@@ -124,9 +122,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
         private void _RecurLocateLinkedTypes(ref List<sModelType> types,sModelType modelType)
         {
             if (!types.Contains(modelType))
+            {
                 types.Add(modelType);
-            foreach (sModelType linked in modelType.LinkedTypes)
-                _RecurLocateLinkedTypes(ref types, linked);
+                foreach (sModelType linked in modelType.LinkedTypes)
+                    _RecurLocateLinkedTypes(ref types, linked);
+            }
         }
     }
 }

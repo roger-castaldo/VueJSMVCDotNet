@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFrameworks>netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
+	<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <RootNamespace>Org.Reddragonit.VueJSMVCDotNet</RootNamespace>
     <Description>A DotNet to VueJS interface library.  This is used to generate model(mvc) style Vues designed to allow an integrated interface between the javascript and backend for data manipulation and obtainment.  It does require that you include vuejs in your project as the code uses it.</Description>
     <PackageProjectUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</PackageProjectUrl>
@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>3.0.0-beta1</Version>
+    <Version>3.0.0-beta2</Version>
     <PackageReleaseNotes>massive rewrite and overhaul to move the system to a middleware style</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyVersion>3.0.0</AssemblyVersion>

@@ -18,51 +18,39 @@ namespace AutomatedTesting.Models.InvalidModels
             return null;
         }
 
-        [ModelListMethod("/search/nullableResponse")]
+        [ModelListMethod()]
         public static Nullable<int> SearchNullable()
         {
             return null;
         }
 
-        [ModelListMethod("/search/arrayResponse")]
+        [ModelListMethod()]
         public static int[] SearchArray()
         {
             return null;
         }
 
-        [ModelListMethod("/search/paged",paged:true)]
+        [ModelListMethod(paged:true)]
         public static List<ModelWithInvalidListMethods> InvalidPagedSignature()
         {
             return null;
         }
 
-        [ModelListMethod("/search/genericeTypeParameter")]
-        public static List<ModelWithInvalidListMethods> WithGenericTypeParameter(Dictionary<string,string> par1)
-        {
-            return null;
-        }
-
-        [ModelListMethod("/search/arrayTypeParameter")]
-        public static List<ModelWithInvalidListMethods> WithArrayTypeParameter(int[] par1)
-        {
-            return null;
-        }
-
-        [ModelListMethod("/search/outParameter")]
+        [ModelListMethod()]
         public static List<ModelWithInvalidListMethods> WithOutParameter(out int par1)
         {
             par1=0;
             return null;
         }
 
-        [ModelListMethod("/search/pagedInvalidType",paged:true)]
+        [ModelListMethod(paged:true)]
         public static List<ModelWithInvalidListMethods> PagedInvalidParameterType(decimal pageStartIndex, int pageSize, out int totalPages)
         {
             totalPages=0;
             return null;
         }
 
-        [ModelListMethod("/search/pagedInvalidType", paged: true)]
+        [ModelListMethod(paged: true)]
         public static List<ModelWithInvalidListMethods> PagedInvalidOutParameter(out int totalPages,int pageStartIndex, int pageSize)
         {
             totalPages=0;

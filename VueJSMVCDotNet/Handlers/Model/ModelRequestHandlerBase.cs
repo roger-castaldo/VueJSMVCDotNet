@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using static Org.Reddragonit.VueJSMVCDotNet.Handlers.ModelRequestHandler;
 
@@ -18,26 +20,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private const string _CONVERTED_URL_KEY = "PARSED_URL";
         private const string _REQUEST_DATA_KEY = "CONVERTED_REQUEST_DATA";
 
-        public struct sRequestData
-        {
-            private readonly Hashtable _formData;
-            public Hashtable FormData => _formData;
-            private readonly ISecureSession _session;
-            public ISecureSession Session => _session;
-
-            public sRequestData(Hashtable formData,ISecureSession session)
-            {
-                _formData = formData;
-                _session = session;
-            }
-        }
-
         protected readonly RequestDelegate _next;
+        protected readonly delRegisterSlowMethodInstance _registerSlowMethod;
         private readonly ISecureSessionFactory _sessionFactory;
-        private readonly delRegisterSlowMethodInstance _registerSlowMethod;
         private readonly string _urlBase;
-        private Dictionary<Type, ASecurityCheck[]> _typeChecks;
-        private Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>> _methodChecks;
 
         public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase)
         {
@@ -45,16 +31,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             _sessionFactory=sessionFactory;
             _registerSlowMethod=registerSlowMethod;
             _urlBase=urlBase;
-            _typeChecks = new Dictionary<Type, ASecurityCheck[]>();
-            _methodChecks = new Dictionary<Type, Dictionary<MethodInfo, ASecurityCheck[]>>();
         }
 
-        protected async Task<sRequestData> _ExtractParts(HttpContext context)
+        protected async Task<ModelRequestData> _ExtractParts(HttpContext context)
         {
             if (!context.Items.ContainsKey(_REQUEST_DATA_KEY))
             {
                 var session = _sessionFactory.ProduceFromContext(context);
-                var formData = new Hashtable();
+                var formData = new Dictionary<string,object>();
                 if (context.Request.ContentType!=null &&
                 (
                     context.Request.ContentType=="application/x-www-form-urlencoded"
@@ -68,16 +52,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                         {
                             if (context.Request.Form[key].Count>1)
                             {
-                                ArrayList al = new ArrayList();
+                                StringBuilder sb = new StringBuilder();
+                                sb.Append("[");
                                 foreach (string str in context.Request.Form[key])
-                                {
-                                    al.Add(JSON.JsonDecode(str));
-                                }
-                                formData.Add(key.Substring(0, key.Length-5), al);
+                                    sb.Append(str+",");
+                                sb.Length--;
+                                sb.Append("]");
+                                formData.Add(key.Substring(0, key.Length-5), JsonDocument.Parse(sb.ToString()));
                             }
                             else
                             {
-                                formData.Add(key.Substring(0, key.Length-5), JSON.JsonDecode(context.Request.Form[key][0]));
+                                formData.Add(key.Substring(0, key.Length-5), JsonDocument.Parse(context.Request.Form[key][0]));
                             }
                         }
                         else
@@ -104,12 +89,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     if (tmp!="")
                     {
                         Logger.Trace("Loading form data from request body");
-                        formData = (Hashtable)JSON.JsonDecode(tmp);
+                        foreach (var jsonProperty in JsonDocument.Parse(tmp).RootElement.EnumerateObject())
+                            formData.Add(jsonProperty.Name, jsonProperty.Value);
                     }
                 }
-                context.Items.Add(_REQUEST_DATA_KEY, new sRequestData(formData, session));
+                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session));
             }
-            return (sRequestData)context.Items[_REQUEST_DATA_KEY];
+            return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
         }
 
         protected string _CleanURL(HttpContext context)
@@ -124,90 +110,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             return (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
         }
 
-        protected string _RegisterSlowMethodInstance(string url, MethodInfo method, object model, object[] pars, ISecureSession session)
-        {
-            return _registerSlowMethod.Invoke(url, method, model, pars, session);
-        }
-
-        protected async Task<bool> _ValidCall(Type t, MethodInfo method, IModel model,HttpContext context,string id=null)
-        {
-            sRequestData requestData = await _ExtractParts(context);
-            string url = _CleanURL(context);
-            if (id!= null)
-                requestData.FormData.Add("id", id);
-            Logger.Trace("Checking security for call {0} under class {1}.{2}", new object[] { url, t.FullName, (method==null ? null : method.Name) });
-            List<ASecurityCheck> checks = new List<ASecurityCheck>();
-            lock (_typeChecks)
-            {
-                if (_typeChecks.ContainsKey(t))
-                    checks.AddRange(_typeChecks[t]);
-                else
-                {
-                    List<ASecurityCheck> tchecks = new List<ASecurityCheck>();
-                    foreach (object obj in t.GetCustomAttributes())
-                    {
-                        if (obj is ASecurityCheck)
-                            checks.Add((ASecurityCheck)obj);
-                    }
-                    _typeChecks.Add(t, tchecks.ToArray());
-                }
-            }
-            if (method != null)
-            {
-                lock (_methodChecks)
-                {
-                    bool add = true;
-                    if (_methodChecks.ContainsKey(t))
-                    {
-                        if (_methodChecks[t].ContainsKey(method))
-                        {
-                            add=false;
-                            checks.AddRange(_methodChecks[t][method]);
-                        }
-                    }
-                    if (add)
-                    {
-                        var methodChecks = new Dictionary<MethodInfo, ASecurityCheck[]>();
-                        if (_methodChecks.ContainsKey(t))
-                        {
-                            methodChecks= _methodChecks[t];
-                            _methodChecks.Remove(t);
-                        }
-                        var mchecks = new List<ASecurityCheck>();
-                        foreach (object obj in method.GetCustomAttributes())
-                        {
-                            if (obj is ASecurityCheck)
-                                checks.Add((ASecurityCheck)obj);
-                        }
-                        methodChecks.Add(method, checks.ToArray());
-                        _methodChecks.Add(t, methodChecks);
-                    }
-                }
-            }
-            foreach (ASecurityCheck asc in checks)
-            {
-                if (!asc.HasValidAccess(requestData.Session, model, url, requestData.FormData))
-                    return false;
-            }
-            return true;
-        }
-
         public void LoadTypes(List<Type> types)
         {
             _LoadTypes(types);
         }
         public void UnloadTypes(List<Type> types)
         {
-            lock (_typeChecks)
-            {
-                foreach (Type t in types)
-                    _typeChecks.Remove(t);
-            }
-            lock (_methodChecks)
-            {
-                foreach (Type t in types)
-                    _methodChecks.Remove(t);
-            }
             _UnloadTypes(types);
         }
         public abstract void ClearCache();

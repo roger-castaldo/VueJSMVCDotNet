@@ -232,42 +232,24 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             rtype = rtype.GetGenericArguments()[0];
                         if (rtype.IsArray)
                             rtype = rtype.GetElementType();
-                        else if (rtype.IsGenericType)
-                        {
-                            if (rtype.GetGenericTypeDefinition() == typeof(List<>))
+                        else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(List<>))
                                 rtype = rtype.GetGenericArguments()[0];
-                        }
                         if (rtype != t)
                         {
                             Logger.Trace("Model {0} has an invalid return type for the model list method {1}", new object[] { t.FullName,mi.Name });
                             invalidModels.Add(t);
                             errors.Add(new InvalidModelListMethodReturnException(t, mi));
                         }
-                        MatchCollection mc = _regListPars.Matches(mlm.Path);
-                        if (mc.Count != Utility.ExtractStrippedParameters(mi).Length - (mlm.Paged ? 3 : 0))
-                        {
-                            Logger.Trace("Model {0} has missing parameters from the url for the list method {1}", new object[] { t.FullName, mi.Name });
-                            invalidModels.Add(t);
-                            errors.Add(new InvalidModelListParameterCountException(t, mi, mlm.Path));
-                        }
                         ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                        if (mlm.Paged && pars.Length<3)
+                        {
+                            Logger.Trace("Model {0} has an invalid signature for paged model list method {1}, required parameters are missing", new object[] { t.FullName, mi.Name });
+                            invalidModels.Add(t);
+                            errors.Add(new InvalidModelListParameterCountException(t, mi));
+                        }
                         for (int x = 0; x < pars.Length; x++)
                         {
                             ParameterInfo pi = pars[x];
-                            if (pi.ParameterType.IsGenericType)
-                            {
-                                if (pi.ParameterType.GetGenericTypeDefinition() != typeof(Nullable<>)) { 
-                                    Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
-                                    invalidModels.Add(t);
-                                    errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
-                                }
-                            }
-                            else if (pi.ParameterType.IsArray)
-                            {
-                                Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelListParameterTypeException(t, mi, pi));
-                            }
                             if (pi.IsOut && (!mlm.Paged || x != pars.Length - 1))
                             {
                                 Logger.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
@@ -291,14 +273,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     errors.Add(new InvalidModelListPageParameterTypeException(t, mi, pi));
                                 }
                             }
-                            if (mlm.Paged && x == pars.Length - 1)
+                            if (mlm.Paged && x == pars.Length - 1 && !pi.IsOut)
                             {
-                                if (!pi.IsOut)
-                                {
-                                    Logger.Trace("Model {0} is not a valid page total parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
-                                    invalidModels.Add(t);
-                                    errors.Add(new InvalidModelListPageTotalPagesNotOutException(t, mi, pi));
-                                }
+                                Logger.Trace("Model {0} is not a valid page total parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
+                                invalidModels.Add(t);
+                                errors.Add(new InvalidModelListPageTotalPagesNotOutException(t, mi, pi));
                             }
                         }
                     }

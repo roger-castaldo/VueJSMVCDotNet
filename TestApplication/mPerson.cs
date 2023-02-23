@@ -105,7 +105,7 @@ namespace TestApplication{
             return true;
         }
 
-        [ModelListMethod("/search/mPerson?q={0}",true)]
+        [ModelListMethod(true)]
         public static List<mPerson> Search(string q,int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -158,7 +158,7 @@ namespace TestApplication{
             return true;
         }
 
-        [ModelListMethod("/search/person/byguid?id={0}",false)]
+        [ModelListMethod(false)]
         public static List<mPerson> ByGuid(Guid id){
             return _persons;
         }

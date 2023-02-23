@@ -107,8 +107,8 @@ namespace AutomatedTesting
             int status;
             var content = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatNames", _middleware, out status, new Dictionary<string, StringValues>()
             {
-                {"firstName:json",new string[]{JSON.JsonEncode(firstName[0]),JSON.JsonEncode(firstName[1]) } },
-                {"lastName:json",new string[]{JSON.JsonEncode(lastName[0]),JSON.JsonEncode(lastName[1]) } }
+                {"firstName:json",new string[]{ JSON.JsonEncode(firstName[0]), JSON.JsonEncode(firstName[1]) } },
+                {"lastName:json",new string[]{ JSON.JsonEncode(lastName[0]), JSON.JsonEncode(lastName[1]) } }
             }));
 
             Assert.IsInstanceOfType(content, typeof(ArrayList));
@@ -132,7 +132,7 @@ namespace AutomatedTesting
                 {"userName","testing" }
             }));
             Assert.AreEqual(404, status);
-            Assert.AreEqual("Unable to locate requested method to invoke",content);
+            Assert.AreEqual("Unable to locate method with matching parameters", content);
         }
 
         [TestMethod]

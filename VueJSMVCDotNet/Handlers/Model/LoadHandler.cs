@@ -15,43 +15,32 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class LoadHandler : ModelRequestHandlerBase
     {
-        private Dictionary<string, MethodInfo> _methods;
+        private readonly List<IModelActionHandler> _handlers;
 
         public LoadHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
             :base(next,sessionFactory,registerSlowMethod,urlBase)
         {
-            _methods = new Dictionary<string, MethodInfo>();
+            _handlers=new List<IModelActionHandler>();
         }
 
         public override void ClearCache()
         {
-            _methods.Clear();
+            _handlers.Clear();
         }
 
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = _CleanURL(context);
-            Logger.Trace("Checking if the Load Handler handles {0}:{1}", new object[] { GetRequestMethod(context), url });
-            if (GetRequestMethod(context) == ModelRequestHandler.RequestMethods.GET)
+            if (GetRequestMethod(context) == ModelRequestHandler.RequestMethods.GET && _handlers.Any(h => h.BaseURLs.Contains(url.Substring(0, url.LastIndexOf("/")), StringComparer.InvariantCultureIgnoreCase)))
             {
-                MethodInfo mi = null;
-                lock (_methods)
-                {
-                    if (_methods.ContainsKey(url.Substring(0, url.LastIndexOf("/"))))
-                        mi = _methods[url.Substring(0, url.LastIndexOf("/"))];
-                }
-                if (mi != null)
-                {
-                    if (! await _ValidCall(mi.DeclaringType,mi,null,context,id: url.Substring(url.LastIndexOf("/") + 1)))
-                        throw new InsecureAccessException();
-                    context.Response.ContentType = "text/json";
-                    context.Response.StatusCode= 200;
-                    string id = url.Substring(url.LastIndexOf("/")+1);
-                    Logger.Trace("Attempting to load model using {0}.{1} with the id {2}", new object[] { mi.DeclaringType.FullName, mi.Name, id });
-                    sRequestData requestData = await _ExtractParts(context);
-                    await context.Response.WriteAsync(JSON.JsonEncode(Utility.InvokeLoad(mi, id, requestData.Session)));
-                    return;
-                }
+                var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url.Substring(0, url.LastIndexOf("/")), StringComparer.InvariantCultureIgnoreCase));
+                if (handler==null)
+                    throw new CallNotFoundException("Model Not Found");
+                var result = handler.Load(url, await _ExtractParts(context));
+                context.Response.ContentType = "text/json";
+                context.Response.StatusCode= 200;
+                await context.Response.WriteAsync(Utility.JsonEncode(result));
+                return;
             }
             await _next(context);
         }
@@ -60,26 +49,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         {
             foreach (Type t in types)
             {
-                MethodInfo loadMethod = t.GetMethods(Constants.LOAD_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0).FirstOrDefault();
-                if (loadMethod!=null)
-                    _methods.Add(Utility.GetModelUrlRoot(t), loadMethod);
+                _handlers.Add((IModelActionHandler)
+                    typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
+                    .GetConstructor(new Type[] { typeof(string), typeof(delRegisterSlowMethodInstance) })
+                    .Invoke(new object[] { "load", _registerSlowMethod })
+                );
             }
         }
 
         protected override void _UnloadTypes(List<Type> types)
         {
-            lock (_methods)
-            {
-                string[] keys = new string[_methods.Count];
-                _methods.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
-                {
-                    if (types.Contains(_methods[str].DeclaringType))
-                    {
-                        _methods.Remove(str);
-                    }
-                }
-            }
+            _handlers.RemoveAll(h =>
+                types.Contains(h.GetType().GetGenericArguments()[0])
+            );
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Jint.Native.Json;
+using Microsoft.AspNetCore.Http;
 using Org.Reddragonit.VueJSMVCDotNet;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
@@ -43,13 +44,13 @@ namespace AutomatedTesting.Security
 
         public void LinkToRequest(HttpContext context)
         {
-            context.Request.Headers.Add("RIGHTS", JSON.JsonEncode(_rights));
+            context.Request.Headers.Add("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
         }
 
         public ISecureSession ProduceFromContext(HttpContext context)
         {
             if (context.Request.Headers.ContainsKey("RIGHTS"))
-                return new SecureSession((ArrayList)JSON.JsonDecode(context.Request.Headers["RIGHTS"].ToString()));
+                return new SecureSession((string[])System.Text.Json.JsonSerializer.Deserialize(context.Request.Headers["RIGHTS"].ToString(), typeof(string[])));
             else
                 return new SecureSession();
         }

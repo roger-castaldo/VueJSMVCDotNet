@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model;
 using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using Org.Reddragonit.VueJSMVCDotNet.JSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +13,11 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.ModelRequestHandlerBase;
 
 namespace Org.Reddragonit.VueJSMVCDotNet
 {
@@ -26,16 +32,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         //houses a cache of Type instances through locate type instances, this is used to increate preformance
         private static Dictionary<string, List<Type>> _INSTANCES_CACHE;
         //houses the assembly load contexts for types
-        private static Dictionary<string,List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
+        private static Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
 
         static Utility()
         {
             _TYPE_CACHE = new Dictionary<string, Type>();
             _INSTANCES_CACHE = new Dictionary<string, List<Type>>();
-            _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string,List<Type>>();
+            _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string, List<Type>>();
         }
 
-        internal static void SetModelValues(Hashtable data, ref IModel model, bool isNew,ISecureSession session)
+        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew)
         {
             foreach (string str in data.Keys)
             {
@@ -46,12 +52,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     {
                         if (pi.CanWrite)
                         {
-                            if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty),true).Length==0 || isNew)
+                            if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length==0 || isNew)
                             {
                                 Logger.Trace("Attempting to convert the value supplied for property {0}.{1} to {2}", new object[] { model.GetType().FullName, pi.Name, pi.PropertyType });
-                                var obj = _ConvertObjectToType(data[str], pi.PropertyType,session);
-                                Logger.Trace("Setting mode property {0}.{1} with converted value", new object[] { model.GetType(), pi.Name });
-                                pi.SetValue(model, obj);
+                                pi.SetValue(model,data.GetValue(pi.PropertyType,str));
                             }
                         }
                     }
@@ -59,28 +63,47 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        internal static void LocateMethod(Hashtable formData,List<MethodInfo> methods,out MethodInfo method,out object[] pars,ISecureSession session)
+        internal static void LocateMethod(ModelRequestData request, IEnumerable<MethodInfo> methods, out MethodInfo method, out object[] pars)
         {
             method = null;
             pars = null;
-            if (formData == null || formData.Count == 0)
-                method = methods.Where(mi=>ExtractStrippedParameters(mi).Count()==0).FirstOrDefault();
+            if (!request.Keys.Any())
+                method = methods.FirstOrDefault(mi => ExtractStrippedParameters(mi).Length==0);
             else
             {
-                foreach (MethodInfo m in methods.Where(mi=> ExtractStrippedParameters(mi).Count()==formData.Count))
+                foreach (MethodInfo m in methods.Where(mi => ExtractStrippedParameters(mi).Count(p=>!p.IsOut)==request.Keys.Count()))
                 {
                     var notNullArguement = (NotNullArguement)m.GetCustomAttribute(typeof(NotNullArguement));
-                    pars = new object[formData.Count];
+                    var parameters = ExtractStrippedParameters(m);
+                    pars = new object[parameters.Length];
                     bool isMethod = true;
                     int index = 0;
-                    foreach (ParameterInfo pi in ExtractStrippedParameters(m))
+                    foreach (ParameterInfo pi in parameters)
                     {
-                        if (formData.ContainsKey(pi.Name) && (notNullArguement==null||!(!notNullArguement.IsParameterNullable(pi)&&formData[pi.Name]==null)))
-                            pars[index] = _ConvertObjectToType(formData[pi.Name], pi.ParameterType,session);
-                        else
+                        if (!pi.IsOut)
                         {
-                            isMethod = false;
-                            break;
+                            if (request.Keys.Contains(pi.Name, StringComparer.InvariantCultureIgnoreCase)) {
+                                object val = null;
+                                try
+                                {
+                                    val = request.GetValue(pi.ParameterType, pi.Name);
+                                }catch(InvalidCastException)
+                                {
+                                    isMethod=false;
+                                    break;
+                                }
+                                if(notNullArguement!=null&&notNullArguement.IsParameterNullable(pi)&&val==null)
+                                {
+                                    isMethod=false;
+                                    break;
+                                }
+                                pars[index] = val;
+                            }
+                            else
+                            {
+                                isMethod = false;
+                                break;
+                            }
                         }
                         index++;
                     }
@@ -96,9 +119,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /*
          * Called to convert a given json object to the expected type.
          */
-        private static object _ConvertObjectToType(object obj, Type expectedType,ISecureSession session)
+        private static object _ConvertObjectToType(object obj, Type expectedType, ISecureSession session)
         {
-            Logger.Trace("Attempting to convert object of type {0} to {1}",new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
+            Logger.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
             if (expectedType.Equals(typeof(object)))
                 return obj;
             if (expectedType.Equals(typeof(bool)) && (obj == null))
@@ -127,11 +150,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     count = list.Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
                 if (!(obj is ArrayList list1))
-                    ret.SetValue(_ConvertObjectToType(obj, underlyingType,session), 0);
+                    ret.SetValue(_ConvertObjectToType(obj, underlyingType, session), 0);
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType,session), x);
+                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType, session), x);
                 }
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
@@ -144,7 +167,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 Type valType = expectedType.GetGenericArguments()[1];
                 foreach (string str in ((Hashtable)obj).Keys)
                 {
-                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType,session), _ConvertObjectToType(((Hashtable)obj)[str], valType,session));
+                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType, session), _ConvertObjectToType(((Hashtable)obj)[str], valType, session));
                 }
                 return ret;
             }
@@ -157,12 +180,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return _ConvertObjectToType(obj, underlyingType,session);
+                return _ConvertObjectToType(obj, underlyingType, session);
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                MethodInfo loadMethod = expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi=>mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0);
+                MethodInfo loadMethod = expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0);
                 return Utility.InvokeLoad(loadMethod, ((Hashtable)obj)["id"].ToString(), session);
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
@@ -200,16 +223,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return obj;
         }
 
-        public static List<Type> LocateTypeInstances(Type parent,AssemblyLoadContext alc){
+        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc) {
             Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
-            List<Type> ret = _LocateTypeInstances(parent,alc.Assemblies);
-            foreach (Type t in ret){
-                _MarkTypeSource(alc.Name,t);
+            List<Type> ret = _LocateTypeInstances(parent, alc.Assemblies);
+            foreach (Type t in ret) {
+                _MarkTypeSource(alc.Name, t);
             }
             return ret;
         }
 
-        private static List<Type> _LocateTypeInstances(Type parent,IEnumerable<Assembly> assemblies)
+        private static List<Type> _LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies)
         {
             List<Type> ret = new List<Type>();
             foreach (Assembly ass in assemblies)
@@ -218,7 +241,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     foreach (Type t in _GetLoadableTypes(ass))
                     {
-                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))){
+                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))) {
                             ret.Add(t);
                         }
                     }
@@ -253,26 +276,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-        private static void _MarkTypeSource(string contextName,Type type){
+        private static void _MarkTypeSource(string contextName, Type type) {
             Logger.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
-            lock(_LOAD_CONTEXT_TYPE_SOURCES)
+            lock (_LOAD_CONTEXT_TYPE_SOURCES)
             {
                 List<Type> types = new List<Type>();
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)){
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
                     types = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
-                if (!types.Contains(type)){
+                if (!types.Contains(type)) {
                     types.Add(type);
                 }
-                _LOAD_CONTEXT_TYPE_SOURCES.Add(contextName,types);
+                _LOAD_CONTEXT_TYPE_SOURCES.Add(contextName, types);
             }
         }
 
-        internal static List<Type> UnloadAssemblyContext(string contextName){
+        internal static List<Type> UnloadAssemblyContext(string contextName) {
             List<Type> ret = null;
-            lock(_LOAD_CONTEXT_TYPE_SOURCES){
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)){
+            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
                     ret = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
@@ -290,7 +313,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 _TYPE_CACHE.Clear();
             }
-            lock(_LOAD_CONTEXT_TYPE_SOURCES){
+            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
                 _LOAD_CONTEXT_TYPE_SOURCES.Clear();
             }
         }
@@ -300,7 +323,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return GetModelUrlRoot(modelType, null);
         }
 
-        internal static string GetModelUrlRoot(Type modelType,string urlBase)
+        internal static string GetModelUrlRoot(Type modelType, string urlBase)
         {
             string urlRoot = (urlBase??"");
             foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false).Cast<ModelRoute>())
@@ -308,7 +331,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 urlRoot += mr.Path;
                 break;
             }
-            return urlRoot.Replace("//","/");
+            return urlRoot.Replace("//", "/");
         }
 
         private static readonly Regex _regNoCache = new Regex("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript);
@@ -324,7 +347,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 context.Request.Scheme,
                 context.Request.Host.Host,
                 (context.Request.Host.Port??(context.Request.IsHttps ? 443 : 80)),
-                (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase,"/"))
+                (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase, "/"))
             );
             if (context.Request.QueryString.HasValue)
                 builder.Query = context.Request.QueryString.Value.Substring(1);
@@ -337,7 +360,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
         }
 
-        public static object InvokeMethod(MethodInfo mi,object obj, object[] pars=null,ISecureSession session=null, AddItem addItem=null)
+        public static object InvokeMethod(MethodInfo mi, object obj, object[] pars = null, ISecureSession session = null, AddItem addItem = null)
         {
             ParameterInfo[] parameters = mi.GetParameters();
             object[] mpars = new object[parameters.Length];
@@ -351,7 +374,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (UsesLog(mi, out lidx))
                 mpars[lidx]=Logger.Instance;
             int index = 0;
-            for(int x = 0; x<mpars.Length; x++)
+            for (int x = 0; x<mpars.Length; x++)
             {
                 if (x!=sidx&&x!=aidx&&x!=lidx)
                 {
@@ -359,11 +382,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     index++;
                 }
             }
-            object ret =  mi.Invoke(obj, mpars);
-            if (parameters.Count(p=>p.IsOut)>0)
+            object ret = mi.Invoke(obj, mpars);
+            if (parameters.Count(p => p.IsOut)>0)
             {
                 index = 0;
-                for(int x = 0; x<parameters.Length; x++) {
+                for (int x = 0; x<parameters.Length; x++) {
                     if (x!=sidx&&x!=aidx&&x!=lidx)
                     {
                         if (parameters[x].IsOut)
@@ -375,14 +398,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret;
         }
 
-        public static IModel InvokeLoad(MethodInfo mi,string id,ISecureSession session){
+        public static IModel InvokeLoad(MethodInfo mi, string id, ISecureSession session) {
             return (IModel)InvokeMethod(mi, null, new object[] { id }, session: session);
         }
 
-        public static bool UsesSecureSession(MethodInfo mi,out int index){
+        public static bool UsesSecureSession(MethodInfo mi, out int index) {
             index=-1;
             ParameterInfo[] pars = mi.GetParameters();
-            for(int x=0;x<pars.Length;x++){
+            for (int x = 0; x<pars.Length; x++) {
                 if (IsISecureSessionType(pars[x].ParameterType)) {
                     index=x;
                     return true;
@@ -406,7 +429,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return false;
         }
 
-        public static bool UsesLog(MethodInfo mi,out int index)
+        public static bool UsesLog(MethodInfo mi, out int index)
         {
             index=-1;
             ParameterInfo[] pars = mi.GetParameters();
@@ -427,9 +450,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 new List<Type>(type.GetInterfaces()).Contains(typeof(ISecureSession));
         }
 
-        public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi){
+        public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi) {
             List<ParameterInfo> ret = new List<ParameterInfo>(mi.GetParameters());
-            if (UsesSecureSession(mi,out int idx))
+            if (UsesSecureSession(mi, out int idx))
                 ret.RemoveAt(idx);
             if (UsesAddItem(mi, out idx))
                 ret.RemoveAt(idx);
@@ -438,7 +461,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return ret.ToArray();
         }
 
-        internal static string GetTypeString(Type propertyType,bool notNullTagged)
+        internal static string GetTypeString(Type propertyType, bool notNullTagged)
         {
             if (propertyType.IsArray)
                 return GetTypeString(propertyType.GetElementType(), false) + "[]"+(propertyType.GetElementType() == typeof(Byte) && !notNullTagged ? "?" : "");
@@ -528,7 +551,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 {
                     if (curPath.Contains(Path.DirectorySeparatorChar.ToString()))
                         curPath=curPath.Substring(0, curPath.LastIndexOf(Path.DirectorySeparatorChar));
-                }else if (sub!="" && sub!=".")
+                } else if (sub!="" && sub!=".")
                 {
                     bool changed = false;
                     foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
@@ -551,5 +574,48 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 return TranslatePath(fileProvider, null, path.Substring(baseURL.Length));
             return (curPath==null || curPath=="" ? null : curPath);
         }
+
+        #region JSON
+
+        private static JsonSerializerOptions _ProduceJsonOptions(ISecureSession session = null)
+        {
+            var result = new JsonSerializerOptions();
+            result.WriteIndented=false;
+            result.Converters.Add(new DateTimeConverter());
+            result.Converters.Add(new GuidConverter());
+            result.Converters.Add(new IPAddressConverter());
+            result.Converters.Add(new DecimalConverter());
+            result.Converters.Add(new ModelConverterFactory(session));
+            result.Converters.Add(new EnumConverterFactory());
+            return result;
+        }
+
+        public static string JsonEncode(object value)
+        {
+            if (value==null)
+                return "null";
+            return JsonSerializer.Serialize(value, value.GetType(), options: _ProduceJsonOptions());
+        }
+
+        public static T JsonDecode<T>(JsonDocument document, ISecureSession session)
+        {
+            return (T)JsonSerializer.Deserialize(document, typeof(T), options: _ProduceJsonOptions(session));
+        }
+
+        public static T JsonDecode<T>(JsonNode node, ISecureSession session)
+        {
+            return (T)JsonSerializer.Deserialize(node, typeof(T), options: _ProduceJsonOptions(session));
+        }
+
+        public static T JsonDecode<T>(JsonElement element, ISecureSession session)
+        {
+            return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(session));
+        }
+
+        public static T ConvertToType<T>(object obj,ISecureSession session)
+        {
+            return (T)_ConvertObjectToType(obj, typeof(T), session);
+        }
+        #endregion
     }
 }

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<IsPackable>false</IsPackable>
 		<AnalysisLevel>none</AnalysisLevel>
 		<RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
@@ -16,10 +16,6 @@
 	  <None Remove="resources\vueFiles\buttons\button.vue" />
 	  <None Remove="resources\vueFiles\icon.vue" />
 	  <None Remove="resources\vueFiles\notification.vue" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Include="..\VueJSMVCDotNet\JSON.cs" Link="JSON.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

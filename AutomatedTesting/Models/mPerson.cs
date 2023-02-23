@@ -162,13 +162,13 @@ namespace AutomatedTesting.Models
             return true;
         }
 
-        [ModelListMethod("/list/mPerson/bob")]
+        [ModelListMethod()]
         public static List<mPerson> ListBobs()
         {
             return _persons.Where(p => p.FirstName.ToLower()=="bob").ToList();
         }
 
-        [ModelListMethod("/list/mPerson/bob/pages",paged:true)]
+        [ModelListMethod(paged:true)]
         public static List<mPerson> ListBobsPaged(int pageStartIndex, int pageSize, out int totalPages)
         {
             mPerson[] bobs = _persons.Where(p => p.FirstName.ToLower()=="bob").ToArray();
@@ -178,98 +178,98 @@ namespace AutomatedTesting.Models
 
         #region List Pars
 
-        [ModelListMethod("/list/mPerson/bob/date?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByDate(DateTime date, ILog log)
         {
             log.Trace("Called List By Date");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/int?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByInt(int val, ILog log)
         {
             log.Trace("Called List By Integer");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/long?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByLong(long val, ILog log)
         {
             log.Trace("Called List By Long");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/short?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByShort(short val, ILog log)
         {
             log.Trace("Called List By Short");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/byte?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByByte(byte val, ILog log)
         {
             log.Trace("Called List By Byte");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/uint?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByUInt(uint val, ILog log)
         {
             log.Trace("Called List By UInteger");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/ulong?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByULong(ulong val, ILog log)
         {
             log.Trace("Called List By ULong");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/ushort?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByUShort(ushort val, ILog log)
         {
             log.Trace("Called List By UShort");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/double?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByDouble(double val, ILog log)
         {
             log.Trace("Called List By Double");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/float?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByFloat(float val, ILog log)
         {
             log.Trace("Called List By Float");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/decimal?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByDecimal(decimal val, ILog log)
         {
             log.Trace("Called List By Decimal");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/guid?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByGuid(Guid val, ILog log)
         {
             log.Trace("Called List By Guid");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/enum?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByEnum(mDataTypes.TestEnums val, ILog log)
         {
             log.Trace("Called List By Enum");
             return _persons;
         }
 
-        [ModelListMethod("/list/mPerson/bob/boolean?par={0}")]
+        [ModelListMethod()]
         public static List<mPerson> ListByBoolean(bool val, ILog log)
         {
             log.Debug("Called List By Boolean");
@@ -278,7 +278,7 @@ namespace AutomatedTesting.Models
 
         #endregion
 
-        [ModelListMethod("/search/mPerson?q={0}", true)]
+        [ModelListMethod(true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]
         public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {

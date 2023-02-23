@@ -12,12 +12,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ModelListMethod : Attribute
     {
-        private string _path;
-        internal string Path
-        {
-            get { return _path; }
-        }
-
         private bool _paged;
         internal bool Paged
         {
@@ -27,11 +21,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
         /// <summary>
         /// Constructor to tag a model listing method
         /// </summary>
-        /// <param name="path">The url to assign to the list method</param>
         /// <param name="paged">Indicates wheter or not the list is paged</param>
-        public ModelListMethod(string path, bool paged=false)
+        public ModelListMethod(bool paged=false)
         {
-            _path = path;
             _paged = paged;
         }
 

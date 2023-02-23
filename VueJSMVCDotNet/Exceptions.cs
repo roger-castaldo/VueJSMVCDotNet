@@ -227,34 +227,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class InvalidModelListParameterCountException : ModelTypeMethodException
     {
-        private readonly string _path;
-        /// <summary>
-        /// The path for the model list
-        /// </summary>
-        public string Path => _path;
 
-        internal InvalidModelListParameterCountException(Type t, MethodInfo mi, string path)
-            : base(t,mi.Name,"The IModel type " + t.FullName + " is not valid because the number of parameters for the method " + mi.Name + " does not match the number of variables in the path " + path)
+        internal InvalidModelListParameterCountException(Type t, MethodInfo mi)
+            : base(t,mi.Name,"The IModel type " + t.FullName + " is not valid because the number of parameters for the method " + mi.Name + " does not match the number of variables")
         {
-            _path= path;
-        }
-    }
-
-    /// <summary>
-    /// thrown when the parameter of a ModelListMethod is not a usable parameter
-    /// </summary>
-    public class InvalidModelListParameterTypeException : ModelTypeMethodException
-    {
-        private ParameterInfo _parameter;
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter => _parameter;
-
-        internal InvalidModelListParameterTypeException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi.Name, "The IModel type " + t.FullName + " is not valid because the parameter " + pi.Name + " in the method " + mi.Name + " is not a usable parameter for a ModelListMethod.")
-        {
-            _parameter= pi;
         }
     }
 

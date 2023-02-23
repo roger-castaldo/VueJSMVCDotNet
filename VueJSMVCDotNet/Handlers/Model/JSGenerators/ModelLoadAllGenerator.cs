@@ -17,8 +17,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                     builder.AppendLine(string.Format(@"     static LoadAll(){{
                             var ret = new ModelList(
                                 function(){{ return new {0}(); }},
-                                function(){{ return {0}.#baseURL; }},
+                                {0}.#baseURL,
                                 false,
+                                true,
                                 undefined
                             );
                             ret.reload();

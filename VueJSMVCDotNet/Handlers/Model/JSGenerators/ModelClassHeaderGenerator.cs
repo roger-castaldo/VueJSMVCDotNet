@@ -37,7 +37,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
             return this.#toProxy();
         }}", new object[] {
                 Constants.INITIAL_DATA_KEY, 
-                JSON.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null)),
+                Utility.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null)),
                 Constants.Events.MODEL_LOADED,
                 Constants.Events.MODEL_UPDATED,
                 Constants.Events.MODEL_SAVED,

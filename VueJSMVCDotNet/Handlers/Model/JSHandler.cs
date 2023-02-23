@@ -207,6 +207,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 
         private Dictionary<string, string> _cache;
         private Dictionary<Type,ModelJSFilePath[]> _types;
+        private Dictionary<Type, IEnumerable<ASecurityCheck>> _securityChecks;
         private readonly string _urlBase;
         private readonly string _vueImportPath;
         private readonly string _compressedCore;
@@ -238,6 +239,7 @@ const securityHeaders = {{", _vueImportPath);
             builder.AppendLine(sr.ReadToEnd());
             _compressedCore = JSMinifier.Minify(builder.ToString());
             sr.Close();
+            _securityChecks=new Dictionary<Type, IEnumerable<ASecurityCheck>>();
         }
 
         public override void ClearCache()
@@ -245,6 +247,10 @@ const securityHeaders = {{", _vueImportPath);
             lock (_cache)
             {
                 _cache.Clear();
+            }
+            lock (_securityChecks)
+            {
+                _securityChecks.Clear();
             }
         }
 
@@ -282,7 +288,14 @@ const securityHeaders = {{", _vueImportPath);
                     var reqData = await _ExtractParts(context);
                     foreach (Type model in models)
                     {
-                        if (!await _ValidCall(model,null,null,context))
+                        IEnumerable<ASecurityCheck> checks = new ASecurityCheck[] { };
+                        lock (_securityChecks)
+                        {
+                            if (!_securityChecks.ContainsKey(model))
+                                _securityChecks.Add(model,model.GetCustomAttributes().OfType<ASecurityCheck>());
+                            checks = _securityChecks[model];
+                        }
+                        if (checks.Any(check=>!check.HasValidAccess(reqData,null,url,null)))
                             throw new InsecureAccessException();
                     }
                     DateTime modDate = DateTime.MinValue;
@@ -388,10 +401,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
 
         protected override void _UnloadTypes(List<Type> types)
         {
-            lock (_cache)
-            {
-                _cache.Clear();
-            }
+            ClearCache();
             lock (_types)
             {
                 foreach (Type t in types)

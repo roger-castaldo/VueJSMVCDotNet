@@ -26,7 +26,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             PATCH,
             METHOD,
             SMETHOD,
-            PULL
+            PULL,
+            LIST
         }
 
         public delegate string delRegisterSlowMethodInstance(string url, MethodInfo method, object model, object[] pars, ISecureSession session);

@@ -108,7 +108,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 context.Response.ContentType= "text/json";
                 context.Response.StatusCode = 200;
                 _completed = _finished&&_data.IsEmpty;
-                return context.Response.WriteAsync(JSON.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty)));
+                return context.Response.WriteAsync(Utility.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty)));
             }
         }
 

@@ -154,9 +154,9 @@ namespace AutomatedTesting
                 {
                     {"Name","John" }
                 })).ReadToEnd();
-            Assert.AreEqual(status, 404);
+            Assert.AreEqual(404, status);
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual("Unable to locate requested method to invoke", content);
+            Assert.AreEqual("Unable to locate method with matching parameters", content);
         }
 
         [TestMethod]

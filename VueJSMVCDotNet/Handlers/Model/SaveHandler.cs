@@ -15,59 +15,37 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class SaveHandler : ModelRequestHandlerBase
     {
-        private Dictionary<string, ConstructorInfo> _constructors;
-        private Dictionary<string, MethodInfo> _saveMethods;
+        private readonly List<IModelActionHandler> _handlers;
 
         public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
             :base(next,sessionFactory,registerSlowMethod,urlBase)
         {
-            _constructors = new Dictionary<string, ConstructorInfo>();
-            _saveMethods = new Dictionary<string, MethodInfo>();
+            _handlers=new List<IModelActionHandler>();
         }
 
         public override void ClearCache()
         {
-            _constructors.Clear();
-            _saveMethods.Clear();
+            _handlers.Clear();
         }
 
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = _CleanURL(context);
             Logger.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { GetRequestMethod(context), url });
-            if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT)
+            if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT && _handlers.Any(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))
             {
-                MethodInfo mi = null;
-                lock (_saveMethods)
+                var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase));
+                if (handler==null)
+                    throw new CallNotFoundException("Model Not Found");
+                ModelRequestData requestData = await _ExtractParts(context);
+                var model = (IModel)Activator.CreateInstance(handler.GetType().GetGenericArguments()[0]);
+                Utility.SetModelValues(requestData, ref model, true);
+                await handler.InvokeWithoutLoad(url, requestData, context, model, extractResponse: (model, response,pars,method) =>
                 {
-                    mi = (_saveMethods.ContainsKey(url) ? _saveMethods[url] : null);
-                }
-                if (mi!=null)
-                {
-                    IModel model = null;
-                    lock (_constructors)
-                    {
-                        model = (IModel)(_constructors.ContainsKey(url) ? _constructors[url].Invoke(new object[] { }) : null);
-                    }
-                    if (model == null)
-                        throw new CallNotFoundException("Model Not Found");
-                    else
-                    {
-                        if (!await _ValidCall(mi.DeclaringType,mi,model,context))
-                            throw new InsecureAccessException();
-                        Logger.Trace("Attempting to handle a save request with {0}.{1} in the model with id {2}", new object[] { model.GetType().FullName, mi.Name, model.id });
-                        sRequestData requestData = await _ExtractParts(context);
-                        Utility.SetModelValues(requestData.FormData, ref model, true,requestData.Session);
-                        if ((bool)Utility.InvokeMethod(mi, model, session: requestData.Session))
-                        {
-                            context.Response.ContentType = "text/json";
-                            context.Response.StatusCode= 200;
-                            await context.Response.WriteAsync(JSON.JsonEncode(new Hashtable() { { "id", model.id } }));
-                            return;
-                        }
-                        throw new SaveFailedException(model.GetType(),mi);
-                    }
-                }
+                    if ((bool)response)
+                        return new Hashtable() { {"id", model.id }};
+                    throw new SaveFailedException(model.GetType(), method);
+                });
             }
             await _next(context);
         }
@@ -75,42 +53,23 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
        protected override void _LoadTypes(List<Type> types){
             foreach (Type t in types)
             {
-                MethodInfo saveMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).Where(m => m.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0).FirstOrDefault();
+                MethodInfo saveMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
                 if (saveMethod != null)
                 {
-                    _saveMethods.Add(Utility.GetModelUrlRoot(t), saveMethod);
-                    _constructors.Add(Utility.GetModelUrlRoot(t), t.GetConstructor(Type.EmptyTypes));
+                    _handlers.Add((IModelActionHandler)
+                        typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
+                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string),typeof(delRegisterSlowMethodInstance) })
+                        .Invoke(new object[] { saveMethod, "save", _registerSlowMethod })
+                    );
                 }
             }
         }
 
         protected override void _UnloadTypes(List<Type> types)
         {
-            string[] keys;
-            lock (_saveMethods)
-            {
-                keys = new string[_saveMethods.Count];
-                _saveMethods.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
-                {
-                    if (types.Contains(_saveMethods[str].DeclaringType))
-                    {
-                        _saveMethods.Remove(str);
-                    }
-                }
-            }
-            lock (_constructors)
-            {
-                keys = new string[_constructors.Count];
-                _constructors.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
-                {
-                    if (types.Contains(_constructors[str].DeclaringType))
-                    {
-                        _constructors.Remove(str);
-                    }
-                }
-            }
+            _handlers.RemoveAll(h =>
+                types.Contains(h.GetType().GetGenericArguments()[0])
+            );
         }
     }
 }

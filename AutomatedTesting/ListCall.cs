@@ -40,7 +40,12 @@ namespace AutomatedTesting
         public void TestList()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status,parameters:new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",0 },
+                {"PageSize",10}
+            }));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -60,7 +65,12 @@ namespace AutomatedTesting
                     cnt++;
             }
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=b&PageStartIndex=0&PageSize=10", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q","b" },
+                {"PageStartIndex",0 },
+                {"PageSize",10}
+            }));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -74,7 +84,12 @@ namespace AutomatedTesting
         public void TestListPageSize()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=2", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",0 },
+                {"PageSize",2}
+            }));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -88,7 +103,12 @@ namespace AutomatedTesting
         public void TestListPageStartIndex()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=1&PageSize=2", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",1 },
+                {"PageSize",2}
+            }));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -102,7 +122,7 @@ namespace AutomatedTesting
         public void TestParameterlessList()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/list/mPerson/bob", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/ListBobs", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
             Assert.AreEqual(mPerson.Persons.Count(p => p.FirstName.ToLower()=="bob"), ((ArrayList)result).Count);
@@ -112,7 +132,11 @@ namespace AutomatedTesting
         public void TestPagedParameterlessList()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/list/mPerson/bob/pages?PageStartIndex=0&PageSize=2", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/ListBobsPaged", _middleware, out status, parameters: new Hashtable()
+            {
+                {"PageStartIndex",0 },
+                {"PageSize",2}
+            }));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
@@ -122,10 +146,10 @@ namespace AutomatedTesting
             Assert.IsTrue(((ArrayList)((Hashtable)result)["response"]).Count<=2);
         }
 
-        private void _TestParameterListCall(string url,int? expectedStatus=null)
+        private void _TestParameterListCall(string url,Hashtable pars,int? expectedStatus=null)
         {
             int status;
-            MemoryStream ms = Utility.ExecuteRequest("GET", url, _middleware, out status);
+            MemoryStream ms = Utility.ExecuteRequest("LIST", url, _middleware, out status,parameters:pars);
             if (expectedStatus!=null)
                 Assert.AreEqual(expectedStatus.Value, status);
             else
@@ -140,180 +164,345 @@ namespace AutomatedTesting
         [TestMethod()]
         public void TestListDateTimeParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", 50000));
+            _TestParameterListCall("/models/mPerson/ListByDate",new Hashtable()
+            {
+                {"date",DateTime.Now }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Date"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/date?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByDate", new Hashtable()
+            {
+                {"date","invalid" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Date"), Times.Once);
         }
 
         [TestMethod()]
         public void TestListIntegerParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", long.MinValue), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            {
+                {"val",long.MinValue }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            {
+                {"val",int.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", int.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            {
+                {"val",int.MaxValue}
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/int?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Integer"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListLongParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", BigInteger.Add(new BigInteger(long.MaxValue),new BigInteger(1))), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            {
+                {"val",BigInteger.Add(new BigInteger(long.MaxValue),new BigInteger(1))}
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            {
+                {"val",long.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", long.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            {
+                {"val",long.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/long?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Long"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListShortParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", int.MaxValue), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            {
+                {"val",int.MaxValue }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            {
+                {"val",short.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", short.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            {
+                {"val",short.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/short?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Short"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListByteParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/byte?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Byte"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/byte?par={0}", short.MaxValue), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            {
+                {"val",short.MaxValue }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Byte"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/byte?par={0}", byte.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            {
+                {"val",byte.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Byte"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/byte?par={0}", byte.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            {
+                {"val",byte.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Byte"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/byte?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Byte"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListUIntegerParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/uint?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UInteger"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/uint?par={0}", ulong.MaxValue), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            {
+                {"val",ulong.MaxValue}
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UInteger"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/uint?par={0}", uint.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            {
+                {"val",uint.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UInteger"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/uint?par={0}", uint.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            {
+                {"val",uint.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UInteger"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/uint?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UInteger"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListULongParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ulong?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By ULong"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ulong?par={0}", BigInteger.Add(new BigInteger(ulong.MaxValue), new BigInteger(1))), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            {
+                {"val",BigInteger.Add(new BigInteger(ulong.MaxValue), new BigInteger(1)) }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By ULong"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ulong?par={0}", ulong.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            {
+                {"val",ulong.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By ULong"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ulong?par={0}", ulong.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            {
+                {"val",ulong.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By ULong"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ulong?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            {
+                {"val",0}
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By ULong"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListUShortParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ushort?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UShort"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ushort?par={0}", uint.MaxValue), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            {
+                {"val",uint.MaxValue }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UShort"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ushort?par={0}", ushort.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            {
+                {"val",ushort.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UShort"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ushort?par={0}", ushort.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            {
+                {"val",ushort.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UShort"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/ushort?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By UShort"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListDoubleParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            {
+                {"val",double.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", double.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            {
+                {"val",double.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/double?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Double"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListFloatParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/float?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Float"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/float?par={0}", float.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            {
+                {"val",float.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Float"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/float?par={0}", float.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            {
+                {"val",float.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Float"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/float?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Float"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListDecimalParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/decimal?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Decimal"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/decimal?par={0}", decimal.MinValue));
+            _TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            {
+                {"val",decimal.MinValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Decimal"), Times.Once);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/decimal?par={0}", decimal.MaxValue));
+            _TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            {
+                {"val",decimal.MaxValue }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Decimal"), Times.Exactly(2));
-            _TestParameterListCall(string.Format("/list/mPerson/bob/decimal?par={0}", 0));
+            _TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            {
+                {"val",0 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Decimal"), Times.Exactly(3));
         }
 
         [TestMethod()]
         public void TestListGuidParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/guid?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByGuid", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Guid"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/guid?par={0}", Guid.Empty));
+            _TestParameterListCall("/models/mPerson/ListByGuid", new Hashtable()
+            {
+                {"val",Guid.Empty }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Guid"), Times.Once);
         }
 
         [TestMethod()]
         public void TestListEnumParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/enum?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByEnum", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Enum"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/enum?par={0}", mDataTypes.TestEnums.Test1));
+            _TestParameterListCall("/models/mPerson/ListByEnum", new Hashtable()
+            {
+                {"val",mDataTypes.TestEnums.Test1 }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Trace, "Called List By Enum"), Times.Once);
         }
 
         [TestMethod()]
         public void TestListBooleanParameter()
         {
-            _TestParameterListCall(string.Format("/list/mPerson/bob/boolean?par={0}", "p"), expectedStatus: 404);
+            _TestParameterListCall("/models/mPerson/ListByBoolean", new Hashtable()
+            {
+                {"val","p" }
+            }, expectedStatus: 404);
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Debug, "Called List By Boolean"), Times.Never);
-            _TestParameterListCall(string.Format("/list/mPerson/bob/boolean?par={0}", true));
+            _TestParameterListCall("/models/mPerson/ListByBoolean", new Hashtable()
+            {
+                {"val",true }
+            });
             _writer.Verify(w => w.WriteLogMessage(It.IsAny<DateTime>(), LogLevels.Debug, "Called List By Boolean"), Times.Once);
         }
     }

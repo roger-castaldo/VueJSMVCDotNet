@@ -133,13 +133,28 @@ namespace AutomatedTesting
         public void TestListMethodSecurity()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",0 },
+                {"PageSize",10}
+            }, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",0 },
+                {"PageSize",10}
+            }, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/search/mPerson?q=NULL&PageStartIndex=0&PageSize=10", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SEARCH }))).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            {
+                {"q",null },
+                {"PageStartIndex",0 },
+                {"PageSize",10}
+            }, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SEARCH }))).ReadToEnd();
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
