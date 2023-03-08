@@ -5,10 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.ModelRequestHandlerBase;
 using static Org.Reddragonit.VueJSMVCDotNet.Handlers.ModelRequestHandler;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
@@ -18,9 +15,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private readonly IEnumerable<string> _baseURLs;
         public IEnumerable<string> BaseURLs => _baseURLs;
 
-        private readonly MethodInfo _loadMethod;
-        private readonly Dictionary<MethodInfo, IEnumerable<ASecurityCheck>> _securityChecks;
-        private readonly IEnumerable<MethodInfo> _methods;
+        private readonly InjectableMethod _loadMethod;
+        private readonly IEnumerable<InjectableMethod> _methods;
 
         public IEnumerable<string> MethodNames => _methods.Select(m => m.Name).Distinct();
 
@@ -36,22 +32,16 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             : this(new MethodInfo[] {method }, callType, delRegisterSlowMethod)
         {}
 
-        public ModelActionHandler(IEnumerable<MethodInfo> methods,string callType, delRegisterSlowMethodInstance delRegisterSlowMethod)
+        public ModelActionHandler(IEnumerable<MethodInfo> methods, string callType, delRegisterSlowMethodInstance delRegisterSlowMethod)
         {
-            _methods= methods;
+            _methods = methods.Select(m => new InjectableMethod(m));
             _callType=callType;
             _registerSlowMethod=delRegisterSlowMethod;
             _baseURLs = typeof(T)
                .GetCustomAttributes(typeof(ModelRoute), false)
                .Select(ca => ((ModelRoute)ca).Path)
                .OrderByDescending(p => p.Length);
-            var modelChecks = typeof(T).GetCustomAttributes().OfType<ASecurityCheck>();
-            _securityChecks = new Dictionary<MethodInfo, IEnumerable<ASecurityCheck>>();
-            _loadMethod = typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0);
-            if (_loadMethod!=null)
-                _securityChecks.Add(_loadMethod, modelChecks.Concat(_loadMethod.GetCustomAttributes().OfType<ASecurityCheck>()));
-            foreach (MethodInfo mi in _methods)
-                _securityChecks.Add(mi, modelChecks.Concat(mi.GetCustomAttributes().OfType<ASecurityCheck>()));
+            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0));
         }
 
         public IModel Load(string url, ModelRequestData request, Func<string, string> extractID = null)
@@ -59,10 +49,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             if (_loadMethod != null)
             {
                 var id = extractID == null ? url.Substring(url.LastIndexOf("/") + 1) : extractID(url);
-                if (_securityChecks[_loadMethod].Any(asc => !asc.HasValidAccess(request, null, url, id)))
+                if (!_loadMethod.HasValidAccess(request, null, url, id))
                     throw new InsecureAccessException();
                 Logger.Trace("Attempting to load model at url {0}", new object[] { url });
-                var result = Utility.InvokeLoad(_loadMethod, id, request.Session);
+                var result = (IModel)_loadMethod.Invoke(null, new object[] { id }, session: request.Session);
                 if (result != null)
                     return result;
             }
@@ -82,21 +72,21 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private async Task _Invoke(string url, ModelRequestData request, HttpContext context,IModel model,Func<IModel, ModelRequestData, IModel> processLoadedModel = null, Func<IModel, object, object[], MethodInfo, object> extractResponse = null)
         {
             Logger.Trace("calling {0} method matching the url {1}", new object[] { _callType, url });
-            MethodInfo method = null;
+            InjectableMethod method = null;
             object[] pars = null;
-            Utility.LocateMethod(request, _methods, out method, out pars);
+            _LocateMethod(request, _methods, out method, out pars);
             if (method==null)
             {
                 method = _methods.First();
-                if (!method.GetCustomAttributes().Any(att=>att is ModelUpdateMethod || att is ModelSaveMethod))
+                if (!method.IsModelUpdateOrSave)
                     throw new CallNotFoundException("Unable to locate method with matching parameters");
             }
-            if (_securityChecks[method].Any(asc => !asc.HasValidAccess(request, model, url, (model==null ? null : model.id))))
+            if (!method.HasValidAccess(request, model, url, (model==null ? null : model.id)))
                 throw new InsecureAccessException();
             if (processLoadedModel != null)
                 model = (T)processLoadedModel(model, request);
             Logger.Trace("Invoking the {0} method {1}.{2} for the url {3}", new object[] { _callType, typeof(T).FullName, method.Name, url });
-            if (method.GetCustomAttributes().OfType<ExposedMethod>().Any(em=>em.IsSlow))
+            if (method.IsSlow)
             {
                 string newPath = _registerSlowMethod(url, method, model, pars, request.Session);
                 if (newPath!= null)
@@ -112,7 +102,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             {
                 if (method.ReturnType == typeof(void))
                 {
-                    Utility.InvokeMethod(method, model, pars: pars, session: request.Session);
+                    method.Invoke(model, pars: pars, session: request.Session);
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
@@ -120,7 +110,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 else if (method.ReturnType==typeof(string))
                 {
                     context.Response.StatusCode= 200;
-                    string tmp = (string)Utility.InvokeMethod(method, model, pars: pars, session: request.Session);
+                    string tmp = (string)method.Invoke(model, pars: pars, session: request.Session);
                     context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
                     await context.Response.WriteAsync((tmp==null ? Utility.JsonEncode(tmp) : tmp));
                 }
@@ -128,10 +118,63 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
-                    var resp = Utility.InvokeMethod(method, model, pars: pars, session: request.Session);
+                    var resp = method.Invoke(model, pars: pars, session: request.Session);
                     if (extractResponse!=null)
-                        resp = extractResponse(model, resp,pars,method);
+                        resp = extractResponse(model, resp,pars,method.Method);
                     await context.Response.WriteAsync(Utility.JsonEncode(resp));
+                }
+            }
+        }
+
+        private static void _LocateMethod(ModelRequestData request, IEnumerable<InjectableMethod> methods, out InjectableMethod method, out object[] pars)
+        {
+            method = null;
+            pars = null;
+            if (!request.Keys.Any())
+                method = methods.FirstOrDefault(imi => imi.StrippedParameters.Length==0);
+            else
+            {
+                foreach (InjectableMethod m in methods.Where(imi => imi.StrippedParameters.Count(p => !p.IsOut)==request.Keys.Count()))
+                {
+                    pars = new object[m.StrippedParameters.Length];
+                    bool isMethod = true;
+                    int index = 0;
+                    foreach (ParameterInfo pi in m.StrippedParameters)
+                    {
+                        if (!pi.IsOut)
+                        {
+                            if (request.Keys.Contains(pi.Name, StringComparer.InvariantCultureIgnoreCase))
+                            {
+                                object val = null;
+                                try
+                                {
+                                    val = request.GetValue(pi.ParameterType, pi.Name);
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    isMethod=false;
+                                    break;
+                                }
+                                if (m.NotNullArguement!=null&&m.NotNullArguement.IsParameterNullable(pi)&&val==null)
+                                {
+                                    isMethod=false;
+                                    break;
+                                }
+                                pars[index] = val;
+                            }
+                            else
+                            {
+                                isMethod = false;
+                                break;
+                            }
+                        }
+                        index++;
+                    }
+                    if (isMethod)
+                    {
+                        method = m;
+                        return;
+                    }
                 }
             }
         }

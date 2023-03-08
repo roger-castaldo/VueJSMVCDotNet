@@ -42,7 +42,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         private Task _execution;
         private CancellationTokenSource _token;
 
-        public SlowMethodInstance(MethodInfo method,object model,object[] pars,ISecureSession session)
+        public SlowMethodInstance(InjectableMethod method,object model,object[] pars,ISecureSession session)
         {
             _data=new ConcurrentQueue<object>();
             _finished=false;
@@ -55,9 +55,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                        Utility.InvokeMethod(method, model, pars: pars, session: session, addItem: new AddItem(AddItem));
+                        method.Invoke(model, pars: pars, session: session, addItem: new AddItem(AddItem));
                     else
-                        AddItem(Utility.InvokeMethod(method, model, pars: pars, session: session, addItem: new AddItem(AddItem)), true);
+                        AddItem(method.Invoke(model, pars: pars, session: session, addItem: new AddItem(AddItem)), true);
                 }catch(Exception e)
                 {
                     Logger.LogError(e);

@@ -28,18 +28,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     internal static class Utility
     {
         //houses a cache of Types found through locate type, this is used to increase performance
-        private static Dictionary<string, Type> _TYPE_CACHE;
+        private static Dictionary<string, Type> _TYPE_CACHE = new();
         //houses a cache of Type instances through locate type instances, this is used to increate preformance
-        private static Dictionary<string, List<Type>> _INSTANCES_CACHE;
+        private static Dictionary<string, List<Type>> _INSTANCES_CACHE = new();
         //houses the assembly load contexts for types
-        private static Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES;
-
-        static Utility()
-        {
-            _TYPE_CACHE = new Dictionary<string, Type>();
-            _INSTANCES_CACHE = new Dictionary<string, List<Type>>();
-            _LOAD_CONTEXT_TYPE_SOURCES = new Dictionary<string, List<Type>>();
-        }
+        private static Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES = new();
 
         internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew)
         {
@@ -58,59 +51,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 pi.SetValue(model,data.GetValue(pi.PropertyType,str));
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        internal static void LocateMethod(ModelRequestData request, IEnumerable<MethodInfo> methods, out MethodInfo method, out object[] pars)
-        {
-            method = null;
-            pars = null;
-            if (!request.Keys.Any())
-                method = methods.FirstOrDefault(mi => ExtractStrippedParameters(mi).Length==0);
-            else
-            {
-                foreach (MethodInfo m in methods.Where(mi => ExtractStrippedParameters(mi).Count(p=>!p.IsOut)==request.Keys.Count()))
-                {
-                    var notNullArguement = (NotNullArguement)m.GetCustomAttribute(typeof(NotNullArguement));
-                    var parameters = ExtractStrippedParameters(m);
-                    pars = new object[parameters.Length];
-                    bool isMethod = true;
-                    int index = 0;
-                    foreach (ParameterInfo pi in parameters)
-                    {
-                        if (!pi.IsOut)
-                        {
-                            if (request.Keys.Contains(pi.Name, StringComparer.InvariantCultureIgnoreCase)) {
-                                object val = null;
-                                try
-                                {
-                                    val = request.GetValue(pi.ParameterType, pi.Name);
-                                }catch(InvalidCastException)
-                                {
-                                    isMethod=false;
-                                    break;
-                                }
-                                if(notNullArguement!=null&&notNullArguement.IsParameterNullable(pi)&&val==null)
-                                {
-                                    isMethod=false;
-                                    break;
-                                }
-                                pars[index] = val;
-                            }
-                            else
-                            {
-                                isMethod = false;
-                                break;
-                            }
-                        }
-                        index++;
-                    }
-                    if (isMethod)
-                    {
-                        method = m;
-                        return;
                     }
                 }
             }
