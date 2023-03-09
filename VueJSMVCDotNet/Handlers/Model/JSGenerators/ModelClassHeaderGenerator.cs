@@ -46,7 +46,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
             }));
         }
 
-        private void _AppendToProxy(ref WrappedStringBuilder builder, PropertyInfo[] props, MethodInfo[] methods, sModelType modelType)
+        private void _AppendToProxy(ref WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, sModelType modelType)
         {
             builder.AppendLine(@"#toProxy(){
     let me = this;
@@ -121,7 +121,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
         };");
         }
 
-        private void _AppendValidations(PropertyInfo[] props, ref WrappedStringBuilder builder)
+        private void _AppendValidations(IEnumerable<PropertyInfo> props, ref WrappedStringBuilder builder)
         {
             List<PropertyInfo> requiredProps = new List<PropertyInfo>();
             foreach (PropertyInfo pi in props)

@@ -122,7 +122,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
         private void _AppendMethodCallDeclaration(MethodInfo method, ref WrappedStringBuilder builder)
         {
             builder.AppendFormat("          {0}{1}(", new object[] { (method.IsStatic ? "static " : "#"), method.Name });
-            ParameterInfo[] pars = Utility.ExtractStrippedParameters(method);
+            ParameterInfo[] pars = new InjectableMethod(method).StrippedParameters;
             for (int x = 0; x < pars.Length; x++)
                 builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
             builder.AppendLine(@"){

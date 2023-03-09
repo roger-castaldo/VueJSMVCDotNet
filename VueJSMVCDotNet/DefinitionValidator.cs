@@ -36,10 +36,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         private static bool _IsValidDataActionMethod(MethodInfo method)
         {
-            return (method.ReturnType == typeof(bool)) && (
-                method.GetParameters().Length == 0 || 
-                (method.GetParameters().Length==1 && Utility.IsISecureSessionType(method.GetParameters()[0].ParameterType))
-            );
+            return (method.ReturnType == typeof(bool)) && new InjectableMethod(method).StrippedParameters.Length==0;
         }
 
         /*
@@ -174,7 +171,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         }
                         if (mi.ReturnType == t)
                         {
-                            ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                            ParameterInfo[] pars = new InjectableMethod(mi).StrippedParameters;
                             if (pars.Length==1 && pars[0].ParameterType==typeof(string))
                             {
                                 if (found)
@@ -209,7 +206,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
                             }else{
-                                ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                                ParameterInfo[] pars = new InjectableMethod(mi).StrippedParameters;
                                 if (pars.Length!=0){
                                     invalidModels.Add(t);
                                     errors.Add(new InvalidLoadAllArguements(t, mi.Name));
@@ -240,7 +237,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                             invalidModels.Add(t);
                             errors.Add(new InvalidModelListMethodReturnException(t, mi));
                         }
-                        ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                        ParameterInfo[] pars = new InjectableMethod(mi).StrippedParameters;
                         if (mlm.Paged && pars.Length<3)
                         {
                             Logger.Trace("Model {0} has an invalid signature for paged model list method {1}, required parameters are missing", new object[] { t.FullName, mi.Name });
@@ -303,8 +300,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
                             int aidx;
-                            bool hasAddItem = Utility.UsesAddItem(mi, out aidx);
-                            int parCount = Utility.ExtractStrippedParameters(mi).Length;
+                            var im = new InjectableMethod(mi);
+                            bool hasAddItem = im.HasAddItem;
+                            int parCount = im.StrippedParameters.Length;
                             if (methods.Contains(mi.Name + "." + parCount.ToString()))
                             {
                                 Logger.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName, mi.Name });

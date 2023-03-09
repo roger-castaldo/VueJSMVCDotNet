@@ -12,15 +12,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     internal class InjectableMethod
     {
         private readonly MethodInfo _method;
-
-        public MethodInfo Method => _method;
         public string Name => _method.Name;
         public bool IsModelUpdateOrSave => _method.GetCustomAttributes().Any(att => att is ModelUpdateMethod || att is ModelSaveMethod);
         public bool IsSlow =>_method.GetCustomAttributes().OfType<ExposedMethod>().Any(em => em.IsSlow);
         public Type ReturnType => _method.ReturnType;
 
+        public IEnumerable<Attribute> GetCustomAttributes()
+        {
+            return _method.GetCustomAttributes();
+        }
+
         private readonly int _secureSessionIndex;
         private readonly int _addItemIndex;
+        public bool HasAddItem => _addItemIndex!=-1;
         private readonly int _loggerIndex;
         private readonly ParameterInfo[] _parameters;
         private readonly IEnumerable<ASecurityCheck> _securityChecks;
@@ -41,13 +45,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             _loggerIndex=-1;
             for(int x = 0; x<_parameters.Length; x++)
             {
-                if (Utility.IsISecureSessionType(_parameters[x].ParameterType))
+                if (_parameters[x].ParameterType == typeof(ISecureSession) ||
+                new List<Type>(_parameters[x].ParameterType.GetInterfaces()).Contains(typeof(ISecureSession)))
                     _secureSessionIndex=x;
                 else if (_parameters[x].ParameterType==typeof(AddItem))
                     _addItemIndex=x;
                 else if (_parameters[x].ParameterType==typeof(ILog))
                     _loggerIndex=x;
-                if (_secureSessionIndex!=x && _addItemIndex!=x && _loggerIndex!=x)
+                else
                     strippedPars.Add(_parameters[x]);
             }
             _strippedParameters= strippedPars.ToArray();

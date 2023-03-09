@@ -375,6 +375,7 @@ namespace AutomatedTesting.Models
 
         [ExposedMethod(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
+        [NotNullArguement(new string[] {"lastName","firstName"})]
         public static string FormatName(ISecureSession session,string lastName,string firstName)
         {
             return string.Format("{0}, {1}", new object[] { firstName, lastName });

@@ -22,7 +22,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
                 });
                 NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
                 builder.AppendFormat(@"     static {0}(", new object[] { mi.Name });
-                ParameterInfo[] pars = Utility.ExtractStrippedParameters(mi);
+                ParameterInfo[] pars = new InjectableMethod(mi).StrippedParameters;
 
                 for (int x = 0; x < (mlm.Paged ? pars.Length - 3 : pars.Length); x++)
                     builder.Append((x > 0 ? "," : "") + pars[x].Name);

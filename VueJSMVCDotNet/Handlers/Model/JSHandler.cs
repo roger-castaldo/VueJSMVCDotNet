@@ -7,6 +7,7 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,152 +24,77 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 
         public struct sModelType
         {
-            private Type _type;
+            private readonly Type _type;
             public Type Type { get { return _type; } }
 
-            private PropertyInfo[] _properties;
-            public PropertyInfo[] Properties { 
-                get { 
-                    if (_properties==null)
-                    {
-                        List<PropertyInfo> props = new List<PropertyInfo>();
-                        foreach (PropertyInfo pi in _type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                        {
-                            if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id")
-                            {
-                                if (!pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0)
-                                    props.Add(pi);
-                            }
-                        }
-                        _properties=props.ToArray();
-                    }
-                    return _properties; 
-                } 
+            private readonly IEnumerable<PropertyInfo> _properties;
+            public IEnumerable<PropertyInfo> Properties => _properties;
+
+            private readonly IEnumerable<MethodInfo> _instanceMethods;
+            public IEnumerable<MethodInfo> InstanceMethods => _instanceMethods; 
+
+            private readonly IEnumerable<MethodInfo> _staticMethods;
+            public IEnumerable<MethodInfo> StaticMethods => _staticMethods;
+
+            private static Type _ExtractType(Type t)
+            {
+                if (t.IsArray)
+                    t = t.GetElementType();
+                else if (t.IsGenericType)
+                    t = t.GetGenericArguments()[0];
+                return t;
             }
 
-            private MethodInfo[] _instanceMethods;
-            public MethodInfo[] InstanceMethods { 
-                get { 
-                    if (_instanceMethods==null)
-                    {
-                        List<MethodInfo> methods = new List<MethodInfo>();
-                        foreach (MethodInfo mi in _type.GetMethods(Constants.INSTANCE_METHOD_FLAGS))
-                        {
-                            if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                                methods.Add(mi);
-                        }
-                        _instanceMethods = methods.ToArray();
-                    }
-                    return _instanceMethods; 
-                } 
-            }
-
-            private MethodInfo[] _staticMethods;
-            public MethodInfo[] StaticMethods { 
-                get { 
-                    if (_staticMethods==null){
-                        List<MethodInfo> methods = new List<MethodInfo>();
-                        foreach (MethodInfo mi in _type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS))
-                        {
-                            if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
-                                methods.Add(mi);
-                        }
-                        _staticMethods = methods.ToArray();
-                    }
-                    return _staticMethods; 
-                } 
-            }
-
-            private sModelType[] _linkedTypes;
-            public sModelType[] LinkedTypes
+            private IEnumerable<sModelType> _linkedTypes;
+            public IEnumerable<sModelType> LinkedTypes
             {
                 get
                 {
                     if (_linkedTypes==null)
                     {
-                        List<sModelType> types = new List<sModelType>();
-                        foreach (PropertyInfo pi in Properties)
-                        {
-                            if (pi.CanRead)
-                            {
-                                Type t = pi.PropertyType;
-                                if (t.IsArray)
-                                    t = t.GetElementType();
-                                else if (t.IsGenericType)
-                                    t = t.GetGenericArguments()[0];
-                                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                                {
-                                    if (!types.Contains(new sModelType(t)))
-                                    {
-                                        types.Add(new sModelType(t));
-                                    }
-                                }
-                            }
-                        }
-                        foreach (MethodInfo[] methods in new MethodInfo[][] { InstanceMethods, StaticMethods })
-                        {
-                            foreach (MethodInfo mi in methods)
-                            {
-                                Type t = mi.ReturnType;
-                                if (t.IsArray)
-                                    t = t.GetElementType();
-                                else if (t.IsGenericType)
-                                    t = t.GetGenericArguments()[0];
-                                if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                                {
-                                    if (!types.Contains(new sModelType(t)))
-                                    {
-                                        types.Add(new sModelType(t));
-                                    }
-                                }
-                                t = ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).ArrayElementType;
-                                if (t!=null)
-                                {
-                                    if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
-                                    {
-                                        if (!types.Contains(new sModelType(t)))
-                                        {
-                                            types.Add(new sModelType(t));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _linkedTypes=types.ToArray();
+                        _linkedTypes = Properties.Where(pi => pi.CanRead)
+                            .Select(pi => _ExtractType(pi.PropertyType))
+                            .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
+                            .Select(t => new sModelType(t))
+                            .Concat(
+                                InstanceMethods.Concat(StaticMethods)
+                                .Select(mi=>_ExtractType(mi.ReturnType))
+                                .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
+                                .Select(t => new sModelType(t))
+                            )
+                            .Concat(
+                                InstanceMethods.Concat(StaticMethods)
+                                .Select(mi => ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).ArrayElementType)
+                                .Where(t => t!=null && t.GetInterfaces().Contains(typeof(IModel)))
+                                .Select(t => new sModelType(t))
+                            )
+                            .Distinct();
                     }
                     return _linkedTypes;
                 }
             }
 
-            private MethodInfo _saveMethod;
+            private readonly MethodInfo _saveMethod;
             public bool HasSave { get { return _saveMethod!=null; } }
             public MethodInfo SaveMethod { get { return _saveMethod; } }
-            private MethodInfo _updateMethod;
+            private readonly MethodInfo _updateMethod;
             public bool HasUpdate { get { return _updateMethod!=null; } }
             public MethodInfo UpdateMethod { get { return _updateMethod; } }
-            private MethodInfo _deleteMethod;
+            private readonly MethodInfo _deleteMethod;
             public bool HasDelete { get { return _deleteMethod!=null; } }
             public MethodInfo DeleteMethod { get { return _deleteMethod; } }
 
             public sModelType(Type type)
             {
                 _type = type;
-                _properties=null;
-                _instanceMethods=null;
-                _staticMethods=null;
-                _linkedTypes=null;
-                _saveMethod=null;
-                _updateMethod=null;
-                _deleteMethod=null;
-                foreach (MethodInfo mi in _type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
-                {
-                    if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
-                        _saveMethod=mi;
-                    else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                        _updateMethod=mi;
-                    else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
-                        _deleteMethod=mi;
-                }
+                _properties=_type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi=> pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id"
+                                && !pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0);
+                _instanceMethods=_type.GetMethods(Constants.INSTANCE_METHOD_FLAGS).Where(mi=> mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
+                _staticMethods=_type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
+                _linkedTypes = null;
+                _saveMethod = _type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
+                _updateMethod=_type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0);
+                _deleteMethod=_type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0);
             }
 
             public override bool Equals(object obj)

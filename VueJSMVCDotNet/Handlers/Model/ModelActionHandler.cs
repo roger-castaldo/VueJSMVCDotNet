@@ -64,12 +64,12 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             await _Invoke(url,request, context, Load(url, request, extractID: extractID),processLoadedModel: processLoadedModel);
         }
 
-        public async Task InvokeWithoutLoad(string url, ModelRequestData request, HttpContext context, IModel model=null, Func<IModel, object, object[], MethodInfo, object> extractResponse = null)
+        public async Task InvokeWithoutLoad(string url, ModelRequestData request, HttpContext context, IModel model=null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
         {
             await _Invoke(url, request, context, model, extractResponse: extractResponse);
         }
 
-        private async Task _Invoke(string url, ModelRequestData request, HttpContext context,IModel model,Func<IModel, ModelRequestData, IModel> processLoadedModel = null, Func<IModel, object, object[], MethodInfo, object> extractResponse = null)
+        private async Task _Invoke(string url, ModelRequestData request, HttpContext context,IModel model,Func<IModel, ModelRequestData, IModel> processLoadedModel = null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
         {
             Logger.Trace("calling {0} method matching the url {1}", new object[] { _callType, url });
             InjectableMethod method = null;
@@ -120,7 +120,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     context.Response.StatusCode= 200;
                     var resp = method.Invoke(model, pars: pars, session: request.Session);
                     if (extractResponse!=null)
-                        resp = extractResponse(model, resp,pars,method.Method);
+                        resp = extractResponse(model, resp,pars,method);
                     await context.Response.WriteAsync(Utility.JsonEncode(resp));
                 }
             }
@@ -155,7 +155,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                                     isMethod=false;
                                     break;
                                 }
-                                if (m.NotNullArguement!=null&&m.NotNullArguement.IsParameterNullable(pi)&&val==null)
+                                if (val==null&&m.NotNullArguement!=null&&!m.NotNullArguement.IsParameterNullable(pi))
                                 {
                                     isMethod=false;
                                     break;

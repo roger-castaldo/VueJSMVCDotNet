@@ -14,20 +14,18 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
     internal class ModelConverter<T> : JsonConverter<T> where T :IModel
     {
         private readonly ISecureSession _session;
+        private readonly InjectableMethod _loadMethod;
         public ModelConverter(ISecureSession session)
         {
             _session=session;
+            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()));
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var result = default(T);
             if (reader.TokenType==JsonTokenType.String)
-            {
-                var loadMethod = typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any());
-                if (loadMethod!=null)
-                    result = (T)Utility.InvokeLoad(loadMethod, reader.GetString(), _session);
-            }
+                result = (T)_loadMethod.Invoke(null,pars:new object[] { reader.GetString() }, session:_session);
             else if (reader.TokenType==JsonTokenType.StartObject)
             {
                 reader.Read();
@@ -35,12 +33,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
                 if (pid=="id")
                 {
                     reader.Read();
-                    var loadMethod = typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any());
-                    if (loadMethod!=null)
-                    {
-                        result = (T)Utility.InvokeLoad(loadMethod, reader.GetString(), _session);
-                        reader.Read();
-                    }
+                    result = (T)_loadMethod.Invoke(null, pars: new object[] { reader.GetString() }, session: _session);
+                    reader.Read();
                 }
                 else
                 {

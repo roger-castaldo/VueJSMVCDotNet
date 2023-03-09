@@ -42,7 +42,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 {
                     if (method.GetCustomAttributes().OfType<ModelListMethod>().Any(mlm => mlm.Paged))
                     {
-                        var pars = Utility.ExtractStrippedParameters(method);
+                        var pars = method.StrippedParameters;
                         int pageIndex = opars.Length-1;
                         for (int x = 0; x<pars.Length; x++)
                         {

@@ -136,6 +136,20 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
+        public void TestStaticMethodWithNullNotNullArguement()
+        {
+            string firstName = null;
+            string lastName = "Testing1234";
+            int status;
+            string content = Utility.ReadResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() {
+                { "firstName", firstName },
+                { "lastName", lastName }
+            }));
+            Assert.AreEqual(404, status);
+            Assert.AreEqual("Unable to locate method with matching parameters", content);
+        }
+
+        [TestMethod]
         public void TestStaticMethodWithObjectResult()
         {
             int status;

@@ -395,7 +395,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class SaveFailedException : ModelTypeMethodException
     {
-        internal SaveFailedException(Type t, MethodInfo mi)
+        internal SaveFailedException(Type t, InjectableMethod mi)
             : base(t, mi.Name, string.Format("The save call for the model type {0} failed.", t.FullName)){ }
     }
 }

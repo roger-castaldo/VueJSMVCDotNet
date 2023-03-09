@@ -56,113 +56,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             }
         }
 
-        /*
-         * Called to convert a given json object to the expected type.
-         */
-        private static object _ConvertObjectToType(object obj, Type expectedType, ISecureSession session)
-        {
-            Logger.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
-            if (expectedType.Equals(typeof(object)))
-                return obj;
-            if (expectedType.Equals(typeof(bool)) && (obj == null))
-                return false;
-            if (obj == null)
-                return null;
-            if (obj.GetType().Equals(expectedType))
-                return obj;
-            if (expectedType.Equals(typeof(string)))
-                return obj.ToString();
-            if (expectedType.IsEnum)
-                return Enum.Parse(expectedType, obj.ToString());
-            if (expectedType.Equals(typeof(Version)))
-                return new Version(obj.ToString());
-            if (expectedType.Equals(typeof(Guid)))
-                return new Guid(obj.ToString());
-            if (expectedType.IsArray || (obj is ArrayList))
-            {
-                int count = 1;
-                Type underlyingType;
-                if (expectedType.IsGenericType)
-                    underlyingType = expectedType.GetGenericArguments()[0];
-                else
-                    underlyingType = expectedType.GetElementType();
-                if (obj is ArrayList list)
-                    count = list.Count;
-                Array ret = Array.CreateInstance(underlyingType, count);
-                if (!(obj is ArrayList list1))
-                    ret.SetValue(_ConvertObjectToType(obj, underlyingType, session), 0);
-                else
-                {
-                    for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType, session), x);
-                }
-                if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
-                    return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
-                return ret;
-            }
-            if (expectedType.FullName.StartsWith("System.Collections.Generic.Dictionary"))
-            {
-                object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(new object[0]);
-                Type keyType = expectedType.GetGenericArguments()[0];
-                Type valType = expectedType.GetGenericArguments()[1];
-                foreach (string str in ((Hashtable)obj).Keys)
-                {
-                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType, session), _ConvertObjectToType(((Hashtable)obj)[str], valType, session));
-                }
-                return ret;
-            }
-            if (expectedType.FullName.StartsWith("System.Nullable"))
-            {
-                Type underlyingType;
-                if (expectedType.IsGenericType)
-                    underlyingType = expectedType.GetGenericArguments()[0];
-                else
-                    underlyingType = expectedType.GetElementType();
-                if (obj == null)
-                    return null;
-                return _ConvertObjectToType(obj, underlyingType, session);
-            }
-            MethodInfo conMethod = null;
-            if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
-            {
-                MethodInfo loadMethod = expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0);
-                return Utility.InvokeLoad(loadMethod, ((Hashtable)obj)["id"].ToString(), session);
-            }
-            foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
-            {
-                if (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
-                {
-                    if (
-                        (
-                            mi.ReturnType.Equals(expectedType)
-                            || mi.ReturnType.Equals(typeof(Nullable<>).MakeGenericType(expectedType))
-                        )
-                        && mi.GetParameters().Length == 1
-                        && (
-                            mi.GetParameters()[0].ParameterType.Equals(obj.GetType())
-                            || mi.GetParameters()[0].ParameterType.Equals(typeof(Nullable<>).MakeGenericType(obj.GetType()))
-                        )
-                    )
-                    {
-                        conMethod = mi;
-                        break;
-                    }
-                }
-            }
-            if (conMethod != null)
-                return conMethod.Invoke(null, new object[] { obj });
-            try
-            {
-                object ret = Convert.ChangeType(obj, expectedType);
-                return ret;
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e);
-            }
-            return obj;
-        }
-
         public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc) {
             Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
             List<Type> ret = _LocateTypeInstances(parent, alc.Assemblies);
@@ -209,7 +102,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 Logger.Error(e.Message);
                 if (e.Message != "The invoked member is not supported in a dynamic assembly."
                             && !e.Message.StartsWith("Unable to load one or more of the requested types."))
-                    throw e;
+                    throw;
                 else
                     ret = new Type[0];
             }
@@ -298,107 +191,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             return type.IsArray ||
                 (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
-        }
-
-        public static object InvokeMethod(MethodInfo mi, object obj, object[] pars = null, ISecureSession session = null, AddItem addItem = null)
-        {
-            ParameterInfo[] parameters = mi.GetParameters();
-            object[] mpars = new object[parameters.Length];
-            int sidx = -1;
-            int aidx = -1;
-            int lidx = -1;
-            if (UsesSecureSession(mi, out sidx))
-                mpars[sidx]=session;
-            if (UsesAddItem(mi, out aidx))
-                mpars[aidx]=addItem;
-            if (UsesLog(mi, out lidx))
-                mpars[lidx]=Logger.Instance;
-            int index = 0;
-            for (int x = 0; x<mpars.Length; x++)
-            {
-                if (x!=sidx&&x!=aidx&&x!=lidx)
-                {
-                    mpars[x]=pars[index];
-                    index++;
-                }
-            }
-            object ret = mi.Invoke(obj, mpars);
-            if (parameters.Count(p => p.IsOut)>0)
-            {
-                index = 0;
-                for (int x = 0; x<parameters.Length; x++) {
-                    if (x!=sidx&&x!=aidx&&x!=lidx)
-                    {
-                        if (parameters[x].IsOut)
-                            pars[index]=mpars[x];
-                        index++;
-                    }
-                }
-            }
-            return ret;
-        }
-
-        public static IModel InvokeLoad(MethodInfo mi, string id, ISecureSession session) {
-            return (IModel)InvokeMethod(mi, null, new object[] { id }, session: session);
-        }
-
-        public static bool UsesSecureSession(MethodInfo mi, out int index) {
-            index=-1;
-            ParameterInfo[] pars = mi.GetParameters();
-            for (int x = 0; x<pars.Length; x++) {
-                if (IsISecureSessionType(pars[x].ParameterType)) {
-                    index=x;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static bool UsesAddItem(MethodInfo mi, out int index)
-        {
-            index=-1;
-            ParameterInfo[] pars = mi.GetParameters();
-            for (int x = 0; x<pars.Length; x++)
-            {
-                if (pars[x].ParameterType==typeof(AddItem))
-                {
-                    index=x;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static bool UsesLog(MethodInfo mi, out int index)
-        {
-            index=-1;
-            ParameterInfo[] pars = mi.GetParameters();
-            for (int x = 0; x<pars.Length; x++)
-            {
-                if (pars[x].ParameterType==typeof(ILog))
-                {
-                    index=x;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static bool IsISecureSessionType(Type type)
-        {
-            return type == typeof(ISecureSession) ||
-                new List<Type>(type.GetInterfaces()).Contains(typeof(ISecureSession));
-        }
-
-        public static ParameterInfo[] ExtractStrippedParameters(MethodInfo mi) {
-            List<ParameterInfo> ret = new List<ParameterInfo>(mi.GetParameters());
-            if (UsesSecureSession(mi, out int idx))
-                ret.RemoveAt(idx);
-            if (UsesAddItem(mi, out idx))
-                ret.RemoveAt(idx);
-            if (UsesLog(mi, out idx))
-                ret.RemoveAt(idx);
-            return ret.ToArray();
         }
 
         internal static string GetTypeString(Type propertyType, bool notNullTagged)
@@ -550,11 +342,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public static T JsonDecode<T>(JsonElement element, ISecureSession session)
         {
             return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(session));
-        }
-
-        public static T ConvertToType<T>(object obj,ISecureSession session)
-        {
-            return (T)_ConvertObjectToType(obj, typeof(T), session);
         }
         #endregion
     }
