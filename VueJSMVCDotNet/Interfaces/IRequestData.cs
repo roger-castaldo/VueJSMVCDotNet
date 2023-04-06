@@ -11,5 +11,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
         IEnumerable<string> Keys { get; }
         T GetValue<T>(string key);
         ISecureSession Session { get; }
+        object this[Type feature]{get;}
     }
 }

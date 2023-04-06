@@ -13,11 +13,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
 {
     internal class ModelConverter<T> : JsonConverter<T> where T :IModel
     {
-        private readonly ISecureSession _session;
+        private readonly IRequestData _requestData;
         private readonly InjectableMethod _loadMethod;
-        public ModelConverter(ISecureSession session)
+        public ModelConverter(IRequestData requestData)
         {
-            _session=session;
+            _requestData=requestData;
             _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()));
         }
 
@@ -25,7 +25,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
         {
             var result = default(T);
             if (reader.TokenType==JsonTokenType.String)
-                result = (T)_loadMethod.Invoke(null,pars:new object[] { reader.GetString() }, session:_session);
+                result = (T)_loadMethod.Invoke(null,_requestData,pars:new object[] { reader.GetString() });
             else if (reader.TokenType==JsonTokenType.StartObject)
             {
                 reader.Read();
@@ -33,7 +33,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
                 if (pid=="id")
                 {
                     reader.Read();
-                    result = (T)_loadMethod.Invoke(null, pars: new object[] { reader.GetString() }, session: _session);
+                    result = (T)_loadMethod.Invoke(null, _requestData, pars: new object[] { reader.GetString() });
                     reader.Read();
                 }
                 else

@@ -30,19 +30,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             LIST
         }
 
-        public delegate string delRegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, ISecureSession session);
+        public delegate string delRegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, IRequestData requestData);
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
         private bool _isInitialized=false;
         private Dictionary<string,SlowMethodInstance> _methodInstances;
         private readonly Timer _cleanupTimer;
-        protected string _RegisterSlowMethodInstance(string url,InjectableMethod method,object model,object[] pars,ISecureSession session)
+        protected string _RegisterSlowMethodInstance(string url,InjectableMethod method,object model,object[] pars,IRequestData requestData)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
             try
             {
-                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars,session);
+                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars,requestData);
                 lock (_methodInstances)
                 {
                     _methodInstances.Add(ret, smi);

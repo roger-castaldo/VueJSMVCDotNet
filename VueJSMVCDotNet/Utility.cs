@@ -309,7 +309,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         #region JSON
 
-        private static JsonSerializerOptions _ProduceJsonOptions(ISecureSession session = null)
+        private static JsonSerializerOptions _ProduceJsonOptions(IRequestData requestData = null)
         {
             var result = new JsonSerializerOptions();
             result.WriteIndented=false;
@@ -317,7 +317,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
             result.Converters.Add(new DecimalConverter());
-            result.Converters.Add(new ModelConverterFactory(session));
+            result.Converters.Add(new ModelConverterFactory(requestData));
             result.Converters.Add(new EnumConverterFactory());
             return result;
         }
@@ -329,19 +329,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return JsonSerializer.Serialize(value, value.GetType(), options: _ProduceJsonOptions());
         }
 
-        public static T JsonDecode<T>(JsonDocument document, ISecureSession session)
+        public static T JsonDecode<T>(JsonDocument document, IRequestData requestData)
         {
-            return (T)JsonSerializer.Deserialize(document, typeof(T), options: _ProduceJsonOptions(session));
+            return (T)JsonSerializer.Deserialize(document, typeof(T), options: _ProduceJsonOptions(requestData));
         }
 
-        public static T JsonDecode<T>(JsonNode node, ISecureSession session)
+        public static T JsonDecode<T>(JsonNode node, IRequestData requestData)
         {
-            return (T)JsonSerializer.Deserialize(node, typeof(T), options: _ProduceJsonOptions(session));
+            return (T)JsonSerializer.Deserialize(node, typeof(T), options: _ProduceJsonOptions(requestData));
         }
 
-        public static T JsonDecode<T>(JsonElement element, ISecureSession session)
+        public static T JsonDecode<T>(JsonElement element, IRequestData requestData)
         {
-            return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(session));
+            return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(requestData));
         }
         #endregion
     }

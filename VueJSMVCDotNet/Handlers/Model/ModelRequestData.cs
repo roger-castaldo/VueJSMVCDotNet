@@ -9,6 +9,8 @@ using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
 using System.Collections;
 using System.Reflection;
 using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using Microsoft.AspNetCore.Http.Features;
+using System.Runtime.CompilerServices;
 
 namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
@@ -26,13 +28,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             try
             {
                 if (obj is JsonDocument document)
-                    return Utility.JsonDecode<T>(document, _session);
+                    return Utility.JsonDecode<T>(document, this);
                 else if (obj is JsonNode node)
-                    return Utility.JsonDecode<T>(node, _session);
+                    return Utility.JsonDecode<T>(node, this);
                 else if (obj is JsonElement element)
-                    return Utility.JsonDecode<T>(element, _session);
+                    return Utility.JsonDecode<T>(element, this);
                 else
-                    return (T)_ConvertObjectToType(obj, typeof(T), _session);
+                    return (T)_ConvertObjectToType(obj, typeof(T));
             }
             catch (Exception)
             {
@@ -53,13 +55,20 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private readonly ISecureSession _session;
         public ISecureSession Session => _session;
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session)
+        private readonly IFeatureCollection _features;
+        public object this[Type feature]
+        {
+            get { return _features[feature]; }
+        }
+
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IFeatureCollection features)
         {
             _formData = formData;
             _session = session;
+            _features=features;
         }
 
-        private static object _ConvertObjectToType(object obj, Type expectedType, ISecureSession session)
+        private object _ConvertObjectToType(object obj, Type expectedType)
         {
             Logger.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
             if (expectedType.Equals(typeof(object)))
@@ -90,11 +99,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     count = list.Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
                 if (!(obj is ArrayList list1))
-                    ret.SetValue(_ConvertObjectToType(obj, underlyingType, session), 0);
+                    ret.SetValue(_ConvertObjectToType(obj, underlyingType), 0);
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType, session), x);
+                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType), x);
                 }
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
@@ -107,7 +116,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 Type valType = expectedType.GetGenericArguments()[1];
                 foreach (string str in ((Hashtable)obj).Keys)
                 {
-                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType, session), _ConvertObjectToType(((Hashtable)obj)[str], valType, session));
+                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType), _ConvertObjectToType(((Hashtable)obj)[str], valType));
                 }
                 return ret;
             }
@@ -120,13 +129,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return _ConvertObjectToType(obj, underlyingType, session);
+                return _ConvertObjectToType(obj, underlyingType);
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
                 return new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0))
-                    .Invoke(null, pars: new object[] { ((Hashtable)obj)["id"].ToString() }, session: session);
+                    .Invoke(null,this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
             {

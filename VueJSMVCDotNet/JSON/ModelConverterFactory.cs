@@ -13,11 +13,11 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
 {
     internal class ModelConverterFactory : JsonConverterFactory
     {
-        private readonly ISecureSession _session;
+        private readonly IRequestData _requestData;
 
-        public ModelConverterFactory(ISecureSession session)
+        public ModelConverterFactory(IRequestData requestData)
         {
-            _session=session;
+            _requestData= requestData;
         }
 
         public override bool CanConvert(Type typeToConvert)
@@ -27,7 +27,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.JSON
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            return (JsonConverter)Activator.CreateInstance(typeof(ModelConverter<>).MakeGenericType(new Type[] {typeToConvert}),new object[] {_session});
+            return (JsonConverter)Activator.CreateInstance(typeof(ModelConverter<>).MakeGenericType(new Type[] {typeToConvert}),new object[] {_requestData});
         }
     }
 }

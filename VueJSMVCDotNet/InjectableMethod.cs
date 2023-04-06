@@ -58,7 +58,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     _loggerIndex=x;
                 else if (_parameters[x].ParameterType==typeof(IHeaderDictionary))
                     _headerIndex=x;
-                else
+                else if (!_parameters[x].ParameterType.IsInterface)
                     strippedPars.Add(_parameters[x]);
             }
             _strippedParameters= strippedPars.ToArray();
@@ -71,11 +71,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             return !_securityChecks.Any(sc => !sc.HasValidAccess(data, model, url, id));
         }
 
-        public object Invoke(object obj, object[] pars = null, ISecureSession session = null, AddItem addItem = null, IHeaderDictionary responseHeaders=null)
+        public object Invoke(object obj, IRequestData requestData, object[] pars = null, AddItem addItem = null, IHeaderDictionary responseHeaders=null)
         {
+            if (requestData==null)
+                throw new ArgumentNullException(nameof(requestData));
             object[] mpars = new object[_parameters.Length];
             if (_secureSessionIndex!=-1)
-                mpars[_secureSessionIndex] = session;
+                mpars[_secureSessionIndex] = requestData.Session;
             if (_addItemIndex!=-1)
                 mpars[_addItemIndex] = addItem;
             if(_loggerIndex!=-1)
@@ -85,10 +87,15 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             int index = 0;
             for (int x = 0; x<mpars.Length; x++)
             {
-                if (x!=_secureSessionIndex&&x!=_addItemIndex&&x!=_loggerIndex)
+                if (x!=_secureSessionIndex&&x!=_addItemIndex&&x!=_loggerIndex&&x!=_headerIndex)
                 {
-                    mpars[x]=pars[index];
-                    index++;
+                    if (_parameters[x].ParameterType.IsInterface)
+                        mpars[x]=requestData[_parameters[x].ParameterType];
+                    else
+                    {
+                        mpars[x]=pars[index];
+                        index++;
+                    }
                 }
             }
             object ret = _method.Invoke(obj, mpars);
