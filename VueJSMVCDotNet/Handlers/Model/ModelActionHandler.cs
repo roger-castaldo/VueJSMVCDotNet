@@ -102,7 +102,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             {
                 if (method.ReturnType == typeof(void))
                 {
-                    method.Invoke(model, pars: pars, session: request.Session);
+                    method.Invoke(model, pars: pars, session: request.Session,responseHeaders:context.Request.Headers);
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
@@ -110,7 +110,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 else if (method.ReturnType==typeof(string))
                 {
                     context.Response.StatusCode= 200;
-                    string tmp = (string)method.Invoke(model, pars: pars, session: request.Session);
+                    string tmp = (string)method.Invoke(model, pars: pars, session: request.Session, responseHeaders: context.Request.Headers);
                     context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
                     await context.Response.WriteAsync((tmp==null ? Utility.JsonEncode(tmp) : tmp));
                 }
@@ -118,7 +118,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
-                    var resp = method.Invoke(model, pars: pars, session: request.Session);
+                    var resp = method.Invoke(model, pars: pars, session: request.Session, responseHeaders: context.Request.Headers);
                     if (extractResponse!=null)
                         resp = extractResponse(model, resp,pars,method);
                     await context.Response.WriteAsync(Utility.JsonEncode(resp));

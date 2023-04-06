@@ -99,17 +99,27 @@ namespace AutomatedTesting
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
-        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels,bool blockFileProvider=false,ILogWriter logWriter = null, string[] securityHeaders=null)
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels, bool blockFileProvider = false, ILogWriter logWriter = null, string[] securityHeaders = null)
         {
-            return new VueMiddleware(null, new VueMiddlewareOptions(
-                modelsOptions: new VueModelsOptions(new SecureSession(), ignoreInvalidModels: ignoreInvalidModels,coreJSImport:"VueJSMVCDotNet_core",securityHeaders:securityHeaders),
-                vueImportPath: _VUE_IMPORT_PATH,
-                vueLoaderImportPath: _VUE_LOADER_PATH,
-                fileProvider:(blockFileProvider ? null : _fileProvider),
-                messageOptions: new MessageHandlerOptions("/resources/messages"),
-                vueFilesOptions:new VueFilesHandlerOptions("/resources/vueFiles"),
-                logWriter: logWriter
-            ));
+            return new VueMiddleware(null, new VueMiddlewareOptions() {
+                VueModelsOptions= new VueModelsOptions(){
+                    SessionFactory=new SecureSession(), 
+                    IgnoreInvalidModels=ignoreInvalidModels,
+                    CoreJSImport="VueJSMVCDotNet_core",
+                    SecurityHeaders=securityHeaders
+                },
+                VueImportPath= _VUE_IMPORT_PATH,
+                VueLoaderImportPath= _VUE_LOADER_PATH,
+                FileProvider=(blockFileProvider ? null : _fileProvider),
+                MessageOptions= new MessageHandlerOptions()
+                {
+                    BaseURL="/resources/messages"
+                },
+                VueFilesOptions = new VueFilesHandlerOptions() { 
+                    BaseURL = "/resources/vueFiles" 
+                },
+                LogWriter =  logWriter
+            });
         }
 
         public static Engine CreateEngine(VueMiddleware middleware=null)

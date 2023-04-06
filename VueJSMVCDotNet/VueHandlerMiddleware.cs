@@ -16,39 +16,30 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class VueModelsOptions
     {
-
-        private readonly ISecureSessionFactory _sessionFactory;
-        internal ISecureSessionFactory SessionFactory =>_sessionFactory;
-        private readonly string _baseURL;
-        internal string BaseURL => _baseURL; 
-        private readonly bool _ignoreInvalidModels;
-        internal bool IgnoreInvalidModels => _ignoreInvalidModels;
-        private readonly string _coreJSURL;
-        internal string CoreJSURL => _coreJSURL;
-        private readonly string _coreJSImport;
-        internal string CoreJSImport => _coreJSImport;
-        private readonly string[] _securityHeaders;
-        internal string[] SecurityHeaders => _securityHeaders;
-
-
         /// <summary>
-        /// default constructor used to supply the middleware options
+        /// The Secure Session Factory builder
         /// </summary>
-        /// <param name="sessionFactory">The secure session factory builder</param>
-        /// <param name="baseURL">Optional: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")</param>
-        /// <param name="ignoreInvalidModels">Optional: If flagged as true it will ignore/disable invalid models</param>
-        /// <param name="coreJSURL">Optional: This will remap the core JS url that is imported by all classes to a different path</param>
-        /// <param name="coreJSImport">Optional:  This will change the import call from the core js url to the module name</param>
-        /// <param name="securityHeaders">Optional:  A list of header keys to read from and write to for all requests if using headers for security</param>
-        public VueModelsOptions(ISecureSessionFactory sessionFactory, string baseURL=null,bool ignoreInvalidModels=false,string coreJSURL=JSHandler.CORE_URL,string coreJSImport = null, string[] securityHeaders=null)
-        {
-            _sessionFactory=sessionFactory;
-            _baseURL=baseURL;
-            _ignoreInvalidModels=ignoreInvalidModels;
-            _coreJSURL=coreJSURL;
-            _coreJSImport=coreJSImport;
-            _securityHeaders=securityHeaders;
-        }
+        public ISecureSessionFactory SessionFactory { get; init; }
+        /// <summary>
+        /// Options: This will remap all urls provided in attributes to the base path provided (e.g. "/modules/tester/")
+        /// </summary>
+        public string BaseURL { get; init; } = null;
+        /// <summary>
+        /// Optional: If flagged as true it will ignore/disable invalid models
+        /// </summary>
+        public bool IgnoreInvalidModels { get; init; } = false;
+        /// <summary>
+        /// Optional: This will remap the core JS url that is imported by all classes to a different path
+        /// </summary>
+        public string CoreJSURL { get; init; } = JSHandler.CORE_URL;
+        /// <summary>
+        /// Optional:  This will change the import call from the core js url to the module name
+        /// </summary>
+        public string CoreJSImport { get; init; } = null;
+        /// <summary>
+        /// Optional:  A list of header keys to read from and write to for all requests if using headers for security
+        /// </summary>
+        public string[] SecurityHeaders { get; init; } = null;
     }
 
     /// <summary>
@@ -57,17 +48,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// 
     public class MessageHandlerOptions
     {
-        private readonly string _baseURL;
-        internal string BaseURL { get { return _baseURL; } }
-
         /// <summary>
-        /// Constructor for specifying the components required to use the MessageHandler
+        /// The base url for the messages to exist inside
         /// </summary>
-        /// <param name="baseURL">The base url for the messages to exist inside</param>
-        public MessageHandlerOptions(string baseURL)
-        {
-            _baseURL= baseURL;
-        }
+        public string BaseURL { get; init; }
     }
 
     /// <summary>
@@ -76,18 +60,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// 
     public class VueFilesHandlerOptions
     {
-        
-        private readonly string _baseURL;
-        internal string BaseURL { get { return _baseURL; } }
-
         /// <summary>
-        /// Constructor for specifying the components required to use the MessageHandler
+        /// The base url for the messages to exist inside
         /// </summary>
-        /// <param name="baseURL">The base url for the messages to exist inside</param>
-        public VueFilesHandlerOptions(string baseURL)
-        {
-            _baseURL= baseURL;
-        }
+        public string BaseURL { get; init; }
     }
 
     /// <summary>
@@ -95,54 +71,45 @@ namespace Org.Reddragonit.VueJSMVCDotNet
     /// </summary>
     public class VueMiddlewareOptions
     {
-        private readonly ILogWriter _logWriter;
-        internal ILogWriter LogWriter { get { return _logWriter; } }
-        private readonly string _vueImportPath;
-        internal string VueImportPath { get { return _vueImportPath; } }
-        private readonly string _vueLoaderImportPath;
-        internal string VueLoaderImportPath { get { return _vueLoaderImportPath; } }
-        private readonly IFileProvider _fileProvider;
-        internal IFileProvider FileProvider { get { return _fileProvider; } }
-        private readonly VueModelsOptions _modelsOptions;
-        internal VueModelsOptions VueModelsOptions { get { return _modelsOptions; } }
-
-        private readonly MessageHandlerOptions _messageOptions;
-        internal MessageHandlerOptions MessageOptions { get { return _messageOptions; } }
-        private readonly VueFilesHandlerOptions _vueFilesOptions;
-        internal VueFilesHandlerOptions VueFilesOptions { get { return _vueFilesOptions; } }
+        /// <summary>
+        /// Optional: An instance of a log writer class to write the logging information to
+        /// </summary>
+        public ILogWriter LogWriter { get; init; } = null;
+        /// <summary>
+        /// Optional: The import path for the VueJs library: default="https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js"
+        /// </summary>
+        public string VueImportPath { get; init; } = "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js";
+        /// <summary>
+        /// Optional: The import path for the Vue-Loader library: default="https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"
+        /// </summary>
+        public string VueLoaderImportPath { get; init; } = "https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js";
+        /// <summary>
+        /// An instance of a file provider, required if using VueFiles or Messages
+        /// </summary>
+        public IFileProvider FileProvider { get; init; } = null;
+        /// <summary>
+        /// Optional: must be provided in order to use the IModel and autogenerated Models/Rest interfaces
+        /// </summary>
+        public VueModelsOptions VueModelsOptions { get; init; } = null;
+        /// <summary>
+        /// Optional: to be provided if the message translator component is to be used
+        /// </summary>
+        public MessageHandlerOptions MessageOptions { get; init; } = null;
+        /// <summary>
+        /// Optional: Settings to be used file the Vue File handler
+        /// </summary>
+        public VueFilesHandlerOptions VueFilesOptions { get; init; } = null;
 
         private VueMiddleware _middleWare;
         internal VueMiddleware VueMiddleware { set { _middleWare = value; } }
-
-        /// <summary>
-        /// The constructor used to build the options for the middle ware components
-        /// </summary>
-        /// <param name="modelsOptions">Optional: must be provided in order to use the IModel and autogenerated Models/Rest interfaces</param>
-        /// <param name="messageOptions">Optional: to be provided if the message translator component is to be used</param>
-        /// <param name="logWriter">(optional)An instance of a log writer class to write the logging information to</param>
-        /// <param name="fileProvider">(Optional) An instance of a file provider, required if using VueFiles or Messages</param>
-        /// <param name="vueFilesOptions">(Optional) Settings to be used file the Vue File handler</param>
-        /// <param name="vueImportPath">(Optional) The import path for the VueJs library: default="https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js"</param>
-        /// <param name="vueLoaderImportPath">(Optional) The import path for the Vue-Loader library: default="https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"</param>
-        public VueMiddlewareOptions(VueModelsOptions modelsOptions=null, IFileProvider fileProvider = null, MessageHandlerOptions messageOptions=null,ILogWriter logWriter=null,string vueImportPath=null,string vueLoaderImportPath=null,VueFilesHandlerOptions vueFilesOptions=null)
-        {
-            _modelsOptions=modelsOptions;
-            _messageOptions=messageOptions;
-            _logWriter=logWriter;
-            _vueImportPath=(vueImportPath==null ? "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js" : vueImportPath);
-            _vueFilesOptions=vueFilesOptions;
-            _vueLoaderImportPath=(vueLoaderImportPath==null ? "https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js" : vueLoaderImportPath);
-            _fileProvider=fileProvider;
-            if ((vueFilesOptions!=null||messageOptions!=null) && fileProvider==null)
-                throw new ArgumentNullException("fileProvider");
-        }
 
         /// <summary>
         /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
         /// that load context to allow for an unload
         /// </summary>
         /// <param name="context">The assembly context being unloaded</param>
-        public void UnloadAssemblyContext(AssemblyLoadContext context){
+        public void UnloadAssemblyContext(AssemblyLoadContext context)
+        {
             UnloadAssemblyContext(context.Name);
         }
 
@@ -151,7 +118,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// instead
         /// </summary>
         /// <param name="contextName">The name of the assembly load context to unload</param>
-        public void UnloadAssemblyContext(string contextName){
+        public void UnloadAssemblyContext(string contextName)
+        {
             _middleWare.UnloadAssemblyContext(contextName);
         }
 
@@ -159,7 +127,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// Called when a new Assembly Load Context has been added
         /// </summary>
         /// <param name="contextName">The name of the context that was added</param>
-        public void AsssemblyLoadContextAdded(string contextName){
+        public void AsssemblyLoadContextAdded(string contextName)
+        {
             _middleWare.AsssemblyLoadContextAdded(contextName);
         }
 
@@ -168,7 +137,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// </summary>
         /// <param name="alc">The assembly load context that was added</param>
         /// <exception cref="ModelValidationException">Houses a set of exceptions if any newly loaded models fail validation</exception>
-        public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
+        public void AsssemblyLoadContextAdded(AssemblyLoadContext alc)
+        {
             AsssemblyLoadContextAdded(alc.Name);
         }
 
@@ -203,6 +173,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <param name="options">the supplied options for creating the middle ware</param>
         public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options)
         {
+            if ((options.VueFilesOptions!=null||options.MessageOptions!=null) && options.FileProvider==null)
+                throw new ArgumentNullException("fileProvider");
             options.VueMiddleware=this;
             _options = options;
             next = (next==null ? new RequestDelegate(NotFound) : next);
@@ -219,8 +191,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             if (options.VueModelsOptions!=null)
             {
                 _modelHandler = new ModelRequestHandler(options.LogWriter, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
-                    options.VueModelsOptions.CoreJSURL, options.VueModelsOptions.CoreJSImport,options.VueModelsOptions.SecurityHeaders,
-                options.VueModelsOptions.SessionFactory,next);
+                    options.VueModelsOptions.CoreJSURL, options.VueModelsOptions.CoreJSImport, options.VueModelsOptions.SecurityHeaders,
+                options.VueModelsOptions.SessionFactory, next);
             }
         }
 
@@ -243,7 +215,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// </summary>
         /// <param name="context">the current httpcontext</param>
         /// <returns>a task</returns>
-        public async Task InvokeAsync(HttpContext context) {
+        public async Task InvokeAsync(HttpContext context)
+        {
             if (_modelHandler!=null)
                 await _modelHandler.ProcessRequest(context);
             else if (_messageHandler!=null)
@@ -257,20 +230,26 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             context.Response.StatusCode = 404;
             await context.Response.WriteAsync("Not Found");
         }
-       internal void UnloadAssemblyContext(string contextName){
-            if (_modelHandler!=null){
+        internal void UnloadAssemblyContext(string contextName)
+        {
+            if (_modelHandler!=null)
+            {
                 _modelHandler.UnloadAssemblyContext(contextName);
             }
         }
 
-        internal void AssemblyAdded(){
-            if (_modelHandler!=null){
+        internal void AssemblyAdded()
+        {
+            if (_modelHandler!=null)
+            {
                 _modelHandler.AssemblyAdded();
             }
         }
 
-        internal void AsssemblyLoadContextAdded(string contextName){
-            if (_modelHandler!=null){
+        internal void AsssemblyLoadContextAdded(string contextName)
+        {
+            if (_modelHandler!=null)
+            {
                 _modelHandler.AsssemblyLoadContextAdded(contextName);
             }
         }
@@ -291,9 +270,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// <returns>the application builder with the middleware setup</returns>
         public static IApplicationBuilder UseVueMiddleware(
             this IApplicationBuilder builder,
-            VueMiddlewareOptions options)
-        {
-            return builder.UseMiddleware<VueMiddleware>(options);
-        }
+            VueMiddlewareOptions options) => builder.UseMiddleware<VueMiddleware>(options);
     }
 }
