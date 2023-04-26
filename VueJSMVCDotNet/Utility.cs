@@ -275,7 +275,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
         internal static string TranslatePath(IFileProvider fileProvider, string baseURL, string path)
         {
-            string[] split = path.ToLower().Split('/');
+            string[] split = path.TrimStart('/').Split('/');
             string curPath = "";
             foreach (string sub in split)
             {
@@ -288,7 +288,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                     bool changed = false;
                     foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
                     {
-                        if (ifi.IsDirectory && ifi.Name.ToLower()==sub.Trim())
+                        if (ifi.IsDirectory && string.Equals(ifi.Name,sub.Trim(),StringComparison.InvariantCultureIgnoreCase))
                         {
                             curPath+=(curPath=="" ? "" : Path.DirectorySeparatorChar.ToString())+ifi.Name;
                             changed=true;

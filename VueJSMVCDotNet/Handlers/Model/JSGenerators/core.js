@@ -669,7 +669,7 @@ class ModelList {
 		this.#isPaged = isPaged;
 		this.#setParameters = setParameters;
 		this.#params = currentParams;
-		this.#data = reactive([]);
+		this.#data = vue.reactive([]);
 		if (isPaged) {
 			this.#currentIndex = (currentIndex === undefined ? 0 : currentIndex);
 			this.#currentPageSize = (currentPageSize === undefined ? 10 : currentPageSize);
@@ -847,16 +847,16 @@ class ModelList {
 	#toVueComposition() {
 		let me = this;
 		let ret = {
-			Items: readonly(me.#data),
+			Items: vue.readonly(me.#data),
 			reload: function () { return me.#reload(); },
 			getEditableItem: function (index) { return me.#data[index]; }
 		};
 		if (this.#isPaged) {
 			Object.assign(ret, {
-				currentIndex: readonly(ref(me.#currentIndex)),
-				currentPage: readonly(ref(me.#currentPage)),
-				currentPageSize: readonly(ref(me.#currentPageSize)),
-				totalPages: readonly(ref(me.#totalPages)),
+				currentIndex: vue.readonly(vue.ref(me.#currentIndex)),
+				currentPage: vue.readonly(vue.ref(me.#currentPage)),
+				currentPageSize: vue.readonly(vue.ref(me.#currentPageSize)),
+				totalPages: vue.readonly(vue.ref(me.#totalPages)),
 				moveToPage: function (pageNumber) { return me.#moveToPage(pageNumber); },
 				moveToNextPage: function () { return me.#moveToNextPage(); },
 				moveToPreviousPage: function () { return me.#moveToPreviousPage(); },
@@ -865,7 +865,7 @@ class ModelList {
 		}
 		if (this.#setParameters !== undefined) {
 			Object.assign(ret, {
-				currentParameters: readonly(me.#params),
+				currentParameters: vue.readonly(me.#params),
 				changeParameters: function () {
 					me.#setParameters.apply(me.#params, arguments);
 					return me.#reload();
@@ -988,4 +988,111 @@ const ModelMethods = {
 	}
 };
 
-export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods };
+
+const vueFileReg = new RegExp('^.+\.vue$');
+const _vueFileCache = new Map();
+
+const _formatURL = function(url)
+{
+	let result = '';
+	let upper = true;
+	for (var i = 0; i < url.length; i++) {
+		switch (url[i]) {
+			case '.':
+			case '-':
+			case '_':
+				upper = true;
+				break;
+			default:
+				if (upper) {
+					result += url[i].toUpperCase();
+					upper = false;
+				}
+				else
+					result += url[i];
+				break;
+		}
+	}
+	return result;
+}
+
+const cacheVueFile = function (url, content) {
+	_vueFileCache.set(url.toLowerCase(), content);
+	_vueFileCache.set(_formatURL(url).toLowerCase(), content);
+}
+
+const _fetchVueFile = async function (url) {
+	if (vueFileReg.test(url)) {
+		if (_vueFileCache.has(url.toLowerCase())) {
+			return {
+				getContentData: (asBinary) => _vueFileCache.get(url.toLowerCase())
+			};
+		} else {
+			let nurl = _formatURL(url).toLowerCase();
+			if (_vueFileCache.has(nurl)) {
+				return {
+					getContentData: (asBinary) => _vueFileCache.get(nurl)
+				};
+			} else {
+				if (url.indexOf("http:") === 0 || url.indexOf("https:") === 0) {
+					const res = await ajax({
+						url: url,
+						useJSON: false
+					});
+					if (!res.ok)
+						throw Object.assign(new Error(res.text + ' ' + url), { res });
+					cacheVueFile(url, res.text());
+				} else {
+					await import(url.substring(0, url.length - 4) + ".js");
+				}
+				return {
+					getContentData: (asBinary) => _vueFileCache.get(url.toLowerCase())
+				};
+			}
+		}
+	} else {
+		const res = await fetch(url);
+		if (!res.ok) 
+			throw Object.assign(new Error(res.statusText + ' ' + url), { res });
+		return {
+			getContentData: (asBinary) => asBinary ? res.arrayBuffer() : res.text()
+		};
+	}
+}
+
+const _cachedCode = [];
+
+const _moduleCache = { vue: vue } ;
+
+const vueSFCOptions = {
+	moduleCache: _moduleCache,
+	compiledCache: {
+		set(key, str) {
+			_cachedCode.push(key);
+			var success = false;
+			while (!success && _cachedCode.length>0) {
+				try {
+					window.sessionStorage.setItem(key, str);
+					success = true;
+				} catch (ex) {
+					window.sessionStorage.removeItem(_cachedCode.shift());
+				}
+			}
+		},
+		get(key) {
+			if (_cachedCode.indexOf(key) >= 0)
+				return window.sessionStorage.getItem(key);
+			return null;
+		}
+	},
+	async getFile(url) {
+		return _fetchVueFile(url);
+	},
+	addStyle(textContent) {
+		const style = Object.assign(document.createElement('style'), { textContent });
+		const ref = document.head.getElementsByTagName('style')[0] || null;
+		document.head.insertBefore(style, ref);
+	}
+}
+
+export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions};

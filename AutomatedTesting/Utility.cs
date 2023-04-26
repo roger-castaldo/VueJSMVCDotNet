@@ -105,9 +105,9 @@ namespace AutomatedTesting
                 VueModelsOptions= new VueModelsOptions(){
                     SessionFactory=new SecureSession(), 
                     IgnoreInvalidModels=ignoreInvalidModels,
-                    CoreJSImport="VueJSMVCDotNet_core",
                     SecurityHeaders=securityHeaders
                 },
+                CoreJSImport="VueJSMVCDotNet_core",
                 VueImportPath= _VUE_IMPORT_PATH,
                 VueLoaderImportPath= _VUE_LOADER_PATH,
                 FileProvider=(blockFileProvider ? null : _fileProvider),

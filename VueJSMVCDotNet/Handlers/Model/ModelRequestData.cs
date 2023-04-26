@@ -55,17 +55,17 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private readonly ISecureSession _session;
         public ISecureSession Session => _session;
 
-        private readonly IFeatureCollection _features;
+        private readonly IServiceProvider _services;
         public object this[Type feature]
         {
-            get { return _features[feature]; }
+            get { return _services.GetService(feature); }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IFeatureCollection features)
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services)
         {
             _formData = formData;
             _session = session;
-            _features=features;
+            _services=services;
         }
 
         private object _ConvertObjectToType(object obj, Type expectedType)

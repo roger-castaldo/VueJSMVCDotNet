@@ -93,7 +93,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
                             formData.Add(jsonProperty.Name, jsonProperty.Value);
                     }
                 }
-                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.Features));
+                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices));
             }
             return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
         }

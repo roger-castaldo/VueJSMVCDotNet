@@ -32,8 +32,8 @@ namespace AutomatedTesting
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/buttons/button.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import * as mod0 from '/resources/vueFiles/icon.js';"));
-            Assert.IsTrue(content.Contains("import 'mod0';"));
+            Assert.IsTrue(content.Contains("import Icon from '/resources/vuefiles/icon.vue';"));
+            Assert.IsTrue(content.Contains("import '/resources/vueFiles/icon.js';"));
         }
 
         [TestMethod]
@@ -42,10 +42,9 @@ namespace AutomatedTesting
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/buttons.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import * as mod0 from '/resources/vueFiles/icon.js';"));
-            Assert.IsTrue(content.Contains("import 'mod0';"));
-            Assert.IsTrue(content.Contains("options.moduleCache.mod1=button;"));
-            Assert.IsTrue(content.Contains("import { button as base_button } from 'mod1';"));
+            Assert.IsTrue(content.Contains("import Icon from '/resources/vuefiles/icon.vue';"));
+            Assert.IsTrue(content.Contains("import '/resources/vueFiles/icon.js';"));
+            Assert.IsTrue(content.Contains("import Button from '/resources/vuefiles/buttons/button.vue';"));
         }
 
         [TestMethod()]

@@ -6,6 +6,7 @@
 		<AnalysisLevel>none</AnalysisLevel>
 		<RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
 		<RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+		<RunSettingsFilePath>C:\Users\Roger Castaldo\source\repos\VueJSMVCDotNet\AutomatedTesting\bin\Debug\net7.0\fine-code-coverage\coverage-tool-output\AutomatedTesting %28net7.0%29-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
 	</PropertyGroup>
 
 	<ItemGroup>

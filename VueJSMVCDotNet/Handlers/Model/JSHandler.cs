@@ -20,7 +20,6 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
 {
     internal class JSHandler : ModelRequestHandlerBase
     {
-        public const string CORE_URL = "/VueJSMVCDotNet_core.min.js";
 
         public struct sModelType
         {
@@ -136,10 +135,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private Dictionary<Type, IEnumerable<ASecurityCheck>> _securityChecks;
         private readonly string _urlBase;
         private readonly string _vueImportPath;
-        private readonly string _compressedCore;
-        private readonly string _coreJSURL;
         private readonly string _coreImportPath;
-        public JSHandler(string urlBase,string vueImportPath,string coreJSURL,string coreImportPath, string[] securityHeaders,
+        public JSHandler(string urlBase,string vueImportPath,string coreImportPath, string[] securityHeaders,
             RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod)
             : base(next,sessionFactory,registerSlowMethod,urlBase)
         {
@@ -147,24 +144,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             _types = new Dictionary<Type, ModelJSFilePath[]>();
             _urlBase=urlBase;
             _vueImportPath=vueImportPath;
-            _coreJSURL=coreJSURL.ToLower();
-            _coreImportPath=coreImportPath ?? _coreJSURL;
-            StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
-            var builder = new StringBuilder();
-            builder.AppendFormat(@"import {{reactive,readonly,ref}} from ""{0}"";
-const securityHeaders = {{", _vueImportPath);
-
-            if (securityHeaders!=null)
-            {
-                foreach (string key in securityHeaders)
-                    builder.AppendFormat("'{0}':null,", key.Replace("'","\\'"));
-                builder.Length-=1;
-            }
-
-            builder.AppendLine("};");
-            builder.AppendLine(sr.ReadToEnd());
-            _compressedCore = JSMinifier.Minify(builder.ToString());
-            sr.Close();
+            _coreImportPath=coreImportPath;
             _securityChecks=new Dictionary<Type, IEnumerable<ASecurityCheck>>();
         }
 
@@ -186,13 +166,6 @@ const securityHeaders = {{", _vueImportPath);
             if (context.Request.Method.ToUpper()=="GET")
             {
                 string url = _CleanURL(context);
-                if (url.ToLower()==_coreJSURL)
-                {
-                    context.Response.ContentType="text/javascript";
-                    context.Response.StatusCode= 200;
-                    await context.Response.WriteAsync(_compressedCore);
-                    return;
-                }
                 List<Type> models = new List<Type>();
                 if (_types!=null)
                 {
