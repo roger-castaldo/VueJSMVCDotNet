@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.ObjectPool;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Handlers.Model.JSGenerators;
+using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,9 +14,9 @@ using System.Reflection;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.ModelRequestHandler;
+using static VueJSMVCDotNet.Handlers.ModelRequestHandler;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
+namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class JSHandler : ModelRequestHandlerBase
     {

@@ -1,6 +1,6 @@
 ﻿using AutomatedTesting.Security;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to Ignore a property for model generation. 

@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Handlers;
+using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -13,7 +13,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     /// <summary>
     /// Used to supply the additional components for the VueModelsHandler
@@ -186,7 +186,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 throw new ArgumentNullException("fileProvider");
             options.VueMiddleware=this;
 
-            StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
+            StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
             var builder = new StringBuilder();
             builder.Append(@$"import * as vue from ""{options.VueImportPath}"";
 const securityHeaders = {{");

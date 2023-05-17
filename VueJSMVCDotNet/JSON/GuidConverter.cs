@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.JSON
+namespace VueJSMVCDotNet.JSON
 {
     internal class GuidConverter : JsonConverter<Guid>
     {

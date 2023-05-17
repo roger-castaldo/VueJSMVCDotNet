@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.JSON
+namespace VueJSMVCDotNet.JSON
 {
     internal class DecimalConverter : JsonConverter<decimal>
     {

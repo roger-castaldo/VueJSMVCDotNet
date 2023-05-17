@@ -1,5 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.JSON
+namespace VueJSMVCDotNet.JSON
 {
     internal class ModelConverter<T> : JsonConverter<T> where T :IModel
     {

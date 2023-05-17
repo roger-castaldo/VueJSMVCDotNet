@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,10 +8,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.ModelRequestHandler;
+using static VueJSMVCDotNet.Handlers.ModelRequestHandler;
 using static System.Collections.Specialized.BitVector32;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
+namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class SaveHandler : ModelRequestHandlerBase
     {

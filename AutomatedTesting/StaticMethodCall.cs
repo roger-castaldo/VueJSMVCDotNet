@@ -2,7 +2,7 @@
 using AutomatedTesting.Security;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.Collections.Generic;

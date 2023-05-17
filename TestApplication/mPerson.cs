@@ -1,8 +1,8 @@
 using System;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
 using System.Collections.Generic;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 
 namespace TestApplication{
     [ModelRoute("/models/mPerson")]

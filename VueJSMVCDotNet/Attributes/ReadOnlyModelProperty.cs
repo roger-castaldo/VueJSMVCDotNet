@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to specify an uneditable readonly property for a given model 

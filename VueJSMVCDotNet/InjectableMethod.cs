@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     internal class InjectableMethod
     {

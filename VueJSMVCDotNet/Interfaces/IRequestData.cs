@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
+namespace VueJSMVCDotNet.Interfaces
 {
     public interface IRequestData
     {

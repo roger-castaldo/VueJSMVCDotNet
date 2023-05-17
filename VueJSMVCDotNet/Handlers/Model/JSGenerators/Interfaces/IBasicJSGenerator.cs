@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSHandler;
+using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces
+namespace VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces
 {
     internal interface IBasicJSGenerator
     {

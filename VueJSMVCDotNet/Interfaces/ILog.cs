@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
+namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// Used to pass through the internal logging mechanism used by the MiddleWare

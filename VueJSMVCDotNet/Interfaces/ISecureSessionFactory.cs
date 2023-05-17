@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
+namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// An interface that is required to be defined in order to extract a secure session from a given request

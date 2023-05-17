@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     internal class SlowMethodInstance : IDisposable
     {

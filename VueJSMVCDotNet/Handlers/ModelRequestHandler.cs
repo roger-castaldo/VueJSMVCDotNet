@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Handlers;
+using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
+namespace VueJSMVCDotNet.Handlers
 {
     internal class ModelRequestHandler : RequestHandlerBase
     {

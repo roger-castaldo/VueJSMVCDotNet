@@ -1,7 +1,7 @@
 ﻿using Jint.Native.Json;
 using Microsoft.AspNetCore.Http;
-using Org.Reddragonit.VueJSMVCDotNet;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;

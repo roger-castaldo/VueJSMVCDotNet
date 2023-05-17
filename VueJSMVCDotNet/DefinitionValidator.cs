@@ -1,5 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     internal static class DefinitionValidator
     {

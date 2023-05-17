@@ -6,8 +6,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Net;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting
 {
@@ -780,7 +780,7 @@ namespace AutomatedTesting
                         Type tmp = value.GetType();
                         while ((tmp = tmp.BaseType) != null)
                         {
-                            if (tmp.FullName == "Org.Reddragonit.Dbpro.Structure.Table")
+                            if (tmp.FullName == "Dbpro.Structure.Table")
                                 break;
                             foreach (PropertyInfo pi in tmp.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance))
                             {

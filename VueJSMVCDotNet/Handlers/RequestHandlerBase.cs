@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
+namespace VueJSMVCDotNet.Handlers
 {
     internal abstract class RequestHandlerBase : IDisposable
     {

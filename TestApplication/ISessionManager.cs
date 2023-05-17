@@ -1,4 +1,4 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;

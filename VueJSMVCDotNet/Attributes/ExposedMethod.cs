@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// This attribute is used to expose a method to a javascript based called for a model. A static 

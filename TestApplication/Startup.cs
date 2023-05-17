@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 using TestApplication.Handlers;
 
 namespace TestApplication

@@ -1,12 +1,12 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes;
 using System;
 using System.Reflection;
 using System.Text;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSHandler;
+using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
+using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 using System.Linq;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
+namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelListCallGenerator : IJSGenerator
     {

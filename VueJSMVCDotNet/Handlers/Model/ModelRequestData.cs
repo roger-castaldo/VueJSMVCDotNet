@@ -5,14 +5,14 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using System.Collections;
 using System.Reflection;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes;
 using Microsoft.AspNetCore.Http.Features;
 using System.Runtime.CompilerServices;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
+namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class ModelRequestData : IRequestData
     {

@@ -1,9 +1,9 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes;
 using System.Reflection;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSHandler;
+using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
+using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.JSGenerators
+namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelLoadAllGenerator : IJSGenerator
     {

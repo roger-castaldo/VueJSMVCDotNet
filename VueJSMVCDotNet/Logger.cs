@@ -1,10 +1,10 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     internal sealed class LogInstance : ILog
     {

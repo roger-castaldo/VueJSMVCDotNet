@@ -1,10 +1,10 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// An abstract class used to implement Security Check attributes.  These can be tagged on 

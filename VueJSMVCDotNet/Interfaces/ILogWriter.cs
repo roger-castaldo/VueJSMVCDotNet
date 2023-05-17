@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Interfaces
+namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// Used for specifying the level of the log message coming through

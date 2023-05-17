@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.JSON
+namespace VueJSMVCDotNet.JSON
 {
     internal class IPAddressConverter : JsonConverter<IPAddress>
     {

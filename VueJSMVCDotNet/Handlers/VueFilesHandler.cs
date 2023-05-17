@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.ObjectPool;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
+namespace VueJSMVCDotNet.Handlers
 {
     internal class VueFilesHandler : RequestHandlerBase
     {

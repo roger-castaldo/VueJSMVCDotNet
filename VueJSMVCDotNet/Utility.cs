@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Handlers.Model;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
-using Org.Reddragonit.VueJSMVCDotNet.JSON;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.JSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,9 +17,9 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using static Org.Reddragonit.VueJSMVCDotNet.Handlers.Model.ModelRequestHandlerBase;
+using static VueJSMVCDotNet.Handlers.Model.ModelRequestHandlerBase;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     /*
      * This class houses some basic utility functions used by other classes to access embedded resources, search
