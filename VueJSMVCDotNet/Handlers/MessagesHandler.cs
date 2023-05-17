@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -56,15 +57,17 @@ export default Translate;";
         private readonly IFileProvider _fileProvider;
         private readonly string _baseURL;
         private readonly ILogWriter _log;
+        private readonly bool _compressAllJS;
         private ConcurrentDictionary<string, CachedContent> _cache;
 
 
-        public MessagesHandler(IFileProvider fileProvider, string baseURL,ILogWriter log,RequestDelegate next)
+        public MessagesHandler(IFileProvider fileProvider, string baseURL,ILogWriter log,bool compressAllJS,RequestDelegate next)
             : base(next)
         {
             _fileProvider=fileProvider;
             _baseURL=baseURL;
             _log=log;
+            _compressAllJS=compressAllJS;
             _cache = new ConcurrentDictionary<string, CachedContent>();
         }
 
@@ -114,7 +117,7 @@ export default Translate;";
                             if (sb.Length>0)
                             {
                                 sb.Length=sb.Length-2;
-                                cc = new CachedContent(contents, sb.ToString());
+                                cc = new CachedContent(contents, (_compressAllJS ? JSMinifier.Minify(string.Format(_BASE_CODE_TEMPLATE, sb.ToString())) : string.Format(_BASE_CODE_TEMPLATE, sb.ToString())));
                                 _fileProvider.Watch(fpath).RegisterChangeCallback(state =>
                                 {
                                     CachedContent ctemp;
@@ -129,7 +132,7 @@ export default Translate;";
                         context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
                         context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((spath.EndsWith(".min.js") ? JSMinifier.Minify(string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)) : string.Format(_BASE_CODE_TEMPLATE, cc.Value.Content)));
+                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
                     }
                     else
                     {

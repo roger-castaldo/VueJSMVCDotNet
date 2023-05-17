@@ -849,7 +849,9 @@ class ModelList {
 		let ret = {
 			Items: vue.readonly(me.#data),
 			reload: function () { return me.#reload(); },
-			getEditableItem: function (index) { return me.#data[index]; }
+			getEditableItem: function (index) { return me.#data[index]; },
+			$on: function (event, callback) { me.#events.on(event, callback); },
+			$off: function (callback) { me.#events.off(callback); }
 		};
 		if (this.#isPaged) {
 			Object.assign(ret, {

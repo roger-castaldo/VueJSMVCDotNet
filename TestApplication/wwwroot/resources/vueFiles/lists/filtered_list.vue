@@ -35,7 +35,7 @@
 <script setup>
     import { mPerson } from "/testing/resources/scripts/mPerson.js";
     import { watch, ref, expose } from "vue";
-    import asynccomp from "../asynccomp.js";
+    import asynccomp from "../asynccomp.vue";
 
     const { Items, changeParameters } = mPerson.Search(null).toVueComposition();
     let current_filter = ref('');

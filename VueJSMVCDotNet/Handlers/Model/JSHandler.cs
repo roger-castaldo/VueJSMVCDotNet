@@ -136,9 +136,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
         private readonly string _urlBase;
         private readonly string _vueImportPath;
         private readonly string _coreImportPath;
-        public JSHandler(string urlBase,string vueImportPath,string coreImportPath, string[] securityHeaders,
-            RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod)
-            : base(next,sessionFactory,registerSlowMethod,urlBase)
+        private readonly bool _compressAllJS;
+        public JSHandler(string urlBase,string vueImportPath, string coreImportPath, string[] securityHeaders,
+            RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, bool compressAllJS)
+            : base(next, sessionFactory, registerSlowMethod, urlBase)
         {
             _cache = new Dictionary<string, string>();
             _types = new Dictionary<Type, ModelJSFilePath[]>();
@@ -146,6 +147,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             _vueImportPath=vueImportPath;
             _coreImportPath=coreImportPath;
             _securityChecks=new Dictionary<Type, IEnumerable<ASecurityCheck>>();
+            _compressAllJS=compressAllJS;
         }
 
         public override void ClearCache()
@@ -252,7 +254,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers.Model
             for (int x = 0; x<models.Count; x++)
                 amodels[x] = new sModelType(models[x]);
             Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
-            WrappedStringBuilder builder = new WrappedStringBuilder(url.ToLower().EndsWith(".min.js"));
+            WrappedStringBuilder builder = new WrappedStringBuilder(_compressAllJS || url.ToLower().EndsWith(".min.js"));
             builder.AppendLine(string.Format(@"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{0}';
 import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from ""{1}"";
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}", new object[] { _coreImportPath, _vueImportPath }));

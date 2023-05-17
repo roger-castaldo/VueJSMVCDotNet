@@ -103,6 +103,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// Optional: Settings to be used file the Vue File handler
         /// </summary>
         public VueFilesHandlerOptions VueFilesOptions { get; init; } = null;
+        /// <summary>
+        /// Optional: If set to true this will compress all outputted javascript, whether or not the requesting url ends with min.js or .js
+        /// </summary>
+        public bool CompressAllJS { get; init; } = false;
 
         private VueMiddleware _middleWare;
         internal VueMiddleware VueMiddleware { set { _middleWare = value; } }
@@ -208,7 +212,7 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new VueFilesHandler(options.FileProvider, url, options.LogWriter, options.VueImportPath, options.VueLoaderImportPath, options.CoreJSImport??options.CoreJSURL, next);
+                        var handler = new VueFilesHandler(options.FileProvider, url, options.LogWriter, options.VueImportPath, options.VueLoaderImportPath, options.CoreJSImport??options.CoreJSURL,options.CompressAllJS, next);
                         fileHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -222,7 +226,7 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new MessagesHandler(options.FileProvider, url,options.LogWriter, next);
+                        var handler = new MessagesHandler(options.FileProvider, url,options.LogWriter,options.CompressAllJS, next);
                         messageHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -233,7 +237,7 @@ const securityHeaders = {{");
             {
                 _modelHandler = new ModelRequestHandler(options.LogWriter, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
                     options.CoreJSImport??options.CoreJSURL, options.VueModelsOptions.SecurityHeaders,
-                options.VueModelsOptions.SessionFactory, next);
+                options.VueModelsOptions.SessionFactory,options.CompressAllJS, next);
             }
         }
 

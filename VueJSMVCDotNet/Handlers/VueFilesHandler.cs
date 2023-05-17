@@ -22,7 +22,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
     internal class VueFilesHandler : RequestHandlerBase
     {
 
-        private static readonly Regex _regImport = new Regex(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)')", RegexOptions.Multiline|RegexOptions.Compiled);
+        private static readonly Regex _regImport = new Regex(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled);
         private static readonly Regex _regImportParts = new Regex(@"\{([^\}]+)\}", RegexOptions.Compiled);
 
         private struct sVueFile
@@ -62,12 +62,25 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                 }
             }
 
-            internal string FormatCache(string absolutePath)
+            internal string FormatCache(string absolutePath,bool isFolder)
             {
                 var fixedContent = _regImport.Replace(_content, (m) => {
                     var import = (m.Groups[3].Value=="" ? m.Groups[4].Value : m.Groups[3].Value);
                     if (import.EndsWith(".vue"))
-                        return $"import{m.Groups[1].Value}'{_MergeUrl(absolutePath, import, false)}'";
+                        return $"import{m.Groups[1].Value}'{_MergeUrl(absolutePath, import, isFolder)}';";
+                    else if (import.EndsWith("/"))
+                    {
+                        var subMatch = _regImportParts.Match(m.Groups[1].Value);
+                        if (subMatch.Success)
+                        {
+                            var sb = new StringBuilder();
+                            foreach (var imp in subMatch.Groups[1].Value.Split(',').Where(i=>!string.IsNullOrEmpty(i.Trim())))
+                                sb.AppendLine($"import {imp.Trim()} from '{_MergeUrl(absolutePath, $"{import}{imp.Trim()}.vue", isFolder)}';");
+                            return sb.ToString();
+                        }
+                        else
+                            return m.Value;
+                    }
                     else
                         return m.Value;
                 });
@@ -81,9 +94,10 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
         private readonly string _vueImportPath;
         private readonly string _vueLoaderImportPath;
         private readonly string _coreImport;
+        private readonly bool _compressAllJS;
         private ConcurrentDictionary<string, CachedContent> _cache;
 
-        public VueFilesHandler(IFileProvider fileProvider, string baseURL, ILogWriter log,string vueImportPath, string vueLoaderImportPath,string coreImport,RequestDelegate next)
+        public VueFilesHandler(IFileProvider fileProvider, string baseURL, ILogWriter log,string vueImportPath, string vueLoaderImportPath,string coreImport,bool compressAllJS,RequestDelegate next)
             : base(next) 
         {
             _fileProvider=fileProvider;
@@ -93,11 +107,13 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
             _vueImportPath=vueImportPath;
             _vueLoaderImportPath=vueLoaderImportPath;
             _coreImport=coreImport;
+            _compressAllJS=compressAllJS;
         }
 
         public override async Task ProcessRequest(HttpContext context)
         {
-            if (context.Request.Path.StartsWithSegments(new PathString(_baseURL))
+            if ((context.Request.Path.StartsWithSegments(new PathString(_baseURL))
+                ||string.Equals(context.Request.Path,_baseURL+".js",StringComparison.InvariantCultureIgnoreCase))
                 && context.Request.Method=="GET"
                 && context.Request.Path.ToString().ToLower().EndsWith(".js"))
             {
@@ -156,7 +172,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Handlers
                                 imports = imports.Concat(file.Imports);
                             }
 
-                            imports = imports.Where(imp=>imp!=_vueImportPath).Distinct();
+                            imports = imports.Where(imp=>imp!=_vueImportPath).Select(imp=> _MergeUrl(absolutePath, imp, files.Count>1)).Distinct();
 
                             StringBuilder sb = new StringBuilder();
                             sb.AppendLine(@$"import {{ loadModule }} from '{_vueLoaderImportPath}';
@@ -192,7 +208,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             }
 
                             foreach (var file in files)
-                                sb.AppendLine(file.FormatCache(absolutePath));
+                                sb.AppendLine(file.FormatCache(absolutePath, files.Count>1));
 
                             files = _SortFiles(files);
 
@@ -215,7 +231,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             if (sb.Length>0)
                             {
                                 sb.Length=sb.Length-2;
-                                cc = new CachedContent(contents, sb.ToString());
+                                cc = new CachedContent(contents, (_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString()));
                                 _fileProvider.Watch(fpath+Path.DirectorySeparatorChar+"*.vue").RegisterChangeCallback(state =>
                                 {
                                     CachedContent ctemp;
@@ -230,7 +246,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                         context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
                         context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
+                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
                     }
                     else
                     {
@@ -249,23 +265,6 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
             var translatedURLs = vueImports.Where(imp => !files.Any(f => _FileMatch(f.Name, imp)))
                                 .Select(imp => _MergeUrl(baseURL, imp, files.Count>1))
                                 .Distinct();
-
-            foreach (var url in translatedURLs)
-            {
-                if (!result.Any(i => string.Equals(i, url.Substring(0, url.LastIndexOf("/"))+".js", StringComparison.InvariantCultureIgnoreCase))) {
-                    if (result.Any(i => !i.EndsWith(".js") && string.Equals(i.Substring(0, i.LastIndexOf("/")), url.Substring(0, url.LastIndexOf("/")), StringComparison.InvariantCultureIgnoreCase)))
-                    {
-                        if (!string.Equals(url.Substring(0, url.LastIndexOf("/")), _baseURL, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            result.RemoveAll(i => !i.EndsWith(".js") && string.Equals(i.Substring(0, i.LastIndexOf("/")), url.Substring(0, url.LastIndexOf("/")), StringComparison.InvariantCultureIgnoreCase));
-                            result.Add(url.Substring(0, url.LastIndexOf("/"))+".js");
-                        }else
-                            result.Add(url);
-                    }
-                    else
-                        result.Add(url);
-                }
-            }
             return result.Select(url => (url.EndsWith(".js") ? url : url.Substring(0, url.Length-4)+".js"));
         }
 
@@ -309,14 +308,16 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
             if (path.StartsWith("http") || !path.Contains('/') || path.StartsWith('/'))
                 return path;
             if (isFolder)
-                baseUrl=(baseUrl.EndsWith(".min.js") ? baseUrl.Substring(0, baseUrl.Length-7) : baseUrl.Substring(0, baseUrl.Length-3));
-            else
             {
-                if (!baseUrl.EndsWith('/'))
-                    baseUrl = baseUrl.Substring(0, baseUrl.LastIndexOf('/'));
-                else if (baseUrl.EndsWith('/'))
-                    baseUrl =baseUrl.Substring(0, baseUrl.Length-1);
+                if (baseUrl.EndsWith(".min.js"))
+                    baseUrl = baseUrl.Substring(0, baseUrl.Length-7)+"/";
+                else if (baseUrl.EndsWith(".js"))
+                    baseUrl = baseUrl.Substring(0, baseUrl.Length-3)+"/";
             }
+            if (!baseUrl.EndsWith('/'))
+                baseUrl = baseUrl.Substring(0, baseUrl.LastIndexOf('/'));
+            else if (baseUrl.EndsWith('/'))
+                baseUrl =baseUrl.Substring(0, baseUrl.Length-1);
             while (path.StartsWith('.'))
             {
                 if (path.StartsWith(".."))

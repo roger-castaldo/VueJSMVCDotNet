@@ -27,24 +27,15 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void FileWithImport()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/buttons/button.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import Icon from '/resources/vuefiles/icon.vue';"));
-            Assert.IsTrue(content.Contains("import '/resources/vueFiles/icon.js';"));
-        }
-
-        [TestMethod]
         public void FolderWithFiles()
         {
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/buttons.js", _middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             Assert.IsTrue(content.Contains("import Icon from '/resources/vuefiles/icon.vue';"));
-            Assert.IsTrue(content.Contains("import '/resources/vueFiles/icon.js';"));
             Assert.IsTrue(content.Contains("import Button from '/resources/vuefiles/buttons/button.vue';"));
+            Assert.IsFalse(content.Contains("/resources/vuefiles/buttons/button.js"));
+            Assert.IsFalse(content.Contains("/resources/vuefiles/icon.js"));
         }
 
         [TestMethod()]
