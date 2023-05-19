@@ -35,7 +35,7 @@ namespace VueJSMVCDotNet.Handlers
             {
                 _name=f.Name;
                 StreamReader sr = new StreamReader(f.CreateReadStream());
-                _content=sr.ReadToEnd().Replace("`", "\\`").Replace("${","\\${");
+                _content=sr.ReadToEnd().Replace("\\","\\\\").Replace("`", "\\`").Replace("${","\\${");
                 sr.Close();
             }
 
