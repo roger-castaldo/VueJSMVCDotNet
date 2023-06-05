@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace AutomatedTesting
 {
@@ -125,15 +126,17 @@ namespace AutomatedTesting
         [TestMethod]
         public void TestInstanceMethodWithSameNameButParameter()
         {
+            var store = new DataStore();
+            store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
                 parameters:new Hashtable()
                 {
                     {"middleName","John" }
-                })).ReadToEnd();
+                },store:store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(mPerson.Persons[0].GetFullName("John"), content);
+            Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName("John"), content);
         }
 
         [TestMethod]
@@ -162,45 +165,51 @@ namespace AutomatedTesting
         [TestMethod]
         public void TestVoidInstanceMethod()
         {
+            var store = new DataStore();
+            store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/SetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/SetFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
                 parameters: new Hashtable()
                 {
                     {"fullName","Bob, Loblaw" }
-                })).ReadToEnd();
+                },store: store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length==0);
-            Assert.AreEqual(mPerson.Persons[0].GetFullName(new SecureSession()), "Bob, Loblaw");
+            Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession()), "Bob, Loblaw");
         }
 
         [TestMethod]
         public void TestObjectInstanceMethod()
         {
+            var store = new DataStore();
+            store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsFullName", new object[] {((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
                 parameters: new Hashtable()
                 {
-                    {"fullName", mPerson.Persons[0].GetFullName(new SecureSession())}
-                })).ReadToEnd();
+                    {"fullName", ((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession())}
+                },store:store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(content,"true");
+            Assert.AreEqual("true",content);
         }
 
         [TestMethod]
         public void TestObjectInstanceMethodWithOpImplicitParameter()
         {
+            var store = new DataStore();
+            store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
                 parameters: new Hashtable()
                 {
                     {"name",
                         new Hashtable(){
-                        {"FirstName", mPerson.Persons[0].FirstName},
-                        {"LastName", mPerson.Persons[0].LastName}
+                        {"FirstName", ((mPerson[])store[mPerson.KEY])[0].FirstName},
+                        {"LastName", ((mPerson[])store[mPerson.KEY])[0].LastName}
                         }
                     }
-                }));
+                }, store: store));
             Assert.AreEqual(status, 200);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.AreEqual(true, result);
@@ -213,7 +222,7 @@ namespace AutomatedTesting
             string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/ThrowInstanceException", new object[] { mPerson.Persons[0].id }), _middleware, out status)).ReadToEnd();
             Assert.AreEqual(status, 500);
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(content, "Error");
+            Assert.AreEqual("Error", content);
         }
 
         [TestMethod]

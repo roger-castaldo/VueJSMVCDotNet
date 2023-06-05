@@ -18,8 +18,8 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public ModelListCallHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
-            :base(next,sessionFactory,registerSlowMethod,urlBase)
+        public ModelListCallHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILog log)
+            :base(next,sessionFactory,registerSlowMethod,urlBase,log)
         {
             _handlers=new List<IModelActionHandler>();
         }
@@ -32,7 +32,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = _CleanURL(context);
-            Logger.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { GetRequestMethod(context), url });
+            log.Trace("Checking to see if {0}:{1} is handled by the model list call", new object[] { GetRequestMethod(context), url });
             if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.LIST && _handlers.Any(h => h.BaseURLs.Contains(url.Substring(0, url.LastIndexOf("/")), StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(url.Substring(url.LastIndexOf("/")+1), StringComparer.InvariantCultureIgnoreCase)))
             {
                 var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url.Substring(0, url.LastIndexOf("/")), StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(url.Substring(url.LastIndexOf("/")+1), StringComparer.InvariantCultureIgnoreCase));
@@ -52,7 +52,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                                 break;
                             }
                         }
-                        Logger.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[pageIndex], method, url });
+                        log.Trace("Outputting page information TotalPages:{0} for {1}:{2}", new object[] { opars[pageIndex], method, url });
                         return new Hashtable()
                         {
                             {"response",result },
@@ -76,8 +76,8 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     _handlers.Add((IModelActionHandler)
                         typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                        .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance) })
-                        .Invoke(new object[] { grp.ToList(), "listMethod", _registerSlowMethod })
+                        .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance),typeof(ILog) })
+                        .Invoke(new object[] { grp.ToList(), "listMethod", _registerSlowMethod,log })
                     );
                 }
             }

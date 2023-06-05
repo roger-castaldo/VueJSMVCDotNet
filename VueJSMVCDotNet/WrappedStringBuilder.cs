@@ -28,21 +28,6 @@ namespace VueJSMVCDotNet
                 _sb.AppendLine(line);
         }
 
-        internal void AppendFormat(string format, object arg0)
-        {
-            _Append(string.Format(format, arg0));
-        }
-
-        internal void AppendFormat(string format, object arg0, object arg1)
-        {
-            _Append(string.Format(format, arg0,arg1));
-        }
-
-        internal void AppendFormat(string format,object[] args)
-        {
-            _Append(string.Format(format, args));
-        }
-
         internal void Append(string value)
         {
             _Append(value);

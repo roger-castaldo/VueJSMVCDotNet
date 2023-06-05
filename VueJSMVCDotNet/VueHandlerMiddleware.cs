@@ -12,6 +12,10 @@ using System.Linq;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
+using VueJSMVCDotNet.Caching;
+using Microsoft.Extensions.Logging;
+using System.Reflection.Metadata;
 
 namespace VueJSMVCDotNet
 {
@@ -70,7 +74,7 @@ namespace VueJSMVCDotNet
         /// <summary>
         /// Optional: An instance of a log writer class to write the logging information to
         /// </summary>
-        public ILogWriter LogWriter { get; init; } = null;
+        public ILogger LogWriter { get; init; } = null;
         /// <summary>
         /// Optional: The import path for the VueJs library: default="https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js"
         /// </summary>
@@ -174,17 +178,22 @@ namespace VueJSMVCDotNet
         private readonly MessagesHandler[] _messageHandlers;
         private readonly VueFilesHandler[] _vueFileHandlers;
         private readonly string _compressedCore;
+        private readonly IMemoryCache _cache;
 
         /// <summary>
         /// default constructor as per dotnet standards
         /// </summary>
         /// <param name="next">next delegate call as per dotnet standards</param>
         /// <param name="options">the supplied options for creating the middle ware</param>
-        public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options)
+        /// <param name="cache">optionally supplied caching mechanism to use</param>
+        public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options, IMemoryCache cache=null)
         {
             if ((options.VueFilesOptions!=null||options.MessageOptions!=null) && options.FileProvider==null)
                 throw new ArgumentNullException("fileProvider");
+            var log = new Logger(options.LogWriter);
             options.VueMiddleware=this;
+
+            _cache = cache ?? new MemoryCache(new MemoryCacheOptions() { });
 
             StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
             var builder = new StringBuilder();
@@ -194,7 +203,7 @@ const securityHeaders = {{");
             if (options.VueModelsOptions!=null && options.VueModelsOptions.SecurityHeaders!=null)
             {
                 foreach (string key in options.VueModelsOptions.SecurityHeaders)
-                    builder.AppendFormat("'{0}':null,", key.Replace("'", "\\'"));
+                    builder.Append($"'{key.Replace("'", "\\'")}':null,");
                 builder.Length-=1;
             }
 
@@ -212,7 +221,7 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new VueFilesHandler(options.FileProvider, url, options.LogWriter, options.VueImportPath, options.VueLoaderImportPath, options.CoreJSImport??options.CoreJSURL,options.CompressAllJS, next);
+                        var handler = new VueFilesHandler(options.FileProvider, url, log, options.VueImportPath, options.VueLoaderImportPath, options.CoreJSImport??options.CoreJSURL,options.CompressAllJS, next, _cache);
                         fileHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -226,7 +235,7 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new MessagesHandler(options.FileProvider, url,options.LogWriter,options.CompressAllJS, next);
+                        var handler = new MessagesHandler(options.FileProvider, url,log,options.CompressAllJS, next,_cache, options.CoreJSImport??options.CoreJSURL, options.VueImportPath);
                         messageHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -235,9 +244,9 @@ const securityHeaders = {{");
             }
             if (options.VueModelsOptions!=null)
             {
-                _modelHandler = new ModelRequestHandler(options.LogWriter, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
+                _modelHandler = new ModelRequestHandler(log, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
                     options.CoreJSImport??options.CoreJSURL, options.VueModelsOptions.SecurityHeaders,
-                options.VueModelsOptions.SessionFactory,options.CompressAllJS, next);
+                options.VueModelsOptions.SessionFactory,options.CompressAllJS, next, _cache);
             }
         }
 
@@ -258,6 +267,7 @@ const securityHeaders = {{");
                 for(int x=0;x< _vueFileHandlers.Length; x++)
                     _vueFileHandlers[x].Dispose();
             }
+            _cache.Dispose();
             GC.SuppressFinalize(this);
         }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace VueJSMVCDotNet
+namespace VueJSMVCDotNet.Caching
 {
     internal struct CachedContent
     {
@@ -12,12 +12,9 @@ namespace VueJSMVCDotNet
         private string _content;
         public string Content { get { return _content; } }
 
-        public CachedContent(Microsoft.Extensions.FileProviders.IDirectoryContents contents, string content)
+        public CachedContent(DateTimeOffset lastModified, string content)
         {
-            _timestamp=new DateTime(contents
-                .OrderByDescending(f => f.LastModified)
-                .FirstOrDefault()
-                .LastModified.Ticks);
+            _timestamp = lastModified.LocalDateTime;
             _content = content;
         }
     }

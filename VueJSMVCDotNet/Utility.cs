@@ -18,6 +18,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using static VueJSMVCDotNet.Handlers.Model.ModelRequestHandlerBase;
+using Microsoft.Extensions.Primitives;
 
 namespace VueJSMVCDotNet
 {
@@ -34,7 +35,7 @@ namespace VueJSMVCDotNet
         //houses the assembly load contexts for types
         private static Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES = new();
 
-        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew)
+        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew,ILog log)
         {
             foreach (string str in data.Keys)
             {
@@ -47,7 +48,7 @@ namespace VueJSMVCDotNet
                         {
                             if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length==0 || isNew)
                             {
-                                Logger.Trace("Attempting to convert the value supplied for property {0}.{1} to {2}", new object[] { model.GetType().FullName, pi.Name, pi.PropertyType });
+                                log.Trace("Attempting to convert the value supplied for property {0}.{1} to {2}", new object[] { model.GetType().FullName, pi.Name, pi.PropertyType });
                                 pi.SetValue(model,data.GetValue(pi.PropertyType,str));
                             }
                         }
@@ -56,23 +57,23 @@ namespace VueJSMVCDotNet
             }
         }
 
-        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc) {
-            Logger.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
-            List<Type> ret = _LocateTypeInstances(parent, alc.Assemblies);
+        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc,ILog log) {
+            log.Trace("Locating Instance types of {0} in the Load Context {1}", new object[] { parent.FullName, alc.Name });
+            List<Type> ret = _LocateTypeInstances(parent, alc.Assemblies,log);
             foreach (Type t in ret) {
-                _MarkTypeSource(alc.Name, t);
+                _MarkTypeSource(alc.Name, t,log);
             }
             return ret;
         }
 
-        private static List<Type> _LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies)
+        private static List<Type> _LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies,ILog log)
         {
             List<Type> ret = new List<Type>();
             foreach (Assembly ass in assemblies)
             {
                 if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
                 {
-                    foreach (Type t in _GetLoadableTypes(ass))
+                    foreach (Type t in _GetLoadableTypes(ass, log))
                     {
                         if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))) {
                             ret.Add(t);
@@ -80,13 +81,13 @@ namespace VueJSMVCDotNet
                     }
                 }
             }
-            Logger.Trace("Located {0} instances of type {1} from the given assemblies", new object[] { ret.Count, parent.FullName });
+            log.Trace("Located {0} instances of type {1} from the given assemblies", new object[] { ret.Count, parent.FullName });
             return ret;
         }
 
-        private static Type[] _GetLoadableTypes(Assembly ass)
+        private static Type[] _GetLoadableTypes(Assembly ass, ILog log)
         {
-            Logger.Trace("Extracting Loadable types from assembly: {0}", new object[] { ass.FullName });
+            log.Trace("Extracting Loadable types from assembly: {0}", new object[] { ass.FullName });
             Type[] ret;
             try
             {
@@ -94,12 +95,12 @@ namespace VueJSMVCDotNet
             }
             catch (ReflectionTypeLoadException rtle)
             {
-                Logger.Error(rtle.Message);
+                log.Error(rtle.Message);
                 ret = rtle.Types;
             }
             catch (Exception e)
             {
-                Logger.Error(e.Message);
+                log.Error(e.Message);
                 if (e.Message != "The invoked member is not supported in a dynamic assembly."
                             && !e.Message.StartsWith("Unable to load one or more of the requested types."))
                     throw;
@@ -109,8 +110,8 @@ namespace VueJSMVCDotNet
             return ret;
         }
 
-        private static void _MarkTypeSource(string contextName, Type type) {
-            Logger.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
+        private static void _MarkTypeSource(string contextName, Type type,ILog log) {
+            log.Trace("Marking the Assembly Load Context of {0} for the type {1}", new object[] { contextName, type.FullName });
             lock (_LOAD_CONTEXT_TYPE_SOURCES)
             {
                 List<Type> types = new List<Type>();
@@ -135,9 +136,9 @@ namespace VueJSMVCDotNet
             }
             return ret;
         }
-        internal static void ClearCaches()
+        internal static void ClearCaches(ILog log)
         {
-            Logger.Trace("Clearing cached types from loaded contexts");
+            log.Trace("Clearing cached types from loaded contexts");
             lock (_INSTANCES_CACHE)
             {
                 _INSTANCES_CACHE.Clear();
@@ -260,10 +261,7 @@ namespace VueJSMVCDotNet
                 bool isFirst = true;
                 foreach (string str in Enum.GetNames(propertyType))
                 {
-                    sb.AppendFormat("{1}'{0}'", new object[] {
-                        str,
-                        (isFirst?"":",")
-                    });
+                    sb.Append($"{(isFirst ? "" : ",")}'{str}'");
                     isFirst = false;
                 }
                 sb.Append("]");
@@ -309,7 +307,7 @@ namespace VueJSMVCDotNet
 
         #region JSON
 
-        private static JsonSerializerOptions _ProduceJsonOptions(IRequestData requestData = null)
+        private static JsonSerializerOptions _ProduceJsonOptions(ILog log,IRequestData requestData = null)
         {
             var result = new JsonSerializerOptions();
             result.WriteIndented=false;
@@ -317,31 +315,31 @@ namespace VueJSMVCDotNet
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
             result.Converters.Add(new DecimalConverter());
-            result.Converters.Add(new ModelConverterFactory(requestData));
+            result.Converters.Add(new ModelConverterFactory(requestData,log));
             result.Converters.Add(new EnumConverterFactory());
             return result;
         }
 
-        public static string JsonEncode(object value)
+        public static string JsonEncode(object value,ILog log)
         {
             if (value==null)
                 return "null";
-            return JsonSerializer.Serialize(value, value.GetType(), options: _ProduceJsonOptions());
+            return JsonSerializer.Serialize(value, value.GetType(), options: _ProduceJsonOptions(log));
         }
 
-        public static T JsonDecode<T>(JsonDocument document, IRequestData requestData)
+        public static T JsonDecode<T>(JsonDocument document, IRequestData requestData,ILog log)
         {
-            return (T)JsonSerializer.Deserialize(document, typeof(T), options: _ProduceJsonOptions(requestData));
+            return (T)JsonSerializer.Deserialize(document, typeof(T), options: _ProduceJsonOptions(log,requestData));
         }
 
-        public static T JsonDecode<T>(JsonNode node, IRequestData requestData)
+        public static T JsonDecode<T>(JsonNode node, IRequestData requestData, ILog log)
         {
-            return (T)JsonSerializer.Deserialize(node, typeof(T), options: _ProduceJsonOptions(requestData));
+            return (T)JsonSerializer.Deserialize(node, typeof(T), options: _ProduceJsonOptions(log, requestData));
         }
 
-        public static T JsonDecode<T>(JsonElement element, IRequestData requestData)
+        public static T JsonDecode<T>(JsonElement element, IRequestData requestData, ILog log)
         {
-            return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(requestData));
+            return (T)JsonSerializer.Deserialize(element, typeof(T), options: _ProduceJsonOptions(log, requestData));
         }
         #endregion
     }

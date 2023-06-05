@@ -36,10 +36,12 @@ namespace VueJSMVCDotNet
 
         private readonly ParameterInfo[] _strippedParameters;
         public ParameterInfo[] StrippedParameters=> _strippedParameters;
+        private readonly ILog log;
 
-        public InjectableMethod(MethodInfo method)
+        public InjectableMethod(MethodInfo method,ILog log)
         {
             _method = method;
+            this.log=log;
             _notNullArguement = (NotNullArguement)method.GetCustomAttribute(typeof(NotNullArguement));
             _parameters = _method.GetParameters();
             List<ParameterInfo> strippedPars = new List<ParameterInfo>();
@@ -80,17 +82,21 @@ namespace VueJSMVCDotNet
                 mpars[_secureSessionIndex] = requestData.Session;
             if (_addItemIndex!=-1)
                 mpars[_addItemIndex] = addItem;
-            if(_loggerIndex!=-1)
-                mpars[_loggerIndex] = Logger.Instance;
+            if (_loggerIndex!=-1)
+                mpars[_loggerIndex] = log;
             if (_headerIndex!=-1)
                 mpars[_headerIndex] = responseHeaders;
+            var ignoredIndexes = new List<int>(new int[] { _secureSessionIndex, _addItemIndex, _loggerIndex, _headerIndex });
             int index = 0;
             for (int x = 0; x<mpars.Length; x++)
             {
                 if (x!=_secureSessionIndex&&x!=_addItemIndex&&x!=_loggerIndex&&x!=_headerIndex)
                 {
                     if (_parameters[x].ParameterType.IsInterface)
+                    {
+                        ignoredIndexes.Add(x);
                         mpars[x]=requestData[_parameters[x].ParameterType];
+                    }
                     else
                     {
                         mpars[x]=pars[index];
@@ -104,7 +110,7 @@ namespace VueJSMVCDotNet
                 index = 0;
                 for (int x = 0; x<_parameters.Length; x++)
                 {
-                    if (x!=_secureSessionIndex&&x!=_addItemIndex&&x!=_loggerIndex)
+                    if (!ignoredIndexes.Contains(x))
                     {
                         if (_parameters[x].IsOut)
                             pars[index]=mpars[x];

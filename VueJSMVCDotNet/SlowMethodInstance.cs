@@ -41,8 +41,9 @@ namespace VueJSMVCDotNet
         private DateTime _lastCall;
         private Task _execution;
         private CancellationTokenSource _token;
+        private readonly ILog log;
 
-        public SlowMethodInstance(InjectableMethod method,object model,object[] pars,IRequestData requestData)
+        public SlowMethodInstance(InjectableMethod method,object model, object[] pars, IRequestData requestData, ILog log)
         {
             _data=new ConcurrentQueue<object>();
             _finished=false;
@@ -50,20 +51,22 @@ namespace VueJSMVCDotNet
             _error=null;
             _lastCall=DateTime.Now;
             _token = new CancellationTokenSource();
+            this.log=log;
             _execution = new Task(() =>
             {
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                        method.Invoke(model, requestData, pars: pars,addItem: new AddItem(AddItem));
+                        method.Invoke(model, requestData, pars: pars, addItem: new AddItem(AddItem));
                     else
                         AddItem(method.Invoke(model, requestData, pars: pars, addItem: new AddItem(AddItem)), true);
-                }catch(Exception e)
+                }
+                catch (Exception e)
                 {
-                    Logger.LogError(e);
+                    log.Error(e);
                     _error=e;
                 }
-            },_token.Token);
+            }, _token.Token);
             _execution.GetAwaiter().OnCompleted(new Action(() => { _finished = true; }));
             _execution.Start();
         }
@@ -86,7 +89,7 @@ namespace VueJSMVCDotNet
         {
             if (_error!=null)
             {
-                Logger.LogError(_error);
+                log.Error(_error);
                 context.Response.ContentType= "text/text";
                 context.Response.StatusCode = 500;
                 _finished=true;
@@ -108,7 +111,7 @@ namespace VueJSMVCDotNet
                 context.Response.ContentType= "text/json";
                 context.Response.StatusCode = 200;
                 _completed = _finished&&_data.IsEmpty;
-                return context.Response.WriteAsync(Utility.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty)));
+                return context.Response.WriteAsync(Utility.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty), log));
             }
         }
 
@@ -121,7 +124,7 @@ namespace VueJSMVCDotNet
                     _token.Cancel();
                 }
                 catch (Exception ex) { 
-                    Logger.LogError(ex);
+                    log.Error(ex);
                 }
             }
         }

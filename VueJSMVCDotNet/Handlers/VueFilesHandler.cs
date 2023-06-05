@@ -16,6 +16,8 @@ using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
+using VueJSMVCDotNet.Caching;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace VueJSMVCDotNet.Handlers
 {
@@ -23,6 +25,7 @@ namespace VueJSMVCDotNet.Handlers
     {
 
         private static readonly Regex _regImport = new Regex(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled);
+        private static readonly Regex _regImportExtensions = new Regex(@"^.+\.(js|vue)$", RegexOptions.Compiled|RegexOptions.IgnoreCase);
         private static readonly Regex _regImportParts = new Regex(@"\{([^\}]+)\}", RegexOptions.Compiled);
 
         private struct sVueFile
@@ -30,10 +33,13 @@ namespace VueJSMVCDotNet.Handlers
             private readonly string _name;
             public string Name => _name;
             private readonly string _content;
+            private readonly DateTimeOffset _lastModified;
+            public DateTimeOffset LastModified => _lastModified;
 
             public sVueFile(IFileInfo f)
             {
                 _name=f.Name;
+                _lastModified=f.LastModified;
                 StreamReader sr = new StreamReader(f.CreateReadStream());
                 _content=sr.ReadToEnd().Replace("\\","\\\\").Replace("`", "\\`").Replace("${","\\${");
                 sr.Close();
@@ -55,7 +61,7 @@ namespace VueJSMVCDotNet.Handlers
                             else
                                 ret.Add(import);
                         }
-                        else
+                        else if (_regImportExtensions.IsMatch(import)||!import.Contains("."))
                             ret.Add(import);
                     }
                     return ret.ToArray();
@@ -90,20 +96,18 @@ namespace VueJSMVCDotNet.Handlers
 
         private readonly IFileProvider _fileProvider;
         private readonly string _baseURL;
-        private readonly ILogWriter _log;
+        private readonly ILog _log;
         private readonly string _vueImportPath;
         private readonly string _vueLoaderImportPath;
         private readonly string _coreImport;
         private readonly bool _compressAllJS;
-        private ConcurrentDictionary<string, CachedContent> _cache;
 
-        public VueFilesHandler(IFileProvider fileProvider, string baseURL, ILogWriter log,string vueImportPath, string vueLoaderImportPath,string coreImport,bool compressAllJS,RequestDelegate next)
-            : base(next) 
+        public VueFilesHandler(IFileProvider fileProvider, string baseURL, ILog log,string vueImportPath, string vueLoaderImportPath,string coreImport,bool compressAllJS,RequestDelegate next,IMemoryCache cache)
+            : base(next,cache,log) 
         {
             _fileProvider=fileProvider;
             _baseURL=baseURL;
             _log=log;
-            _cache=new ConcurrentDictionary<string, CachedContent>();
             _vueImportPath=vueImportPath;
             _vueLoaderImportPath=vueLoaderImportPath;
             _coreImport=coreImport;
@@ -118,11 +122,10 @@ namespace VueJSMVCDotNet.Handlers
                 && context.Request.Path.ToString().ToLower().EndsWith(".js"))
             {
                 string spath = context.Request.Path.ToString().ToLower();
-                CachedContent? cc = null;
+                CachedContent? cc = this[spath];
                 bool respond = true;
-                if (_cache.ContainsKey(spath))
+                if (cc!=null)
                 {
-                    cc = _cache[spath];
                     if (context.Request.Headers.ContainsKey("If-Modified-Since"))
                     {
                         if (cc.Value.Timestamp.ToUniversalTime().ToString("R").ToLower()==context.Request.Headers["If-Modified-Since"].ToString().ToLower())
@@ -130,7 +133,7 @@ namespace VueJSMVCDotNet.Handlers
                             context.Response.ContentType="text/javascript";
                             context.Response.Headers.Add("accept-ranges", "bytes");
                             context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                            context.Response.Headers.Add("etag", string.Format("\"{0}\"", BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()));
+                            context.Response.Headers.Add("etag", $"\"{BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                             context.Response.StatusCode = 304;
                             await context.Response.WriteAsync("");
                             respond=false;
@@ -219,7 +222,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                                 sb.AppendLine($"const {fileName} = defineAsyncComponent(() => loadModule('{absolutePath}{file.Name}', vueSFCOptions));");
                             }
                             if (files.Count==1)
-                                sb.AppendLine(string.Format("export default {0};", _FormatFileName(files[0].Name)));
+                                sb.AppendLine($"export default {_FormatFileName(files[0].Name)};");
                             else
                             {
                                 sb.Append("export {");
@@ -231,13 +234,12 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             if (sb.Length>0)
                             {
                                 sb.Length=sb.Length-2;
-                                cc = new CachedContent(contents, (_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString()));
+                                cc = new CachedContent(files.OrderByDescending(f=>f.LastModified.Ticks).Last().LastModified, (_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString()));
                                 _fileProvider.Watch(fpath+Path.DirectorySeparatorChar+"*.vue").RegisterChangeCallback(state =>
                                 {
-                                    CachedContent ctemp;
-                                    _cache.TryRemove((string)state, out ctemp);
+                                    this[(string)state]=null;
                                 }, spath);
-                                _cache.TryAdd(spath, cc.Value);
+                                this[spath] = cc;
                             }
                         }
                     }
@@ -354,9 +356,8 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
             return result.ToString();
         }
 
-        public override void Dispose()
+        protected override void _dispose()
         {
-            _cache.Clear();
             GC.SuppressFinalize(this);
         }
     }

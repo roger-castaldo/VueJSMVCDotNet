@@ -3,14 +3,15 @@ using System;
 using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     class ModelInstanceFooterGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
         {
-            Logger.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+            log.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.Type.FullName });
             builder.Append(@"
         static createInstance(){
             console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Type.Name+@"' function instead!"");
@@ -33,9 +34,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             foreach (PropertyInfo pi in modelType.Properties)
             {
                 if (pi.CanWrite)
-                    builder.AppendLine(string.Format("              Object.defineProperty(data,'{0}',{{get:function(){{return curObj.#{0};}},set:function(val){{curObj.{0} = val;}}}});", new object[] { pi.Name }));
+                    builder.AppendLine($"              Object.defineProperty(data,'{pi.Name}',{{get:function(){{return curObj.#{pi.Name};}},set:function(val){{curObj.{pi.Name} = val;}}}});");
                 else
-                    builder.AppendLine(string.Format("              Object.defineProperty(data,'{0}',{{get:function(){{return curObj.#{0};}}}});", new object[] { pi.Name }));
+                    builder.AppendLine($"              Object.defineProperty(data,'{pi.Name}',{{get:function(){{return curObj.#{pi.Name};}}}});");
             }
             builder.AppendLine(@"           Object.defineProperty(data,'id',{get:function(){return curObj.id;}});");
             foreach (MethodInfo mi in modelType.InstanceMethods)
@@ -44,43 +45,37 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 {
                     ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
                     Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
-                    builder.AppendFormat("          methods.{0} = function(", mi.Name);
+                    builder.Append($"          methods.{mi.Name} = function(");
                     foreach (ParameterInfo pi in mi.GetParameters())
-                        builder.AppendFormat("{0},", pi.Name);
+                        builder.Append($"{pi.Name},");
                     if (mi.GetParameters().Length > 0)
                         builder.Length = builder.Length-1;
-                    builder.AppendFormat("){{ {0} curObj.{1}(", (returnType == typeof(void) ? "" : "return"), mi.Name);
+                    builder.Append($"){{ {(returnType == typeof(void) ? "" : "return")} curObj.{mi.Name}(");
                     foreach (ParameterInfo pi in mi.GetParameters())
-                        builder.AppendFormat("{0},", pi.Name);
+                        builder.Append($"{pi.Name},");
                     if (mi.GetParameters().Length > 0)
                         builder.Length = builder.Length-1;
                     builder.AppendLine("); };");
                 }
             }
-            builder.AppendLine(@"       return {
-                data:function(){return data;},
+            builder.AppendLine(@$"       return {{
+                data:function(){{return data;}},
                 methods:methods,
-                created:function(){
+                created:function(){{
                     let view=this;
-                    this.$on([");
-                builder.AppendFormat("'{0}','{1}','{2}','parsed'",new object[]{
-                    Constants.Events.MODEL_LOADED,
-                    Constants.Events.MODEL_SAVED,
-                    Constants.Events.MODEL_UPDATED
-                });
-                builder.AppendLine(@"],function(){view.$forceUpdate();});
-                            }
-                        };
-                    }");
+                    this.$on(['{Constants.Events.MODEL_LOADED}','{Constants.Events.MODEL_SAVED}','{Constants.Events.MODEL_UPDATED}','parsed'],function(){{view.$forceUpdate();}});
+                            }}
+                        }};
+                    }}");
 
             //composition code
             builder.AppendLine(@"   toVueComposition(){
         let me = this.#toProxy();
         return {");
             foreach (PropertyInfo p in modelType.Properties)
-                builder.AppendLine(string.Format("          {0}:{1}(me.{0}),", new object[] { p.Name, (p.CanWrite ? "readonly" : "ref") }));
+                builder.AppendLine($"          {p.Name}:{(p.CanWrite ? "readonly" : "ref")}(me.{p.Name}),");
             foreach (MethodInfo m in modelType.InstanceMethods)
-                builder.AppendLine(string.Format("          {0}:function(){{ return me.{0}.apply(me,arguments); }},", new object[] { m.Name }));
+                builder.AppendLine($"          {m.Name}:function(){{ return me.{m.Name}.apply(me,arguments); }},");
             if (modelType.HasSave)
                 builder.AppendLine("            save:function(){ return me.save.apply(me,arguments); },");
             if (modelType.HasDelete)

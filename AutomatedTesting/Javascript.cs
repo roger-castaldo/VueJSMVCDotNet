@@ -276,8 +276,8 @@ export const name = 'John';");
             try
             {
                 eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import translator from 'Translate';
-export const name = translator('Name',null,'en');");
+                eng.AddModule("custom", @"import {Translate} from 'Translate';
+export const name = Translate('Name',null);");
                 var ns = eng.ImportModule("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
             }
@@ -302,8 +302,8 @@ export const name = translator('Name',null,'en');");
             try
             {
                 eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import translator from 'Translate';
-export const name = translator('Name',null,'en');");
+                eng.AddModule("custom", @"import {Translate} from 'Translate';
+export const name = Translate('Name',null,'en');");
                 var ns = eng.ImportModule("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
             }

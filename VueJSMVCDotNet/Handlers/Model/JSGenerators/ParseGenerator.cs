@@ -10,16 +10,16 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
         {
-            Logger.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
-            builder.AppendLine(string.Format(@"         {0}(jdata){{
+            log.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+            builder.AppendLine(@$"         {Constants.PARSE_FUNCTION_NAME}(jdata){{
         if (jdata==null) {{
             throw 'Unable to parse null result for a model';
         }}
         if (isString(jdata)){{
             jdata=JSON.parse(jdata);
-        }}", Constants.PARSE_FUNCTION_NAME));
+        }}");
             foreach (PropertyInfo pi in modelType.Properties)
             {
                 Type t = pi.PropertyType;
@@ -31,32 +31,28 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 {
                     if (Utility.IsArrayType(pi.PropertyType))
                     {
-                        builder.AppendLine(string.Format(@"      if (jdata.{0}!=null){{
+                        builder.AppendLine(@$"      if (jdata.{pi.Name}!=null){{
                 let tmp = [];
-                for(let x=0;x<jdata.{0}.length;x++){{
-                    tmp.push(_{1}(jdata.{0}[x]));
+                for(let x=0;x<jdata.{pi.Name}.length;x++){{
+                    tmp.push(_{t.Name}(jdata.{pi.Name}[x]));
                 }}
-                jdata.{0}=tmp;
-            }}", pi.Name,t.Name));
+                jdata.{pi.Name}=tmp;
+            }}");
                     }
                     else
                     {
-                        builder.AppendLine(string.Format(@"      if (jdata.{0}!=null){{
-                jdata.{0}=_{1}(jdata.{0});
-            }}", pi.Name, t.Name));
+                        builder.AppendLine(@$"      if (jdata.{pi.Name}!=null){{
+                jdata.{pi.Name}=_{t.Name}(jdata.{pi.Name});
+            }}");
                     }
                 }
             }
-            builder.AppendLine(string.Format("      this.{0} = jdata;", new object[] { Constants.INITIAL_DATA_KEY }));
+            builder.AppendLine($"      this.{Constants.INITIAL_DATA_KEY} = jdata;");
             foreach (PropertyInfo pi in modelType.Properties)
-                builder.AppendLine(string.Format("    if (jdata.{0}!==undefined){{ this.#{0}=checkProperty('{0}','{1}',(jdata.{0}===null ? null : (Array.isArray(jdata.{0}) ? jdata.{0}.slice() : jdata.{0})),'{2}'); }}", new object[]{
-                    pi.Name,
-                    Utility.GetTypeString(pi.PropertyType,pi.GetCustomAttribute(typeof(NotNullProperty),false)!=null),
-                    Utility.GetEnumList(pi.PropertyType)
-                }));
-            builder.AppendLine(string.Format(@"           this.#events.trigger('{0}',this);
+                builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),'{Utility.GetEnumList(pi.PropertyType)}'); }}");
+            builder.AppendLine(@$"           this.#events.trigger('{Constants.Events.MODEL_PARSED}',this);
         return this;
-        }}",new object[] {Constants.Events.MODEL_PARSED}));
+        }}");
         }
     }
 }

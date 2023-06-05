@@ -17,8 +17,8 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
-            :base(next,sessionFactory,registerSlowMethod,urlBase)
+        public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase,ILog log)
+            :base(next,sessionFactory,registerSlowMethod,urlBase,log)
         {
             _handlers=new List<IModelActionHandler>();
         }
@@ -31,7 +31,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = _CleanURL(context);
-            Logger.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { GetRequestMethod(context), url });
+            log.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { GetRequestMethod(context), url });
             if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT && _handlers.Any(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))
             {
                 var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase));
@@ -39,7 +39,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     throw new CallNotFoundException("Model Not Found");
                 ModelRequestData requestData = await _ExtractParts(context);
                 var model = (IModel)Activator.CreateInstance(handler.GetType().GetGenericArguments()[0]);
-                Utility.SetModelValues(requestData, ref model, true);
+                Utility.SetModelValues(requestData, ref model, true,log);
                 await handler.InvokeWithoutLoad(url, requestData, context, model, extractResponse: (model, response,pars,method) =>
                 {
                     if ((bool)response)
@@ -58,8 +58,8 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     _handlers.Add((IModelActionHandler)
                         typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string),typeof(delRegisterSlowMethodInstance) })
-                        .Invoke(new object[] { saveMethod, "save", _registerSlowMethod })
+                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILog) })
+                        .Invoke(new object[] { saveMethod, "save", _registerSlowMethod, log })
                     );
                 }
             }

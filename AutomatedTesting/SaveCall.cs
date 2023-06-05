@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Esprima.Ast;
 
 namespace AutomatedTesting
 {
@@ -13,11 +14,13 @@ namespace AutomatedTesting
     public class SaveCall
     {
         private VueMiddleware _middleware;
+        private IDataStore _store;
 
         [TestInitialize]
         public void Init()
         {
             _middleware = Utility.CreateMiddleware(true);
+            _store=new DataStore();
         }
 
         [TestCleanup]
@@ -38,13 +41,13 @@ namespace AutomatedTesting
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            }));
+            },store:_store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("id"));
-            Assert.AreNotEqual(currentCount, mPerson.Persons.Length);
+            Assert.AreNotEqual(currentCount, ((mPerson[])_store[mPerson.KEY]).Length);
             mPerson newPer = null;
-            foreach (mPerson p in mPerson.Persons)
+            foreach (mPerson p in ((mPerson[])_store[mPerson.KEY]))
             {
                 if (p.id == (string)((Hashtable)result)["id"])
                 {
@@ -70,7 +73,7 @@ namespace AutomatedTesting
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            }));
+            },store: _store));
             Assert.IsNotNull(result);
             Assert.AreEqual(500, status);
             Assert.AreEqual(currentCount, mPerson.Persons.Length);

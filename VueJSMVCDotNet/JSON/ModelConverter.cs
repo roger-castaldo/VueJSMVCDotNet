@@ -15,10 +15,10 @@ namespace VueJSMVCDotNet.JSON
     {
         private readonly IRequestData _requestData;
         private readonly InjectableMethod _loadMethod;
-        public ModelConverter(IRequestData requestData)
+        public ModelConverter(IRequestData requestData,ILog log)
         {
             _requestData=requestData;
-            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()));
+            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

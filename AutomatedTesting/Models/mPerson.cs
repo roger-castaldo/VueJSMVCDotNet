@@ -68,11 +68,11 @@ namespace AutomatedTesting.Models
         }
 
 
-        private mPerson(string firstName, string lastName)
+        private mPerson(int id,string firstName, string lastName)
         {
             _firstName = firstName;
             _lastName = lastName;
-            _id = Math.Abs(_rnd.Next(1,9999));
+            _id = id;
         }
 
         public mPerson() { }
@@ -80,25 +80,21 @@ namespace AutomatedTesting.Models
         private int _id = 0;
         public string id { get { return _id.ToString(); } }
 
-        private static List<mPerson> _persons = new List<mPerson>();
+        public static mPerson[] Persons => new mPerson[]{
+                new mPerson(1111,"Bob","Loblaw"),
+                new mPerson(2222,"Fred","Flinston"),
+                new mPerson(3333,"Barney","Rumble")
+            };
 
-        public static mPerson[] Persons { get { return _persons.ToArray(); } }
-
-        static mPerson()
-        {
-            _persons.AddRange(new mPerson[]{
-                new mPerson("Bob","Loblaw"),
-                new mPerson("Fred","Flinston"),
-                new mPerson("Barney","Rumble")
-            });
-        }
+        public const string KEY = "Persons";
 
         [ModelLoadMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD)]
-        public static mPerson Load(string id, ISecureSession session)
+        public static mPerson Load(string id, ISecureSession session,IDataStore store)
         {
             mPerson ret = null;
-            foreach (mPerson per in _persons)
+            var persons = (mPerson[])store[KEY]??Persons;
+            foreach (mPerson per in persons)
             {
                 if (id == per.id)
                 {
@@ -111,67 +107,73 @@ namespace AutomatedTesting.Models
 
         [ModelLoadAllMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD_ALL)]
-        public static List<mPerson> LoadAll(ISecureSession session)
+        public static List<mPerson> LoadAll(ISecureSession session,IDataStore store)
         {
-            return _persons;
+            return new List<mPerson>((mPerson[])store[KEY]??Persons);
         }
 
         [ModelDeleteMethod()]
         [SecurityRoleCheck(Constants.Rights.DELETE)]
-        public bool Delete(ISecureSession session)
+        public bool Delete(ISecureSession session,IDataStore store)
         {
             bool ret = false;
-            for (int x = 0; x < _persons.Count; x++)
+            var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
+            for (int x = 0; x < persons.Count; x++)
             {
-                if (_persons[x].id == this.id)
+                if (persons[x].id == this.id)
                 {
-                    _persons.RemoveAt(x);
+                    persons.RemoveAt(x);
                     ret = true;
                     break;
                 }
             }
+            store[KEY]=persons.ToArray();
             return ret;
         }
 
         [ModelUpdateMethod()]
         [SecurityRoleCheck(Constants.Rights.UPDATE)]
-        public bool Update(ISecureSession session)
+        public bool Update(ISecureSession session, IDataStore store)
         {
             bool ret = false;
-            for (int x = 0; x < _persons.Count; x++)
+            var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
+            for (int x = 0; x < persons.Count; x++)
             {
-                if (_persons[x].id == this.id)
+                if (persons[x].id == this.id)
                 {
-                    _persons.RemoveAt(x);
-                    _persons.Insert(x, this);
+                    persons.RemoveAt(x);
+                    persons.Insert(x, this);
                     ret = true;
                     break;
                 }
             }
+            store[KEY]=persons.ToArray();
             return ret;
         }
 
         [ModelSaveMethod()]
         [SecurityRoleCheck(Constants.Rights.SAVE)]
-        public bool Save(ISecureSession session)
+        public bool Save(ISecureSession session,IDataStore store)
         {
             if (this.FirstName=="DoNotSave")
                 return false;
             this._id = new Random().Next(999999);
-            _persons.Add(this);
+            var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
+            persons.Add(this);  
+            store[KEY] = persons.ToArray();
             return true;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListBobs()
+        public static List<mPerson> ListBobs(IDataStore store)
         {
-            return _persons.Where(p => p.FirstName.ToLower()=="bob").ToList();
+            return new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToList();
         }
 
         [ModelListMethod(paged:true)]
-        public static List<mPerson> ListBobsPaged(int pageStartIndex, int pageSize, out int totalPages)
+        public static List<mPerson> ListBobsPaged(IDataStore store,int pageStartIndex, int pageSize, out int totalPages)
         {
-            mPerson[] bobs = _persons.Where(p => p.FirstName.ToLower()=="bob").ToArray();
+            mPerson[] bobs = new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToArray();
             totalPages=(int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
             return bobs.Skip(pageStartIndex).Take(pageSize).ToList();
         }
@@ -179,121 +181,122 @@ namespace AutomatedTesting.Models
         #region List Pars
 
         [ModelListMethod()]
-        public static List<mPerson> ListByDate(DateTime date, ILog log)
+        public static mPerson[] ListByDate(DateTime date, ILog log)
         {
             log.Trace("Called List By Date");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByInt(int val, ILog log)
+        public static mPerson[] ListByInt(int val, ILog log)
         {
             log.Trace("Called List By Integer");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByLong(long val, ILog log)
+        public static mPerson[] ListByLong(long val, ILog log)
         {
             log.Trace("Called List By Long");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByShort(short val, ILog log)
+        public static mPerson[] ListByShort(short val, ILog log)
         {
             log.Trace("Called List By Short");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByByte(byte val, ILog log)
+        public static mPerson[] ListByByte(byte val, ILog log)
         {
             log.Trace("Called List By Byte");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByUInt(uint val, ILog log)
+        public static mPerson[] ListByUInt(uint val, ILog log)
         {
             log.Trace("Called List By UInteger");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByULong(ulong val, ILog log)
+        public static mPerson[] ListByULong(ulong val, ILog log)
         {
             log.Trace("Called List By ULong");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByUShort(ushort val, ILog log)
+        public static mPerson[] ListByUShort(ushort val, ILog log)
         {
             log.Trace("Called List By UShort");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByDouble(double val, ILog log)
+        public static mPerson[] ListByDouble(double val, ILog log)
         {
             log.Trace("Called List By Double");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByFloat(float val, ILog log)
+        public static mPerson[] ListByFloat(float val, ILog log)
         {
             log.Trace("Called List By Float");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByDecimal(decimal val, ILog log)
+        public static mPerson[] ListByDecimal(decimal val, ILog log)
         {
             log.Trace("Called List By Decimal");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByGuid(Guid val, ILog log)
+        public static mPerson[] ListByGuid(Guid val, ILog log)
         {
             log.Trace("Called List By Guid");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByEnum(mDataTypes.TestEnums val, ILog log)
+        public static mPerson[] ListByEnum(mDataTypes.TestEnums val, ILog log)
         {
             log.Trace("Called List By Enum");
-            return _persons;
+            return Persons;
         }
 
         [ModelListMethod()]
-        public static List<mPerson> ListByBoolean(bool val, ILog log)
+        public static mPerson[] ListByBoolean(bool val, ILog log)
         {
             log.Debug("Called List By Boolean");
-            return _persons;
+            return Persons;
         }
 
         #endregion
 
         [ModelListMethod(true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]
-        public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
+        public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session,IDataStore store)
         {
             List<mPerson> ret = new List<mPerson>();
             totalPages = 0;
             List<mPerson> matches = new List<mPerson>();
+            var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
             if (q != null)
             {
                 q = q.ToLower();
-                for (int x = 0; x < _persons.Count; x++)
+                for (int x = 0; x < persons.Count; x++)
                 {
-                    if (_persons[x].FirstName.ToLower().Contains(q) ||
-                    _persons[x].LastName.ToLower().Contains(q))
+                    if (persons[x].FirstName.ToLower().Contains(q) ||
+                    persons[x].LastName.ToLower().Contains(q))
                     {
-                        matches.Add(_persons[x]);
+                        matches.Add(Persons[x]);
                     }
                 }
 
@@ -329,15 +332,27 @@ namespace AutomatedTesting.Models
         [ExposedMethod]
         public bool IsNameMatch(sName name)
         {
-            return FirstName==name.FirstName&&LastName==name.LastName;
+            return string.Equals(FirstName, name.FirstName, StringComparison.InvariantCultureIgnoreCase)
+                &&string.Equals(LastName, name.LastName, StringComparison.InvariantCultureIgnoreCase);
         }
 
         [ExposedMethod]
-        public void SetFullName(string fullName)
+        public void SetFullName(string fullName,IDataStore store)
         {
             string[] tmp = fullName.Split(',');
-            _firstName=tmp[1].Trim();
-            _lastName=tmp[0].Trim();
+            var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
+            for (var x = 0; x<persons.Count; x++)
+            {
+                if (persons[x].id==id)
+                {
+                    var me = persons[x];
+                    persons.RemoveAt(x);
+                    me.FirstName = tmp[1].Trim();
+                    me.LastName = tmp[0].Trim();
+                    persons.Insert(x, me);
+                }
+            }
+            store[KEY]=persons.ToArray();
         }
 
         [ExposedMethod]

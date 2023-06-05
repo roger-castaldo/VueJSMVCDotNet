@@ -15,6 +15,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using static VueJSMVCDotNet.Handlers.ModelRequestHandler;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
@@ -130,18 +131,20 @@ namespace VueJSMVCDotNet.Handlers.Model
             new ModelClassFooterGenerator()
         };
 
-        private Dictionary<string, string> _cache;
-        private Dictionary<Type,ModelJSFilePath[]> _types;
-        private Dictionary<Type, IEnumerable<ASecurityCheck>> _securityChecks;
+        private readonly List<string> _keys;
+        private readonly IMemoryCache _cache;
+        private readonly Dictionary<Type,ModelJSFilePath[]> _types;
+        private readonly Dictionary<Type, IEnumerable<ASecurityCheck>> _securityChecks;
         private readonly string _urlBase;
         private readonly string _vueImportPath;
         private readonly string _coreImportPath;
         private readonly bool _compressAllJS;
         public JSHandler(string urlBase,string vueImportPath, string coreImportPath, string[] securityHeaders,
-            RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, bool compressAllJS)
-            : base(next, sessionFactory, registerSlowMethod, urlBase)
+            RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, bool compressAllJS,IMemoryCache cache, ILog log)
+            : base(next, sessionFactory, registerSlowMethod, urlBase,log)
         {
-            _cache = new Dictionary<string, string>();
+            _keys = new List<string>();
+            _cache = cache;
             _types = new Dictionary<Type, ModelJSFilePath[]>();
             _urlBase=urlBase;
             _vueImportPath=vueImportPath;
@@ -152,9 +155,10 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         public override void ClearCache()
         {
-            lock (_cache)
+            lock (_keys)
             {
-                _cache.Clear();
+                _keys.ForEach(key => _cache.Remove(key));
+                _keys.Clear();
             }
             lock (_securityChecks)
             {
@@ -219,23 +223,35 @@ namespace VueJSMVCDotNet.Handlers.Model
                     }
 
                     string ret = null;
-                    Logger.Trace("Checking cache for existing js file for {0}", new object[] { url });
+                    log.Trace("Checking cache for existing js file for {0}", new object[] { url });
                     context.Response.ContentType= "text/javascript";
                     context.Response.StatusCode= 200;
-                    lock (_cache)
+                    lock (_keys)
                     {
-                        if (_cache.ContainsKey(url))
-                            ret = _cache[url];
+                        if (_keys.Contains(url))
+                        {
+                            try
+                            {
+                                ret = _cache.Get<string>(url);
+                            }
+                            catch (Exception)
+                            {
+                                _keys.Remove(url);
+                            }
+                            if (ret==null)
+                                _keys.Remove(url);
+                        }
                     }
                     if (ret == null && models.Count>0)
                     {
                         ret = _GenerateCode(models,url);
-                        lock (_cache)
+                        lock (_keys)
                         {
-                            if (!_cache.ContainsKey(url))
+                            if (!_keys.Contains(url))
                             {
-                                Logger.Trace("Caching generated js file for {0}", new object[] { url });
-                                _cache.Add(url, ret);
+                                log.Trace("Caching generated js file for {0}", new object[] { url });
+                                _keys.Add(url);
+                                _cache.Set<string>(url, ret, RequestHandlerBase.CACHE_ENTRY_OPTIONS);
                             }
                         }
                     }
@@ -253,32 +269,32 @@ namespace VueJSMVCDotNet.Handlers.Model
             sModelType[] amodels = new sModelType[models.Count];
             for (int x = 0; x<models.Count; x++)
                 amodels[x] = new sModelType(models[x]);
-            Logger.Trace("No cached js file for {0}, generating new...", new object[] { url });
+            log.Trace("No cached js file for {0}, generating new...", new object[] { url });
             WrappedStringBuilder builder = new WrappedStringBuilder(_compressAllJS || url.ToLower().EndsWith(".min.js"));
-            builder.AppendLine(string.Format(@"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{0}';
-import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from ""{1}"";
-if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}", new object[] { _coreImportPath, _vueImportPath }));
+            builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{_coreImportPath}';
+import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{_vueImportPath}';
+if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}");
             foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
             {
-                builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
-                gen.GeneratorJS(ref builder, _urlBase, amodels);
-                builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                builder.AppendLine($"//START:{gen.GetType().Name}");
+                gen.GeneratorJS(ref builder, _urlBase, amodels, log);
+                builder.AppendLine($"//END:{gen.GetType().Name}");
             }
             foreach (sModelType model in amodels)
             {
-                Logger.Trace("Processing module {0} for js url {1}", new object[] { model.Type.FullName, url });
+                log.Trace("Processing module {0} for js url {1}", new object[] { model.Type.FullName, url });
                 foreach (IJSGenerator gen in _classGenerators)
                 {
-                    builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
-                    gen.GeneratorJS(ref builder, model, _urlBase);
-                    builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                    builder.AppendLine($"//START:{gen.GetType().Name}");
+                    gen.GeneratorJS(ref builder, model, _urlBase, log);
+                    builder.AppendLine($"//END:{gen.GetType().Name}");
                 }
             }
             foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
             {
-                builder.AppendLine(string.Format("//START:{0}", gen.GetType().Name));
-                gen.GeneratorJS(ref builder, _urlBase, amodels);
-                builder.AppendLine(string.Format("//END:{0}", gen.GetType().Name));
+                builder.AppendLine($"//START:{gen.GetType().Name}");
+                gen.GeneratorJS(ref builder, _urlBase, amodels,log);
+                builder.AppendLine($"//END:{gen.GetType().Name}");
             }
             return builder.ToString();
         }

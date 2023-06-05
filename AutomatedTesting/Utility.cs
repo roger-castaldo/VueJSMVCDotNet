@@ -11,36 +11,39 @@ using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AutomatedTesting
 {
     internal static class Utility
     {
 
-        public static MemoryStream ExecuteRequest(string method, string path, VueMiddleware middleware, out int responseStatus, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null)
+        public static MemoryStream ExecuteRequest(string method, string path, VueMiddleware middleware, out int responseStatus, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null,IDataStore store=null)
         {
             IHeaderDictionary responseHeaders;
-            return _ExecuteRequestExportingHeaders(method, path, middleware, out responseStatus, out responseHeaders, session: session, parameters: parameters, headers: headers);
+            return _ExecuteRequestExportingHeaders(method, path, middleware, out responseStatus, out responseHeaders, session: session, parameters: parameters, headers: headers,store:store);
         }
 
-        public static MemoryStream ExecuteRequest(string method, string path, VueMiddleware middleware, out int responseStatus, Dictionary<string, StringValues> formData, SecureSession session = null, Dictionary<string, string> headers = null)
+        public static MemoryStream ExecuteRequest(string method, string path, VueMiddleware middleware, out int responseStatus, Dictionary<string, StringValues> formData, SecureSession session = null, Dictionary<string, string> headers = null, IDataStore store = null)
         {
             IHeaderDictionary responseHeaders;
-            return _ExecuteRequestExportingHeaders(method, path, middleware, out responseStatus, out responseHeaders, session: session, formData:formData, headers: headers);
+            return _ExecuteRequestExportingHeaders(method, path, middleware, out responseStatus, out responseHeaders, session: session, formData:formData, headers: headers,store:store);
         }
 
-        public static MemoryStream ExecuteRequestExportingHeaders(string method, string path, VueMiddleware middleware, out int responseStatus,out IHeaderDictionary responseHeaders, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null)
+        public static MemoryStream ExecuteRequestExportingHeaders(string method, string path, VueMiddleware middleware, out int responseStatus,out IHeaderDictionary responseHeaders, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null, IDataStore store = null)
         {
-            return _ExecuteRequestExportingHeaders(method,path,middleware,out responseStatus,out responseHeaders,session:session,parameters:parameters, headers:headers);
+            return _ExecuteRequestExportingHeaders(method,path,middleware,out responseStatus,out responseHeaders,session:session,parameters:parameters, headers:headers,store:store);
         }
 
-        private static MemoryStream _ExecuteRequestExportingHeaders(string method, string path, VueMiddleware middleware, out int responseStatus, out IHeaderDictionary responseHeaders, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null,Dictionary<string, StringValues> formData=null)
+        private static MemoryStream _ExecuteRequestExportingHeaders(string method, string path, VueMiddleware middleware, out int responseStatus, out IHeaderDictionary responseHeaders, SecureSession session = null, object parameters = null, Dictionary<string, string> headers = null,Dictionary<string, StringValues> formData=null, IDataStore store = null)
         {
             MemoryStream ms = new MemoryStream();
             HttpContext context = new DefaultHttpContext();
             context.Request.Method = method;
             context.Request.Host = new HostString("localhost");
             context.Request.IsHttps = false;
+            context.Features.Set<IDataStore>(store??new DataStore());
             if (session!=null)
                 session.LinkToRequest(context);
             if (path.Contains("?"))
@@ -99,7 +102,7 @@ namespace AutomatedTesting
 
         public static EmbeddedResourceFileProvider FileProvider { get { return _fileProvider; } }
 
-        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels, bool blockFileProvider = false, ILogWriter logWriter = null, string[] securityHeaders = null)
+        public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels, bool blockFileProvider = false, ILogger logWriter = null, string[] securityHeaders = null)
         {
             return new VueMiddleware(null, new VueMiddlewareOptions() {
                 VueModelsOptions= new VueModelsOptions(){
@@ -145,6 +148,7 @@ namespace AutomatedTesting
                 "VueJSMVCDotNet_core",
                 ReadJavascriptResponse(ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", middleware,out status))
             );
+            engine.SetValue("window", "{navigator:{language:'en-ca'}}");
             return engine;
         }
 

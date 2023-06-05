@@ -81,137 +81,126 @@ const _fixDates = function (data) {
 	return data;
 };
 
-const ajax = function (options) {
+const ajax = async function (options) {
 	if (options.isSlow !== undefined && options.isSlow) {
-		return new Promise((resolve, reject) => {
-			delete options.isSlow;
-			let isArray = (options.isArray == undefined ? false : options.isArray);
-			ajax(options).then(
-				res => {
-					let ret = [];
-					let url = res.json();
-					let pullCall = function () {
-						ajax({
-							url: url,
-							method: 'PULL',
-							useJSON: true
-						}).then(
-							res => {
-								res = res.json();
-								if (res.Data.length > 0) {
-									Array.prototype.push.apply(ret, res.Data);
+		delete options.isSlow;
+		let isArray = (options.isArray == undefined ? false : options.isArray);
+		let res = await ajax(options);
+		let ret = [];
+		let url = await res.json();
+		return await new Promise((resolve, reject) => {
+			let pullCall = function () {
+				ajax({
+					url: url,
+					method: 'PULL',
+					useJSON: true
+				}).then(
+					res => {
+						res = res.json();
+						if (res.Data.length > 0) {
+							Array.prototype.push.apply(ret, res.Data);
+						}
+						if (res.HasMore) {
+							pullCall();
+						} else if (res.IsFinished) {
+							resolve({
+								json: function () {
+									return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
 								}
-								if (res.HasMore) {
-									pullCall();
-								} else if (res.IsFinished) {
-									resolve({
-										json: function () {
-											return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
-										}
-									});
-								} else {
-									setTimeout(pullCall, 200);
-								}
-							},
-							err => {
-								reject(err);
-							}
-						);
-					};
-					pullCall();
-				},
-				err => {
-					reject(err);
-				}
-			);
+							});
+						} else {
+							setTimeout(pullCall, 200);
+						}
+					},
+					err => {
+						reject(err);
+					}
+				);
+			};
+			pullCall();
 		});
 	} else {
-		return new Promise((resolve, reject) => {
-			if (options.url === null || options.url === undefined || options.url === '') {
-				throw 'Unable to call empty url';
-			}
-			options = Object.assign({}, {
-				method: 'GET',
-				credentials: false,
-				body: null,
-				credentials: 'include',
-				headers: {
-				},
-				data: null,
-				url: null,
-				useJSON: true
-			}, options);
+		if (options.url === null || options.url === undefined || options.url === '') {
+			throw 'Unable to call empty url';
+		}
+		options = Object.assign({}, {
+			method: 'GET',
+			credentials: false,
+			body: null,
+			credentials: 'include',
+			headers: {
+			},
+			data: null,
+			url: null,
+			useJSON: true
+		}, options);
+		if (options.useJSON) {
+			options.headers['Content-Type'] = 'application/json';
+		}
+		for (let prop in securityHeaders) {
+			if (options.headers[prop] === undefined)
+				options.headers[prop] = securityHeaders[prop];
+		}
+		options.url += (options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
+		let data = null;
+		if (options.data !== null) {
 			if (options.useJSON) {
-				options.headers['Content-Type'] = 'application/json';
-			}
-			for (let prop in securityHeaders) {
-				if (options.headers[prop] === undefined)
-					options.headers[prop] = securityHeaders[prop];
-			}
-			options.url += (options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
-			let data = null;
-			if (options.data !== null) {
-				if (options.useJSON) {
-					data = JSON.stringify(stripBigInt(options.data));
-				} else {
-					data = new FormData();
-					for (let prop in options.data) {
-						if (Array.isArray(options.data[prop])) {
-							if (options.data[prop].length > 0) {
-								if (_isObject(options.data[prop][0])) {
-									for (let x = 0; x < options.data[prop].length; x++) {
-										data.append(prop + ':json', JSON.stringify(options.data[prop][x]));
-									}
-								} else {
-									for (let x = 0; x < options.data[prop].length; x++) {
-										data.append(prop, options.data[prop][x]);
-									}
+				data = JSON.stringify(stripBigInt(options.data));
+			} else {
+				data = new FormData();
+				for (let prop in options.data) {
+					if (Array.isArray(options.data[prop])) {
+						if (options.data[prop].length > 0) {
+							if (_isObject(options.data[prop][0])) {
+								for (let x = 0; x < options.data[prop].length; x++) {
+									data.append(prop + ':json', JSON.stringify(options.data[prop][x]));
+								}
+							} else {
+								for (let x = 0; x < options.data[prop].length; x++) {
+									data.append(prop, options.data[prop][x]);
 								}
 							}
-						} else if (_isObject(options.data[prop])) {
-							data.append(prop + ':json', JSON.stringify(options.data[prop]));
-						} else {
-							data.append(prop, options.data[prop]);
 						}
+					} else if (_isObject(options.data[prop])) {
+						data.append(prop + ':json', JSON.stringify(options.data[prop]));
+					} else {
+						data.append(prop, options.data[prop]);
 					}
 				}
 			}
-			if (options.method !== 'GET') {
-				options.body = data;
+		}
+		if (options.method !== 'GET') {
+			options.body = data;
+		} else {
+			delete options.body;
+		}
+		let url = options.url;
+		delete options.url;
+		try {
+			let response = fetch(url, options);
+			for (let prop in securityHeaders) {
+				if (response.headers[prop] !== undefined)
+					securityHeaders[prop] = response.headers[prop];
+			}
+			let content = await reponse.text();
+			if (response.ok) {
+				return {
+					ok: true,
+					text: function () { return content; },
+					json: function () { return (response.headers.get('Content-Type') === 'text/text' ? content : _fixDates(JSON.parse(content))); }
+				};
 			} else {
-				delete options.body;
+				return Promise.reject({
+					ok: false,
+					text: new function () { return content; }
+				});
 			}
-			let url = options.url;
-			delete options.url;
-			fetch(url, options).then(
-				response => {
-					for (let prop in securityHeaders) {
-						if (response.headers[prop] !== undefined)
-							securityHeaders[prop] = response.headers[prop];
-					}
-					response.text().then(content => {
-						if (response.ok) {
-							resolve({
-								ok: true,
-								text: function () { return content; },
-								json: function () { return (response.headers.get('Content-Type') === 'text/text' ? content : _fixDates(JSON.parse(content))); }
-							});
-						} else {
-							reject({
-								ok: false,
-								text: function () { return content; }
-							});
-						}
-					});
-				},
-				rejected => {
-					reject({
-						ok: false,
-						text: function () { return rejected; }
-					});
-				}
-			);
-		});
+		} catch (err) {
+			return Promise.reject({
+				ok: false,
+				text: new function () { return err; }
+			});
+		}
 	}
 };
 
@@ -761,7 +750,7 @@ class ModelList {
 		});
 	};
 
-	#reload() {
+	async #reload() {
 		let tmp = this;
 		let data = {};
 		if (tmp.#isPaged) {
@@ -771,79 +760,72 @@ class ModelList {
 		for (let prop in tmp.#params) {
 			data[prop] = tmp.#params[prop];
 		}
-		return new Promise((resolve, reject) => {
-			ajax({
-				url: tmp.#url,
-				method: (tmp.#useGet ? 'GET' : 'LIST'),
-				credentials: 'include',
-				useJSON:true,
-				data: data
-			}).then(
-				response => {
-					if (response.ok) {
-						let data = response.json();
-						if (data === null) {
-							tmp.#totalPages = 0;
-							Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length]);
-						} else {
-							if (data.TotalPages !== undefined) {
-								tmp.#totalPages = data.TotalPages;
-								data = data.response;
-							}
-							for (let i in data) {
-								let mtmp = tmp.#constructModel();
-								mtmp._parse(data[i]);
-								data[i] = mtmp;
-								data[i].$on('destroyed', function (model) {
-									for (let x = 0; x < tmp.#data.length; x++) {
-										if (tmp.#data[x].id === model.id) {
-											tmp.#events.trigger('model_destroyed', model);
-											Array.prototype.splice.apply(tmp.#data, [x, 1]);
-											break;
-										}
-									}
-								});
-								data[i].$on('updated', function (model) {
-									for (let x = 0; x < tmp.#data.length; x++) {
-										if (tmp.#data[x].id === model.id) {
-											tmp.#events.trigger('model_updated', model);
-											Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
-											Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
-											break;
-										}
-									}
-								});
-								data[i].$on('loaded', function (model) {
-									for (let x = 0; x < tmp.#data.length; x++) {
-										if (tmp.#data[x].id === model.id) {
-											tmp.#events.trigger('model_loaded', model);
-											Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
-											Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
-											break;
-										}
-									}
-								});
-								Array.prototype.push.apply(tmp.#data, data);
-								if (tmp.#data.length - data.length > 0) {
-									{
-										Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length - data.length]);
-									}
-								}
+		let response = await ajax({
+			url: tmp.#url,
+			method: (tmp.#useGet ? 'GET' : 'LIST'),
+			credentials: 'include',
+			useJSON: true,
+			data: data
+		});
+		if (response.ok) {
+			let data = response.json();
+			if (data === null) {
+				tmp.#totalPages = 0;
+				Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length]);
+			} else {
+				if (data.TotalPages !== undefined) {
+					tmp.#totalPages = data.TotalPages;
+					data = data.response;
+				}
+				for (let i in data) {
+					let mtmp = tmp.#constructModel();
+					mtmp._parse(data[i]);
+					data[i] = mtmp;
+					data[i].$on('destroyed', function (model) {
+						for (let x = 0; x < tmp.#data.length; x++) {
+							if (tmp.#data[x].id === model.id) {
+								tmp.#events.trigger('model_destroyed', model);
+								Array.prototype.splice.apply(tmp.#data, [x, 1]);
+								break;
 							}
 						}
-						let proxy = tmp.#toProxy();
-						tmp.#events.trigger('loaded', proxy);
-						resolve(proxy);
-					} else {
-						reject(response.text());
+					});
+					data[i].$on('updated', function (model) {
+						for (let x = 0; x < tmp.#data.length; x++) {
+							if (tmp.#data[x].id === model.id) {
+								tmp.#events.trigger('model_updated', model);
+								Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
+								Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
+								break;
+							}
+						}
+					});
+					data[i].$on('loaded', function (model) {
+						for (let x = 0; x < tmp.#data.length; x++) {
+							if (tmp.#data[x].id === model.id) {
+								tmp.#events.trigger('model_loaded', model);
+								Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
+								Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
+								break;
+							}
+						}
+					});
+					Array.prototype.push.apply(tmp.#data, data);
+					if (tmp.#data.length - data.length > 0) {
+						{
+							Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length - data.length]);
+						}
 					}
-				},
-				rejected => {
-					reject(rejected);
 				}
-			);
-		});
-	}
+			}
+			let proxy = tmp.#toProxy();
+			tmp.#events.trigger('loaded', proxy);
+			resolve(proxy);
+		} else {
+			return Promise.reject(response.text());
+		}
+	};
+
 	#toVueComposition() {
 		let me = this;
 		let ret = {
@@ -879,117 +861,96 @@ class ModelList {
 };
 
 const ModelMethods = {
-	reload: function (url, id, isNew) {
-		return new Promise((resolve, reject) => {
-			if (isNew) {
-				reject('Cannot reload unsaved model.');
-			} else {
-				ajax({
-					url: url + '/' + id,
-					method: 'GET'
-				}).then(
-					response => {
-						if (response.ok) {
-							let data = response.json();
-							if (data == null) {
-								reject(null);
-							} else {
-								resolve(data);
-							}
-						} else {
-							reject(response.text());
-						}
-					},
-					response => { reject(response.text()); }
-				);
-			}
-		});
-	},
-	destroy: function (url, id, isNew) {
-		return new Promise((resolve, reject) => {
-			if (isNew) {
-				reject('Cannot delete unsaved model.');
-			} else {
-				ajax(
-					{
-						url: url + '/' + id,
-						method: 'DELETE'
-					}).then(
-						response => {
-							if (response.ok) {
-								let data = response.json();
-								if (data) {
-									resolve();
-								} else {
-									reject();
-								}
-							} else {
-								reject(response.text());
-							}
-						},
-						response => { reject(response.text()); }
-					);
-			}
-		});
-	},
-	update: function (url, id, isNew, isValid, data, useJSON) {
-		return new Promise((resolve, reject) => {
-			if (!isValid) {
-				reject('Invalid model.');
-			} else if (isNew) {
-				reject('Cannot update unsaved model, please call save instead.');
-			} else {
-				if (JSON.stringify(data) === JSON.stringify({})) {
-					resolve(data);
+	reload: async function (url, id, isNew) {
+		if (isNew) {
+			throw 'Cannot reload unsaved model.';
+		} else {
+			let response = await ajax({
+				url: url + '/' + id,
+				method: 'GET'
+			});
+			if (response.ok) {
+				let data = response.json();
+				if (data == null) {
+					Promise.reject(null);
 				} else {
-					ajax(
-						{
-							url: url + '/' + id,
-							method: 'PATCH',
-							useJSON: useJSON,
-							data: data
-						}).then(response => {
-							if (response.ok) {
-								let data = response.json();
-								if (data) {
-									resolve();
-								} else {
-									reject();
-								}
-							} else {
-								reject(response.text());
-							}
-						}, response => { reject(response.text()); });
+					return data;
+				}
+			} else {
+				return Promise.reject(response.text());
+			}
+		}
+	},
+	destroy: async function (url, id, isNew) {
+		if (isNew) {
+			throw 'Cannot delete unsaved model.';
+		} else {
+			let response = await ajax({
+				url: url + '/' + id,
+				method: 'DELETE'
+			});
+			if (response.ok) {
+				let data = response.json();
+				if (data == null) {
+					Promise.reject(null);
+				} else {
+					return data;
+				}
+			} else {
+				return Promise.reject(response.text());
+			}
+		}
+	},
+	update: async function (url, id, isNew, isValid, data, useJSON) {
+		if (!isValid) {
+			return Promise.reject('Invalid model.');
+		} else if (isNew) {
+			return Promise.reject('Cannot update unsaved model, please call save instead.');
+		} else {
+			if (JSON.stringify(data) === JSON.stringify({})) {
+				return data;
+			} else {
+				let response = await ajax({
+					url: url + '/' + id,
+					method: 'PATCH',
+					useJSON: useJSON,
+					data: data
+				});
+				if (response.ok) {
+					let data = response.json();
+					if (data) {
+						return {};
+					} else {
+						return Promise.reject();
+					}
+				} else {
+					return Promise.reject(response.text());
 				}
 			}
-		});
+		}
 	},
-	save: function (url, isNew, isValid, data, useJSON) {
-		return new Promise((resolve, reject) => {
-			if (!isValid) {
-				reject('Invalid model.');
-			} else if (!isNew) {
-				reject('Cannot save a saved model, please call update instead.');
+	save: async function (url, isNew, isValid, data, useJSON) {
+		if (!isValid) {
+			return Promise.reject('Invalid model.');
+		} else if (!isNew) {
+			return Promise.reject('Cannot save a saved model, please call update instead.');
+		} else {
+			let response = await ajax({
+				url: url,
+				method: 'PUT',
+				useJSON: useJSON,
+				data: data
+			});
+			if (response.ok) {
+				return response.json();
 			} else {
-				ajax(
-					{
-						url: url,
-						method: 'PUT',
-						useJSON: useJSON,
-						data: data
-					}).then(response => {
-						if (response.ok) {
-							resolve(response.json());
-						} else {
-							reject(response.text());
-						}
-					},
-						response => { reject(response.text()); });
+				return Promise.reject(response.text());
 			}
-		});
+		}
 	}
 };
 
+///Vue File Section
 
 const vueFileReg = new RegExp('^.+\.vue$');
 const _vueFileCache = new Map();
@@ -1094,7 +1055,32 @@ const vueSFCOptions = {
 		const style = Object.assign(document.createElement('style'), { textContent });
 		const ref = document.head.getElementsByTagName('style')[0] || null;
 		document.head.insertBefore(style, ref);
+	},
+	async handleModule(type, source, path, options) {
+		if (type === '.json')
+			return JSON.parse(await source(false));
 	}
 }
 
-export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions};
+//Messages section
+
+const _language = vue.ref((window===undefined || window.navigator===undefined ? 'en' : window.navigator.userLanguage || window.navigator.language));
+if (_language.value.indexOf('-') >= 0) {
+	_language.value = _language.value.substring(0, _language.value.indexOf('-'));
+}
+
+const Language = vue.readonly(_language);
+
+const SetLanguage = function (language) {
+	_language.value = language;
+}
+
+const ResetLanaguage = function () {
+	language.value = (window === undefined || window.navigator === undefined ? 'en' : window.navigator.userLanguage || window.navigator.language);
+	if (_language.value.indexOf('-') >= 0) {
+		_language.value = _language.value.substring(0, _language.value.indexOf('-'));
+	}
+}
+
+
+export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions,Language,SetLanguage,ResetLanguage};

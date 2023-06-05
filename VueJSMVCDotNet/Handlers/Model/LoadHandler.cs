@@ -17,8 +17,8 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public LoadHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
-            :base(next,sessionFactory,registerSlowMethod,urlBase)
+        public LoadHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILog log) 
+            : base(next, sessionFactory, registerSlowMethod, urlBase, log)
         {
             _handlers=new List<IModelActionHandler>();
         }
@@ -39,7 +39,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 var result = handler.Load(url, await _ExtractParts(context));
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
-                await context.Response.WriteAsync(Utility.JsonEncode(result));
+                await context.Response.WriteAsync(Utility.JsonEncode(result, log));
                 return;
             }
             await _next(context);
@@ -51,8 +51,8 @@ namespace VueJSMVCDotNet.Handlers.Model
             {
                 _handlers.Add((IModelActionHandler)
                     typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                    .GetConstructor(new Type[] { typeof(string), typeof(delRegisterSlowMethodInstance) })
-                    .Invoke(new object[] { "load", _registerSlowMethod })
+                    .GetConstructor(new Type[] { typeof(string), typeof(delRegisterSlowMethodInstance),typeof(ILog) })
+                    .Invoke(new object[] { "load", _registerSlowMethod,log })
                 );
             }
         }

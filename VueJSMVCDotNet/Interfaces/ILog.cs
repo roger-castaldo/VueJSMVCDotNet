@@ -13,43 +13,25 @@ namespace VueJSMVCDotNet.Interfaces
     public interface ILog
     {
         /// <summary>
-        /// Log a trace level message
-        /// </summary>
-        /// <param name="message">the log message</param>
-        void Trace(string message);
-
-        /// <summary>
         /// Log a trace level message with a formatted string
         /// </summary>
         /// <param name="message">the formatted log message</param>
         /// <param name="pars">the object[] to pass to string.format</param>
-        void Trace(string message, object[] pars);
-
-        /// <summary>
-        /// Log a debug leve message
-        /// </summary>
-        /// <param name="message">the log message</param>
-        void Debug(string message);
+        void Trace(string message, params object[] pars);
 
         /// <summary>
         /// Log a debug level message
         /// </summary>
         /// <param name="message">the log message</param>
         /// <param name="pars">the object[] to pass to string.format</param>
-        void Debug(string message, object[] pars);
-
-        /// <summary>
-        /// Log a error level message
-        /// </summary>
-        /// <param name="message">the log message</param>
-        void Error(string message);
+        void Debug(string message, params object[] pars);
 
         /// <summary>
         /// Log a error level message
         /// </summary>
         /// <param name="message">the log message</param>
         /// <param name="pars">the object[] to pass to string.format</param>
-        void Error(string message, object[] pars);
+        void Error(string message, params object[] pars);
 
         /// <summary>
         /// Log a error level message

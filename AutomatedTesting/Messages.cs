@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
@@ -101,9 +102,10 @@ namespace AutomatedTesting
                 int status;
                 string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
                 eng.AddModule("Translate", content);
-                eng.AddModule("custom", string.Format(@"
-    import translator from 'Translate';
-export const name = "+additionalCode));
+                eng.AddModule("custom", @$"
+    import {{Translate as translator}} from 'Translate';
+    import {{SetLanguage}} from 'VueJSMVCDotNet_core';
+{additionalCode}");
                 var ns = eng.ImportModule("custom");
                 Assert.AreEqual(result, ns.Get("name").AsString());
             }
@@ -133,34 +135,38 @@ export const name = "+additionalCode));
         [TestMethod]
         public void TranslateNameWithDefaults()
         {
-            _ExecuteTest("translator('Name')", "Name");
+            _ExecuteTest("export const name = translator('Name')", "Name");
         }
 
         [TestMethod]
         public void TranslateNameWithSpecificLanguage()
         {
-            _ExecuteTest("translator('Name',null,'fr')", "Nome");
+            _ExecuteTest(@"SetLanguage('fr');
+export const name = translator('Name');", "Nome");
         }
 
         [TestMethod]
         public void TranslateFormattedWithInputs()
         {
-            _ExecuteTest("translator('Formatted',['hello world'])", String.Format("This is a formatted message {0} was the argument",new object[] {"hello world"}));
+            _ExecuteTest("export const name = translator('Formatted',['hello world'])", String.Format("This is a formatted message {0} was the argument",new object[] {"hello world"}));
         }
 
         [TestMethod]
-        public void FileChangeTriggers()
+        public async void FileChangeTriggers()
         {
-            Utility.FileProvider.HidePath("AutomatedTesting.resources.messages.test.fr.json");
-            _ExecuteTest("translator('Name',null,'fr')", "Name");
-            Utility.FileProvider.ShowPath("AutomatedTesting.resources.messages.test.fr.json");
-            _ExecuteTest("translator('Name',null,'fr')", "Nome");
+            Utility.FileProvider.HidePath("AutomatedTesting.resources.messages.test.sp.json");
+            _ExecuteTest(@"SetLanguage('sp');
+export const name = translator('Name');", "Name");
+            Utility.FileProvider.ShowPath("AutomatedTesting.resources.messages.test.sp.json");
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            _ExecuteTest(@"SetLanguage('sp');
+export const name = translator('Name');", "Nombre");
         }
 
         [TestMethod]
         public void MissingMessage()
         {
-            _ExecuteTest("translator('MissingMessage')", "MissingMessage");
+            _ExecuteTest("export const name = translator('MissingMessage');", "MissingMessage");
         }
     }
 }

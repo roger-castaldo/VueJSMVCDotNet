@@ -16,6 +16,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class ModelRequestData : IRequestData
     {
+        private readonly ILog log;
         private readonly Dictionary<string, object> _formData;
         public IEnumerable<string> Keys => _formData.Keys;
 
@@ -28,11 +29,11 @@ namespace VueJSMVCDotNet.Handlers.Model
             try
             {
                 if (obj is JsonDocument document)
-                    return Utility.JsonDecode<T>(document, this);
+                    return Utility.JsonDecode<T>(document, this,log);
                 else if (obj is JsonNode node)
-                    return Utility.JsonDecode<T>(node, this);
+                    return Utility.JsonDecode<T>(node, this, log);
                 else if (obj is JsonElement element)
-                    return Utility.JsonDecode<T>(element, this);
+                    return Utility.JsonDecode<T>(element, this, log);
                 else
                     return (T)_ConvertObjectToType(obj, typeof(T));
             }
@@ -56,21 +57,27 @@ namespace VueJSMVCDotNet.Handlers.Model
         public ISecureSession Session => _session;
 
         private readonly IServiceProvider _services;
+        private readonly IFeatureCollection _features;
         public object this[Type feature]
         {
-            get { return _services.GetService(feature); }
+            get {
+                return (_services==null ? null : _services.GetService(feature))??
+                    (_features==null ? null : (_features.Any(t=>t.Key==feature) ? _features.First(t=>t.Key==feature).Value : null)); 
+            }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services)
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILog log)
         {
             _formData = formData;
             _session = session;
             _services=services;
+            _features=features;
+            this.log=log;
         }
 
         private object _ConvertObjectToType(object obj, Type expectedType)
         {
-            Logger.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
+            log.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
             if (expectedType.Equals(typeof(object)))
                 return obj;
             if (expectedType.Equals(typeof(bool)) && (obj == null))
@@ -134,7 +141,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                return new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0))
+                return new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log)
                     .Invoke(null,this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
@@ -167,7 +174,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
             catch (Exception e)
             {
-                Logger.LogError(e);
+                log.Error(e);
             }
             return obj;
         }

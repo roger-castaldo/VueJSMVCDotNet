@@ -13,7 +13,7 @@ namespace AutomatedTesting
     [TestClass]
     public class MethodStrongTyping
     {
-        private static string _content;
+        private string _content;
 
         [TestInitialize]
         public void Init()

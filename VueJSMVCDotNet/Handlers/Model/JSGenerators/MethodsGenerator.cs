@@ -10,7 +10,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class MethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase)
+        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
         {
             List<MethodInfo> methods = new List<MethodInfo>();
             methods.AddRange(modelType.InstanceMethods);
@@ -22,67 +22,43 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 bool isSlow;
                 bool allowNullResponse;
                 _ExtractReturnType(mi, out array, out returnType, out isSlow, out allowNullResponse);
-                _AppendMethodCallDeclaration(mi, ref builder);
-                if (!mi.IsStatic)
-                    builder.AppendLine("            let model=this;");
-                builder.AppendFormat(@"return new Promise((resolve,reject)=>{{
-                    ajax(
-                    {{
-                        url:{0}.#baseURL+'/'+{1},
-                        method:'{2}METHOD',
-                        useJSON:{3},
-                        data:function_data{4}
-                    }}).then(response=>{{
-                        {5}",
-                        new object[]
-                        {
-                            modelType.Type.Name,
-                            string.Format((mi.IsStatic ? "'{0}'" : "model.{1}.id+'/{0}'"),new object[]{mi.Name,Constants.INITIAL_DATA_KEY}),
-                            (mi.IsStatic ? "S":""),
-                            (mi.GetCustomAttributes(typeof(UseFormData),false).Length==0).ToString().ToLower(),
-                            (isSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : ""),
-                            (returnType == typeof(void) ? "" : @"let ret=response.json();
+                _AppendMethodCallDeclaration(mi, ref builder,log);
+                builder.AppendLine(@$"let response = await ajax({{
+                        url:`${{{modelType.Type.Name}.#baseURL}}/{(mi.IsStatic ? mi.Name : $"${{this.{Constants.INITIAL_DATA_KEY}.id}}/{mi.Name}")}`,
+                        method:'{(mi.IsStatic ? "S" : "")}METHOD',
+                        useJSON:{(mi.GetCustomAttributes(typeof(UseFormData), false).Length==0).ToString().ToLower()},
+                        data:function_data{(isSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")}
+                    }});
+                        {(returnType == typeof(void) ? "" : @"let ret=response.json();
                     if (ret!=undefined||ret==null)
-                        response = ret;")
-                        });
+                        response = ret;")}");
                 if (returnType != typeof(void))
                 {
-                    builder.AppendLine("if (response==null){");
-                    if (!allowNullResponse)
-                        builder.AppendLine("reject(\"A null response was returned by the server which is invalid.\");");
-                    else
-                        builder.AppendLine("resolve(response);");
-                    builder.AppendLine("}else{");
+                    builder.AppendLine(@$"if (response==null){{
+    {(allowNullResponse ? "return response;" : "return Promise.reject('A null response was returned by the server which is invalid.');")}
+}} else {{");
                     if (new List<Type>(returnType.GetInterfaces()).Contains(typeof(IModel)))
                     {
                         if (array)
                         {
-                            builder.AppendLine(string.Format(@"         ret=[];
+                            builder.AppendLine(@$"         ret=[];
             for (let x=0;x<response.length;x++){{
-                ret.push(_{0}(response[x]));
+                ret.push(_{returnType.Name}(response[x]));
             }}
-            response = ret;", new object[]{
-                                returnType.Name
-                                    }));
+            response = ret;");
                         }
                         else
                         {
-                            builder.AppendLine(string.Format(@"             ret = _{0}(response);
-            response=ret;", new object[]{
-                  returnType.Name
-                      }));
+                            builder.AppendLine(@$"             ret = _{returnType.Name}(response);
+            response=ret;");
                         }
                     }
-                    builder.AppendLine(@"           resolve(response);
+                    builder.AppendLine(@"           return response;
         }");
                 }
                 else
-                    builder.AppendLine("           resolve();");
-                builder.AppendLine(@"},
-                    response=>{
-                        reject(response);
-                    });
-    });
+                    builder.AppendLine("           return;");
+                builder.AppendLine(@"
 }");
             }
         }
@@ -119,12 +95,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
         }
 
-        private void _AppendMethodCallDeclaration(MethodInfo method, ref WrappedStringBuilder builder)
+        private void _AppendMethodCallDeclaration(MethodInfo method, ref WrappedStringBuilder builder, ILog log)
         {
-            builder.AppendFormat("          {0}{1}(", new object[] { (method.IsStatic ? "static " : "#"), method.Name });
-            ParameterInfo[] pars = new InjectableMethod(method).StrippedParameters;
+            builder.Append($"          {(method.IsStatic ? "static async " : "async #")}{method.Name}(");
+            ParameterInfo[] pars = new InjectableMethod(method,log).StrippedParameters;
             for (int x = 0; x < pars.Length; x++)
-                builder.Append(pars[x].Name + (x + 1 == pars.Length ? "" : ","));
+                builder.Append($"{pars[x].Name}{(x + 1 == pars.Length ? "" : ",")}");
             builder.AppendLine(@"){
                 let function_data = {};");
             NotNullArguement nna = (method.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)method.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
@@ -156,26 +132,16 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 {
                     if (parray)
                     {
-                        builder.AppendLine(string.Format(@"function_data.{0}=[];
-for(let x=0;x<{0}.length;x++){{
-    function_data.{0}.push({{id:{0}[x].id}});
-}}", par.Name));
+                        builder.AppendLine(@$"function_data.{par.Name}=[];
+for(let x=0;x<{par.Name}.length;x++){{
+    function_data.{par.Name}.push({{id:{par.Name}[x].id}});
+}}");
                     }
                     else
-                        builder.AppendLine(string.Format("function_data.{0} = checkProperty('{0}','{1}',{0},{2});", new object[]
-                        {
-                                    par.Name,
-                                    Utility.GetTypeString(par.ParameterType,(nna==null ? false : !nna.IsParameterNullable(par))),
-                                    Utility.GetEnumList(par.ParameterType)
-                        }));
+                        builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna==null ? false : !nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
                 }
                 else
-                    builder.AppendLine(string.Format("function_data.{0} = checkProperty('{0}','{1}',{0},{2});", new object[]
-                    {
-                                par.Name,
-                                Utility.GetTypeString(par.ParameterType, (nna == null ? false : ! nna.IsParameterNullable(par))),
-                                Utility.GetEnumList(par.ParameterType)
-                    }));
+                    builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna == null ? false : !nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
             }
         }
     }

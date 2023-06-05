@@ -17,8 +17,8 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public LoadAllHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase)
-            : base(next, sessionFactory, registerSlowMethod, urlBase)
+        public LoadAllHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILog log) 
+            : base(next, sessionFactory, registerSlowMethod, urlBase, log)
         {
             _handlers=new List<IModelActionHandler>();
         }
@@ -51,8 +51,8 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     _handlers.Add((IModelActionHandler)
                         typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance) })
-                        .Invoke(new object[] { loadAllMethod, "loadall", _registerSlowMethod })
+                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance),typeof(ILog) })
+                        .Invoke(new object[] { loadAllMethod, "loadall", _registerSlowMethod,log })
                     );
                 }
             }

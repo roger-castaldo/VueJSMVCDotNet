@@ -121,7 +121,7 @@ namespace AutomatedTesting
                     }
                     else
                     {
-                        System.Threading.Thread.Sleep(1000);
+                        System.Threading.Thread.Sleep(1100);
                         cnt++;
                     }
                 }

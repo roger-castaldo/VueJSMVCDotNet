@@ -9,12 +9,23 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using VueJSMVCDotNet.Caching;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace VueJSMVCDotNet.Handlers
 {
     internal class MessagesHandler : RequestHandlerBase
     {
-        private const string _BASE_CODE_TEMPLATE = @"const _format = function (str, args) {{
+        private string _CompileToCode(StringBuilder messages)
+        {
+            return $@"import {{Language}} from '{_corePath}';
+import {{computed}} from '{_vuePath}';
+
+const messages = {{
+    {messages.ToString()}
+}};
+
+const _format = function (str, args) {{
     if (args === undefined || args === null) {{
         return str;
     }}
@@ -23,18 +34,10 @@ namespace VueJSMVCDotNet.Handlers
     }});
 }};
 
-const messages = {{
-    {0}
-}};
-
-function Translate(message,args,language) {{
-    language = (language===undefined ? window.navigator.userLanguage || window.navigator.language : language);
-    if (language.indexOf('-') >= 0) {{
-        language = language.substring(0, language.indexOf('-'));
-    }}
+const _translate = function(message,args,language){{
     let splt = message.split('.');
     let ret = null;
-    let langs = [language, 'en'];
+    let langs = [Language.value, 'en'];
     langs.some((lang) => {{
         ret = messages[lang];
         let idx = 0;
@@ -52,23 +55,34 @@ function Translate(message,args,language) {{
     return (ret == null || ret == undefined ? message : _format(ret,args));
 }}
 
-export default Translate;";
+const Translate = function(message,args) {{
+    return _translate(message,args,Language);
+}};
+
+const ProduceComputedMessage = function(message,arges) {{
+    return computed(()=>{{
+        return _translate(message,args,Language);
+    }});
+}};
+
+export {{Translate,ProduceComputedMessage}};";
+        }
 
         private readonly IFileProvider _fileProvider;
         private readonly string _baseURL;
-        private readonly ILogWriter _log;
         private readonly bool _compressAllJS;
-        private ConcurrentDictionary<string, CachedContent> _cache;
+        private readonly string _corePath;
+        private readonly string _vuePath;
 
 
-        public MessagesHandler(IFileProvider fileProvider, string baseURL,ILogWriter log,bool compressAllJS,RequestDelegate next)
-            : base(next)
+        public MessagesHandler(IFileProvider fileProvider, string baseURL, ILog log,bool compressAllJS, RequestDelegate next, IMemoryCache cache, string corePath, string vuePath)
+            : base(next, cache, log)
         {
             _fileProvider=fileProvider;
             _baseURL=baseURL;
-            _log=log;
             _compressAllJS=compressAllJS;
-            _cache = new ConcurrentDictionary<string, CachedContent>();
+            _corePath=corePath;
+            _vuePath=vuePath;
         }
 
         public override async Task ProcessRequest(HttpContext context)
@@ -80,9 +94,9 @@ export default Translate;";
                 string spath = context.Request.Path.ToString().ToLower();
                 CachedContent? cc = null;
                 bool respond = true;
-                if (_cache.ContainsKey(spath))
+                cc = this[spath];
+                if (cc.HasValue)
                 {
-                    cc = _cache[spath];
                     if (context.Request.Headers.ContainsKey("If-Modified-Since"))
                     {
                         if (cc.Value.Timestamp.ToUniversalTime().ToString("R").ToLower()==context.Request.Headers["If-Modified-Since"].ToString().ToLower())
@@ -90,7 +104,7 @@ export default Translate;";
                             context.Response.ContentType="text/javascript";
                             context.Response.Headers.Add("accept-ranges", "bytes");
                             context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                            context.Response.Headers.Add("etag", string.Format("\"{0}\"", BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()));
+                            context.Response.Headers.Add("etag", $"\"{ BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                             context.Response.StatusCode = 304;
                             await context.Response.WriteAsync("");
                             respond=false;
@@ -109,21 +123,21 @@ export default Translate;";
                             foreach (IFileInfo f in contents.Where(f => f.Name.ToLower().EndsWith(".json")))
                             {
                                 StreamReader sr = new StreamReader(f.CreateReadStream());
-                                sb.AppendFormat("\n\t{0}:", f.Name.Substring(0, f.Name.Length-5));
-                                sb.Append(sr.ReadToEnd());
+                                sb.AppendLine($"   {f.Name.Substring(0, f.Name.Length-5)}:{sr.ReadToEnd()},");
                                 sr.Close();
-                                sb.Append(",\n");
                             }
                             if (sb.Length>0)
                             {
                                 sb.Length=sb.Length-2;
-                                cc = new CachedContent(contents, (_compressAllJS ? JSMinifier.Minify(string.Format(_BASE_CODE_TEMPLATE, sb.ToString())) : string.Format(_BASE_CODE_TEMPLATE, sb.ToString())));
+                                cc = new CachedContent(
+                                    contents.OrderByDescending(ifi=>ifi.LastModified.Ticks).Last().LastModified, 
+                                    (_compressAllJS ? JSMinifier.Minify(_CompileToCode(sb)) : _CompileToCode(sb))
+                                );
                                 _fileProvider.Watch(fpath).RegisterChangeCallback(state =>
                                 {
-                                    CachedContent ctemp;
-                                    _cache.TryRemove((string)state, out ctemp);
+                                    this[(string)state]=null;
                                 }, spath);
-                                _cache.TryAdd(spath, cc.Value);
+                                this[spath] = cc.Value;
                             }
                         }
                     }
@@ -145,9 +159,8 @@ export default Translate;";
                 await _next(context);
         }
 
-        public override void Dispose()
+        protected override void _dispose()
         {
-            _cache.Clear();
             GC.SuppressFinalize(this);
         }
     }

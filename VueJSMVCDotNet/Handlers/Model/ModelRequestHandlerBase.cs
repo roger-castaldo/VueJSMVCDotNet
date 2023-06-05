@@ -22,15 +22,17 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         protected readonly RequestDelegate _next;
         protected readonly delRegisterSlowMethodInstance _registerSlowMethod;
+        protected readonly ILog log;
         private readonly ISecureSessionFactory _sessionFactory;
         private readonly string _urlBase;
 
-        public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase)
+        public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase, ILog log)
         {
             _next = next;
             _sessionFactory=sessionFactory;
             _registerSlowMethod=registerSlowMethod;
             _urlBase=urlBase;
+            this.log=log;
         }
 
         protected async Task<ModelRequestData> _ExtractParts(HttpContext context)
@@ -47,7 +49,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     foreach (string key in context.Request.Form.Keys)
                     {
-                        Logger.Trace("Loading form data value from key {0}", new object[] { key });
+                        log.Trace("Loading form data value from key {0}", new object[] { key });
                         if (key.EndsWith(":json"))
                         {
                             if (context.Request.Form[key].Count>1)
@@ -88,12 +90,12 @@ namespace VueJSMVCDotNet.Handlers.Model
                     string tmp = await new StreamReader(context.Request.Body).ReadToEndAsync();
                     if (tmp!="")
                     {
-                        Logger.Trace("Loading form data from request body");
+                        log.Trace("Loading form data from request body");
                         foreach (var jsonProperty in JsonDocument.Parse(tmp).RootElement.EnumerateObject())
                             formData.Add(jsonProperty.Name, jsonProperty.Value);
                     }
                 }
-                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices));
+                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices,context.Features,log));
             }
             return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
         }

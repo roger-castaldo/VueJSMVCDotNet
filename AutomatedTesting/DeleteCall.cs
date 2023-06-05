@@ -13,11 +13,13 @@ namespace AutomatedTesting
     public class DeleteCall
     {
         private VueMiddleware _middleware;
+        private IDataStore _store;
 
         [TestInitialize]
         public void Init()
         {
             _middleware = Utility.CreateMiddleware(true);
+            _store = new DataStore();
         }
 
         [TestCleanup]
@@ -31,11 +33,11 @@ namespace AutomatedTesting
         {
             int personCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", $"/models/mPerson/{mPerson.Persons[0].id}", _middleware, out status,store:_store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);
-            Assert.AreNotEqual(personCount, mPerson.Persons.Length);
+            Assert.AreNotEqual(personCount, ((mPerson[])_store[mPerson.KEY]).Length);
         }
 
         [TestMethod]
@@ -43,12 +45,12 @@ namespace AutomatedTesting
         {
             int personCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status));
+            object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status, store: _store));
             Assert.IsNotNull(result);
             Assert.AreEqual(404, status);
             Assert.IsInstanceOfType(result, typeof(string));
             Assert.AreEqual("Model Not Found", result);
-            Assert.AreEqual(personCount, mPerson.Persons.Length);
+            Assert.IsNull(_store[mPerson.KEY]);
         }
     }
 }

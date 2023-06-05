@@ -17,6 +17,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         private readonly InjectableMethod _loadMethod;
         private readonly IEnumerable<InjectableMethod> _methods;
+        private readonly ILog log;
 
         public IEnumerable<string> MethodNames => _methods.Select(m => m.Name).Distinct();
 
@@ -24,24 +25,25 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         protected readonly string _callType;
 
-        public ModelActionHandler(string callType, delRegisterSlowMethodInstance delRegisterSlowMethod)
-            : this(new MethodInfo[] {}, callType, delRegisterSlowMethod)
+        public ModelActionHandler(string callType, delRegisterSlowMethodInstance delRegisterSlowMethod, ILog log)
+            : this(new MethodInfo[] {}, callType, delRegisterSlowMethod,log)
         { }
 
-        public ModelActionHandler(MethodInfo method, string callType,delRegisterSlowMethodInstance delRegisterSlowMethod)
-            : this(new MethodInfo[] {method }, callType, delRegisterSlowMethod)
+        public ModelActionHandler(MethodInfo method, string callType,delRegisterSlowMethodInstance delRegisterSlowMethod, ILog log)
+            : this(new MethodInfo[] {method }, callType, delRegisterSlowMethod, log)
         {}
 
-        public ModelActionHandler(IEnumerable<MethodInfo> methods, string callType, delRegisterSlowMethodInstance delRegisterSlowMethod)
+        public ModelActionHandler(IEnumerable<MethodInfo> methods, string callType, delRegisterSlowMethodInstance delRegisterSlowMethod, ILog log)
         {
-            _methods = methods.Select(m => new InjectableMethod(m));
+            _methods = methods.Select(m => new InjectableMethod(m,log));
             _callType=callType;
             _registerSlowMethod=delRegisterSlowMethod;
+            this.log=log;
             _baseURLs = typeof(T)
                .GetCustomAttributes(typeof(ModelRoute), false)
                .Select(ca => ((ModelRoute)ca).Path)
                .OrderByDescending(p => p.Length);
-            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0));
+            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log);
         }
 
         public IModel Load(string url, ModelRequestData request, Func<string, string> extractID = null)
@@ -51,7 +53,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 var id = extractID == null ? url.Substring(url.LastIndexOf("/") + 1) : extractID(url);
                 if (!_loadMethod.HasValidAccess(request, null, url, id))
                     throw new InsecureAccessException();
-                Logger.Trace("Attempting to load model at url {0}", new object[] { url });
+                log.Trace("Attempting to load model at url {0}", new object[] { url });
                 var result = (IModel)_loadMethod.Invoke(null,request, pars:new object[] { id });
                 if (result != null)
                     return result;
@@ -71,7 +73,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         private async Task _Invoke(string url, ModelRequestData request, HttpContext context,IModel model,Func<IModel, ModelRequestData, IModel> processLoadedModel = null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
         {
-            Logger.Trace("calling {0} method matching the url {1}", new object[] { _callType, url });
+            log.Trace("calling {0} method matching the url {1}", new object[] { _callType, url });
             InjectableMethod method = null;
             object[] pars = null;
             _LocateMethod(request, _methods, out method, out pars);
@@ -85,7 +87,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 throw new InsecureAccessException();
             if (processLoadedModel != null)
                 model = (T)processLoadedModel(model, request);
-            Logger.Trace("Invoking the {0} method {1}.{2} for the url {3}", new object[] { _callType, typeof(T).FullName, method.Name, url });
+            log.Trace("Invoking the {0} method {1}.{2} for the url {3}", new object[] { _callType, typeof(T).FullName, method.Name, url });
             if (method.IsSlow)
             {
                 string newPath = _registerSlowMethod(url, method, model, pars, request);
@@ -93,7 +95,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.ContentType = "text/json";
                     context.Response.StatusCode = 200;
-                    await context.Response.WriteAsync(Utility.JsonEncode(newPath));
+                    await context.Response.WriteAsync(Utility.JsonEncode(newPath, log));
                 }
                 else
                     throw new SlowMethodRegistrationFailed();
@@ -112,7 +114,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     context.Response.StatusCode= 200;
                     string tmp = (string)method.Invoke(model,request, pars: pars, responseHeaders: context.Request.Headers);
                     context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
-                    await context.Response.WriteAsync((tmp==null ? Utility.JsonEncode(tmp) : tmp));
+                    await context.Response.WriteAsync((tmp==null ? Utility.JsonEncode(tmp,log) : tmp));
                 }
                 else
                 {
@@ -121,7 +123,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     var resp = method.Invoke(model, request, pars: pars, responseHeaders: context.Request.Headers);
                     if (extractResponse!=null)
                         resp = extractResponse(model, resp,pars,method);
-                    await context.Response.WriteAsync(Utility.JsonEncode(resp));
+                    await context.Response.WriteAsync(Utility.JsonEncode(resp,log));
                 }
             }
         }

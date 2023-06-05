@@ -56,7 +56,7 @@ namespace AutomatedTesting.FileProvider
         internal void Trigger()
         {
             _changed=true;
-            foreach (sCallBack scb in _callbacks)
+            foreach (sCallBack scb in _callbacks.ToArray())
                 scb.runIt();
         }
     }
