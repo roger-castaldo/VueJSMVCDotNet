@@ -177,12 +177,12 @@ const ajax = async function (options) {
 		let url = options.url;
 		delete options.url;
 		try {
-			let response = fetch(url, options);
+			let response = await fetch(url, options);
 			for (let prop in securityHeaders) {
 				if (response.headers[prop] !== undefined)
 					securityHeaders[prop] = response.headers[prop];
 			}
-			let content = await reponse.text();
+			let content = await response.text();
 			if (response.ok) {
 				return {
 					ok: true,
@@ -1075,7 +1075,7 @@ const SetLanguage = function (language) {
 	_language.value = language;
 }
 
-const ResetLanaguage = function () {
+const ResetLanguage = function () {
 	language.value = (window === undefined || window.navigator === undefined ? 'en' : window.navigator.userLanguage || window.navigator.language);
 	if (_language.value.indexOf('-') >= 0) {
 		_language.value = _language.value.substring(0, _language.value.indexOf('-'));

@@ -59,7 +59,7 @@ const Translate = function(message,args) {{
     return _translate(message,args,Language);
 }};
 
-const ProduceComputedMessage = function(message,arges) {{
+const ProduceComputedMessage = function(message,args) {{
     return computed(()=>{{
         return _translate(message,args,Language);
     }});
