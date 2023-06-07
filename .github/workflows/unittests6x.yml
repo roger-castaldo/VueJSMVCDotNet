@@ -20,9 +20,9 @@ jobs:
           6.0.x
           7.0.x
     - name: Restore dependencies for Library
-      run: dotnet restore VueJSMVCDotNet
+      run: dotnet restore VueJSMVCDotNet/VueJSMVCDotNet.csproj
     - name: Build-6.0 for library
-      run: dotnet build --framework net6.0 --no-restore VueJSMVCDotNet
+      run: dotnet build --framework net6.0 --no-restore VueJSMVCDotNet/VueJSMVCDotNet.csproj
     - name: Restore dependencies for testing
       run: dotnet restore AutomatedTesting
     - name: Build-6.0 testing
