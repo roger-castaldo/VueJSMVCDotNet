@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-    <Version>3.0.0-beta5</Version>
+    <Version>3.0.0-beta6</Version>
     <PackageReleaseNotes>massive rewrite and overhaul to move the system to a middleware style</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyVersion>3.0.0</AssemblyVersion>

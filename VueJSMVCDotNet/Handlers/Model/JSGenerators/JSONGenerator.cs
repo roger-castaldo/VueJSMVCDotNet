@@ -43,7 +43,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                         }
                     }
                     if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
-                        builder.AppendLine($"            prop = (this.{Constants.INITIAL_DATA_KEY}===undefined||this.#{p.Name}===null ? (this.#{p.Name}!==undefined ? this.#{0} : null) : (this.{Constants.INITIAL_DATA_KEY}.{p.Name}!==undefined ? this.{Constants.INITIAL_DATA_KEY}.{p.Name} : null));");
+                        builder.AppendLine($"            prop = (this.{Constants.INITIAL_DATA_KEY}===undefined||this.#{p.Name}===null ? (this.#{p.Name}!==undefined ? this.#{p.Name} : null) : (this.{Constants.INITIAL_DATA_KEY}.{p.Name}!==undefined ? this.{Constants.INITIAL_DATA_KEY}.{p.Name} : null));");
                     else
                         builder.AppendLine($"            prop = (this.#{p.Name}!==undefined ? this.#{p.Name} : null);");
                     if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))

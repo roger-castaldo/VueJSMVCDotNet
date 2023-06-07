@@ -820,7 +820,7 @@ class ModelList {
 			}
 			let proxy = tmp.#toProxy();
 			tmp.#events.trigger('loaded', proxy);
-			resolve(proxy);
+			return proxy;
 		} else {
 			return Promise.reject(response.text());
 		}
