@@ -14,9 +14,9 @@ namespace VueJSMVCDotNet.JSON
     internal class ModelConverterFactory : JsonConverterFactory
     {
         private readonly IRequestData _requestData;
-        private readonly ILog log;
+        private readonly ILogger log;
 
-        public ModelConverterFactory(IRequestData requestData,ILog log)
+        public ModelConverterFactory(IRequestData requestData,ILogger log)
         {
             _requestData= requestData;
             this.log=log;

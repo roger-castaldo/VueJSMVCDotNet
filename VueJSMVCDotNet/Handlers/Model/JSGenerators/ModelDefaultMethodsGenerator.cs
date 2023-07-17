@@ -7,30 +7,30 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelDefaultMethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log.Trace("Generating Model Default Methods Definition javascript for {0}", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Generating Model Default Methods Definition javascript for {}",  modelType.Type.FullName);
             if (modelType.HasSave)
             {
-                log.Trace("Adding save method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
-                _AppendSave(modelType,ref builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                log?.LogTrace("Adding save method for Model Definition[{}]", modelType.Type.FullName);
+                ModelDefaultMethodsGenerator.AppendSave(modelType,ref builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
             }
             if (modelType.HasUpdate)
             {
-                log.Trace("Adding update method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
-                _AppendUpdate(modelType, ref builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                log?.LogTrace("Adding update method for Model Definition[{}]", modelType.Type.FullName);
+                ModelDefaultMethodsGenerator.AppendUpdate(modelType, ref builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
             }
             if(modelType.HasDelete)
             {
-                log.Trace("Adding delete method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
-                _AppendDelete(modelType, ref builder);
+                log?.LogTrace("Adding delete method for Model Definition[{}]", modelType.Type.FullName);
+                ModelDefaultMethodsGenerator.AppendDelete(modelType, ref builder);
             }
-            _AppendReloadMethod(modelType, ref builder, log);
+            ModelDefaultMethodsGenerator.AppendReloadMethod(modelType, ref builder, log);
         }
 
-        private void _AppendReloadMethod(sModelType modelType, ref WrappedStringBuilder builder, ILog log)
+        private static void AppendReloadMethod(SModelType modelType, ref WrappedStringBuilder builder, ILogger log)
         {
-            log.Trace("Adding reload method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Adding reload method for Model Definition[{}]", modelType.Type.FullName);
             builder.AppendLine(@$"     async #reload(){{
                 let response = await ModelMethods.reload({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY},this.#isNew());
                 this.{Constants.PARSE_FUNCTION_NAME}(response);
@@ -40,7 +40,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }}");
         }
 
-        private void _AppendDelete(sModelType modelType,ref WrappedStringBuilder builder)
+        private static void AppendDelete(SModelType modelType,ref WrappedStringBuilder builder)
         {
             builder.AppendLine(@$"         async #destroy(){{
                 let response = await ModelMethods.destroy({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew());
@@ -50,7 +50,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
         }
 
-        private void _AppendUpdate(sModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private static void AppendUpdate(SModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(@$"         async #update(){{
                 let response = ModelMethods.update({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
@@ -66,7 +66,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
         }
 
-        private void _AppendSave(sModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private static void AppendSave(SModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(@$"             async #save(){{
                 let response = ModelMethods.save({modelType.Type.Name}.#baseURL,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});

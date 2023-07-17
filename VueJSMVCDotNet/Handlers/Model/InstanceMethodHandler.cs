@@ -18,7 +18,7 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public InstanceMethodHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILog log)
+        public InstanceMethodHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILogger log)
             :base(next,sessionFactory, registerSlowMethod, urlBase, log)
         {
             _handlers=new List<IModelActionHandler>();
@@ -29,27 +29,30 @@ namespace VueJSMVCDotNet.Handlers.Model
             _handlers.Clear();
         }
 
-        private static readonly Regex _regUrlSplit = new Regex("^(.+)/([^/]+)/([^/]+)$", RegexOptions.Compiled|RegexOptions.ECMAScript);
+        private static readonly Regex _regUrlSplit = new("^(.+)/([^/]+)/([^/]+)$", RegexOptions.Compiled|RegexOptions.ECMAScript,TimeSpan.FromMilliseconds(500));
 
         public override async Task ProcessRequest(HttpContext context)
         {
-            string url = _CleanURL(context);
+            string url = CleanURL(context);
             var match = _regUrlSplit.Match(url);
-            if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.METHOD && match.Success && _handlers.Any(h => h.BaseURLs.Contains(match.Groups[1].Value, StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(match.Groups[3].Value, StringComparer.InvariantCultureIgnoreCase)))
+            if (ModelRequestHandlerBase.GetRequestMethod(context)==ModelRequestHandler.RequestMethods.METHOD && match.Success && _handlers.Any(h => h.BaseURLs.Contains(match.Groups[1].Value, StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(match.Groups[3].Value, StringComparer.InvariantCultureIgnoreCase)))
             {
                 var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(match.Groups[1].Value, StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(match.Groups[3].Value, StringComparer.InvariantCultureIgnoreCase));
-                if (handler==null)
-                    throw new CallNotFoundException("Unable to locate requested method to invoke");
-                await handler.Invoke(url, await _ExtractParts(context), context, extractID: (url) =>
+                if (handler!=null)
                 {
-                    return _regUrlSplit.Match(url).Groups[2].Value;
-                });
-                return;
+                    await handler.Invoke(url, await ExtractParts(context), context, extractID: (url) =>
+                                {
+                                    return _regUrlSplit.Match(url).Groups[2].Value;
+                                });
+                    return;
+                }
+
+                throw new CallNotFoundException("Unable to locate requested method to invoke");
             }
             else
                 await _next(context);
         }
-        protected override void _LoadTypes(List<Type> types){
+        protected override void InternalLoadTypes(List<Type> types){
             foreach (Type t in types)
             {
                 foreach (var grp in t.GetMethods(Constants.INSTANCE_METHOD_FLAGS)
@@ -58,14 +61,14 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     _handlers.Add((IModelActionHandler)
                         typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                        .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILog) })
+                        .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILogger) })
                         .Invoke(new object[] { grp.ToList(), "instanceMethod", _registerSlowMethod, log })
                     );
                 }
             }
         }
 
-        protected override void _UnloadTypes(List<Type> types)
+        protected override void InternalUnloadTypes(List<Type> types)
         {
             _handlers.RemoveAll(h =>
                 types.Contains(h.GetType().GetGenericArguments()[0])

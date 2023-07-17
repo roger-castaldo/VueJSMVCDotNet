@@ -1,19 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Handlers;
+using Microsoft.Extensions.Caching.Memory;
+using System.Threading;
 using VueJSMVCDotNet.Handlers.Model;
 using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Timers;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace VueJSMVCDotNet.Handlers
 {
@@ -31,26 +20,26 @@ namespace VueJSMVCDotNet.Handlers
             LIST
         }
 
-        public delegate string delRegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, IRequestData requestData);
+        public delegate string delRegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, IRequestData requestData, ILogger log);
 
         //houses a list of invalid models if StartTypes.DisableInvalidModels is passed for a startup parameter
         private List<Type> _invalidModels;
         private bool _isInitialized=false;
-        private Dictionary<string,SlowMethodInstance> _methodInstances;
+        private readonly Dictionary<string, SlowMethodInstance> _methodInstances;
         private readonly Timer _cleanupTimer;
-        protected string _RegisterSlowMethodInstance(string url,InjectableMethod method,object model,object[] pars,IRequestData requestData)
+        protected string RegisterSlowMethodInstance(string url,InjectableMethod method,object model,object[] pars,IRequestData requestData,ILogger log)
         {
             string ret = (url+"/"+Guid.NewGuid().ToString()).ToLower();
             try
             {
-                SlowMethodInstance smi = new SlowMethodInstance(method,model, pars,requestData,log);
+                SlowMethodInstance smi = new(method,model, pars,requestData,log);
                 lock (_methodInstances)
                 {
                     _methodInstances.Add(ret, smi);
                 }
             }catch(Exception e)
             {
-                log.Error(e);
+                log?.LogError("Attempting to register a slow method caused an error. {}",e.Message);
                 ret=null;
             }
             return ret;
@@ -64,14 +53,13 @@ namespace VueJSMVCDotNet.Handlers
         private readonly string _urlBase;
         private readonly bool _ignoreInvalidModels;
 
-        private static readonly Regex _baseUrlRegex = new Regex("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase);
+        private static readonly Regex _baseUrlRegex = new("^(https?:/)?/(.+)(/)$", RegexOptions.Compiled|RegexOptions.ECMAScript|RegexOptions.IgnoreCase,TimeSpan.FromMilliseconds(500));
 
-        public ModelRequestHandler(ILog log,
+        public ModelRequestHandler(ILogger log,
             string baseURL,
             bool ignoreInvalidModels,
             string vueImportPath,
             string coreImportPath,
-            string[] securityHeaders,
             ISecureSessionFactory sessionFactory,
             bool compressAllJS,
             RequestDelegate next, IMemoryCache cache)
@@ -79,7 +67,7 @@ namespace VueJSMVCDotNet.Handlers
         {
             _urlBase=baseURL;
             _ignoreInvalidModels=ignoreInvalidModels;
-            vueImportPath=(vueImportPath==null ? "https://unpkg.com/vue@3/dist/vue.esm-browser.js" : vueImportPath);
+            vueImportPath??="https://unpkg.com/vue@3/dist/vue.esm-browser.js";
             if (_urlBase!=null && !_baseUrlRegex.IsMatch(_urlBase))
             {
                 if (!_urlBase.EndsWith("/"))
@@ -87,7 +75,7 @@ namespace VueJSMVCDotNet.Handlers
                 if (_urlBase!="/" && !_baseUrlRegex.IsMatch(_urlBase))
                     _urlBase="/"+_urlBase;
             }
-            var registerSlowMethod = new delRegisterSlowMethodInstance(_RegisterSlowMethodInstance);
+            var registerSlowMethod = new delRegisterSlowMethodInstance(RegisterSlowMethodInstance);
             var instanceMethodHandler = new InstanceMethodHandler(next, sessionFactory, registerSlowMethod, _urlBase,log);
             var deleteHandler = new DeleteHandler(new RequestDelegate(instanceMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod,_urlBase, log);
             var updateHandler = new UpdateHandler(new RequestDelegate(deleteHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase, log);
@@ -96,7 +84,7 @@ namespace VueJSMVCDotNet.Handlers
             var loadAllHandler = new LoadAllHandler(new RequestDelegate(loadHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase, log);
             var staticMethodHandler = new StaticMethodHandler(new RequestDelegate(loadAllHandler.ProcessRequest), sessionFactory, registerSlowMethod, _urlBase, log);
             var modelListCallHandler = new ModelListCallHandler(new RequestDelegate(staticMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase, log);
-            var jsHandler = new JSHandler(_urlBase,vueImportPath,coreImportPath,securityHeaders,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod,compressAllJS,cache,log);
+            var jsHandler = new JSHandler(_urlBase,vueImportPath,coreImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod,compressAllJS,cache,log);
             _Handlers = new ModelRequestHandlerBase[]
             {
                 jsHandler,
@@ -109,15 +97,13 @@ namespace VueJSMVCDotNet.Handlers
                 deleteHandler,
                 instanceMethodHandler
             };
-            log.Debug("Starting up VueJS Request Handler");
+            log?.LogDebug("Starting up VueJS Request Handler");
             _methodInstances= new Dictionary<string, SlowMethodInstance>();
-            _cleanupTimer = new Timer(60*1000);
-            _cleanupTimer.Elapsed+=_cleanupTimer_Elapsed;
-            _cleanupTimer.Start();
+            _cleanupTimer = new Timer(new TimerCallback(CleanupTimer_Elapsed),null,TimeSpan.FromMinutes(1),TimeSpan.FromMinutes(1));
             AssemblyAdded();
         }
 
-        private void _cleanupTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void CleanupTimer_Elapsed(object state)
         {
             lock (_methodInstances)
             {
@@ -128,7 +114,7 @@ namespace VueJSMVCDotNet.Handlers
                     if (_methodInstances[str].IsExpired)
                     {
                         SlowMethodInstance smi = _methodInstances[str];
-                        try { smi.Dispose(); } catch (Exception ex) { log.Error(ex); }
+                        try { smi.Dispose(); } catch (Exception ex) { log?.LogError("SlowMethodInstance diposal error {}",ex.Message); }
                         _methodInstances.Remove(str);
                     }else if (_methodInstances[str].IsFinished)
                     {
@@ -138,31 +124,30 @@ namespace VueJSMVCDotNet.Handlers
             }
         }
 
-        /// <summary>
-        /// Disposes of the request handler and cleans up the resources there in
-        /// </summary>
-        protected override void _dispose()
+        protected override void Dispose(bool disposing)
         {
-            try
+            if (!disposedValue)
             {
-                _cleanupTimer.Stop();
-            }
-            catch (Exception e) { log.Error(e); }
-            try
-            {
-                _cleanupTimer.Dispose();
-            }
-            catch (Exception e) { log.Error(e); }
-            lock (_methodInstances)
-            {
-                string[] keys = new string[_methodInstances.Count];
-                _methodInstances.Keys.CopyTo(keys, 0);
-                foreach (string str in keys)
+                if (disposing)
                 {
-                    try { _methodInstances[str].Dispose(); } catch (Exception e) { log.Error(e); };
-                    _methodInstances.Remove(str);
+                    try
+                    {
+                        _cleanupTimer.Dispose();
+                    }
+                    catch (Exception e) { log?.LogError("CleanupTimer disposal error {}",e.Message); }
+                    lock (_methodInstances)
+                    {
+                        string[] keys = new string[_methodInstances.Count];
+                        _methodInstances.Keys.CopyTo(keys, 0);
+                        foreach (string str in keys)
+                        {
+                            try { _methodInstances[str].Dispose(); } catch (Exception e) { log?.LogError("Method Instance disposal error {}",e.Message); };
+                            _methodInstances.Remove(str);
+                        }
+                    }
                 }
             }
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -172,9 +157,8 @@ namespace VueJSMVCDotNet.Handlers
         /// <returns>a task as a result of handling the request</returns>
         public override async Task ProcessRequest(HttpContext context)
         {
-            log.Debug("Checking if {0} is handled by VueJS library", new object[] { context.Request.Path });
-            object method;
-            if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out method))
+            log?.LogDebug("Checking if {} is handled by VueJS library", context.Request.Path);
+            if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out object method))
             {
                 if (context.Request.Method.ToUpper()=="PULL")
                 {
@@ -188,7 +172,7 @@ namespace VueJSMVCDotNet.Handlers
                             if (smi.IsExpired)
                             {
                                 _methodInstances.Remove(url.ToLower());
-                                try { smi.Dispose(); }catch(Exception e) { log.Error(e);}
+                                try { smi.Dispose(); } catch (Exception e) { log?.LogError("SlowMethodInstance disposal error {}",e.Message); }
                                 smi=null;
                             }
                         }
@@ -205,7 +189,7 @@ namespace VueJSMVCDotNet.Handlers
                         }
                     }
                     else
-                        await _next(context);
+                        await next(context);
                 }
                 else
                 {
@@ -215,21 +199,21 @@ namespace VueJSMVCDotNet.Handlers
                     }
                     catch (CallNotFoundException cnfe)
                     {
-                        log.Error(cnfe);
+                        log?.LogError("Request Error, call not found: {}",cnfe.Message);
                         context.Response.ContentType = "text/text";
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsync(cnfe.Message);
                     }
                     catch (InsecureAccessException iae)
                     {
-                        log.Error(iae);
+                        log?.LogError("Request Error, insecure access: {}", iae.Message);
                         context.Response.ContentType = "text/text";
                         context.Response.StatusCode = 403;
                         await context.Response.WriteAsync(iae.Message);
                     }
                     catch (Exception e)
                     {
-                        log.Error(e);
+                        log?.LogError("Request Error: {}",e.Message);
                         context.Response.ContentType= "text/text";
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("Error");
@@ -237,7 +221,7 @@ namespace VueJSMVCDotNet.Handlers
                 }
             }
             else
-                await _next(context);
+                await next(context);
         }
 
         public void UnloadAssemblyContext(string contextName){
@@ -250,15 +234,15 @@ namespace VueJSMVCDotNet.Handlers
 
         public void AssemblyAdded()
         {
-            log.Debug("Assembly added called, rebuilding handlers...");
+            log?.LogDebug("Assembly added called, rebuilding handlers...");
             _isInitialized=false;
             Utility.ClearCaches(log);
             foreach (ModelRequestHandlerBase irh in _Handlers)
             {
-                log.Debug("Clearing cache for handler {0}",new object[] { irh.GetType().Name });
+                log?.LogDebug("Clearing cache for handler {}",irh.GetType().Name);
                 irh.ClearCache();
             }
-            log.Debug("Processing all available AssemblyLoadContexts...");
+            log?.LogDebug("Processing all available AssemblyLoadContexts...");
             foreach (AssemblyLoadContext alc in AssemblyLoadContext.All){
                 AsssemblyLoadContextAdded(alc);
             }
@@ -274,21 +258,19 @@ namespace VueJSMVCDotNet.Handlers
         }
 
         public void AsssemblyLoadContextAdded(AssemblyLoadContext alc){
-            log.Debug("Loading Assembly Load Context {0}", new object[] { alc.Name });
-            List<Type> models;
-            List<Type> invalidModels;
-            List<Exception> errors = DefinitionValidator.Validate(alc,log,out invalidModels,out models);
+            log?.LogDebug("Loading Assembly Load Context {}",  alc.Name);
+            List<Exception> errors = DefinitionValidator.Validate(alc, log, out List<Type> invalidModels, out List<Type> models);
             if (!_isInitialized)
-                _invalidModels = new List<Type>();
+                _invalidModels = new();
             _invalidModels.AddRange(invalidModels);
             if (errors.Count > 0)
             {
-                log.Error("Validation errors:");
+                log?.LogError("Validation errors:");
                 foreach (Exception e in errors)
-                    log.Error(e);
-                log.Error("Invalid IModels:");
+                    log?.LogError("Validation Error: {}",e.Message);
+                log?.LogError("Invalid IModels:");
                 foreach (Type t in _invalidModels)
-                    log.Error(t.FullName);
+                    log?.LogError("Invalid Model: {}",t.FullName);
             }
             if (errors.Count > 0 && !_ignoreInvalidModels)
                 throw new ModelValidationException(errors);

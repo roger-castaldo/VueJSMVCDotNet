@@ -17,7 +17,7 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly List<IModelActionHandler> _handlers;
 
-        public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase,ILog log)
+        public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase,ILogger log)
             :base(next,sessionFactory,registerSlowMethod,urlBase,log)
         {
             _handlers=new List<IModelActionHandler>();
@@ -30,14 +30,13 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         public override async Task ProcessRequest(HttpContext context)
         {
-            string url = _CleanURL(context);
-            log.Trace("Checking to see if {0}:{1} is handled by the Save Handler", new object[] { GetRequestMethod(context), url });
-            if (GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT && _handlers.Any(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))
+            string url = CleanURL(context);
+            log?.LogTrace("Checking to see if {}:{} is handled by the Save Handler", ModelRequestHandlerBase.GetRequestMethod(context), url);
+            if (ModelRequestHandlerBase.GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT && _handlers.Any(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))
             {
-                var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase));
-                if (handler==null)
-                    throw new CallNotFoundException("Model Not Found");
-                ModelRequestData requestData = await _ExtractParts(context);
+                var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase))
+                    ?? throw new CallNotFoundException("Model Not Found");
+                ModelRequestData requestData = await ExtractParts(context);
                 var model = (IModel)Activator.CreateInstance(handler.GetType().GetGenericArguments()[0]);
                 Utility.SetModelValues(requestData, ref model, true,log);
                 await handler.InvokeWithoutLoad(url, requestData, context, model, extractResponse: (model, response,pars,method) =>
@@ -50,7 +49,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             await _next(context);
         }
 
-       protected override void _LoadTypes(List<Type> types){
+       protected override void InternalLoadTypes(List<Type> types){
             foreach (Type t in types)
             {
                 MethodInfo saveMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
@@ -58,14 +57,14 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     _handlers.Add((IModelActionHandler)
                         typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILog) })
+                        .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILogger) })
                         .Invoke(new object[] { saveMethod, "save", _registerSlowMethod, log })
                     );
                 }
             }
         }
 
-        protected override void _UnloadTypes(List<Type> types)
+        protected override void InternalUnloadTypes(List<Type> types)
         {
             _handlers.RemoveAll(h =>
                 types.Contains(h.GetType().GetGenericArguments()[0])

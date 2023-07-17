@@ -1,28 +1,20 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.FileProviders;
-using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using VueJSMVCDotNet.Caching;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
+using VueJSMVCDotNet.Caching;
 
 namespace VueJSMVCDotNet.Handlers
 {
     internal class MessagesHandler : RequestHandlerBase
     {
-        private string _CompileToCode(StringBuilder messages)
+        private string CompileToCode(StringBuilder messages)
         {
             return $@"import {{Language}} from '{_corePath}';
 import {{computed}} from '{_vuePath}';
 
 const messages = {{
-    {messages.ToString()}
+    {messages}
 }};
 
 const _format = function (str, args) {{
@@ -75,7 +67,7 @@ export {{Translate,ProduceComputedMessage}};";
         private readonly string _vuePath;
 
 
-        public MessagesHandler(IFileProvider fileProvider, string baseURL, ILog log,bool compressAllJS, RequestDelegate next, IMemoryCache cache, string corePath, string vuePath)
+        public MessagesHandler(IFileProvider fileProvider, string baseURL, ILogger log,bool compressAllJS, RequestDelegate next, IMemoryCache cache, string corePath, string vuePath)
             : base(next, cache, log)
         {
             _fileProvider=fileProvider;
@@ -104,7 +96,7 @@ export {{Translate,ProduceComputedMessage}};";
                             context.Response.ContentType="text/javascript";
                             context.Response.Headers.Add("accept-ranges", "bytes");
                             context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                            context.Response.Headers.Add("etag", $"\"{ BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                            context.Response.Headers.Add("etag", $"\"{ BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                             context.Response.StatusCode = 304;
                             await context.Response.WriteAsync("");
                             respond=false;
@@ -115,23 +107,23 @@ export {{Translate,ProduceComputedMessage}};";
                 {
                     if (!cc.HasValue)
                     {
-                        string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath.Substring(0, spath.Length-(spath.EndsWith(".min.js") ? 7 : 3)));
+                        string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath[..^(spath.EndsWith(".min.js") ? 7 : 3)]);
                         if (fpath!=null)
                         {
-                            StringBuilder sb = new StringBuilder();
+                            StringBuilder sb = new();
                             IDirectoryContents contents = _fileProvider.GetDirectoryContents(fpath);
                             foreach (IFileInfo f in contents.Where(f => f.Name.ToLower().EndsWith(".json")))
                             {
-                                StreamReader sr = new StreamReader(f.CreateReadStream());
-                                sb.AppendLine($"   {f.Name.Substring(0, f.Name.Length-5)}:{sr.ReadToEnd()},");
+                                StreamReader sr = new(f.CreateReadStream());
+                                sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
                                 sr.Close();
                             }
                             if (sb.Length>0)
                             {
-                                sb.Length=sb.Length-2;
+                                sb.Length-=2;
                                 cc = new CachedContent(
                                     contents.OrderByDescending(ifi=>ifi.LastModified.Ticks).Last().LastModified, 
-                                    (_compressAllJS ? JSMinifier.Minify(_CompileToCode(sb)) : _CompileToCode(sb))
+                                    (_compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
                                 );
                                 _fileProvider.Watch(fpath).RegisterChangeCallback(state =>
                                 {
@@ -156,12 +148,7 @@ export {{Translate,ProduceComputedMessage}};";
                 }
             }
             else
-                await _next(context);
-        }
-
-        protected override void _dispose()
-        {
-            GC.SuppressFinalize(this);
+                await next(context);
         }
     }
 }

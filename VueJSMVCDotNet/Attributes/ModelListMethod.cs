@@ -12,19 +12,14 @@ namespace VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ModelListMethod : Attribute
     {
-        private bool _paged;
-        internal bool Paged
-        {
-            get { return _paged; }
-        }
-
+        internal bool Paged { get; private init; }
         /// <summary>
         /// Constructor to tag a model listing method
         /// </summary>
         /// <param name="paged">Indicates wheter or not the list is paged</param>
         public ModelListMethod(bool paged=false)
         {
-            _paged = paged;
+            Paged = paged;
         }
 
     }

@@ -10,9 +10,11 @@ namespace AutomatedTesting.Models
 {
     [ModelRoute("/models/mGroup")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
+#pragma warning disable IDE1006 // Naming Styles
     public class mGroup : IModel
+#pragma warning restore IDE1006 // Naming Styles
     {
-        private static Random _rnd = new Random((int)DateTime.Now.Ticks);
+        private static readonly Random _rnd = new((int)DateTime.Now.Ticks);
 
         [ModelRequiredField()]
         [ReadOnlyModelProperty()]
@@ -37,7 +39,7 @@ namespace AutomatedTesting.Models
         }
 
         public mPerson PrimaryPerson { 
-            get { return (People==null ? null : People.FirstOrDefault()); }
+            get { return (People?.FirstOrDefault()); }
             set
             {
                 if (People==null)
@@ -47,7 +49,7 @@ namespace AutomatedTesting.Models
             }
         }
 
-        private int _id = 0;
+        private readonly int _id = 0;
         public string id => _id.ToString();
 
         public mGroup() { }
@@ -59,7 +61,7 @@ namespace AutomatedTesting.Models
             _id = _rnd.Next();
         }
 
-        private static List<mGroup> _groups = new List<mGroup>();
+        private static readonly List<mGroup> _groups = new();
 
         public static mGroup[] Groups => _groups.ToArray();
 

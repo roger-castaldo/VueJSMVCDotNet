@@ -14,6 +14,8 @@ namespace VueJSMVCDotNet.Interfaces
         /// <summary>
         /// The unique id for this model instance that all model based rest calls will use
         /// </summary>
+#pragma warning disable IDE1006 // Naming Styles
         string id { get; }
+#pragma warning restore IDE1006 // Naming Styles
     }
 }

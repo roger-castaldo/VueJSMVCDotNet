@@ -13,37 +13,25 @@ namespace VueJSMVCDotNet
 {
     internal class SlowMethodInstance : IDisposable
     {
-        public struct sPullResponse
+        public readonly struct SPullResponse
         {
-            private object[] _data;
-            public object[] Data { get { return _data; } }
-
-            private bool _isFinished;
-            public bool IsFinished { get { return _isFinished; } }
-
-            private bool _hasMore;
-            public bool HasMore{get{return _hasMore;} }
-
-            public sPullResponse(object[] data,bool isFinished,bool hasMore)
-            {
-                _data=data;
-                _isFinished=isFinished;
-                _hasMore=hasMore;
-            }
+            public object[] Data { get; init; }
+            public bool IsFinished { get; init; }
+            public bool HasMore { get; init; }
         }
 
         private static readonly int _TIMEOUT_MILLISECONDS = 60*1000;
 
-        private ConcurrentQueue<object> _data;
+        private readonly ConcurrentQueue<object> _data;
         private bool _finished;
         private bool _completed;
         private Exception _error;
         private DateTime _lastCall;
-        private Task _execution;
-        private CancellationTokenSource _token;
-        private readonly ILog log;
+        private readonly Task _execution;
+        private readonly CancellationTokenSource _token;
+        private readonly ILogger log;
 
-        public SlowMethodInstance(InjectableMethod method,object model, object[] pars, IRequestData requestData, ILog log)
+        public SlowMethodInstance(InjectableMethod method,object model, object[] pars, IRequestData requestData, ILogger log)
         {
             _data=new ConcurrentQueue<object>();
             _finished=false;
@@ -63,7 +51,7 @@ namespace VueJSMVCDotNet
                 }
                 catch (Exception e)
                 {
-                    log.Error(e);
+                    log?.LogError("Slow method execution error, {}",e.Message);
                     _error=e;
                 }
             }, _token.Token);
@@ -89,7 +77,7 @@ namespace VueJSMVCDotNet
         {
             if (_error!=null)
             {
-                log.Error(_error);
+                log?.LogError("Slow method request handling error, {}",_error.Message);
                 context.Response.ContentType= "text/text";
                 context.Response.StatusCode = 500;
                 _finished=true;
@@ -99,11 +87,10 @@ namespace VueJSMVCDotNet
             else
             {
                 _lastCall = DateTime.Now;
-                List<object> ret = new List<object>();
-                while (ret.Count<5&&_data.Count>0)
+                List<object> ret = new();
+                while (ret.Count<5&&!_data.IsEmpty)
                 {
-                    object obj;
-                    if (_data.TryDequeue(out obj))
+                    if (_data.TryDequeue(out object obj))
                         ret.Add(obj);
                     else
                         break;
@@ -111,7 +98,12 @@ namespace VueJSMVCDotNet
                 context.Response.ContentType= "text/json";
                 context.Response.StatusCode = 200;
                 _completed = _finished&&_data.IsEmpty;
-                return context.Response.WriteAsync(Utility.JsonEncode(new sPullResponse(ret.ToArray(), _finished&&_data.IsEmpty, !_data.IsEmpty), log));
+                return context.Response.WriteAsync(Utility.JsonEncode(new SPullResponse()
+                {
+                    Data=ret.ToArray(),
+                    IsFinished=_finished&&_data.IsEmpty,
+                    HasMore=!_data.IsEmpty
+                }, log));
             }
         }
 
@@ -124,7 +116,7 @@ namespace VueJSMVCDotNet
                     _token.Cancel();
                 }
                 catch (Exception ex) { 
-                    log.Error(ex);
+                    log?.LogError("Error disposing SlowMethodInstance, {}",ex.Message);
                 }
             }
         }

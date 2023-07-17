@@ -36,15 +36,15 @@ namespace VueJSMVCDotNet
 
         private readonly ParameterInfo[] _strippedParameters;
         public ParameterInfo[] StrippedParameters=> _strippedParameters;
-        private readonly ILog log;
+        private readonly ILogger log;
 
-        public InjectableMethod(MethodInfo method,ILog log)
+        public InjectableMethod(MethodInfo method,ILogger log)
         {
             _method = method;
             this.log=log;
             _notNullArguement = (NotNullArguement)method.GetCustomAttribute(typeof(NotNullArguement));
             _parameters = _method.GetParameters();
-            List<ParameterInfo> strippedPars = new List<ParameterInfo>();
+            List<ParameterInfo> strippedPars = new();
             _secureSessionIndex=-1;
             _addItemIndex=-1;
             _loggerIndex=-1;
@@ -56,7 +56,7 @@ namespace VueJSMVCDotNet
                     _secureSessionIndex=x;
                 else if (_parameters[x].ParameterType==typeof(AddItem))
                     _addItemIndex=x;
-                else if (_parameters[x].ParameterType==typeof(ILog))
+                else if (_parameters[x].ParameterType==typeof(ILogger))
                     _loggerIndex=x;
                 else if (_parameters[x].ParameterType==typeof(IHeaderDictionary))
                     _headerIndex=x;

@@ -1,8 +1,5 @@
 ﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
@@ -10,9 +7,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log.Trace("Appending Parse method for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Appending Parse method for Model Definition[{}]", modelType.Type.FullName);
             builder.AppendLine(@$"         {Constants.PARSE_FUNCTION_NAME}(jdata){{
         if (jdata==null) {{
             throw 'Unable to parse null result for a model';

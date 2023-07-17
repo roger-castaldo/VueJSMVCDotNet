@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,20 +13,20 @@ namespace VueJSMVCDotNet.Handlers
 {
     internal abstract class RequestHandlerBase : IDisposable
     {
-        public static readonly MemoryCacheEntryOptions CACHE_ENTRY_OPTIONS = new MemoryCacheEntryOptions()
+        public static readonly MemoryCacheEntryOptions CACHE_ENTRY_OPTIONS = new()
         {
             SlidingExpiration=TimeSpan.FromHours(1)
         };
 
-        protected readonly RequestDelegate _next;
-        protected readonly ILog log;
-        private readonly IMemoryCache _cache;
-        private bool _isDisposed = false;
+        protected readonly RequestDelegate next;
+        protected readonly ILogger log;
+        private readonly IMemoryCache cache;
+        protected bool disposedValue;
 
-        public RequestHandlerBase(RequestDelegate next, IMemoryCache cache,ILog log)
+        public RequestHandlerBase(RequestDelegate next, IMemoryCache cache, ILogger log)
         {
-            _next = next;
-            _cache = cache;
+            this.next = next;
+            this.cache = cache;
             this.log=log;
         }
 
@@ -33,21 +34,21 @@ namespace VueJSMVCDotNet.Handlers
         {
             get
             {
-                if (_isDisposed)
+                if (disposedValue)
                     return null;
-                return (CachedContent?)(_cache.TryGetValue(url, out var cachedContent) ? cachedContent : null);
+                return (CachedContent?)(cache.TryGetValue(url, out var cachedContent) ? cachedContent : null);
             }
             set
             {
-                if (!_isDisposed)
+                if (!disposedValue)
                 {
                     if (value==null)
-                        _cache.Remove(url);
+                        cache.Remove(url);
                     else
                     {
                         try
                         {
-                            _cache.Set(url, value, CACHE_ENTRY_OPTIONS);
+                            cache.Set(url, value, CACHE_ENTRY_OPTIONS);
                         }
                         catch (Exception) { }
                     }
@@ -55,13 +56,35 @@ namespace VueJSMVCDotNet.Handlers
             }
         }
 
-        public void Dispose()
+        public abstract Task ProcessRequest(HttpContext context);
+
+        protected virtual void Dispose(bool disposing)
         {
-            _isDisposed=true;
-            _dispose();
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue=true;
+            }
         }
 
-        protected abstract void _dispose();
-        public abstract Task ProcessRequest(HttpContext context);
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~RequestHandlerBase()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

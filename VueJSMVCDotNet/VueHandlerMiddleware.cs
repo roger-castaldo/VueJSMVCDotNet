@@ -189,13 +189,13 @@ namespace VueJSMVCDotNet
         public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options, IMemoryCache cache=null)
         {
             if ((options.VueFilesOptions!=null||options.MessageOptions!=null) && options.FileProvider==null)
-                throw new ArgumentNullException("fileProvider");
-            var log = new Logger(options.LogWriter);
+                throw new ArgumentNullException(nameof(options),$"{nameof(options.FileProvider)} must be provided");
+            var log = options.LogWriter;
             options.VueMiddleware=this;
 
             _cache = cache ?? new MemoryCache(new MemoryCacheOptions() { });
 
-            StreamReader sr = new StreamReader(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
+            StreamReader sr = new(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
             var builder = new StringBuilder();
             builder.Append(@$"import * as vue from ""{options.VueImportPath}"";
 const securityHeaders = {{");
@@ -213,7 +213,7 @@ const securityHeaders = {{");
             sr.Close();
 
             _options = options;
-            next = (next==null ? new RequestDelegate(NotFound) : next);
+            next ??= new RequestDelegate(NotFound);
             if (options.VueFilesOptions!=null)
             {
                 var fileHandlers = new List<VueFilesHandler>();
@@ -221,7 +221,17 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new VueFilesHandler(options.FileProvider, url, log, options.VueImportPath, options.VueLoaderImportPath, options.CoreJSImport??options.CoreJSURL,options.CompressAllJS, next, _cache);
+                        var handler = new VueFilesHandler(
+                            options.FileProvider, 
+                            url,  
+                            options.VueImportPath, 
+                            options.VueLoaderImportPath, 
+                            options.CoreJSImport??options.CoreJSURL,
+                            options.CompressAllJS, 
+                            next, 
+                            _cache,
+                            log
+                        );
                         fileHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -235,7 +245,16 @@ const securityHeaders = {{");
                 {
                     if (!string.IsNullOrEmpty(url.Trim()))
                     {
-                        var handler = new MessagesHandler(options.FileProvider, url,log,options.CompressAllJS, next,_cache, options.CoreJSImport??options.CoreJSURL, options.VueImportPath);
+                        var handler = new MessagesHandler(
+                            options.FileProvider, 
+                            url,
+                            log,
+                            options.CompressAllJS, 
+                            next,
+                            _cache, 
+                            options.CoreJSImport??options.CoreJSURL, 
+                            options.VueImportPath
+                        );
                         messageHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
                     }
@@ -245,7 +264,7 @@ const securityHeaders = {{");
             if (options.VueModelsOptions!=null)
             {
                 _modelHandler = new ModelRequestHandler(log, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
-                    options.CoreJSImport??options.CoreJSURL, options.VueModelsOptions.SecurityHeaders,
+                    options.CoreJSImport??options.CoreJSURL,
                 options.VueModelsOptions.SessionFactory,options.CompressAllJS, next, _cache);
             }
         }
@@ -255,8 +274,7 @@ const securityHeaders = {{");
         /// </summary>
         public void Dispose()
         {
-            if (_modelHandler!=null)
-                _modelHandler.Dispose();
+            _modelHandler?.Dispose();
             if (_messageHandlers!=null)
             {
                 for (int x = 0; x< _messageHandlers.Length; x++)
@@ -298,26 +316,17 @@ const securityHeaders = {{");
         }
         internal void UnloadAssemblyContext(string contextName)
         {
-            if (_modelHandler!=null)
-            {
-                _modelHandler.UnloadAssemblyContext(contextName);
-            }
+            _modelHandler?.UnloadAssemblyContext(contextName);
         }
 
         internal void AssemblyAdded()
         {
-            if (_modelHandler!=null)
-            {
-                _modelHandler.AssemblyAdded();
-            }
+            _modelHandler?.AssemblyAdded();
         }
 
         internal void AsssemblyLoadContextAdded(string contextName)
         {
-            if (_modelHandler!=null)
-            {
-                _modelHandler.AsssemblyLoadContextAdded(contextName);
-            }
+            _modelHandler?.AsssemblyLoadContextAdded(contextName);
         }
     }
 

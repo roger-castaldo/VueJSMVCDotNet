@@ -15,7 +15,7 @@ namespace VueJSMVCDotNet.JSON
     {
         private readonly IRequestData _requestData;
         private readonly InjectableMethod _loadMethod;
-        public ModelConverter(IRequestData requestData,ILog log)
+        public ModelConverter(IRequestData requestData,ILogger log)
         {
             _requestData=requestData;
             _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);

@@ -7,7 +7,6 @@ namespace VueJSMVCDotNet
 {
     internal static class Constants
     {
-        public static readonly DateTime UTC = new DateTime(1970, 1, 1, 00, 00, 00, DateTimeKind.Utc);
         public const string INITIAL_DATA_KEY = "#initialData";
         public const string TO_JSON_VARIABLE = "#toJSON";
         public const string PARSE_FUNCTION_NAME = "_parse";

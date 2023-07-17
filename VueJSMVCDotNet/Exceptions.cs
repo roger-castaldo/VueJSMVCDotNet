@@ -16,16 +16,15 @@ namespace VueJSMVCDotNet
     /// Base for Thrown Validation Exceptions with a specific type
     /// </summary>
     public class ModelTypeException : Exception{
-        private Type _modelType;
         /// <summary>
         /// The type of the model generating the exception
         /// </summary>
-        public Type ModelType => _modelType;
+        public Type ModelType { get; private init; }
 
         internal ModelTypeException(Type t,string message)
             : base(message)
         {
-            _modelType=t;
+            ModelType=t;
         }
     }
 
@@ -34,15 +33,14 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class ModelTypeMethodException : ModelTypeException
     {
-        private string _methodName;
         /// <summary>
         /// The name of the method causing the error
         /// </summary>
-        public string MethodName => _methodName;
+        public string MethodName { get; private init; }
         internal ModelTypeMethodException(Type t,string methodName, string message)
             : base(t,message)
         {
-            _methodName=methodName;
+            MethodName=methodName;
         }
     }
 
@@ -73,33 +71,29 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class DuplicateRouteException : Exception
     {
-        private string _firstPath;
         /// <summary>
         /// The first of the duplicate Paths
         /// </summary>
-        public string FirstPath => _firstPath;
-        private Type _firstModel;
+        public string FirstPath { get; private init; }
         /// <summary>
         /// The first Model Type containing the first path
         /// </summary>
-        public Type FirstModel => _firstModel;
-        private string _secondPath;
+        public Type FirstModel { get; private init; }
         /// <summary>
         /// The second of the duplicate Paths
         /// </summary>
-        public string SecondPath => _secondPath;
-        private Type _secondType;
+        public string SecondPath { get; private init; }
         /// <summary>
         /// The second Model Type containg the second path
         /// </summary>
-        public Type SecondModel => _secondType;
+        public Type SecondModel { get; private init; }
 
         internal DuplicateRouteException(string path1, Type type1, string path2, Type type2)
             : base($"The IModel type {type2.FullName} is not valid as its route {path2} is a duplicate for the route {path1} contained within the Model {type1.FullName}") { 
-            _firstPath= path1; 
-            _firstModel= type1;
-            _secondPath= path2;
-            _secondType= type2;
+            FirstPath= path1; 
+            FirstModel= type1;
+            SecondPath= path2;
+            SecondModel= type2;
         }
     }
 
@@ -176,19 +170,15 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class ModelValidationException : Exception
     {
-        private List<Exception> _innerExceptions;
         /// <summary>
         /// All the exceptions found when validating the model definitions
         /// </summary>
-        public List<Exception> InnerExceptions
-        {
-            get { return _innerExceptions; }
-        }
+        public List<Exception> InnerExceptions { get; private init; }
 
         internal ModelValidationException(List<Exception> exceptions)
             : base("Model Definition Validations have failed.")
         {
-            _innerExceptions = exceptions;
+            InnerExceptions = exceptions;
         }
     }
 
@@ -239,15 +229,14 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class InvalidModelListPageParameterTypeException : ModelTypeMethodException
     {
-        private ParameterInfo _parameter;
         /// <summary>
         /// The parameter causing the error
         /// </summary>
-        public ParameterInfo Parameter => _parameter;
+        public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListPageParameterTypeException(Type t, MethodInfo mi, ParameterInfo pi)
             : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not a usable as a paging parameter for a ModelListMethod.")
         {
-            _parameter=pi;
+            Parameter=pi;
         }
     }
 
@@ -256,15 +245,14 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class InvalidModelListPageTotalPagesNotOutException : ModelTypeMethodException
     {
-        private ParameterInfo _parameter;
         /// <summary>
         /// The parameter causing the error
         /// </summary>
-        public ParameterInfo Parameter => _parameter;
+        public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListPageTotalPagesNotOutException(Type t, MethodInfo mi, ParameterInfo pi)
             : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not an out parameter which is needed to indicate the total number of pages.")
         {
-            _parameter=pi;
+            Parameter=pi;
         }
     }
 
@@ -273,15 +261,14 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class InvalidModelListParameterOutException : ModelTypeMethodException
     {
-        private ParameterInfo _parameter;
         /// <summary>
         /// The parameter causing the error
         /// </summary>
-        public ParameterInfo Parameter => _parameter;
+        public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListParameterOutException(Type t, MethodInfo mi, ParameterInfo pi)
             : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is an out parameter.")
         {
-            _parameter=pi;
+            Parameter=pi;
         }
     }
 

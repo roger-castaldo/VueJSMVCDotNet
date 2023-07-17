@@ -6,12 +6,12 @@ namespace VueJSMVCDotNet
 {
     internal class WrappedStringBuilder
     {
-        private StringBuilder _sb;
-        private bool _minimize;
+        private readonly StringBuilder _sb;
+        private readonly bool _minimize;
 
         public WrappedStringBuilder(bool minimize)
         {
-            _sb = new StringBuilder();
+            _sb = new();
             _minimize = minimize;
         }
 
@@ -23,17 +23,17 @@ namespace VueJSMVCDotNet
         public void AppendLine(string line)
         {
             if (_minimize)
-                _Append(line);
+                Append(line);
             else
                 _sb.AppendLine(line);
         }
 
         internal void Append(string value)
         {
-            _Append(value);
+            WrappedAppend(value);
         }
 
-        private void _Append(string value)
+        private void WrappedAppend(string value)
         {
             _sb.Append((_minimize ? JSMinifier.StripComments(value.Trim()) : value));
         }

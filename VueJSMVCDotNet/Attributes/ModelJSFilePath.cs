@@ -10,15 +10,10 @@ namespace VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class ModelJSFilePath: Attribute
     {
-        private string _path;
-        internal string Path
-        {
-            get { return _path; }
-        }
-
+        internal string Path { get; private init; }
         internal string MinPath
         {
-            get { return (_path.EndsWith(".min.js") ? _path : _path.Substring(0, _path.LastIndexOf(".")) + ".min.js"); }
+            get { return (Path.EndsWith(".min.js") ? Path : string.Concat(Path.AsSpan(0, Path.LastIndexOf(".")), ".min.js")); }
         }
 
         /// <summary>
@@ -27,7 +22,7 @@ namespace VueJSMVCDotNet.Attributes
         /// <param name="path">The url path to identify what url to provide the javascript definition of this model to.</param>
         public ModelJSFilePath(string path)
         {
-            _path = (!path.EndsWith(".js") ? path+".js" : path).ToLower();
+            Path = (!path.EndsWith(".js") ? path+".js" : path).ToLower();
         }
 
         internal bool IsMatch(string url)

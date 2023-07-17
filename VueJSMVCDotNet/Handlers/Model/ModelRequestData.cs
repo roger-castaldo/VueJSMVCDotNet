@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class ModelRequestData : IRequestData
     {
-        private readonly ILog log;
+        private readonly ILogger log;
         private readonly Dictionary<string, object> _formData;
         public IEnumerable<string> Keys => _formData.Keys;
 
@@ -35,7 +35,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 else if (obj is JsonElement element)
                     return Utility.JsonDecode<T>(element, this, log);
                 else
-                    return (T)_ConvertObjectToType(obj, typeof(T));
+                    return (T)ConvertObjectToType(obj, typeof(T));
             }
             catch (Exception)
             {
@@ -61,12 +61,12 @@ namespace VueJSMVCDotNet.Handlers.Model
         public object this[Type feature]
         {
             get {
-                return (_services==null ? null : _services.GetService(feature))??
-                    (_features==null ? null : (_features.Any(t=>t.Key==feature) ? _features.First(t=>t.Key==feature).Value : null)); 
+                return (_services?.GetService(feature))??
+                    (_features!=null ? (_features.Any(t=>t.Key==feature) ? _features.First(t=>t.Key==feature).Value : null) : null); 
             }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILog log)
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILogger log)
         {
             _formData = formData;
             _session = session;
@@ -75,9 +75,9 @@ namespace VueJSMVCDotNet.Handlers.Model
             this.log=log;
         }
 
-        private object _ConvertObjectToType(object obj, Type expectedType)
+        private object ConvertObjectToType(object obj, Type expectedType)
         {
-            log.Trace("Attempting to convert object of type {0} to {1}", new object[] { (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName });
+            log?.LogTrace("Attempting to convert object of type {} to {}", (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName);
             if (expectedType.Equals(typeof(object)))
                 return obj;
             if (expectedType.Equals(typeof(bool)) && (obj == null))
@@ -105,12 +105,12 @@ namespace VueJSMVCDotNet.Handlers.Model
                 if (obj is ArrayList list)
                     count = list.Count;
                 Array ret = Array.CreateInstance(underlyingType, count);
-                if (!(obj is ArrayList list1))
-                    ret.SetValue(_ConvertObjectToType(obj, underlyingType), 0);
+                if (obj is not ArrayList list1)
+                    ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
                 else
                 {
                     for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(_ConvertObjectToType(list1[x], underlyingType), x);
+                        ret.SetValue(ConvertObjectToType(list1[x], underlyingType), x);
                 }
                 if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
                     return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
@@ -118,12 +118,12 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
             if (expectedType.FullName.StartsWith("System.Collections.Generic.Dictionary"))
             {
-                object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(new object[0]);
+                object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(Array.Empty<object>());
                 Type keyType = expectedType.GetGenericArguments()[0];
                 Type valType = expectedType.GetGenericArguments()[1];
                 foreach (string str in ((Hashtable)obj).Keys)
                 {
-                    ((IDictionary)ret).Add(_ConvertObjectToType(str, keyType), _ConvertObjectToType(((Hashtable)obj)[str], valType));
+                    ((IDictionary)ret).Add(ConvertObjectToType(str, keyType), ConvertObjectToType(((Hashtable)obj)[str], valType));
                 }
                 return ret;
             }
@@ -136,7 +136,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     underlyingType = expectedType.GetElementType();
                 if (obj == null)
                     return null;
-                return _ConvertObjectToType(obj, underlyingType);
+                return ConvertObjectToType(obj, underlyingType);
             }
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
@@ -174,7 +174,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
             catch (Exception e)
             {
-                log.Error(e);
+                log?.LogError("Type conversion error: {}",e.Message);
             }
             return obj;
         }

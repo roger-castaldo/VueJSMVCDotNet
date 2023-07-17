@@ -22,11 +22,11 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         protected readonly RequestDelegate _next;
         protected readonly delRegisterSlowMethodInstance _registerSlowMethod;
-        protected readonly ILog log;
+        protected readonly ILogger log;
         private readonly ISecureSessionFactory _sessionFactory;
         private readonly string _urlBase;
 
-        public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase, ILog log)
+        public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase, ILogger log)
         {
             _next = next;
             _sessionFactory=sessionFactory;
@@ -35,7 +35,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             this.log=log;
         }
 
-        protected async Task<ModelRequestData> _ExtractParts(HttpContext context)
+        protected async Task<ModelRequestData> ExtractParts(HttpContext context)
         {
             if (!context.Items.ContainsKey(_REQUEST_DATA_KEY))
             {
@@ -49,39 +49,33 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     foreach (string key in context.Request.Form.Keys)
                     {
-                        log.Trace("Loading form data value from key {0}", new object[] { key });
+                        log?.LogTrace("Loading form data value from key {}", key);
                         if (key.EndsWith(":json"))
                         {
                             if (context.Request.Form[key].Count>1)
                             {
-                                StringBuilder sb = new StringBuilder();
-                                sb.Append("[");
+                                StringBuilder sb = new();
+                                sb.Append('[');
                                 foreach (string str in context.Request.Form[key])
-                                    sb.Append(str+",");
+                                    sb.Append($"{str},");
                                 sb.Length--;
-                                sb.Append("]");
-                                formData.Add(key.Substring(0, key.Length-5), JsonDocument.Parse(sb.ToString()));
+                                sb.Append(']');
+                                formData.Add(key[..^5], JsonDocument.Parse(sb.ToString()));
                             }
                             else
-                            {
-                                formData.Add(key.Substring(0, key.Length-5), JsonDocument.Parse(context.Request.Form[key][0]));
-                            }
+                                formData.Add(key[..^5], JsonDocument.Parse(context.Request.Form[key][0]));
                         }
                         else
                         {
                             if (context.Request.Form[key].Count>1)
                             {
-                                ArrayList al = new ArrayList();
+                                ArrayList al = new();
                                 foreach (string str in context.Request.Form[key])
-                                {
                                     al.Add(str);
-                                }
                                 formData.Add(key, al);
                             }
                             else
-                            {
                                 formData.Add(key, context.Request.Form[key][0]);
-                            }
                         }
                     }
                 }
@@ -90,7 +84,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     string tmp = await new StreamReader(context.Request.Body).ReadToEndAsync();
                     if (tmp!="")
                     {
-                        log.Trace("Loading form data from request body");
+                        log?.LogTrace("Loading form data from request body");
                         foreach (var jsonProperty in JsonDocument.Parse(tmp).RootElement.EnumerateObject())
                             formData.Add(jsonProperty.Name, jsonProperty.Value);
                     }
@@ -100,29 +94,29 @@ namespace VueJSMVCDotNet.Handlers.Model
             return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
         }
 
-        protected string _CleanURL(HttpContext context)
+        protected string CleanURL(HttpContext context)
         {
             if (!context.Items.ContainsKey(_CONVERTED_URL_KEY))
                 context.Items.Add(_CONVERTED_URL_KEY,Utility.CleanURL(Utility.BuildURL(context, _urlBase)));
             return (string)context.Items[_CONVERTED_URL_KEY];
         }
 
-        protected RequestMethods GetRequestMethod(HttpContext context)
+        protected static RequestMethods GetRequestMethod(HttpContext context)
         {
             return (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
         }
 
         public void LoadTypes(List<Type> types)
         {
-            _LoadTypes(types);
+            InternalLoadTypes(types);
         }
         public void UnloadTypes(List<Type> types)
         {
-            _UnloadTypes(types);
+            InternalUnloadTypes(types);
         }
         public abstract void ClearCache();
         public abstract Task ProcessRequest(HttpContext context);
-        protected abstract void _LoadTypes(List<Type> types);
-        protected abstract void _UnloadTypes(List<Type> types);
+        protected abstract void InternalLoadTypes(List<Type> types);
+        protected abstract void InternalUnloadTypes(List<Type> types);
     }
 }

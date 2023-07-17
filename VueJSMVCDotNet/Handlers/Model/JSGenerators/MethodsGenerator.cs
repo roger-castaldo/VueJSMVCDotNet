@@ -1,8 +1,5 @@
 ﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
@@ -10,19 +7,15 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class MethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            List<MethodInfo> methods = new List<MethodInfo>();
+            List<MethodInfo> methods = new();
             methods.AddRange(modelType.InstanceMethods);
             methods.AddRange(modelType.StaticMethods);
             foreach (MethodInfo mi in methods)
             {
-                Type returnType;
-                bool array;
-                bool isSlow;
-                bool allowNullResponse;
-                _ExtractReturnType(mi, out array, out returnType, out isSlow, out allowNullResponse);
-                _AppendMethodCallDeclaration(mi, ref builder,log);
+                MethodsGenerator.ExtractReturnType(mi, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse);
+                MethodsGenerator.AppendMethodCallDeclaration(mi, ref builder,log);
                 builder.AppendLine(@$"let response = await ajax({{
                         url:`${{{modelType.Type.Name}.#baseURL}}/{(mi.IsStatic ? mi.Name : $"${{this.{Constants.INITIAL_DATA_KEY}.id}}/{mi.Name}")}`,
                         method:'{(mi.IsStatic ? "S" : "")}METHOD',
@@ -63,7 +56,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
         }
 
-        private void _ExtractReturnType(MethodInfo method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse)
+        private static void ExtractReturnType(MethodInfo method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse)
         {
             ExposedMethod em = (ExposedMethod)method.GetCustomAttributes(typeof(ExposedMethod), false)[0];
             isSlow=em.IsSlow;
@@ -95,7 +88,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
         }
 
-        private void _AppendMethodCallDeclaration(MethodInfo method, ref WrappedStringBuilder builder, ILog log)
+        private static void AppendMethodCallDeclaration(MethodInfo method, ref WrappedStringBuilder builder, ILogger log)
         {
             builder.Append($"          {(method.IsStatic ? "static async " : "async #")}{method.Name}(");
             ParameterInfo[] pars = new InjectableMethod(method,log).StrippedParameters;
@@ -138,10 +131,10 @@ for(let x=0;x<{par.Name}.length;x++){{
 }}");
                     }
                     else
-                        builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna==null ? false : !nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
+                        builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
                 }
                 else
-                    builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna == null ? false : !nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
+                    builder.AppendLine($"function_data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna != null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
             }
         }
     }

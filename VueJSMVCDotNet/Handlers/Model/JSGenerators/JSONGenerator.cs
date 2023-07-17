@@ -1,8 +1,5 @@
 ﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
@@ -10,9 +7,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log.Trace("Generating toJSON method for {0}", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Generating toJSON method for {}",  modelType.Type.FullName);
             builder.AppendLine(@$"     {Constants.TO_JSON_VARIABLE}(){{
         let attrs={{}};
         let prop=null;");

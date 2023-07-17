@@ -9,6 +9,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 
 namespace AutomatedTesting.Models
 {
@@ -181,100 +182,100 @@ namespace AutomatedTesting.Models
         #region List Pars
 
         [ModelListMethod()]
-        public static mPerson[] ListByDate(DateTime date, ILog log)
+        public static mPerson[] ListByDate(DateTime date, ILogger log)
         {
-            log.Trace("Called List By Date");
+            log.LogTrace("Called List By Date");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByInt(int val, ILog log)
+        public static mPerson[] ListByInt(int val, ILogger log)
         {
-            log.Trace("Called List By Integer");
+            log.LogTrace("Called List By Integer");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByLong(long val, ILog log)
+        public static mPerson[] ListByLong(long val, ILogger log)
         {
-            log.Trace("Called List By Long");
+            log.LogTrace("Called List By Long");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByShort(short val, ILog log)
+        public static mPerson[] ListByShort(short val, ILogger log)
         {
-            log.Trace("Called List By Short");
+            log.LogTrace("Called List By Short");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByByte(byte val, ILog log)
+        public static mPerson[] ListByByte(byte val, ILogger log)
         {
-            log.Trace("Called List By Byte");
+            log.LogTrace("Called List By Byte");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByUInt(uint val, ILog log)
+        public static mPerson[] ListByUInt(uint val, ILogger log)
         {
-            log.Trace("Called List By UInteger");
+            log.LogTrace("Called List By UInteger");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByULong(ulong val, ILog log)
+        public static mPerson[] ListByULong(ulong val, ILogger log)
         {
-            log.Trace("Called List By ULong");
+            log.LogTrace("Called List By ULong");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByUShort(ushort val, ILog log)
+        public static mPerson[] ListByUShort(ushort val, ILogger log)
         {
-            log.Trace("Called List By UShort");
+            log.LogTrace("Called List By UShort");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByDouble(double val, ILog log)
+        public static mPerson[] ListByDouble(double val, ILogger log)
         {
-            log.Trace("Called List By Double");
+            log.LogTrace("Called List By Double");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByFloat(float val, ILog log)
+        public static mPerson[] ListByFloat(float val, ILogger log)
         {
-            log.Trace("Called List By Float");
+            log.LogTrace("Called List By Float");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByDecimal(decimal val, ILog log)
+        public static mPerson[] ListByDecimal(decimal val, ILogger log)
         {
-            log.Trace("Called List By Decimal");
+            log.LogTrace("Called List By Decimal");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByGuid(Guid val, ILog log)
+        public static mPerson[] ListByGuid(Guid val, ILogger log)
         {
-            log.Trace("Called List By Guid");
+            log.LogTrace("Called List By Guid");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByEnum(mDataTypes.TestEnums val, ILog log)
+        public static mPerson[] ListByEnum(mDataTypes.TestEnums val, ILogger log)
         {
-            log.Trace("Called List By Enum");
+            log.LogTrace("Called List By Enum");
             return Persons;
         }
 
         [ModelListMethod()]
-        public static mPerson[] ListByBoolean(bool val, ILog log)
+        public static mPerson[] ListByBoolean(bool val, ILogger log)
         {
-            log.Debug("Called List By Boolean");
+            log.LogTrace("Called List By Boolean");
             return Persons;
         }
 

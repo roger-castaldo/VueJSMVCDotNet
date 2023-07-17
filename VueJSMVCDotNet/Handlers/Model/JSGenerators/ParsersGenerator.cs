@@ -1,20 +1,17 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
+﻿
+using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
-using System.Linq;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParsersGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, sModelType[] models, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, SModelType[] models, ILogger log)
         {
-            List<sModelType> types = new List<sModelType>();
-            foreach (sModelType modelType in models)
+            List<SModelType> types = new();
+            foreach (SModelType modelType in models)
             {
                 builder.AppendLine(@$"     const _{modelType.Type.Name} = function(data){{
             let ret=null;
@@ -24,18 +21,15 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }}
             return ret;
         }};");
-                _RecurLocateLinkedTypes(ref types, modelType);
+                RecurLocateLinkedTypes(ref types, modelType);
             }
             types.RemoveAll(t => models.Contains(t));
             foreach (var type in types.Where(t=>t.Type.GetCustomAttributes().Any(att=>att is ModelJSFilePath)))
                 builder.AppendLine($"        import {{ {type.Type.Name} }} from '{((ModelJSFilePath)type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path}';");
 
-            foreach (sModelType type in types)
+            foreach (SModelType type in types)
             {
-                log.Trace("Appending Parser Call for Linked Type[{0}]", new object[]
-                {
-                    type.Type.FullName
-                });
+                log?.LogTrace("Appending Parser Call for Linked Type[{}]", type.Type.FullName);
                 if (type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
                 {
                     builder.AppendLine(@$"     const _{type.Type.Name} = function(data){{
@@ -101,13 +95,13 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
         }
 
-        private void _RecurLocateLinkedTypes(ref List<sModelType> types,sModelType modelType)
+        private void RecurLocateLinkedTypes(ref List<SModelType> types,SModelType modelType)
         {
             if (!types.Contains(modelType))
             {
                 types.Add(modelType);
-                foreach (sModelType linked in modelType.LinkedTypes)
-                    _RecurLocateLinkedTypes(ref types, linked);
+                foreach (SModelType linked in modelType.LinkedTypes)
+                    RecurLocateLinkedTypes(ref types, linked);
             }
         }
     }

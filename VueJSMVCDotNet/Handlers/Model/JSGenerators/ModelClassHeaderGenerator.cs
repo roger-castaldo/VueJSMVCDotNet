@@ -1,10 +1,6 @@
 ﻿using VueJSMVCDotNet.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
-using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
@@ -12,9 +8,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
     {
         
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log.Trace("Generating Model Definition javascript for {0}", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Generating Model Definition javascript for {}", modelType.Type.FullName);
 
             builder.AppendLine(@$" class {modelType.Type.Name} {{
         {Constants.INITIAL_DATA_KEY}=undefined;
@@ -25,8 +21,8 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             foreach (PropertyInfo p in modelType.Properties)
                 builder.AppendLine($"      #{p.Name}=undefined;");
 
-            _AppendValidations(modelType.Properties, ref builder,log);
-            _AppendToProxy(ref builder,modelType.Properties, modelType.InstanceMethods, modelType);
+            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, ref builder,log);
+            ModelClassHeaderGenerator.AppendToProxy(ref builder,modelType.Properties, modelType.InstanceMethods, modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
@@ -39,7 +35,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
         }
 
-        private void _AppendToProxy(ref WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, sModelType modelType)
+        private static void AppendToProxy(ref WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, SModelType modelType)
         {
             builder.AppendLine(@"#toProxy(){
     let me = this;
@@ -110,9 +106,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         };");
         }
 
-        private void _AppendValidations(IEnumerable<PropertyInfo> props, ref WrappedStringBuilder builder, ILog log)
+        private static void AppendValidations(IEnumerable<PropertyInfo> props, ref WrappedStringBuilder builder, ILogger log)
         {
-            List<PropertyInfo> requiredProps = new List<PropertyInfo>();
+            List<PropertyInfo> requiredProps = new();
             foreach (PropertyInfo pi in props)
             {
                 if (pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0)
@@ -124,10 +120,10 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     let ret=true;");
                 foreach (PropertyInfo pi in requiredProps)
                 {
-                    log.Trace("Appending Required Propert[{0}] for Model Definition[{1}] validations", new object[]{
+                    log?.LogTrace("Appending Required Propert[{}] for Model Definition[{}] validations",
                         pi.Name,
                         pi.DeclaringType.FullName
-                    });
+                    );
                     builder.AppendLine($"          ret=ret&&(this.#{pi.Name}==undefined||this.#{pi.Name}==null ? false : true);");
                 }
                 builder.AppendLine(@"           return ret;

@@ -1,40 +1,23 @@
 ﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Loader;
-using System.Text.RegularExpressions;
 
 namespace VueJSMVCDotNet
 {
     internal static class DefinitionValidator
     {
-        private struct sPathTypePair
+        private readonly struct SPathTypePair
         {
-            private string _path;
-            public string Path
-            {
-                get { return _path; }
-            }
+            public string Path { get; private init; }
+            public Type ModelType { get; private init; }
 
-            private Type _modelType;
-            public Type ModelType
+            public SPathTypePair(string path, Type modelType)
             {
-                get { return _modelType; }
-            }
-
-            public sPathTypePair(string path, Type modelType)
-            {
-                _path = path;
-                _modelType = modelType;
+                Path = path;
+                ModelType = modelType;
             }
         }
 
-        private static Regex _regListPars = new Regex("\\{(\\d+)\\}", RegexOptions.Compiled | RegexOptions.ECMAScript);
-
-        private static bool _IsValidDataActionMethod(MethodInfo method, ILog log)
+        private static bool IsValidDataActionMethod(MethodInfo method, ILogger log)
         {
             return (method.ReturnType == typeof(bool)) && new InjectableMethod(method,log).StrippedParameters.Length==0;
         }
@@ -52,20 +35,20 @@ namespace VueJSMVCDotNet
          * 9.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
          * 10.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void)
          */
-        internal static List<Exception> Validate(AssemblyLoadContext alc,ILog log,out List<Type> invalidModels,out List<Type> models)
+        internal static List<Exception> Validate(AssemblyLoadContext alc,ILogger log,out List<Type> invalidModels,out List<Type> models)
         {
-            log.Debug("Attempting to load and validate the models found in the Assembly Load Context {0}", new object[] { alc.Name });
+            log?.LogDebug("Attempting to load and validate the models found in the Assembly Load Context {Name}",alc.Name);
             models = Utility.LocateTypeInstances(typeof(IModel),alc,log);
-            log.Debug("Located {0} models in Assembly Load Context {1}", new object[] { models.Count, alc.Name });
-            List<Exception> errors = new List<Exception>();
-            invalidModels = new List<Type>();
-            List<sPathTypePair> paths = new List<sPathTypePair>();
+            log?.LogDebug("Located {Count} models in Assembly Load Context {Name}", models.Count, alc.Name);
+            List<Exception> errors = new();
+            invalidModels = new();
+            List<SPathTypePair> paths = new();
             foreach (Type t in models)
             {
-                log.Debug("Validating Model {0}", new object[] { t.FullName });
+                log?.LogDebug("Validating Model {FullName}",  t.FullName);
                 if (t.GetCustomAttributes(typeof(ModelRoute), false).Length == 0)
                 {
-                    log.Trace("Model {0} has no route", new object[] { t.FullName });
+                    log?.LogTrace("Model {FullName} has no route", t.FullName);
                     invalidModels.Add(t);
                     errors.Add(new NoRouteException(t));
                 }
@@ -78,16 +61,16 @@ namespace VueJSMVCDotNet
                     {
                         if (hasAdd)
                         {
-                            log.Trace("Model {0} has more than 1 save method", new object[] { t.FullName });
+                            log?.LogTrace("Model {FullName} has more than 1 save method", t.FullName);
                             invalidModels.Add(t);
                             errors.Add(new DuplicateModelSaveMethodException(t, mi));
                         }
                         else
                         {
                             hasAdd = true;
-                            if (!_IsValidDataActionMethod(mi, log))
+                            if (!IsValidDataActionMethod(mi, log))
                             {
-                                log.Trace("Model {0} has and invalid save method", new object[] { t.FullName });
+                                log?.LogTrace("Model {FullNane} has and invalid save method", t.FullName);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelSaveMethodException(t, mi));
                             }
@@ -97,16 +80,16 @@ namespace VueJSMVCDotNet
                     {
                         if (hasDelete)
                         {
-                            log.Trace("Model {0} has more than 1 delete method", new object[] { t.FullName });
+                            log?.LogTrace("Model {FullName} has more than 1 delete method", t.FullName );
                             invalidModels.Add(t);
                             errors.Add(new DuplicateModelDeleteMethodException(t, mi));
                         }
                         else
                         {
                             hasDelete = true;
-                            if (!_IsValidDataActionMethod(mi, log))
+                            if (!IsValidDataActionMethod(mi, log))
                             {
-                                log.Trace("Model {0} has and invalid delete method", new object[] { t.FullName });
+                                log?.LogTrace("Model {FullName} has and invalid delete method", t.FullName);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelDeleteMethodException(t, mi));
                             }
@@ -116,15 +99,15 @@ namespace VueJSMVCDotNet
                     {
                         if (hasUpdate)
                         {
-                            log.Trace("Model {0} has more than 1 update method", new object[] { t.FullName });
+                            log?.LogTrace("Model {FullName} has more than 1 update method", t.FullName );
                             invalidModels.Add(t);
                             errors.Add(new DuplicateModelUpdateMethodException(t, mi));
                         }
                         else
                         {
                             hasUpdate = true;
-                            if (!_IsValidDataActionMethod(mi, log)) { 
-                                log.Trace("Model {0} has and invalid update method", new object[] { t.FullName });
+                            if (!IsValidDataActionMethod(mi, log)) { 
+                                log?.LogTrace("Model {FullName} has and invalid update method", t.FullName);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelUpdateMethodException(t, mi));
                             }
@@ -135,24 +118,24 @@ namespace VueJSMVCDotNet
                 {
                     if (t.GetConstructor(Type.EmptyTypes) == null)
                     {
-                        log.Trace("Model {0} has a save method without an empty constructor", new object[] { t.FullName });
+                        log?.LogTrace("Model {FullName} has a save method without an empty constructor", t.FullName);
                         invalidModels.Add(t);
                         errors.Add(new NoEmptyConstructorException(t));
                     }
                 }
-                foreach (ModelRoute mr in t.GetCustomAttributes(typeof(ModelRoute), false))
+                foreach (ModelRoute mr in t.GetCustomAttributes<ModelRoute>(false))
                 {
-                    Regex reg = new Regex("^(" + (mr.Host == "*" ? ".+" : mr.Host) + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path) + ")$", RegexOptions.ECMAScript | RegexOptions.Compiled);
-                    foreach (sPathTypePair p in paths)
+                    Regex reg = new("^(" + (mr.Host == "*" ? ".+" : mr.Host) + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path) + ")$", RegexOptions.ECMAScript | RegexOptions.Compiled);
+                    foreach (SPathTypePair p in paths)
                     {
                         if (reg.IsMatch(p.Path) && (p.ModelType.FullName != t.FullName))
                         {
-                            log.Trace("Model {0} has a model route that is a duplicate of another model", new object[] { t.FullName });
+                            log?.LogTrace("Model {FullName} has a model route that is a duplicate of another model", t.FullName);
                             invalidModels.Add(t);
                             errors.Add(new DuplicateRouteException(p.Path, p.ModelType, mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
                         }
                     }
-                    paths.Add(new sPathTypePair(mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
+                    paths.Add(new SPathTypePair(mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
                 }
                 bool found = false;
                 bool foundLoadAll=false;
@@ -164,7 +147,7 @@ namespace VueJSMVCDotNet
                         {
                             if (!mi.ReturnType.IsAssignableFrom(t))
                             {
-                                log.Trace("Model {0} does not return a valid type for its Load method", new object[] { t.FullName });
+                                log?.LogTrace("Model {FullName} does not return a valid type for its Load method", t.FullName );
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidLoadMethodReturnType(t, mi.Name));
                             }
@@ -176,13 +159,13 @@ namespace VueJSMVCDotNet
                             {
                                 if (found)
                                 {
-                                    log.Trace("Model {0} has a duplicated load method", new object[] { t.FullName });
+                                    log?.LogTrace("Model {FullName} has a duplicated load method", t.FullName);
                                     invalidModels.Add(t);
                                     errors.Add(new DuplicateLoadMethodException(t, mi.Name));
                                 }
                                 found = true;
                             }else{
-                                log.Trace("Model {0} has an invalid load method", new object[] { t.FullName });
+                                log?.LogTrace("Model {FullName} has an invalid load method", t.FullName);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidLoadMethodArguements(t, mi.Name));
                             }
@@ -196,13 +179,13 @@ namespace VueJSMVCDotNet
                             rtype = rtype.GetGenericArguments()[0];
                         }else{
                             rtype=null;
-                            log.Trace("Model {0} has an invalid return type for ModelLoadAllMethod", new object[] { t.FullName });
+                            log?.LogTrace("Model {FullName} has an invalid return type for ModelLoadAllMethod", t.FullName);
                             invalidModels.Add(t);
                             errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
                         }
                         if (rtype!=null){
                             if (rtype!=t){
-                                log.Trace("Model {0} has an invalid return type for ModelLoadAllMethod", new object[] { t.FullName });
+                                log?.LogTrace("Model {FullName} has an invalid return type for ModelLoadAllMethod", t.FullName);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
                             }else{
@@ -212,7 +195,7 @@ namespace VueJSMVCDotNet
                                     errors.Add(new InvalidLoadAllArguements(t, mi.Name));
                                 }else{
                                     if (foundLoadAll){
-                                        log.Trace("Model {0} has more than 1 ModelLoadAllMethod", new object[] { t.FullName });
+                                        log?.LogTrace("Model {FullName} has more than 1 ModelLoadAllMethod", t.FullName);
                                         invalidModels.Add(t);
                                         errors.Add(new DuplicateLoadAllMethodException(t, mi.Name));
                                     }
@@ -233,14 +216,14 @@ namespace VueJSMVCDotNet
                                 rtype = rtype.GetGenericArguments()[0];
                         if (rtype != t)
                         {
-                            log.Trace("Model {0} has an invalid return type for the model list method {1}", new object[] { t.FullName,mi.Name });
+                            log?.LogTrace("Model {FullName} has an invalid return type for the model list method {Name}", t.FullName,mi.Name);
                             invalidModels.Add(t);
                             errors.Add(new InvalidModelListMethodReturnException(t, mi));
                         }
                         ParameterInfo[] pars = new InjectableMethod(mi, log).StrippedParameters;
                         if (mlm.Paged && pars.Length<3)
                         {
-                            log.Trace("Model {0} has an invalid signature for paged model list method {1}, required parameters are missing", new object[] { t.FullName, mi.Name });
+                            log?.LogTrace("Model {FullName} has an invalid signature for paged model list method {Name}, required parameters are missing",  t.FullName, mi.Name);
                             invalidModels.Add(t);
                             errors.Add(new InvalidModelListParameterCountException(t, mi));
                         }
@@ -249,7 +232,7 @@ namespace VueJSMVCDotNet
                             ParameterInfo pi = pars[x];
                             if (pi.IsOut && (!mlm.Paged || x != pars.Length - 1))
                             {
-                                log.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
+                                log?.LogTrace("Model {} list method {} with the parameter {}",  t.FullName, mi.Name, pi.Name);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelListParameterOutException(t, mi, pi));
                             }
@@ -265,14 +248,14 @@ namespace VueJSMVCDotNet
                                     && ptype != typeof(ulong)
                                     && ptype != typeof(ushort))
                                 {
-                                    log.Trace("Model {0} has an invalid parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
+                                    log?.LogTrace("Model {} has an invalid parameter {} list method {}",  t.FullName,pi.Name, mi.Name);
                                     invalidModels.Add(t);
                                     errors.Add(new InvalidModelListPageParameterTypeException(t, mi, pi));
                                 }
                             }
                             if (mlm.Paged && x == pars.Length - 1 && !pi.IsOut)
                             {
-                                log.Trace("Model {0} is not a valid page total parameter {2} list method {1}", new object[] { t.FullName, mi.Name, pi.Name });
+                                log?.LogTrace("Model {} is not a valid page total parameter {} list method {}", t.FullName,pi.Name, mi.Name);
                                 invalidModels.Add(t);
                                 errors.Add(new InvalidModelListPageTotalPagesNotOutException(t, mi, pi));
                             }
@@ -281,31 +264,30 @@ namespace VueJSMVCDotNet
                 }
                 if (t.GetProperty("id").GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length > 0)
                 {
-                    log.Trace("Model {0} is not valid because the id property is blocked by ModelIgnoreProperty", new object[] { t.FullName });
+                    log?.LogTrace("Model {} is not valid because the id property is blocked by ModelIgnoreProperty", t.FullName);
                     invalidModels.Add(t);
                     errors.Add(new ModelIDBlockedException(t));
                 }
                 if (!found)
                 {
-                    log.Trace("Model {0} is not valid because no load method was found", new object[] { t.FullName });
+                    log?.LogTrace("Model {} is not valid because no load method was found", t.FullName );
                     invalidModels.Add(t);
                     errors.Add(new NoLoadMethodException(t));
                 }
                 foreach (BindingFlags bf in new BindingFlags[] { Constants.STATIC_INSTANCE_METHOD_FLAGS,Constants.INSTANCE_METHOD_FLAGS })
                 {
-                    List<string> methods = new List<string>();
+                    List<string> methods = new();
                     MethodInfo[] methodInfos = t.GetMethods(bf);
                     foreach (MethodInfo mi in methodInfos)
                     {
                         if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
                         {
-                            int aidx;
                             var im = new InjectableMethod(mi, log);
                             bool hasAddItem = im.HasAddItem;
                             int parCount = im.StrippedParameters.Length;
                             if (methods.Contains(mi.Name + "." + parCount.ToString()))
                             {
-                                log.Trace("Model {0} is not valid because the method {1} has a duplicate method signature", new object[] { t.FullName, mi.Name });
+                                log?.LogTrace("Model {} is not valid because the method {} has a duplicate method signature", t.FullName, mi.Name);
                                 invalidModels.Add(t);
                                 errors.Add(new DuplicateMethodSignatureException(t, mi));
                             }
@@ -317,13 +299,13 @@ namespace VueJSMVCDotNet
                                 {
                                     if (!em.IsSlow)
                                     {
-                                        log.Trace("Model {0} is not valid because the method {1} is using the AddItem delegate but is not marked slow", new object[] { t.FullName, mi.Name });
+                                        log?.LogTrace("Model {} is not valid because the method {} is using the AddItem delegate but is not marked slow", t.FullName, mi.Name);
                                         invalidModels.Add(t);
                                         errors.Add(new MethodNotMarkedAsSlow(t, mi));
                                         isValidCall = false;
                                     }else if (mi.ReturnType!=typeof(void))
                                     {
-                                        log.Trace("Model {0} is not valid because the method {1} is using the AddItem delegate requires a void response", new object[] { t.FullName, mi.Name });
+                                        log?.LogTrace("Model {} is not valid because the method {} is using the AddItem delegate requires a void response",  t.FullName, mi.Name);
                                         invalidModels.Add(t);
                                         errors.Add(new MethodWithAddItemNotVoid(t, mi));
                                         isValidCall = false;

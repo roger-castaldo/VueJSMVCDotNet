@@ -1,17 +1,14 @@
 ﻿using VueJSMVCDotNet.Attributes;
-using System;
-using System.Reflection;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
-using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     class ModelInstanceFooterGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, sModelType modelType, string urlBase, ILog log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log.Trace("Appending Model Instance Footer for Model Definition[{0}]", new object[] { modelType.Type.FullName });
+            log?.LogTrace("Appending Model Instance Footer for Model Definition[{}]",  modelType.Type.FullName);
             builder.Append(@"
         static createInstance(){
             console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Type.Name+@"' function instead!"");
@@ -49,12 +46,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     foreach (ParameterInfo pi in mi.GetParameters())
                         builder.Append($"{pi.Name},");
                     if (mi.GetParameters().Length > 0)
-                        builder.Length = builder.Length-1;
+                        builder.Length--;
                     builder.Append($"){{ {(returnType == typeof(void) ? "" : "return")} curObj.{mi.Name}(");
                     foreach (ParameterInfo pi in mi.GetParameters())
                         builder.Append($"{pi.Name},");
                     if (mi.GetParameters().Length > 0)
-                        builder.Length = builder.Length-1;
+                        builder.Length--;
                     builder.AppendLine("); };");
                 }
             }

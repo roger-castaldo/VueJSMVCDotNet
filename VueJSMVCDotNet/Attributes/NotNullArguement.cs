@@ -13,7 +13,7 @@ namespace VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Method,AllowMultiple =false,Inherited =false)]
     public  class NotNullArguement : Attribute
     {
-        private string[] _names;
+        private readonly string[] _names;
         internal bool IsParameterNullable(ParameterInfo par)
         {
             return !_names.Contains(par.Name);
