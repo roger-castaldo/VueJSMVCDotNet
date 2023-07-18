@@ -145,7 +145,7 @@ export const name = translator('Name');", "Nome");
         }
 
         [TestMethod]
-        public async void FileChangeTriggers()
+        public async Task FileChangeTriggers()
         {
             Utility.FileProvider.HidePath("AutomatedTesting.resources.messages.test.sp.json");
             ExecuteTest(@"SetLanguage('sp');

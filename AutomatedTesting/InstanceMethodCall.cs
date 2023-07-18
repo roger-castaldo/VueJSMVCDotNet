@@ -199,8 +199,7 @@ namespace AutomatedTesting
         {
             var store = new DataStore();
             store[mPerson.KEY] = mPerson.Persons.ToArray();
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
+            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out int status,
                 parameters: new Hashtable()
                 {
                     {"name",
@@ -210,7 +209,7 @@ namespace AutomatedTesting
                         }
                     }
                 }, store: store));
-            Assert.AreEqual(status, 200);
+            Assert.AreEqual(200, status);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.AreEqual(true, result);
         }
