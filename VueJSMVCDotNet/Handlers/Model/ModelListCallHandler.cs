@@ -51,7 +51,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                                 break;
                             }
                         }
-                        log?.LogTrace("Outputting page information TotalPages:{} for {}:{}", opars[pageIndex], method, url);
+                        log?.LogTrace("Outputting page information TotalPages:{} for {}:{}", opars[pageIndex], method, Utility.SantizeLogValue(url));
                         return new Hashtable()
                         {
                             {"response",result },

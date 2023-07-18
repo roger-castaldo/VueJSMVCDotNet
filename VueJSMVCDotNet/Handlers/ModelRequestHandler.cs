@@ -157,7 +157,7 @@ namespace VueJSMVCDotNet.Handlers
         /// <returns>a task as a result of handling the request</returns>
         public override async Task ProcessRequest(HttpContext context)
         {
-            log?.LogDebug("Checking if {} is handled by VueJS library", context.Request.Path);
+            log?.LogDebug("Checking if {} is handled by VueJS library", Utility.SantizeLogValue(context.Request.Path));
             if (Enum.TryParse(typeof(RequestMethods), context.Request.Method.ToUpper(), out object method))
             {
                 if (context.Request.Method.ToUpper()=="PULL")

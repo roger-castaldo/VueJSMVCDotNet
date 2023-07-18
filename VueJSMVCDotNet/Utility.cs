@@ -344,5 +344,10 @@ namespace VueJSMVCDotNet
             return (T)JsonSerializer.Deserialize(element, typeof(T), options: ProduceJsonOptions(log, requestData));
         }
         #endregion
+
+        public static string? SantizeLogValue(string? value)
+        {
+            return (value == null ? null : value.Replace('\r', '_').Replace('\n', '_'));
+        }
     }
 }
