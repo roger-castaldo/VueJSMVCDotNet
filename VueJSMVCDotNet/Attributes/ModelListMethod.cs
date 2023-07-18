@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to create custom collection list of a method.  Created through calling the function
@@ -12,27 +12,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ModelListMethod : Attribute
     {
-        private string _path;
-        internal string Path
-        {
-            get { return _path; }
-        }
-
-        private bool _paged;
-        internal bool Paged
-        {
-            get { return _paged; }
-        }
-
+        internal bool Paged { get; private init; }
         /// <summary>
         /// Constructor to tag a model listing method
         /// </summary>
-        /// <param name="path">The url to assign to the list method</param>
         /// <param name="paged">Indicates wheter or not the list is paged</param>
-        public ModelListMethod(string path, bool paged=false)
+        public ModelListMethod(bool paged=false)
         {
-            _path = path;
-            _paged = paged;
+            Paged = paged;
         }
 
     }

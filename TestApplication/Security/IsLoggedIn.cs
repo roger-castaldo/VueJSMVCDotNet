@@ -1,5 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,9 +14,9 @@ namespace TestApplication.Security
         {
         }
 
-        public override bool HasValidAccess(ISecureSession session, IModel model, string url, Hashtable parameters)
+        public override bool HasValidAccess(IRequestData data, IModel model, string url,string id)
         {
-            return session != null;
+            return data.Session!= null;
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using Org.Reddragonit.VueJSMVCDotNet.Attributes;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
+﻿using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -175,7 +175,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelListMethod("/search/models/User?q={0}",true)]
+        [ModelListMethod(true)]
         public static List<User> Search(string filter, int pageStartIndex, int pageSize, out int totalPages)
         {
             totalPages = 0;
@@ -207,7 +207,7 @@ namespace TestApplication
             return (ret.Count == 0 ? null : ret);
         }
 
-        [ModelListMethod("/search/models/User?searchAll=true&q={0}", false)]
+        [ModelListMethod(false)]
         public static List<User> SearchAll(string filter)
         {
             List<User> ret = new List<User>();

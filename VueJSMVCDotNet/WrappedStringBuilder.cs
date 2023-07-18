@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
     internal class WrappedStringBuilder
     {
-        private StringBuilder _sb;
-        private bool _minimize;
+        private readonly StringBuilder _sb;
+        private readonly bool _minimize;
 
         public WrappedStringBuilder(bool minimize)
         {
-            _sb = new StringBuilder();
+            _sb = new();
             _minimize = minimize;
         }
 
@@ -23,39 +23,19 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public void AppendLine(string line)
         {
             if (_minimize)
-                _Append(line);
+                Append(line);
             else
                 _sb.AppendLine(line);
         }
 
-        internal void AppendFormat(string format, object arg0)
-        {
-            _Append(string.Format(format, arg0));
-        }
-
-        internal void AppendFormat(string format, object arg0, object arg1)
-        {
-            _Append(string.Format(format, arg0,arg1));
-        }
-
-        internal void AppendFormat(string format,object arg0,object arg1,object arg2)
-        {
-            _Append(string.Format(format, arg0,arg1,arg2));
-        }
-
-        internal void AppendFormat(string format,object[] args)
-        {
-            _Append(string.Format(format, args));
-        }
-
         internal void Append(string value)
         {
-            _Append(value);
+            WrappedAppend(value);
         }
 
-        private void _Append(string value)
+        private void WrappedAppend(string value)
         {
-            _sb.Append((_minimize ? value.Trim() : value));
+            _sb.Append((_minimize ? JSMinifier.StripComments(value.Trim()) : value));
         }
 
         public int Length

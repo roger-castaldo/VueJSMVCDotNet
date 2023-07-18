@@ -1,6 +1,8 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
+using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,18 +12,20 @@ namespace AutomatedTesting
     [TestClass]
     public class DeleteCall
     {
-        private RequestHandler _handler;
+        private VueMiddleware _middleware;
+        private IDataStore _store;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = Utility.CreateMiddleware(true);
+            _store = new DataStore();
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
@@ -29,11 +33,24 @@ namespace AutomatedTesting
         {
             int personCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _handler, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", $"/models/mPerson/{mPerson.Persons[0].id}", _middleware, out status,store:_store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);
-            Assert.AreNotEqual(personCount, mPerson.Persons.Length);
+            Assert.AreNotEqual(personCount, ((mPerson[])_store[mPerson.KEY]).Length);
+        }
+
+        [TestMethod]
+        public void TestDeleteMethodWithMissingModel()
+        {
+            int personCount = mPerson.Persons.Length;
+            int status;
+            object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status, store: _store));
+            Assert.IsNotNull(result);
+            Assert.AreEqual(404, status);
+            Assert.IsInstanceOfType(result, typeof(string));
+            Assert.AreEqual("Model Not Found", result);
+            Assert.IsNull(_store[mPerson.KEY]);
         }
     }
 }

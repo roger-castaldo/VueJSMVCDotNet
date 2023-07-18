@@ -1,76 +1,30 @@
 <html>
 <head>
-    <script src="https://unpkg.com/vue@next/dist/vue.global.js"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+            "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"
+          }
+        }
+    </script>
+    <script type="module">
+        import translator from './resources/messages/test.js';
+
+        console.log(translator('Filtering'));
+        console.log(translator('Formatted', ['a single input from the array']));
+        console.log(translator('Name'));
+        console.log(translator('Name', null, 'fr'));
+    </script>
+    
 </head>
 <body>
-    <script src="/testing/resources/scripts/mPerson.js"></script>
-    <script src="/testing/resources/scripts/models/User.js"></script>
-    <table id="dvList">
-        <thead>
-            <tr>
-                <th colspan="100%">Full Person List</th>
-            </tr>
-            <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>FullName</th>
-                <th>
-                    <button v-on:click="CreateNew">Create New</button>
-                </th>
-            </tr>
-        </thead>
-        <tbody v-if="Items!=null">
-            <tr v-for="person in Items">
-                <td>{{person.FirstName}}</td>
-                <td>{{person.LastName}}</td>
-                <td>
-                    <asynccomp v-bind:promise="person.GetFullName()" resultname="fullName">
-                        <template #resolved="props">
-                            {{props.fullName}}
-                        </template>
-                        <template #rejected="result">
-                            <span style="color:red">{{result}}</span>
-                        </template>
-                    </asynccomp>
-                </td>
-                <td>
-                    <button v-on:click="person.destroy()">Delete</button>
-                    <button v-on:click="EditPerson(person)">Edit</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <table id="dvListFiltered">
-        <thead>
-            <tr>
-                <th colspan="100%">Filtered Person List</th>
-            </tr>
-            <tr>
-                <th colspan="100%">
-                    <input type="text" v-model="current_filter" />
-                </th>
-            </tr>
-            <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>FullName</th>
-            </tr>
-        </thead>
-        <tbody v-if="Items!=null">
-            <tr v-for="person in Items">
-                <td>{{person.FirstName}}</td>
-                <td>{{person.LastName}}</td>
-                <asynccomp v-bind:promise="person.GetFullName()">
-                    <template #resolved="props">
-                        {{props.result}}
-                    </template>
-                    <template #rejected="props">
-                        <span style="color:red">{{props.result}}</span>
-                    </template>
-                </asynccomp>
-            </tr>
-        </tbody>
-    </table>
+    <section id="dvList">
+        <Suspense>
+            <component is="List"/>
+        </Suspense>
+    </section>
+    <section id="dvListFiltered" />
     <table id="dvedit" v-show="person!=null">
         <thead>
             <tr>
@@ -112,10 +66,33 @@
             </tr>
         </tfoot>
     </table>
-    <script>
-        var person = App.Models.mPerson.createInstance();
+
+    <ul id="list_items_module">
+        <li><icon :iconType="'test'" /></li>
+        <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
+        <li v-on:click="append('NewItem')">Add New</li>
+    </ul>
+
+    <section id="notification_container" />
+
+    <script type="module">
+        import { mPerson } from "/testing/resources/scripts/mPerson.js";
+        import { User } from "/testing/resources/scripts/models/User.js";
+        import { createApp, watch, ref, defineComponent, toRef, h } from "vue";
+        import hiddenArray from "/resources/scripts/hiddenArray.js";
+        import notification from "/resources/scripts/testLoader.js";
+        import { List, FilteredList } from "/resources/vueFiles/lists.js";
+
+        window.lst = createApp({
+            components: { List }
+        }).mount('#dvList');
+        
+        createApp(notification).mount('#notification_container');
+        window.lstFiltered = createApp(FilteredList).mount('#dvListFiltered');
+
+        var person = mPerson.createInstance();
         console.log(person);
-        var frm = Vue.createApp({
+        var frm = createApp({
             data: function () {
                 return { person: null, lst: null, FirstName: null, LastName: null };
             },
@@ -202,40 +179,42 @@
                 }
             }
         };
-        window.lst = App.Models.mPerson.LoadAll().toVue({
+
+        mPerson.TestNull().then(result => { alert(result == null); });
+        let hiddenApp = createApp({
             components: {
-                asynccomp
-            },
-            watch: {
-                Items: {
-                    deep: true,
-                    handler: function () {
-                        console.log('Items changed');
+                icon: defineComponent({
+                    setup(props, context) {
+                        const icontype = toRef(context.attrs, 'icontype');
+                        return { icontype };
+                    },
+                    render() {
+                        return h(
+                            'i',
+                            {
+                                'class': 'icon ' + this.icontype
+                            }
+                        );
                     }
-                }
+                })
             },
-            methods: {
-                EditPerson: function (person) {
-                    frm.person = person;
-                },
-                CreateNew: function () {
-                    frm.lst = this.Items;
-                    frm.person = App.Models.mPerson.createInstance();
-                }
+            setup(props, { attrs, slots, emit, expose }) {
+                const { Items, append } = hiddenArray(props, { attrs, slots, emit, expose });
+                return { Items, append };
             }
-        }).mount('#dvList');
-        window.lstFiltered = App.Models.mPerson.Search(null).toVue({
-            data: function () {
-                return { current_filter: null };
-            },
-            watch: {
-                current_filter: function (val) {
-                    val = (val == '' ? null : val);
-                    this.changeParameters(val);
-                }
-            }
-        }).mount('#dvListFiltered');
-        App.Models.mPerson.TestNull().then(result => { alert(result == null); });
+        }).mount('#list_items_module');
+
+        mPerson.Search('b', 0, 1).reload().then(paged => {
+            console.log(paged.currentPage);
+            console.log(paged.length);
+            console.log(paged.totalPages);
+            console.log(paged[0].FirstName);
+            paged.moveToNextPage().then(() => {
+                console.log('page moved');
+                console.log(paged.currentPage);
+                console.log(paged[0].FirstName);
+            });
+        });
     </script>
 </body>
 </html>

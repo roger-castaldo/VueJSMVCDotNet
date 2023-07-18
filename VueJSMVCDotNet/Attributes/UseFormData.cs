@@ -1,6 +1,6 @@
 using System;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// This attribute is used to expose to flag a method call to use formdata for posting the data 

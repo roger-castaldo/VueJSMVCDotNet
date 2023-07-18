@@ -1,28 +1,32 @@
 ﻿using AutomatedTesting.Models;
+using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Esprima.Ast;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class SaveCall
     {
-        private RequestHandler _handler;
+        private VueMiddleware _middleware;
+        private IDataStore _store;
 
         [TestInitialize]
         public void Init()
         {
-            _handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            _middleware = Utility.CreateMiddleware(true);
+            _store=new DataStore();
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            _handler.Dispose();
+            _middleware.Dispose();
         }
 
         [TestMethod]
@@ -33,17 +37,17 @@ namespace AutomatedTesting
             DateTime birthDay = DateTime.Now;
             int currentCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _handler, out status, parameters: new Hashtable() { 
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() { 
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            }));
+            },store:_store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("id"));
-            Assert.AreNotEqual(currentCount, mPerson.Persons.Length);
+            Assert.AreNotEqual(currentCount, ((mPerson[])_store[mPerson.KEY]).Length);
             mPerson newPer = null;
-            foreach (mPerson p in mPerson.Persons)
+            foreach (mPerson p in ((mPerson[])_store[mPerson.KEY]))
             {
                 if (p.id == (string)((Hashtable)result)["id"])
                 {
@@ -55,6 +59,24 @@ namespace AutomatedTesting
             Assert.AreEqual(firstName, newPer.FirstName);
             Assert.AreEqual(lastName, newPer.LastName);
             Assert.AreEqual(birthDay.ToString(), newPer.BirthDay.ToString());
+        }
+
+        [TestMethod]
+        public void TestSaveMethodFailure ()
+        {
+            string firstName = "DoNotSave";
+            string lastName = "Testing321";
+            DateTime birthDay = DateTime.Now;
+            int currentCount = mPerson.Persons.Length;
+            int status;
+            var result = Utility.ReadResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() {
+                { "FirstName", firstName },
+                {"LastName",lastName },
+                {"BirthDay",birthDay }
+            },store: _store));
+            Assert.IsNotNull(result);
+            Assert.AreEqual(500, status);
+            Assert.AreEqual(currentCount, mPerson.Persons.Length);
         }
     }
 }

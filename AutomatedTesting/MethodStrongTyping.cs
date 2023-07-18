@@ -1,6 +1,7 @@
-﻿using Jint;
+﻿using AutomatedTesting.Security;
+using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,17 +13,14 @@ namespace AutomatedTesting
     [TestClass]
     public class MethodStrongTyping
     {
-        private static string _content;
+        private string _content;
 
         [TestInitialize]
         public void Init()
         {
-            RequestHandler handler = new RequestHandler(RequestHandler.StartTypes.DisableInvalidModels, null);
+            VueMiddleware middleware = Utility.CreateMiddleware(true);
             int status;
-            _content = Constants.JAVASCRIPT_BASE + new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mDataTypes.js", handler,out status)).ReadToEnd() + @"
-
-var mdl = App.Models.mDataTypes.createInstance();
-";
+            _content =  Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mDataTypes.js", middleware, out status));
         }
 
         [TestCleanup]
@@ -34,13 +32,15 @@ var mdl = App.Models.mDataTypes.createInstance();
         private static string _GenerateCalls(string call,bool ignoreBytes)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(_content);
-            sb.AppendLine(@"var args = [];
+            sb.AppendLine(@"
+import { mDataTypes } from 'mDataTypes';
+let mdl = new mDataTypes();
+var args = [];
 while(args.length<=37){
     args.push(null);
 }
 
-testArgs = [];
+let testArgs = [];
 testArgs.push({name:'stringArg',values:[{},null,'testing']});
 testArgs.push({name:'nullStringArg',values:[{},null]});
 testArgs.push({name:'shortArg',values:['AB',null,32768,10]});
@@ -92,54 +92,79 @@ for(var x=0;x<testArgs.length;x++){
             }
         }
     }
-}");
+}
+export const name = 'John';");
 
             return sb.ToString();
+        }
+
+        private void _ExecuteTest(string call,bool ignoreBytes)
+        {
+            Engine eng = Utility.CreateEngine();
+            try
+            {
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.AddModule("mDataTypes", _content);
+                eng.AddModule("custom", _GenerateCalls(call, ignoreBytes));
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Esprima.ParserException e)
+            {
+                Assert.Fail(e.Message);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
         }
 
         [TestMethod]
         public void TestInstanceMethod()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_GenerateCalls("mdl.TestInputs",false));
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mdl.TestInputs", false);
         }
 
         [TestMethod]
         public void TestStaticMethod()
         {
-            Engine eng = new Engine();
-            try
-            {
-                eng.Execute(_GenerateCalls("App.Models.mDataType.StaticTestInputs",false));
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
+            _ExecuteTest("mDataType.StaticTestInputs", false);
         }
 
         [TestMethod]
         public void TestListMethod()
         {
-            Engine eng = new Engine();
+            _ExecuteTest("mDataType.TestListInputs", true);
+        }
+
+        [TestMethod]
+        public void TestSingleNotNullArgument()
+        {
+            Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Execute(_GenerateCalls("App.Models.mDataType.TestListInputs",true));
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.AddModule("mDataTypes", _content);
+                eng.AddModule("custom", @"
+        import { mDataTypes } from 'mDataTypes';
+        try{
+            mDataTypes.TestSingleNotNullInput(' ',null);
+        }catch(err){
+            if (err.message.toString()!='fetch is not defined'){
+                throw err.message;
+            }
+        }
+        try{
+            mDataTypes.TestSingleNotNullInput(null,null);    
+        }catch(err){
+            if (err.indexOf('Cannot set stringArg')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on stringArg: '+err;
+            }
+        }
+export const name = 'John';");
+                var ns = eng.ImportModule("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
             {

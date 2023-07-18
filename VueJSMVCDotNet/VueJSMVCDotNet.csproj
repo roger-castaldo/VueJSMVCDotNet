@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFrameworks>net481;netcoreapp3.1;net6.0;</TargetFrameworks>
-    <RootNamespace>Org.Reddragonit.VueJSMVCDotNet</RootNamespace>
+	<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <RootNamespace>VueJSMVCDotNet</RootNamespace>
     <Description>A DotNet to VueJS interface library.  This is used to generate model(mvc) style Vues designed to allow an integrated interface between the javascript and backend for data manipulation and obtainment.  It does require that you include vuejs in your project as the code uses it.</Description>
     <PackageProjectUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</PackageProjectUrl>
     <PackageLicenseUrl />
     <RepositoryUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
-    <PackageId>Org.Reddragonit.VueJSMVCDotNet</PackageId>
-    <Version>2.0.2</Version>
-    <PackageReleaseNotes>patch against stripping big ints for json serialization</PackageReleaseNotes>
+    <PackageId>VueJSMVCDotNet</PackageId>
+    <Version>3.0.0</Version>
+    <PackageReleaseNotes>massive rewrite and overhaul to move the system to a middleware style</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.0.2</AssemblyVersion>
-    <FileVersion>2.0.2</FileVersion>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <FileVersion>3.0.0</FileVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -22,13 +22,35 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Handlers\Model\JSGenerators\core.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Handlers\Model\JSGenerators\core.js" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+	    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="6.0.0" />
+    </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="7.0.0" />
+	</ItemGroup>
+  <ItemGroup>
+    <Folder Include="Handlers\Model\JSGenerators\Interfaces\" />
   </ItemGroup>
 </Project>

@@ -1,22 +1,57 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net481;net6.0;</TargetFrameworks>
-
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<IsPackable>false</IsPackable>
+		<AnalysisLevel>none</AnalysisLevel>
+		<RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
+		<RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Include="..\VueJSMVCDotNet\JSON.cs" Link="JSON.cs" />
+	  <None Remove="resources\messages\test\en.json" />
+	  <None Remove="resources\messages\test\fr.json" />
+	  <None Remove="resources\messages\test\sp.json" />
+	  <None Remove="resources\vueFiles\buttons\button-add.vue" />
+	  <None Remove="resources\vueFiles\buttons\button-cancel.vue" />
+	  <None Remove="resources\vueFiles\buttons\button.vue" />
+	  <None Remove="resources\vueFiles\icon.vue" />
+	  <None Remove="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Jint" Version="3.0.0-beta-2041" />
-		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
-		<PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-		<PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-		<PackageReference Include="coverlet.collector" Version="3.1.2">
+	  <EmbeddedResource Include="resources\messages\test\en.json">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="resources\messages\test\sp.json">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="resources\messages\test\fr.json">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button-add.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button-cancel.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\buttons\button.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\icon.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\notification.vue" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="coverlet.msbuild" Version="6.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="ILogger.Moq" Version="1.1.10" />
+		<PackageReference Include="Jint" Version="3.0.0-beta-2044" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+		<PackageReference Include="Moq" Version="4.18.4" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+		<PackageReference Include="coverlet.collector" Version="6.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -26,4 +61,12 @@
     <ProjectReference Include="..\VueJSMVCDotNet\VueJSMVCDotNet.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+	  <None Update="resources\vue.esm-browser.prod.js">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="resources\vue3-sfc-loader.esm.js">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// This attribute is used to expose a method to a javascript based called for a model. A static 
@@ -13,17 +13,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ExposedMethod : Attribute
     {
-        private bool _allowNullResponse;
-        internal bool AllowNullResponse
-        {
-            get { return _allowNullResponse; }
-        }
-
-        private bool _isSlow;
-        internal bool IsSlow { get { return _isSlow; } }
-
-        private Type _arrayElementType;
-        internal Type ArrayElementType { get { return _arrayElementType; } }
+        internal bool AllowNullResponse { get; private init; }
+        internal bool IsSlow { get; private init; }
+        internal Type ArrayElementType { get; private init; }
 
         /// <summary>
         /// Tag a method as being exposed to allow for it to be called from the javascript side as either 
@@ -36,9 +28,9 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
         /// <param name="arrayElementType">Set to the type of element that is going to be supplied in a slow response array.</param>
         public ExposedMethod(bool allowNullResponse=false,bool isSlow=false,Type arrayElementType=null)
         {
-            _allowNullResponse = allowNullResponse;
-            _isSlow = isSlow||arrayElementType!=null;
-            _arrayElementType = arrayElementType;
+            AllowNullResponse = allowNullResponse;
+            IsSlow = isSlow||arrayElementType!=null;
+            ArrayElementType = arrayElementType;
         }
     }
 }

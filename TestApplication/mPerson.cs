@@ -1,12 +1,12 @@
 using System;
-using Org.Reddragonit.VueJSMVCDotNet.Interfaces;
-using Org.Reddragonit.VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Attributes;
 using System.Collections.Generic;
-using Org.Reddragonit.VueJSMVCDotNet;
+using VueJSMVCDotNet;
 
 namespace TestApplication{
     [ModelRoute("/models/mPerson")]
-    [ModelJSFilePath("/resources/scripts/mPerson.js",modelNamespace:"App.Models")]
+    [ModelJSFilePath("/resources/scripts/mPerson.js")]
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
@@ -105,7 +105,7 @@ namespace TestApplication{
             return true;
         }
 
-        [ModelListMethod("/search/mPerson?q={0}",true)]
+        [ModelListMethod(true)]
         public static List<mPerson> Search(string q,int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -158,7 +158,7 @@ namespace TestApplication{
             return true;
         }
 
-        [ModelListMethod("/search/person/byguid?id={0}",false)]
+        [ModelListMethod(false)]
         public static List<mPerson> ByGuid(Guid id){
             return _persons;
         }

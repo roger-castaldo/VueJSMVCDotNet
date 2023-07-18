@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Http;
+using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication{
     internal class SessionManager : ISessionManager
@@ -11,6 +12,8 @@ namespace TestApplication{
             _current = context;
         }
 
+        public SessionManager() { }
+
         public DateTime Start{
             get{
                 if (_current.Session.GetString("Start")==null){
@@ -18,6 +21,11 @@ namespace TestApplication{
                 }
                 return DateTime.Parse(_current.Session.GetString("Start"));
             }
+        }
+
+        public ISecureSession ProduceFromContext(HttpContext context)
+        {
+            return new SessionManager(context);
         }
     }
 }

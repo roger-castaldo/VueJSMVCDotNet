@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet
+namespace VueJSMVCDotNet
 {
 	internal class JSMinifier
     {
@@ -14,7 +15,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             {
                 if ((originalString[x] == '/') && ret.EndsWith("/"))
                 {
-                    ret = ret.Substring(0, ret.Length - 1);
+                    ret = ret[..^1];
                     while (x < originalString.Length)
                     {
                         if (originalString[x] == '\n')
@@ -24,7 +25,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 }
                 else if ((originalString[x] == '*') && ret.EndsWith("/"))
                 {
-                    ret = ret.Substring(0, ret.Length - 1);
+                    ret = ret[..^1];
                     x++;
                     if (x < originalString.Length)
                     {
@@ -74,7 +75,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         public static string Minify(string js)
         {
             string[] lines = js.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            StringBuilder emptyLines = new StringBuilder();
+            StringBuilder emptyLines = new();
             foreach (string line in lines)
             {
                 string s = line.Trim();
@@ -90,6 +91,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
 
     }
 
+    [ExcludeFromCodeCoverage]
     internal class JsMin
     {
         private const int Eof = -1;
@@ -137,7 +139,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                 switch (_theA)
                 {
                     case ' ':
-                        Action(IsAlphanum(_theB) ? 1 : 2);
+                        Action(JsMin.IsAlphanum(_theB) ? 1 : 2);
                         break;
                     case '\n':
                     case '\u2028':
@@ -172,7 +174,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                     Action(2);
                                     break;
                                 }
-                                Action(IsAlphanum(_theB) ? 1 : 2);
+                                Action(JsMin.IsAlphanum(_theB) ? 1 : 2);
                                 break;
                         }
                         break;
@@ -181,7 +183,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         {
 
                             case ' ':
-                                Action(IsAlphanum(_theA) ? 1 : 3);
+                                Action(JsMin.IsAlphanum(_theA) ? 1 : 3);
                                 break;
                             case '\n':
                             case '\u2028':
@@ -199,7 +201,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                                         Action(1);
                                         break;
                                     default:
-                                        Action(IsAlphanum(_theA) ? 1 : 3);
+                                        Action(JsMin.IsAlphanum(_theA) ? 1 : 3);
                                         break;
                                 }
                                 break;
@@ -258,7 +260,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         {
             const string operators = "+-*/";
             if ((_theY == '\n' || _theY == ' ') &&
-                (operators.IndexOf((char)_theA) >= 0) && (operators.IndexOf((char)_theB) >= 0))
+                (operators.Contains((char)_theA)) && (operators.Contains((char)_theB)))
             {
                 Put(_theY);
                 return true;
@@ -271,7 +273,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
             const string r = "return";
             const string preReturn = ";){} ";
             if (_retStatement == -1 && _theA == 'r' &&
-                (preReturn.IndexOf((char)_theY) >= 0 || char.IsWhiteSpace((char)_theY) || _theY == 'r'))
+                (preReturn.Contains((char)_theY) || char.IsWhiteSpace((char)_theY) || _theY == 'r'))
             {
                 _retStatement = 0;
                 return true;
@@ -547,7 +549,7 @@ namespace Org.Reddragonit.VueJSMVCDotNet
                         for (; ; )
                         {
                             c = Get();
-                            if (IsLineSeparator(c))
+                            if (JsMin.IsLineSeparator(c))
                             {
                                 break;
                             }
@@ -664,14 +666,14 @@ namespace Org.Reddragonit.VueJSMVCDotNet
         /// </summary>
         /// <param name="c"></param>
         /// <returns></returns>
-        private bool IsAlphanum(int c)
+        private static bool IsAlphanum(int c)
         {
             return ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
                     (c >= 'A' && c <= 'Z') || c == '_' || c == '$' || c == '\\' ||
                     c > 126);
         }
 
-        private bool IsLineSeparator(int c)
+        private static bool IsLineSeparator(int c)
         {
             return c <= '\n' || c == '\u2028' || c == '\u2029';
         }

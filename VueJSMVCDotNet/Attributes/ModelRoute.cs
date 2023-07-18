@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to specify the route(path) to use for accessing the model 
@@ -10,17 +10,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class ModelRoute : Attribute
     {
-        private string _host;
-        internal string Host
-        {
-            get { return _host; }
-        }
-
-        private string _path;
-        internal string Path
-        {
-            get { return _path; }
-        }
+        internal string Host { get; private init; }
+        internal string Path { get; private init; }
 
         /// <summary>
         /// Define the base route for the model that all rest paths will be built off of.
@@ -29,8 +20,8 @@ namespace Org.Reddragonit.VueJSMVCDotNet.Attributes
         /// <param name="host">(Optional) specify a host that is used, in the case of using more than one host.</param>
         public ModelRoute(string path,string host="*")
         {
-            _path = path;
-            _host = "*";
+            Path = path;
+            Host = host;
         }
     }
 }

@@ -20,12 +20,6 @@ namespace AutomatedTesting
         }
 
         public const string JAVASCRIPT_BASE = @"
-    var window={App:{}};
-    var App = window.App;
-    var Vue = {
-        version:'3.0'
-    };
-
     function WeakMap(){
         return {
             _data:{},
@@ -58,6 +52,8 @@ namespace AutomatedTesting
             callback:callback
         });
     }
+
+    const window = {navigator:{language:'en-us'}};
 
     /*class XMLHttpRequest {
         constructor() {
