@@ -152,14 +152,8 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     lock (_types)
                     {
-                        foreach (Type t in _types.Keys)
-                        {
-                            foreach (ModelJSFilePath mjsfp in _types[t])
-                            {
-                                if (mjsfp.IsMatch(url))
-                                    models.Add(t);
-                            }
-                        }
+                        models = _types.Where(pair=>pair.Value.Any(mjsfp=>mjsfp.IsMatch(url)))
+                            .Select(pair=>pair.Key).ToList();
                     }
                 }
                 if (models.Count>0)

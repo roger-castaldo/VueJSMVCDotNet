@@ -60,7 +60,9 @@ namespace VueJSMVCDotNet
                     _loggerIndex=x;
                 else if (_parameters[x].ParameterType==typeof(IHeaderDictionary))
                     _headerIndex=x;
-                else if (!_parameters[x].ParameterType.IsInterface)
+                else if (_parameters[x].ParameterType==typeof(IFormFile)
+                    || _parameters[x].ParameterType==typeof(IReadOnlyList<IFormFile>)
+                    || !_parameters[x].ParameterType.IsInterface)
                     strippedPars.Add(_parameters[x]);
             }
             _strippedParameters= strippedPars.ToArray();
@@ -92,7 +94,12 @@ namespace VueJSMVCDotNet
             {
                 if (x!=_secureSessionIndex&&x!=_addItemIndex&&x!=_loggerIndex&&x!=_headerIndex)
                 {
-                    if (_parameters[x].ParameterType.IsInterface)
+                    if (_parameters[x].ParameterType.IsInterface
+                        && !(
+                            _parameters[x].ParameterType==typeof(IFormFile)
+                            || _parameters[x].ParameterType==typeof(IReadOnlyList<IFormFile>)
+                        )
+                    )
                     {
                         ignoredIndexes.Add(x);
                         mpars[x]=requestData[_parameters[x].ParameterType];

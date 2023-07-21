@@ -2,6 +2,7 @@
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
+using Microsoft.AspNetCore.Http;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
@@ -19,7 +20,8 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 builder.AppendLine(@$"let response = await ajax({{
                         url:`${{{modelType.Type.Name}.#baseURL}}/{(mi.IsStatic ? mi.Name : $"${{this.{Constants.INITIAL_DATA_KEY}.id}}/{mi.Name}")}`,
                         method:'{(mi.IsStatic ? "S" : "")}METHOD',
-                        useJSON:{(mi.GetCustomAttributes(typeof(UseFormData), false).Length==0).ToString().ToLower()},
+                        useJSON:{(mi.GetCustomAttributes(typeof(UseFormData), false).Length==0 
+                        && !mi.GetParameters().Any(p=>p.ParameterType==typeof(IFormFile) || p.ParameterType==typeof(IReadOnlyList<IFormFile>))).ToString().ToLower()},
                         data:function_data{(isSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")}
                     }});
                         {(returnType == typeof(void) ? "" : @"let ret=response.json();

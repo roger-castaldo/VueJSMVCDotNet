@@ -25,6 +25,8 @@ const _isDate = function (obj) {
 };
 
 const _isObject = function (obj) {
+	if (obj !== null && obj !== undefined && (obj.toString() === '[object FileList]' || obj.toString() === '[object File]'))
+		return false;
 	let type = typeof obj;
 	return (type === 'function' || type === 'object' && !!obj) && !_isDate(obj);
 };
@@ -344,30 +346,6 @@ const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:
 const _versionRegex = /^([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$/;
 const _guidRegex = /^(?:\{{0,1}(?:[0-9a-fA-F]){8}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){12}\}{0,1})$/;
 
-const _b64toBlob = function (b64Data, contentType, sliceSize) {
-	contentType = contentType || '';
-	sliceSize = sliceSize || 512;
-
-	let byteCharacters = atob(b64Data);
-	let byteArrays = [];
-
-	for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-		let slice = byteCharacters.slice(offset, offset + sliceSize);
-
-		let byteNumbers = new Array(slice.length);
-		for (let i = 0; i < slice.length; i++) {
-			byteNumbers[i] = slice.charCodeAt(i);
-		}
-
-		let byteArray = new Uint8Array(byteNumbers);
-
-		byteArrays.push(byteArray);
-	}
-
-	let blob = new Blob(byteArrays, { type: contentType });
-	return blob;
-};
-
 const _checkDataType = function (type, value, enumlist) {
 	if (type.indexOf('System.') === 0)
 		type = type.substring(7);
@@ -383,7 +361,14 @@ const _checkDataType = function (type, value, enumlist) {
 			return value;
 		}
 	}
-	if (type.indexOf('[]') >= 0 && type !== 'Byte[]') {
+	if (type === 'IFormFile[]') {
+		if (value.toString() !== '[object FileList]')
+			throw 'invalid type: Value not a FileList and cannot be converted';
+	}
+	else if (type === 'IFormFile') {
+		if (value.toString() !== '[object File]')
+			throw 'invalid type: Value not a File and cannot be converted';
+	}else if (type.indexOf('[]') >= 0 && type !== 'Byte[]') {
 		if (!Array.isArray(value))
 			throw 'invalid type: Value not an array';
 		type = type.substring(0, type.length - 2);

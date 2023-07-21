@@ -3,6 +3,8 @@ using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Attributes;
 using System.Collections.Generic;
 using VueJSMVCDotNet;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace TestApplication{
     [ModelRoute("/models/mPerson")]
@@ -204,6 +206,14 @@ namespace TestApplication{
                 System.Threading.Thread.Sleep(1000);
             }
             addCall(string.Format("{1} {0}", new Object[] { _lastName, _firstName }), true);
+        }
+
+        [ExposedMethod()]
+        public static string ReadFile(IFormFile contentFile)
+        {
+            var reader = new StreamReader(contentFile.OpenReadStream());
+            var result = $"{contentFile.Name} = {reader.ReadToEnd()}";
+            return result;
         }
     }
 }

@@ -211,6 +211,10 @@ namespace VueJSMVCDotNet
                 return "Enum";
             else if (propertyType.IsSubclassOf(typeof(Exception)))
                 return "System.Exception";
+            else if (propertyType==typeof(IFormFile))
+                return "IFormFile"+(!notNullTagged ? "?" : "");
+            else if (propertyType==typeof(IReadOnlyList<IFormFile>))
+                return "IFormFile[]";
             else
             {
                 switch (propertyType.FullName)

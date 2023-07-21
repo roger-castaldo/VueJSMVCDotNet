@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-    <Version>3.0.0</Version>
-    <PackageReleaseNotes>massive rewrite and overhaul to move the system to a middleware style</PackageReleaseNotes>
+	  <AssemblyVersion>3.1.0</AssemblyVersion>
+    <PackageReleaseNotes>added int support for IFormFile and IReadonlyList&lt;IFormFile&gt; to be passed into methods</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>3.0.0</AssemblyVersion>
-    <FileVersion>3.0.0</FileVersion>
+	  <FileVersion>$(AssemblyVersion)</FileVersion>
+	  <Version>$(AssemblyVersion)</Version>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

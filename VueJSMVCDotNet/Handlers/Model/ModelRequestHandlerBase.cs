@@ -41,12 +41,14 @@ namespace VueJSMVCDotNet.Handlers.Model
             {
                 var session = _sessionFactory.ProduceFromContext(context);
                 var formData = new Dictionary<string,object>();
+                IFormFileCollection files = null;
                 if (context.Request.ContentType!=null &&
                 (
                     context.Request.ContentType=="application/x-www-form-urlencoded"
                     || context.Request.ContentType.StartsWith("multipart/form-data")
                 ))
                 {
+                    files=context.Request.Form.Files;
                     foreach (string key in context.Request.Form.Keys)
                     {
                         log?.LogTrace("Loading form data value from key {}", key);
@@ -89,7 +91,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                             formData.Add(jsonProperty.Name, jsonProperty.Value);
                     }
                 }
-                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices,context.Features,log));
+                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices,context.Features,log,files));
             }
             return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
         }

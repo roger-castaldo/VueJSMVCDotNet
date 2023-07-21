@@ -11,6 +11,7 @@ using System.Reflection;
 using VueJSMVCDotNet.Attributes;
 using Microsoft.AspNetCore.Http.Features;
 using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Http;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
@@ -18,29 +19,38 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly ILogger log;
         private readonly Dictionary<string, object> _formData;
-        public IEnumerable<string> Keys => _formData.Keys;
+        public IEnumerable<string> Keys => _formData.Keys
+            .Concat(files==null||files.Count==0 
+            ? Array.Empty<string>()
+            : files.Select(f=>f.Name));
 
         public T GetValue<T>(string key)
         {
             key = Keys.FirstOrDefault(k => String.Equals(k, key, StringComparison.InvariantCultureIgnoreCase));
             if (key==null)
                 throw new KeyNotFoundException();
-            var obj = _formData[key];
-            try
+            if (_formData.ContainsKey(key))
             {
-                if (obj is JsonDocument document)
-                    return Utility.JsonDecode<T>(document, this,log);
-                else if (obj is JsonNode node)
-                    return Utility.JsonDecode<T>(node, this, log);
-                else if (obj is JsonElement element)
-                    return Utility.JsonDecode<T>(element, this, log);
-                else
-                    return (T)ConvertObjectToType(obj, typeof(T));
-            }
-            catch (Exception)
-            {
-                throw new InvalidCastException();
-            }
+                var obj = _formData[key];
+                try
+                {
+                    if (obj is JsonDocument document)
+                        return Utility.JsonDecode<T>(document, this, log);
+                    else if (obj is JsonNode node)
+                        return Utility.JsonDecode<T>(node, this, log);
+                    else if (obj is JsonElement element)
+                        return Utility.JsonDecode<T>(element, this, log);
+                    else
+                        return (T)ConvertObjectToType(obj, typeof(T));
+                }
+                catch (Exception)
+                {
+                    throw new InvalidCastException();
+                }
+            } else if (typeof(T)==typeof(IReadOnlyList<IFormFile>))
+                return (T)files.GetFiles(key);
+            else
+                return (T)files[key];
         }
 
         internal object GetValue(Type t,string key) {
@@ -58,6 +68,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         private readonly IServiceProvider _services;
         private readonly IFeatureCollection _features;
+        private readonly IFormFileCollection files;
         public object this[Type feature]
         {
             get {
@@ -66,13 +77,14 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILogger log)
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILogger log, IFormFileCollection files)
         {
             _formData = formData;
             _session = session;
             _services=services;
             _features=features;
             this.log=log;
+            this.files=files;
         }
 
         private object ConvertObjectToType(object obj, Type expectedType)
