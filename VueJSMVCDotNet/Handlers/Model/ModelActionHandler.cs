@@ -102,7 +102,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             {
                 if (method.ReturnType == typeof(void))
                 {
-                    method.Invoke(model,request, pars: pars, responseHeaders:context.Request.Headers);
+                    method.Invoke(model,request, pars: pars, responseHeaders:context.Response.Headers);
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
@@ -110,7 +110,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 else if (method.ReturnType==typeof(string))
                 {
                     context.Response.StatusCode= 200;
-                    string tmp = (string)method.Invoke(model,request, pars: pars, responseHeaders: context.Request.Headers);
+                    string tmp = (string)method.Invoke(model,request, pars: pars, responseHeaders: context.Response.Headers);
                     context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
                     await context.Response.WriteAsync((tmp??Utility.JsonEncode(tmp, log)));
                 }
@@ -118,7 +118,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
-                    var resp = method.Invoke(model, request, pars: pars, responseHeaders: context.Request.Headers);
+                    var resp = method.Invoke(model, request, pars: pars, responseHeaders: context.Response.Headers);
                     if (extractResponse!=null)
                         resp = extractResponse(model, resp,pars,method);
                     await context.Response.WriteAsync(Utility.JsonEncode(resp,log));
