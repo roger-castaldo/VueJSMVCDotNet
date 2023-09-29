@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-	  <AssemblyVersion>3.1.1</AssemblyVersion>
+	  <AssemblyVersion>3.1.2</AssemblyVersion>
     <PackageReleaseNotes>added int support for IFormFile and IReadonlyList&lt;IFormFile&gt; to be passed into methods</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <FileVersion>$(AssemblyVersion)</FileVersion>

@@ -181,8 +181,8 @@ const ajax = async function (options) {
 		try {
 			let response = await fetch(url, options);
 			for (let prop in securityHeaders) {
-				if (response.headers[prop] !== undefined)
-					securityHeaders[prop] = response.headers[prop];
+				if (response.headers.get(prop) !== undefined && response.headers.get(prop)!==null)
+					securityHeaders[prop] = response.headers.get(prop);
 			}
 			let content = await response.text();
 			if (response.ok) {
