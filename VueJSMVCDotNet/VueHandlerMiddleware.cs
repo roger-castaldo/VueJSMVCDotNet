@@ -227,7 +227,8 @@ const securityHeaders = {{");
                             options.VueImportPath, 
                             options.VueLoaderImportPath, 
                             options.CoreJSImport??options.CoreJSURL,
-                            options.CompressAllJS, 
+                            options.CompressAllJS,
+                            (url) => (_modelHandler==null ? false : _modelHandler.HandlesJSPath(url)),
                             next, 
                             _cache,
                             log

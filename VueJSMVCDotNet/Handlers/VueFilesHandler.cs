@@ -68,7 +68,7 @@ namespace VueJSMVCDotNet.Handlers
                 }
             }
 
-            internal string FormatCache(string absolutePath,bool isFolder)
+            internal string FormatCache(string absolutePath,bool isFolder, Func<string, bool> isModelUrl)
             {
                 var fixedContent = _regImport.Replace(_content, (m) => {
                     var import = (m.Groups[3].Value=="" ? m.Groups[4].Value : m.Groups[3].Value);
@@ -80,13 +80,15 @@ namespace VueJSMVCDotNet.Handlers
                         if (subMatch.Success)
                         {
                             var sb = new StringBuilder();
-                            foreach (var imp in subMatch.Groups[1].Value.Split(',').Where(i=>!string.IsNullOrEmpty(i.Trim())))
+                            foreach (var imp in subMatch.Groups[1].Value.Split(',').Where(i => !string.IsNullOrEmpty(i.Trim())))
                                 sb.AppendLine($"import {imp.Trim()} from '{MergeUrl(absolutePath, $"{import}{imp.Trim()}.vue", isFolder)}';");
                             return sb.ToString();
                         }
                         else
                             return m.Value;
                     }
+                    else if (isModelUrl(import))
+                        return (import.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase) ? m.Value.Replace(import,$"{import[..^2]}mjs") : m.Value);
                     else
                         return m.Value;
                 });
@@ -101,8 +103,10 @@ namespace VueJSMVCDotNet.Handlers
         private readonly string _vueLoaderImportPath;
         private readonly string _coreImport;
         private readonly bool _compressAllJS;
+        private readonly Func<string, bool> _isModelUrl;
 
-        public VueFilesHandler(IFileProvider fileProvider, string baseURL,string vueImportPath, string vueLoaderImportPath,string coreImport,bool compressAllJS,RequestDelegate next,IMemoryCache cache,ILogger log)
+        public VueFilesHandler(IFileProvider fileProvider, string baseURL,string vueImportPath, string vueLoaderImportPath,string coreImport,bool compressAllJS,Func<string,bool> isModelUrl,
+            RequestDelegate next,IMemoryCache cache,ILogger log)
             : base(next,cache,log) 
         {
             _fileProvider=fileProvider;
@@ -111,6 +115,7 @@ namespace VueJSMVCDotNet.Handlers
             _vueLoaderImportPath=vueLoaderImportPath;
             _coreImport=coreImport;
             _compressAllJS=compressAllJS;
+            _isModelUrl=isModelUrl;
         }
 
         public override async Task ProcessRequest(HttpContext context)
@@ -182,9 +187,11 @@ import {{defineAsyncComponent}} from '{_vueImportPath}';
 import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
 
                             foreach (string str in imports.Where(imp=>
-                                imp.Length<=4
-                                || (imp.Length>4 
-                                    && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                                !_isModelUrl(imp) && (
+                                    imp.Length<=4
+                                    || (imp.Length>4 
+                                        && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                                        )
                                     )
                                 )
                             )
@@ -197,10 +204,12 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                                 ), files))
                                 sb.AppendLine($"import '{str}';");
 
-                            foreach (string str in imports.Where(imp => 
-                                imp.Length<=4
-                                || (imp.Length>4
-                                    && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                            foreach (string str in imports.Where(imp =>
+                                !_isModelUrl(imp) && (
+                                    imp.Length<=4
+                                    || (imp.Length>4
+                                        && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                                        )
                                     )
                                 )
                             )
@@ -210,7 +219,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             }
 
                             foreach (var file in files)
-                                sb.AppendLine(file.FormatCache(absolutePath, files.Count>1));
+                                sb.AppendLine(file.FormatCache(absolutePath, files.Count>1,_isModelUrl));
 
                             files = VueFilesHandler.SortFiles(files);
 

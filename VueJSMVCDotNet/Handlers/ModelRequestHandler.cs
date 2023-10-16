@@ -46,6 +46,7 @@ namespace VueJSMVCDotNet.Handlers
         }
 
         private readonly ModelRequestHandlerBase[] _Handlers;
+        private readonly JSHandler jsHandler;
 
         private static readonly DateTime _startTime = DateTime.Now;
         internal static DateTime StartTime { get { return _startTime; } }
@@ -84,7 +85,7 @@ namespace VueJSMVCDotNet.Handlers
             var loadAllHandler = new LoadAllHandler(new RequestDelegate(loadHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase, log);
             var staticMethodHandler = new StaticMethodHandler(new RequestDelegate(loadAllHandler.ProcessRequest), sessionFactory, registerSlowMethod, _urlBase, log);
             var modelListCallHandler = new ModelListCallHandler(new RequestDelegate(staticMethodHandler.ProcessRequest),sessionFactory,registerSlowMethod, _urlBase, log);
-            var jsHandler = new JSHandler(_urlBase,vueImportPath,coreImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod,compressAllJS,cache,log);
+            jsHandler = new JSHandler(_urlBase,vueImportPath,coreImportPath,new RequestDelegate(modelListCallHandler.ProcessRequest),sessionFactory,registerSlowMethod,compressAllJS,cache,log);
             _Handlers = new ModelRequestHandlerBase[]
             {
                 jsHandler,
@@ -101,6 +102,11 @@ namespace VueJSMVCDotNet.Handlers
             _methodInstances= new Dictionary<string, SlowMethodInstance>();
             _cleanupTimer = new Timer(new TimerCallback(CleanupTimer_Elapsed),null,TimeSpan.FromMinutes(1),TimeSpan.FromMinutes(1));
             AssemblyAdded();
+        }
+
+        public bool HandlesJSPath(string url)
+        {
+            return jsHandler.HandlesJSPath(url);   
         }
 
         private void CleanupTimer_Elapsed(object state)

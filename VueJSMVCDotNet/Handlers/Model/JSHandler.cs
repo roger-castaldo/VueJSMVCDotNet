@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using System;
 using System.IO;
+using System.Reflection;
+using System.Threading;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
@@ -108,6 +111,7 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         private readonly List<string> _keys;
         private readonly IMemoryCache _cache;
+        private readonly ReaderWriterLockSlim _locker;
         private readonly Dictionary<Type,ModelJSFilePath[]> _types;
         private readonly Dictionary<Type, IEnumerable<ASecurityCheck>> _securityChecks;
         private readonly string _urlBase;
@@ -126,19 +130,16 @@ namespace VueJSMVCDotNet.Handlers.Model
             _coreImportPath=coreImportPath;
             _securityChecks=new Dictionary<Type, IEnumerable<ASecurityCheck>>();
             _compressAllJS=compressAllJS;
+            _locker = new ReaderWriterLockSlim();
         }
 
         public override void ClearCache()
         {
-            lock (_keys)
-            {
-                _keys.ForEach(key => _cache.Remove(key));
-                _keys.Clear();
-            }
-            lock (_securityChecks)
-            {
-                _securityChecks.Clear();
-            }
+            _locker.EnterWriteLock();
+            _keys.ForEach(key => _cache.Remove(key));
+            _keys.Clear();
+            _securityChecks.Clear();
+            _locker.ExitWriteLock();
         }
 
         public override async Task ProcessRequest(HttpContext context)
@@ -148,14 +149,11 @@ namespace VueJSMVCDotNet.Handlers.Model
             {
                 string url = CleanURL(context);
                 List<Type> models = new();
+                _locker.EnterReadLock();
                 if (_types!=null)
-                {
-                    lock (_types)
-                    {
-                        models = _types.Where(pair=>pair.Value.Any(mjsfp=>mjsfp.IsMatch(url)))
-                            .Select(pair=>pair.Key).ToList();
-                    }
-                }
+                    models = _types.Where(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))
+                        .Select(pair => pair.Key).ToList();
+                _locker.ExitReadLock();
                 if (models.Count>0)
                 {
                     found=true;
@@ -163,12 +161,11 @@ namespace VueJSMVCDotNet.Handlers.Model
                     foreach (Type model in models)
                     {
                         IEnumerable<ASecurityCheck> checks = Array.Empty<ASecurityCheck>();
-                        lock (_securityChecks)
-                        {
-                            if (!_securityChecks.ContainsKey(model))
-                                _securityChecks.Add(model,model.GetCustomAttributes().OfType<ASecurityCheck>());
-                            checks = _securityChecks[model];
-                        }
+                        _locker.EnterReadLock();
+                        if (!_securityChecks.ContainsKey(model))
+                            _securityChecks.Add(model,model.GetCustomAttributes().OfType<ASecurityCheck>());
+                        checks = _securityChecks[model];
+                        _locker.ExitReadLock();
                         if (checks.Any(check=>!check.HasValidAccess(reqData,null,url,null)))
                             throw new InsecureAccessException();
                     }
@@ -195,34 +192,32 @@ namespace VueJSMVCDotNet.Handlers.Model
                     log?.LogTrace("Checking cache for existing js file for {}", url);
                     context.Response.ContentType= "text/javascript";
                     context.Response.StatusCode= 200;
-                    lock (_keys)
+                    _locker.EnterWriteLock();
+                    if (_keys.Contains(url))
                     {
-                        if (_keys.Contains(url))
+                        try
                         {
-                            try
-                            {
-                                ret = _cache.Get<string>(url);
-                            }
-                            catch (Exception)
-                            {
-                                _keys.Remove(url);
-                            }
-                            if (ret==null)
-                                _keys.Remove(url);
+                            ret = _cache.Get<string>(url);
                         }
+                        catch (Exception)
+                        {
+                            _keys.Remove(url);
+                        }
+                        if (ret==null)
+                            _keys.Remove(url);
                     }
+                    _locker.ExitWriteLock();
                     if (ret == null && models.Count>0)
                     {
-                        ret = GenerateCode(models,url,url.EndsWith(".mjs",StringComparison.InvariantCultureIgnoreCase));
-                        lock (_keys)
+                        ret = GenerateCode(models, url, url.EndsWith(".mjs", StringComparison.InvariantCultureIgnoreCase));
+                        _locker.EnterWriteLock();
+                        if (!_keys.Contains(url))
                         {
-                            if (!_keys.Contains(url))
-                            {
-                                log?.LogTrace("Caching generated js file for {}",  url);
-                                _keys.Add(url);
-                                _cache.Set<string>(url, ret, RequestHandlerBase.CACHE_ENTRY_OPTIONS);
-                            }
+                            log?.LogTrace("Caching generated js file for {}", url);
+                            _keys.Add(url);
+                            _cache.Set<string>(url, ret, RequestHandlerBase.CACHE_ENTRY_OPTIONS);
                         }
+                        _locker.ExitWriteLock();
                     }
                     context.Response.Headers.Add("Last-Modified", modDate.ToUniversalTime().ToString("R"));
                     context.Response.Headers.Add("Cache-Control", "public");
@@ -270,30 +265,38 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
 
         protected override void InternalLoadTypes(List<Type> types)
         {
-            lock (_types)
+            _locker.EnterWriteLock();
+            foreach (Type t in types)
             {
-                foreach (Type t in types)
+                ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
+                if (paths != null && paths.Length > 0)
                 {
-                    ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
-                    if (paths != null && paths.Length > 0)
-                    {
-                        _types.Remove(t);
-                        _types.Add(t, paths);
-                    }
+                    _types.Remove(t);
+                    _types.Add(t, paths);
                 }
             }
+            _locker.ExitWriteLock();
         }
 
         protected override void InternalUnloadTypes(List<Type> types)
         {
             ClearCache();
-            lock (_types)
+            _locker.EnterWriteLock();
+            foreach (Type t in types)
             {
-                foreach (Type t in types)
-                {
-                    _types.Remove(t);
-                }
+                _types.Remove(t);
             }
+            _locker.ExitWriteLock();
+        }
+
+        public bool HandlesJSPath(string url)
+        {
+            var result = false;
+            _locker.EnterReadLock();
+            if (_types!=null)
+                result = _types.Any(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)));
+            _locker.ExitReadLock();
+            return result;
         }
     }
 }
