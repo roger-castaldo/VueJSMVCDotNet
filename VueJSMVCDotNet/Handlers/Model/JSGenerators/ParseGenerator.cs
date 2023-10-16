@@ -46,7 +46,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
             builder.AppendLine($"      this.{Constants.INITIAL_DATA_KEY} = jdata;");
             foreach (PropertyInfo pi in modelType.Properties)
-                builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),'{Utility.GetEnumList(pi.PropertyType)}'); }}");
+                builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),{Utility.GetEnumList(pi.PropertyType)}); }}");
             builder.AppendLine(@$"           this.#events.trigger('{Constants.Events.MODEL_PARSED}',this);
         return this;
         }}");

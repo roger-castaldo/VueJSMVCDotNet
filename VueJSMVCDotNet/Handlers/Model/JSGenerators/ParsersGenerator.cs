@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParsersGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, SModelType[] models, ILogger log)
+        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, SModelType[] models, bool useModuleExtension, ILogger log)
         {
             List<SModelType> types = new();
             foreach (SModelType modelType in models)
@@ -25,7 +25,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }
             types.RemoveAll(t => models.Contains(t));
             foreach (var type in types.Where(t=>t.Type.GetCustomAttributes().Any(att=>att is ModelJSFilePath)))
-                builder.AppendLine($"        import {{ {type.Type.Name} }} from '{((ModelJSFilePath)type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false)[0]).Path}';");
+                builder.AppendLine($"        import {{ {type.Type.Name} }} from '{(useModuleExtension ? type.Type.GetCustomAttribute<ModelJSFilePath>().ModulePath : type.Type.GetCustomAttribute<ModelJSFilePath>().Path)}';");
 
             foreach (SModelType type in types)
             {

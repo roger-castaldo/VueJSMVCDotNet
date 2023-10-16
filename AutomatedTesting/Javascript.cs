@@ -173,7 +173,7 @@ export const name = 'John';");
                 System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
             });
             Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'");
+            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
             Engine eng = Utility.CreateEngine();
             try
             {
@@ -207,7 +207,7 @@ export const name = 'John';");
                 System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
             });
             Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'");
+            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
             Engine eng = Utility.CreateEngine();
             try
             {

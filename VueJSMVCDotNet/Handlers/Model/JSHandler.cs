@@ -213,7 +213,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                     }
                     if (ret == null && models.Count>0)
                     {
-                        ret = GenerateCode(models,url);
+                        ret = GenerateCode(models,url,url.EndsWith(".mjs",StringComparison.InvariantCultureIgnoreCase));
                         lock (_keys)
                         {
                             if (!_keys.Contains(url))
@@ -233,20 +233,20 @@ namespace VueJSMVCDotNet.Handlers.Model
                 await _next(context);
         }
 
-        private string GenerateCode(List<Type> models,string url)
+        private string GenerateCode(List<Type> models,string url,bool useModuleExtension)
         {
             SModelType[] amodels = new SModelType[models.Count];
             for (int x = 0; x<models.Count; x++)
                 amodels[x] = new SModelType(models[x]);
             log?.LogTrace("No cached js file for {}, generating new...", url);
-            WrappedStringBuilder builder = new(_compressAllJS || url.ToLower().EndsWith(".min.js"));
+            WrappedStringBuilder builder = new(_compressAllJS || url.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase)|| url.EndsWith(".min.mjs", StringComparison.InvariantCultureIgnoreCase));
             builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{_coreImportPath}';
 import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{_vueImportPath}';
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}");
             foreach (IBasicJSGenerator gen in _oneTimeInitialGenerators)
             {
                 builder.AppendLine($"//START:{gen.GetType().Name}");
-                gen.GeneratorJS(ref builder, _urlBase, amodels, log);
+                gen.GeneratorJS(ref builder, _urlBase, amodels, useModuleExtension, log);
                 builder.AppendLine($"//END:{gen.GetType().Name}");
             }
             foreach (SModelType model in amodels)
@@ -262,7 +262,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             foreach (IBasicJSGenerator gen in _oneTimeFinishGenerators)
             {
                 builder.AppendLine($"//START:{gen.GetType().Name}");
-                gen.GeneratorJS(ref builder, _urlBase, amodels,log);
+                gen.GeneratorJS(ref builder, _urlBase, amodels,useModuleExtension,log);
                 builder.AppendLine($"//END:{gen.GetType().Name}");
             }
             return builder.ToString();

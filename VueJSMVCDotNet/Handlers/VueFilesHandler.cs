@@ -28,6 +28,7 @@ namespace VueJSMVCDotNet.Handlers
         private static readonly Regex _regImport = new(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled,TimeSpan.FromMilliseconds(500));
         private static readonly Regex _regImportExtensions = new(@"^.+\.(js|vue)$", RegexOptions.Compiled|RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500));
         private static readonly Regex _regImportParts = new(@"\{([^\}]+)\}", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+        private static readonly Regex _regInlineImport = new(@"\s*import\((""[^""]+\.js""|'[^']+\.js')\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
         private readonly struct SVueFile
         {
@@ -89,6 +90,7 @@ namespace VueJSMVCDotNet.Handlers
                     else
                         return m.Value;
                 });
+                fixedContent = _regInlineImport.Replace(fixedContent, (m) => m.Value.Replace(m.Groups[1].Value, $"{m.Groups[1].Value[..^3]}mjs{m.Groups[1].Value[0]}"));
                 return $"cacheVueFile('{absolutePath}{Name}',`{fixedContent}`);";
             }
         }

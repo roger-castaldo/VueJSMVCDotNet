@@ -83,6 +83,18 @@ const _fixDates = function (data) {
 	return data;
 };
 
+const _applySecurityHeaders = function (options) {
+	options = Object.assign({}, {
+		headers: {
+		}
+	}, options);
+	for (let prop in securityHeaders) {
+		if (options.headers[prop] === undefined)
+			options.headers[prop] = securityHeaders[prop];
+	}
+	return options;
+};
+
 const ajax = async function (options) {
 	if (options.isSlow !== undefined && options.isSlow) {
 		delete options.isSlow;
@@ -125,23 +137,17 @@ const ajax = async function (options) {
 		if (options.url === null || options.url === undefined || options.url === '') {
 			throw 'Unable to call empty url';
 		}
-		options = Object.assign({}, {
+		options = Object.assign(_applySecurityHeaders(options), {
 			method: 'GET',
 			credentials: false,
 			body: null,
 			credentials: 'include',
-			headers: {
-			},
 			data: null,
 			url: null,
 			useJSON: true
 		}, options);
 		if (options.useJSON) {
 			options.headers['Content-Type'] = 'application/json';
-		}
-		for (let prop in securityHeaders) {
-			if (options.headers[prop] === undefined)
-				options.headers[prop] = securityHeaders[prop];
 		}
 		options.url += (options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
 		let data = null;
@@ -999,7 +1005,7 @@ const _fetchVueFile = async function (url) {
 			}
 		}
 	} else {
-		const res = await fetch(url);
+		const res = await fetch(url, _applySecurityHeaders({}));
 		if (!res.ok) 
 			throw Object.assign(new Error(res.statusText + ' ' + url), { res });
 		return {
