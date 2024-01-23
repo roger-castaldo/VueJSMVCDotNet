@@ -351,7 +351,7 @@ namespace VueJSMVCDotNet
 
         public static string? SantizeLogValue(string? value)
         {
-            return (value == null ? null : value.Replace('\r', '_').Replace('\n', '_'));
+            return value?.Replace('\r', '_').Replace('\n', '_');
         }
     }
 }

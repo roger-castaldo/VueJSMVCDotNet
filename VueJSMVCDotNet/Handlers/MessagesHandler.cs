@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 using System.IO;
 using VueJSMVCDotNet.Caching;
 
@@ -89,18 +90,16 @@ export {{Translate,ProduceComputedMessage}};";
                 cc = this[spath];
                 if (cc.HasValue)
                 {
-                    if (context.Request.Headers.ContainsKey("If-Modified-Since"))
+                    if (context.Request.Headers.TryGetValue("If-Modified-Since", out StringValues value)
+                        && cc.Value.Timestamp.ToUniversalTime().ToString("R").Equals(value.ToString(), StringComparison.InvariantCultureIgnoreCase))
                     {
-                        if (cc.Value.Timestamp.ToUniversalTime().ToString("R").ToLower()==context.Request.Headers["If-Modified-Since"].ToString().ToLower())
-                        {
-                            context.Response.ContentType="text/javascript";
-                            context.Response.Headers.Add("accept-ranges", "bytes");
-                            context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                            context.Response.Headers.Add("etag", $"\"{ BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
-                            context.Response.StatusCode = 304;
-                            await context.Response.WriteAsync("");
-                            respond=false;
-                        }
+                        context.Response.ContentType="text/javascript";
+                        context.Response.Headers.Add("accept-ranges", "bytes");
+                        context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
+                        context.Response.Headers.Add("etag", $"\"{BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                        context.Response.StatusCode = 304;
+                        await context.Response.WriteAsync("");
+                        respond=false;
                     }
                 }
                 if (respond)
