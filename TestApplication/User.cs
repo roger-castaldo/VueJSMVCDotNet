@@ -2,7 +2,6 @@
 using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using TestApplication.Security;
 
 namespace TestApplication

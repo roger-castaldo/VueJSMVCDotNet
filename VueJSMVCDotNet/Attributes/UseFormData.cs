@@ -1,5 +1,3 @@
-using System;
-
 namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>

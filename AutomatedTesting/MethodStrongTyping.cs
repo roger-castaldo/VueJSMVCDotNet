@@ -1,12 +1,8 @@
-﻿using AutomatedTesting.Security;
-using Jint;
+﻿using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VueJSMVCDotNet;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace AutomatedTesting
 {

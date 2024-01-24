@@ -1,20 +1,13 @@
 ﻿using AutomatedTesting.Models;
-using AutomatedTesting.Security;
-using Jint;
-using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace VueJSMVCDotNet.Interfaces
+﻿namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// The core interface for the whole system, that being a model.  Implements basic functions and

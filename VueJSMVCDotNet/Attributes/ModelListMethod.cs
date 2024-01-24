@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to create custom collection list of a method.  Created through calling the function

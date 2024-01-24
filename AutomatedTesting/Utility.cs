@@ -1,19 +1,13 @@
 ﻿using AutomatedTesting.FileProvider;
-using AutomatedTesting.Models;
 using AutomatedTesting.Security;
 using Jint;
-using Jint.Native;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Interfaces;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Caching.Memory;
-using Moq;
 
 namespace AutomatedTesting
 {

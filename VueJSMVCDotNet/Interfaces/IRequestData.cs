@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace VueJSMVCDotNet.Interfaces
+﻿namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// Houses the data that is provided for the current request being processed

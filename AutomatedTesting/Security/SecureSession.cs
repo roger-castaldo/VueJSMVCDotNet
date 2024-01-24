@@ -1,12 +1,8 @@
-﻿using Jint.Native.Json;
-using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet;
+﻿using Microsoft.AspNetCore.Http;
 using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace AutomatedTesting.Security
 {

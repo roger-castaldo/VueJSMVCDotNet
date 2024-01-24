@@ -1,14 +1,10 @@
-﻿using AutomatedTesting.Security;
-using Jint;
+﻿using Jint;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VueJSMVCDotNet;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Mime;
-using System.Text;
 
 namespace AutomatedTesting
 {

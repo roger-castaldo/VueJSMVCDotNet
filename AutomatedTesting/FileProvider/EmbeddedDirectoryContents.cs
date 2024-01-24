@@ -1,13 +1,9 @@
-﻿using Esprima.Ast;
-using Jint.Native.String;
-using Microsoft.Extensions.FileProviders;
-using System;
+﻿using Microsoft.Extensions.FileProviders;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AutomatedTesting.FileProvider

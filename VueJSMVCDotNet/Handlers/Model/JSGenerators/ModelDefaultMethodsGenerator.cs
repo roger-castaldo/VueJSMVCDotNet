@@ -1,6 +1,5 @@
 ﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
-using VueJSMVCDotNet.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators

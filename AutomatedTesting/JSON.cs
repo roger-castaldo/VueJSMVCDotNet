@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Net;
 using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting
 {

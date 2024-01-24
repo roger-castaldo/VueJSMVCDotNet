@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
     /// Used to mark the model save method which returns a bool 

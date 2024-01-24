@@ -1,13 +1,9 @@
 ﻿using AutomatedTesting.Models.InvalidModels;
-using AutomatedTesting.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VueJSMVCDotNet;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace AutomatedTesting
 {

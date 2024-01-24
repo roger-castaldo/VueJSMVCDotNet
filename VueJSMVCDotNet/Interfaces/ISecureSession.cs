@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace VueJSMVCDotNet.Interfaces
+﻿namespace VueJSMVCDotNet.Interfaces
 {
     /// <summary>
     /// Used to pass around a user session within the handler and sub handler components.  

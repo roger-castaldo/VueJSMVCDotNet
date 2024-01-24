@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
 
 namespace VueJSMVCDotNet
 {
-	internal class JSMinifier
+    internal class JSMinifier
     {
         internal static string StripComments(string originalString)
         {

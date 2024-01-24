@@ -5,8 +5,6 @@ using VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 using System.Threading.Tasks;
 
 namespace AutomatedTesting

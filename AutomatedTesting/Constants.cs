@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AutomatedTesting
+﻿namespace AutomatedTesting
 {
     internal static class Constants
     {
