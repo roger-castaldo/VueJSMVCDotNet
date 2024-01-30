@@ -212,7 +212,7 @@ namespace VueJSMVCDotNet
                             rtype = rtype.GetGenericArguments()[0];
                         if (rtype.IsArray)
                             rtype = rtype.GetElementType();
-                        else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(List<>))
+                        else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition().GetInterfaces().Any(t=>t==typeof(System.Collections.IEnumerable)))
                                 rtype = rtype.GetGenericArguments()[0];
                         if (rtype != t)
                         {
