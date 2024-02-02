@@ -228,7 +228,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             {
                                 sb.Length-=2;
                                 cc = new CachedContent(files.OrderByDescending(f=>f.LastModified.Ticks).Last().LastModified, (_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString()));
-                                _fileProvider.Watch(fpath+Path.DirectorySeparatorChar+"*.vue").RegisterChangeCallback(state =>
+                                _fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.vue").RegisterChangeCallback(state =>
                                 {
                                     this[(string)state]=null;
                                 }, spath);

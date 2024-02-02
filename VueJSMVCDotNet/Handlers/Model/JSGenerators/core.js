@@ -655,6 +655,7 @@ class ModelList {
 			this.#currentPageSize = (currentPageSize === undefined ? 10 : currentPageSize);
 			this.#pageVariableNames = pageVariableNames;
 		}
+		this.#reload();
 		return this.#toProxy();
 	};
 

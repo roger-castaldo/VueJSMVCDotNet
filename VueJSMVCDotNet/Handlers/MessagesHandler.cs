@@ -106,12 +106,12 @@ export {{Translate,ProduceComputedMessage}};";
                 {
                     if (!cc.HasValue)
                     {
-                        string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath[..^(spath.EndsWith(".min.js") ? 7 : 3)]);
+                        string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
                         if (fpath!=null)
                         {
                             StringBuilder sb = new();
                             IDirectoryContents contents = _fileProvider.GetDirectoryContents(fpath);
-                            foreach (IFileInfo f in contents.Where(f => f.Name.ToLower().EndsWith(".json")))
+                            foreach (IFileInfo f in contents.Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)))
                             {
                                 StreamReader sr = new(f.CreateReadStream());
                                 sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
@@ -124,7 +124,7 @@ export {{Translate,ProduceComputedMessage}};";
                                     contents.OrderByDescending(ifi=>ifi.LastModified.Ticks).Last().LastModified, 
                                     (_compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
                                 );
-                                _fileProvider.Watch(fpath).RegisterChangeCallback(state =>
+                                _fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.json").RegisterChangeCallback(state =>
                                 {
                                     this[(string)state]=null;
                                 }, spath);

@@ -14,15 +14,13 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 {
                     log?.LogTrace("Adding Load All Method for Model Definition[{}]", modelType.Type.FullName);
                     builder.AppendLine(@$"     static LoadAll(){{
-                            var ret = new ModelList(
+                            return new ModelList(
                                 function(){{ return new {modelType.Type.Name}(); }},
                                 {modelType.Type.Name}.#baseURL,
                                 false,
                                 true,
                                 undefined
                             );
-                            ret.reload();
-                            return ret;
                         }}");
                     break;
                 }
