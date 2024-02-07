@@ -30,7 +30,7 @@ namespace VueJSMVCDotNet
         /// <summary>
         /// Optional:  A list of header keys to read from and write to for all requests if using headers for security
         /// </summary>
-        public string[] SecurityHeaders { get; init; } = null;
+        public string[] SecurityHeaders { get; init; } = Array.Empty<string>();
     }
 
     /// <summary>
@@ -103,8 +103,8 @@ namespace VueJSMVCDotNet
         /// </summary>
         public bool CompressAllJS { get; init; } = false;
 
-        private VueMiddleware _middleWare;
-        internal VueMiddleware VueMiddleware { set { _middleWare = value; } }
+        private VueMiddleware middleWare;
+        internal VueMiddleware VueMiddleware { set { middleWare = value; } }
 
         /// <summary>
         /// called when an assemblyloadcontext needs to be unloaded, this will remove all references to 
@@ -123,7 +123,7 @@ namespace VueJSMVCDotNet
         /// <param name="contextName">The name of the assembly load context to unload</param>
         public void UnloadAssemblyContext(string contextName)
         {
-            _middleWare.UnloadAssemblyContext(contextName);
+            middleWare.UnloadAssemblyContext(contextName);
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace VueJSMVCDotNet
         /// <param name="contextName">The name of the context that was added</param>
         public void AsssemblyLoadContextAdded(string contextName)
         {
-            _middleWare.AsssemblyLoadContextAdded(contextName);
+            middleWare.AsssemblyLoadContextAdded(contextName);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace VueJSMVCDotNet
         ///</summary>
         public void AssemblyAdded()
         {
-            _middleWare.AssemblyAdded();
+            middleWare.AssemblyAdded();
         }
     }
 
@@ -160,16 +160,14 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class VueMiddleware : IDisposable
     {
-        private readonly VueMiddlewareOptions _options;
+        private readonly VueMiddlewareOptions options;
         /// <summary>
         /// The Options that were supplied to construct the VueMiddleware
         /// </summary>
-        public VueMiddlewareOptions Options => _options;
-        private readonly ModelRequestHandler _modelHandler;
-        private readonly MessagesHandler[] _messageHandlers;
-        private readonly VueFilesHandler[] _vueFileHandlers;
-        private readonly string _compressedCore;
-        private readonly IMemoryCache _cache;
+        public VueMiddlewareOptions Options => options;
+        private readonly IEnumerable<RequestHandlerBase> handlers;
+        private readonly string compressedCore;
+        private readonly IMemoryCache cache;
 
         /// <summary>
         /// default constructor as per dotnet standards
@@ -183,82 +181,68 @@ namespace VueJSMVCDotNet
                 throw new ArgumentNullException(nameof(options),$"{nameof(options.FileProvider)} must be provided");
             var log = options.LogWriter;
             options.VueMiddleware=this;
+            this.options=options;
 
-            _cache = cache ?? new MemoryCache(new MemoryCacheOptions() { });
+            this.cache = cache ?? new MemoryCache(new MemoryCacheOptions() { });
 
             StreamReader sr = new(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
             var builder = new StringBuilder();
             builder.Append(@$"import * as vue from ""{options.VueImportPath}"";
-const securityHeaders = {{");
+const securityHeaders = {{{
+                string.Join(',',(this.options.VueModelsOptions?.SecurityHeaders??Array.Empty<string>()).Select(t=>$"'{t.Replace("'","\\'")}':null"))
+            }}};
+{sr.ReadToEnd()}");
 
-            if (options.VueModelsOptions!=null && options.VueModelsOptions.SecurityHeaders!=null)
-            {
-                foreach (string key in options.VueModelsOptions.SecurityHeaders)
-                    builder.Append($"'{key.Replace("'", "\\'")}':null,");
-                builder.Length-=1;
-            }
-
-            builder.AppendLine("};");
-            builder.AppendLine(sr.ReadToEnd());
-            _compressedCore = JSMinifier.Minify(builder.ToString());
+            compressedCore = JSMinifier.Minify(builder.ToString());
             sr.Close();
 
-            _options = options;
             next ??= new RequestDelegate(NotFound);
-            if (options.VueFilesOptions!=null)
-            {
-                var fileHandlers = new List<VueFilesHandler>();
-                foreach (var url in options.VueFilesOptions.BaseURL.Split(';'))
-                {
-                    if (!string.IsNullOrEmpty(url.Trim()))
+            handlers = Array.Empty<RequestHandlerBase>()
+                .Concat(
+                    options.VueFilesOptions?.BaseURL.Split(';')
+                    .Where(t => !string.IsNullOrEmpty(t.Trim()))
+                    .Select(url =>
                     {
                         var handler = new VueFilesHandler(
-                            options.FileProvider, 
-                            url,  
-                            options.VueImportPath, 
-                            options.VueLoaderImportPath, 
+                            options.FileProvider,
+                            url,
+                            options.VueImportPath,
+                            options.VueLoaderImportPath,
                             options.CoreJSImport??options.CoreJSURL,
                             options.CompressAllJS,
-                            (url) => (_modelHandler==null ? false : _modelHandler.HandlesJSPath(url)),
-                            next, 
-                            _cache,
+                            (url) => (handlers.FirstOrDefault(h=>h is ModelRequestHandler)==null ? false : handlers.OfType<ModelRequestHandler>().FirstOrDefault().HandlesJSPath(url)),
+                            next,
+                            this.cache,
                             log
                         );
-                        fileHandlers.Add(handler);
                         next = new RequestDelegate(handler.ProcessRequest);
-                    }
-                }
-                _vueFileHandlers = fileHandlers.ToArray();
-            }
-            if (options.MessageOptions!=null)
-            {
-                var messageHandlers = new List<MessagesHandler>();
-                foreach (var url in options.MessageOptions.BaseURL.Split(';'))
-                {
-                    if (!string.IsNullOrEmpty(url.Trim()))
-                    {
-                        var handler = new MessagesHandler(
-                            options.FileProvider, 
-                            url,
-                            log,
-                            options.CompressAllJS, 
-                            next,
-                            _cache, 
-                            options.CoreJSImport??options.CoreJSURL, 
-                            options.VueImportPath
-                        );
-                        messageHandlers.Add(handler);
-                        next = new RequestDelegate(handler.ProcessRequest);
-                    }
-                }
-                _messageHandlers=messageHandlers.ToArray();
-            }
+                        return handler;
+                    })
+                )
+                .Concat(
+                    options.MessageOptions?.BaseURL.Split(';')
+                        .Where(url => !string.IsNullOrEmpty(url.Trim()))
+                        .Select(url =>
+                        {
+                            var handler = new MessagesHandler(
+                                options.FileProvider,
+                                url,
+                                log,
+                                options.CompressAllJS,
+                                next,
+                                this.cache,
+                                options.CoreJSImport??options.CoreJSURL,
+                                options.VueImportPath
+                            );
+                            next = new RequestDelegate(handler.ProcessRequest);
+                            return handler;
+                        })
+                )
+                .ToArray();
             if (options.VueModelsOptions!=null)
-            {
-                _modelHandler = new ModelRequestHandler(log, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
+                handlers = handlers.Append(new ModelRequestHandler(log, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
                     options.CoreJSImport??options.CoreJSURL,
-                options.VueModelsOptions.SessionFactory,options.CompressAllJS, next, _cache);
-            }
+                options.VueModelsOptions.SessionFactory, options.CompressAllJS, next, this.cache));
         }
 
         /// <summary>
@@ -266,18 +250,9 @@ const securityHeaders = {{");
         /// </summary>
         public void Dispose()
         {
-            _modelHandler?.Dispose();
-            if (_messageHandlers!=null)
-            {
-                for (int x = 0; x< _messageHandlers.Length; x++)
-                    _messageHandlers[x].Dispose();
-            }
-            if (_vueFileHandlers!=null)
-            {
-                for(int x=0;x< _vueFileHandlers.Length; x++)
-                    _vueFileHandlers[x].Dispose();
-            }
-            _cache.Dispose();
+            foreach (var handler in handlers)
+                handler.Dispose();
+            cache.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -288,18 +263,15 @@ const securityHeaders = {{");
         /// <returns>a task</returns>
         public async Task InvokeAsync(HttpContext context)
         {
-            if (string.Equals(context.Request.Method,"GET",StringComparison.InvariantCultureIgnoreCase)
-                && context.Request.Path.Equals(new PathString(_options.CoreJSURL)))
+            if (string.Equals(context.Request.Method, "GET", StringComparison.InvariantCultureIgnoreCase)
+                && context.Request.Path.Equals(new PathString(options.CoreJSURL)))
             {
                 context.Response.ContentType="text/javascript";
                 context.Response.StatusCode= 200;
-                await context.Response.WriteAsync(_compressedCore);
-            }else if (_modelHandler!=null)
-                await _modelHandler.ProcessRequest(context);
-            else if (_messageHandlers!=null)
-                await _messageHandlers[0].ProcessRequest(context);
+                await context.Response.WriteAsync(compressedCore);
+            }
             else
-                await _vueFileHandlers[0].ProcessRequest(context);
+                await handlers.Last().ProcessRequest(context);
         }
         private async Task NotFound(HttpContext context)
         {
@@ -307,19 +279,13 @@ const securityHeaders = {{");
             await context.Response.WriteAsync("Not Found");
         }
         internal void UnloadAssemblyContext(string contextName)
-        {
-            _modelHandler?.UnloadAssemblyContext(contextName);
-        }
+            => handlers.OfType<ModelRequestHandler>().FirstOrDefault<ModelRequestHandler>()?.UnloadAssemblyContext(contextName);
 
         internal void AssemblyAdded()
-        {
-            _modelHandler?.AssemblyAdded();
-        }
+            => handlers.OfType<ModelRequestHandler>().FirstOrDefault()?.AssemblyAdded();
 
         internal void AsssemblyLoadContextAdded(string contextName)
-        {
-            _modelHandler?.AsssemblyLoadContextAdded(contextName);
-        }
+            => handlers.OfType<ModelRequestHandler>().FirstOrDefault()?.AsssemblyLoadContextAdded(contextName);
     }
 
     /// <summary>

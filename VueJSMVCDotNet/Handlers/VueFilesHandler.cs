@@ -117,12 +117,12 @@ namespace VueJSMVCDotNet.Handlers
                 {
                     if (context.Request.Headers.ContainsKey("If-Modified-Since"))
                     {
-                        if (cc.Value.Timestamp.ToUniversalTime().ToString("R").ToLower()==context.Request.Headers["If-Modified-Since"].ToString().ToLower())
+                        if (cc.Timestamp.ToUniversalTime().ToString("R").Equals(context.Request.Headers["If-Modified-Since"].ToString(),StringComparison.InvariantCultureIgnoreCase))
                         {
                             context.Response.ContentType="text/javascript";
-                            context.Response.Headers.Add("accept-ranges", "bytes");
-                            context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                            context.Response.Headers.Add("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                            context.Response.Headers.Append("accept-ranges", "bytes");
+                            context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
+                            context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                             context.Response.StatusCode = 304;
                             await context.Response.WriteAsync("");
                             respond=false;
@@ -131,7 +131,7 @@ namespace VueJSMVCDotNet.Handlers
                 }
                 if (respond)
                 {
-                    if (!cc.HasValue)
+                    if (cc==null)
                     {
                         List<SVueFile> files = new();
                         IDirectoryContents contents = null;
@@ -227,7 +227,11 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             if (sb.Length>0)
                             {
                                 sb.Length-=2;
-                                cc = new CachedContent(files.OrderByDescending(f=>f.LastModified.Ticks).Last().LastModified, (_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString()));
+                                cc = new()
+                                {
+                                    Timestamp=files.OrderByDescending(f => f.LastModified.Ticks).Last().LastModified.DateTime,
+                                    Content=(_compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString())
+                                };
                                 _fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.vue").RegisterChangeCallback(state =>
                                 {
                                     this[(string)state]=null;
@@ -236,12 +240,12 @@ import {{cacheVueFile, vueSFCOptions}} from '{_coreImport}';");
                             }
                         }
                     }
-                    if (cc.HasValue)
+                    if (cc!=null)
                     {
-                        context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
-                        context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
+                        context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
+                        context.Response.Headers.Append("Last-Modified", cc.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
+                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Content) : cc.Content));
                     }
                     else
                     {

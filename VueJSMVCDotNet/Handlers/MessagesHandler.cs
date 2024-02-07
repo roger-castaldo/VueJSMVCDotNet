@@ -85,18 +85,18 @@ export {{Translate,ProduceComputedMessage}};";
                 && context.Request.Path.ToString().ToLower().EndsWith(".js"))
             {
                 string spath = context.Request.Path.ToString().ToLower();
-                CachedContent? cc = null;
+                CachedContent cc = null;
                 bool respond = true;
                 cc = this[spath];
-                if (cc.HasValue)
+                if (cc!=null)
                 {
                     if (context.Request.Headers.TryGetValue("If-Modified-Since", out StringValues value)
-                        && cc.Value.Timestamp.ToUniversalTime().ToString("R").Equals(value.ToString(), StringComparison.InvariantCultureIgnoreCase))
+                        && cc.Timestamp.ToUniversalTime().ToString("R").Equals(value.ToString(), StringComparison.InvariantCultureIgnoreCase))
                     {
                         context.Response.ContentType="text/javascript";
-                        context.Response.Headers.Add("accept-ranges", "bytes");
-                        context.Response.Headers.Add("date", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
-                        context.Response.Headers.Add("etag", $"\"{BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Value.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                        context.Response.Headers.Append("accept-ranges", "bytes");
+                        context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
+                        context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                         context.Response.StatusCode = 304;
                         await context.Response.WriteAsync("");
                         respond=false;
@@ -104,7 +104,7 @@ export {{Translate,ProduceComputedMessage}};";
                 }
                 if (respond)
                 {
-                    if (!cc.HasValue)
+                    if (cc==null)
                     {
                         string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
                         if (fpath!=null)
@@ -120,24 +120,25 @@ export {{Translate,ProduceComputedMessage}};";
                             if (sb.Length>0)
                             {
                                 sb.Length-=2;
-                                cc = new CachedContent(
-                                    contents.OrderByDescending(ifi=>ifi.LastModified.Ticks).Last().LastModified, 
-                                    (_compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
-                                );
+                                cc = new()
+                                {
+                                    Timestamp=contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
+                                    Content=(_compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
+                                };
                                 _fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.json").RegisterChangeCallback(state =>
                                 {
                                     this[(string)state]=null;
                                 }, spath);
-                                this[spath] = cc.Value;
+                                this[spath] = cc;
                             }
                         }
                     }
-                    if (cc.HasValue)
+                    if (cc != null)
                     {
-                        context.Response.Headers.Add("Cache-Control", "public, must-revalidate, max-age=3600");
-                        context.Response.Headers.Add("Last-Modified", cc.Value.Timestamp.ToUniversalTime().ToString("R"));
+                        context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
+                        context.Response.Headers.Append("Last-Modified", cc.Timestamp.ToUniversalTime().ToString("R"));
                         context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Value.Content) : cc.Value.Content));
+                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Content) : cc.Content));
                     }
                     else
                     {

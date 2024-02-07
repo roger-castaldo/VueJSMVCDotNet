@@ -339,9 +339,8 @@ namespace VueJSMVCDotNet
         }
         #endregion
 
-        public static string? SantizeLogValue(string? value)
-        {
-            return value?.Replace('\r', '_').Replace('\n', '_');
-        }
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+        public static string? SantizeLogValue(string? value) => value?.Replace('\r', '_').Replace('\n', '_');
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
     }
 }

@@ -68,7 +68,7 @@ namespace AutomatedTesting
             if (headers != null)
             {
                 foreach (string key in headers.Keys)
-                    context.Request.Headers.Add(key, headers[key]);
+                    context.Request.Headers.Append(key, headers[key]);
             }
 
             middleware.InvokeAsync(context).Wait();

@@ -217,8 +217,8 @@ namespace VueJSMVCDotNet.Handlers.Model
                         }
                         _locker.ExitWriteLock();
                     }
-                    context.Response.Headers.Add("Last-Modified", modDate.ToUniversalTime().ToString("R"));
-                    context.Response.Headers.Add("Cache-Control", "public");
+                    context.Response.Headers.Append("Last-Modified", modDate.ToUniversalTime().ToString("R"));
+                    context.Response.Headers.Append("Cache-Control", "public");
                     await context.Response.WriteAsync(ret);
                 }
             }

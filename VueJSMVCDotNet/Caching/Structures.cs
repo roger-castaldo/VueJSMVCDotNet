@@ -1,14 +1,8 @@
 ﻿namespace VueJSMVCDotNet.Caching
 {
-    internal readonly struct CachedContent
+    internal record CachedContent
     {
-        public DateTime Timestamp { get; private init; }
-        public string Content { get; private init; }
-
-        public CachedContent(DateTimeOffset lastModified, string content)
-        {
-            Timestamp = lastModified.LocalDateTime;
-            Content = content;
-        }
+        public DateTime Timestamp { get; init; }
+        public string Content { get; init; }
     }
 }
