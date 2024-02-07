@@ -7,20 +7,12 @@ namespace VueJSMVCDotNet
     {
         private readonly struct SPathTypePair
         {
-            public string Path { get; private init; }
-            public Type ModelType { get; private init; }
-
-            public SPathTypePair(string path, Type modelType)
-            {
-                Path = path;
-                ModelType = modelType;
-            }
+            public string Path { get; init; }
+            public Type ModelType { get; init; }
         }
 
         private static bool IsValidDataActionMethod(MethodInfo method, ILogger log)
-        {
-            return (method.ReturnType == typeof(bool)) && new InjectableMethod(method,log).StrippedParameters.Length==0;
-        }
+            => (method.ReturnType == typeof(bool)) && new InjectableMethod(method,log).StrippedParameters.Length==0;
 
         /*
          * Called to validate all model definitions through the following checks:
@@ -135,7 +127,11 @@ namespace VueJSMVCDotNet
                             errors.Add(new DuplicateRouteException(p.Path, p.ModelType, mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
                         }
                     }
-                    paths.Add(new SPathTypePair(mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
+                    paths.Add(new()
+                    {
+                        Path=mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path),
+                        ModelType=t
+                    });
                 }
                 bool found = false;
                 bool foundLoadAll=false;
