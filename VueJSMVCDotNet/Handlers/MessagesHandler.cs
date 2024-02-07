@@ -11,8 +11,8 @@ namespace VueJSMVCDotNet.Handlers
     {
         private string CompileToCode(StringBuilder messages)
         {
-            return $@"import {{Language}} from '{_corePath}';
-import {{computed}} from '{_vuePath}';
+            return $@"import {{Language}} from '{corePath}';
+import {{computed}} from '{vuePath}';
 
 const messages = {{
     {messages}
@@ -61,71 +61,58 @@ const ProduceComputedMessage = function(message,args) {{
 export {{Translate,ProduceComputedMessage}};";
         }
 
-        private readonly IFileProvider _fileProvider;
-        private readonly string _baseURL;
-        private readonly bool _compressAllJS;
-        private readonly string _corePath;
-        private readonly string _vuePath;
+        private readonly IFileProvider fileProvider;
+        private readonly string baseURL;
+        private readonly bool compressAllJS;
+        private readonly string corePath;
+        private readonly string vuePath;
 
 
         public MessagesHandler(IFileProvider fileProvider, string baseURL, ILogger log,bool compressAllJS, RequestDelegate next, IMemoryCache cache, string corePath, string vuePath)
             : base(next, cache, log)
         {
-            _fileProvider=fileProvider;
-            _baseURL=baseURL;
-            _compressAllJS=compressAllJS;
-            _corePath=corePath;
-            _vuePath=vuePath;
+            this.fileProvider=fileProvider;
+            this.baseURL=baseURL;
+            this.compressAllJS=compressAllJS;
+            this.corePath=corePath;
+            this.vuePath=vuePath;
         }
 
         public override async Task ProcessRequest(HttpContext context)
         {
-            if (context.Request.Path.StartsWithSegments(new PathString(_baseURL))
+            if (context.Request.Path.StartsWithSegments(new PathString(baseURL))
                 && context.Request.Method=="GET"
                 && context.Request.Path.ToString().ToLower().EndsWith(".js"))
             {
                 string spath = context.Request.Path.ToString().ToLower();
                 CachedContent cc = null;
-                bool respond = true;
                 cc = this[spath];
-                if (cc!=null)
-                {
-                    if (context.Request.Headers.TryGetValue("If-Modified-Since", out StringValues value)
-                        && cc.Timestamp.ToUniversalTime().ToString("R").Equals(value.ToString(), StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        context.Response.ContentType="text/javascript";
-                        context.Response.Headers.Append("accept-ranges", "bytes");
-                        context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
-                        context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(System.Security.Cryptography.MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
-                        context.Response.StatusCode = 304;
-                        await context.Response.WriteAsync("");
-                        respond=false;
-                    }
-                }
-                if (respond)
+                if (!await ReponseCached(context, cc))
                 {
                     if (cc==null)
                     {
-                        string fpath = Utility.TranslatePath(_fileProvider, _baseURL, spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
+                        string fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
                         if (fpath!=null)
                         {
                             StringBuilder sb = new();
-                            IDirectoryContents contents = _fileProvider.GetDirectoryContents(fpath);
-                            foreach (IFileInfo f in contents.Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                StreamReader sr = new(f.CreateReadStream());
-                                sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
-                                sr.Close();
-                            }
+                            var contents = fileProvider.GetDirectoryContents(fpath)
+                                .Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
+                                
+                            contents.ForEach(f =>
+                                {
+                                    StreamReader sr = new(f.CreateReadStream());
+                                    sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
+                                    sr.Close();
+                                });
                             if (sb.Length>0)
                             {
                                 sb.Length-=2;
                                 cc = new()
                                 {
                                     Timestamp=contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
-                                    Content=(_compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
+                                    Content=(compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
                                 };
-                                _fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.json").RegisterChangeCallback(state =>
+                                fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.json").RegisterChangeCallback(state =>
                                 {
                                     this[(string)state]=null;
                                 }, spath);
@@ -133,18 +120,10 @@ export {{Translate,ProduceComputedMessage}};";
                             }
                         }
                     }
-                    if (cc != null)
-                    {
-                        context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
-                        context.Response.Headers.Append("Last-Modified", cc.Timestamp.ToUniversalTime().ToString("R"));
-                        context.Response.ContentType = "text/javascript";
-                        await context.Response.WriteAsync((!_compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Content) : cc.Content));
-                    }
+                    if (cc!=null)
+                        await ProduceResponse(context, "text/javascript", cc.Timestamp, (!compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Content) : cc.Content));
                     else
-                    {
-                        context.Response.StatusCode = 404;
-                        await context.Response.WriteAsync("Unable to locate requested file.");
-                    }
+                        await ProduceNotFound(context, "Unable to locate requested file.");
                 }
             }
             else

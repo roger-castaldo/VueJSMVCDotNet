@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using System.Security.Cryptography;
 using VueJSMVCDotNet.Caching;
 
 namespace VueJSMVCDotNet.Handlers
@@ -21,6 +22,41 @@ namespace VueJSMVCDotNet.Handlers
             this.next = next;
             this.cache = cache;
             this.log=log;
+        }
+
+        protected static async Task<bool> ReponseCached(HttpContext context, CachedContent cc)
+        {
+            if (cc!=null)
+            {
+                if (context.Request.Headers.ContainsKey("If-Modified-Since"))
+                {
+                    if (cc.Timestamp.ToUniversalTime().ToString("R").Equals(context.Request.Headers["If-Modified-Since"].ToString(), StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        context.Response.ContentType="text/javascript";
+                        context.Response.Headers.Append("accept-ranges", "bytes");
+                        context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
+                        context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                        context.Response.StatusCode = 304;
+                        await context.Response.WriteAsync("");
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        protected static async Task ProduceResponse(HttpContext context, string contentType, DateTime timestamp, string content)
+        {
+            context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
+            context.Response.Headers.Append("Last-Modified", timestamp.ToUniversalTime().ToString("R"));
+            context.Response.ContentType = contentType;
+            await context.Response.WriteAsync(content);
+        }
+
+        protected static async Task ProduceNotFound(HttpContext context, string message)
+        {
+            context.Response.StatusCode = 404;
+            await context.Response.WriteAsync(message);
         }
 
         protected CachedContent? this[string url]

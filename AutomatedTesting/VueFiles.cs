@@ -29,8 +29,8 @@ namespace AutomatedTesting
             Assert.IsTrue(content.Length > 0);
             Assert.IsTrue(content.Contains("import Icon from '/resources/vuefiles/icon.vue';"));
             Assert.IsTrue(content.Contains("import Button from '/resources/vuefiles/buttons/button.vue';"));
+            Assert.IsTrue(content.Contains("/resources/vuefiles/icon.js"));
             Assert.IsFalse(content.Contains("/resources/vuefiles/buttons/button.js"));
-            Assert.IsFalse(content.Contains("/resources/vuefiles/icon.js"));
         }
 
         [TestMethod()]
