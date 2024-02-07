@@ -10,11 +10,7 @@ namespace VueJSMVCDotNet.JSON
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType==JsonTokenType.String)
-                return (T)Enum.Parse(typeof(T), reader.GetString());
-            throw new InvalidCastException();
-        }
+            => (reader.TokenType==JsonTokenType.String ? (T)Enum.Parse(typeof(T), reader.GetString()):throw new InvalidCastException());
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {

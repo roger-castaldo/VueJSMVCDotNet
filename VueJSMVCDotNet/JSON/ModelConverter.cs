@@ -7,19 +7,19 @@ namespace VueJSMVCDotNet.JSON
 {
     internal class ModelConverter<T> : JsonConverter<T> where T :IModel
     {
-        private readonly IRequestData _requestData;
-        private readonly InjectableMethod _loadMethod;
+        private readonly IRequestData requestData;
+        private readonly InjectableMethod loadMethod;
         public ModelConverter(IRequestData requestData,ILogger log)
         {
-            _requestData=requestData;
-            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);
+            this.requestData=requestData;
+            loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var result = default(T);
             if (reader.TokenType==JsonTokenType.String)
-                result = (T)_loadMethod.Invoke(null,_requestData,pars:new object[] { reader.GetString() });
+                result = (T)loadMethod.Invoke(null,requestData,pars:new object[] { reader.GetString() });
             else if (reader.TokenType==JsonTokenType.StartObject)
             {
                 reader.Read();
@@ -27,7 +27,7 @@ namespace VueJSMVCDotNet.JSON
                 if (pid=="id")
                 {
                     reader.Read();
-                    result = (T)_loadMethod.Invoke(null, _requestData, pars: new object[] { reader.GetString() });
+                    result = (T)loadMethod.Invoke(null, requestData, pars: new object[] { reader.GetString() });
                     reader.Read();
                 }
                 else

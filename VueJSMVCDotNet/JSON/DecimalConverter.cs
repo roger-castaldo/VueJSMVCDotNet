@@ -23,8 +23,6 @@ namespace VueJSMVCDotNet.JSON
         }
 
         public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
-        {
-            writer.WriteNumberValue(value);
-        }
+            => writer.WriteNumberValue(value);
     }
 }
