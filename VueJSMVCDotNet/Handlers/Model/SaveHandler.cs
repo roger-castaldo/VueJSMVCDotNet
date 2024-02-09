@@ -8,27 +8,25 @@ namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class SaveHandler : ModelRequestHandlerBase
     {
-        private readonly List<IModelActionHandler> _handlers;
+        private readonly List<IModelActionHandler> handlers;
 
         public SaveHandler(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase,ILogger log)
             :base(next,sessionFactory,registerSlowMethod,urlBase,log)
         {
-            _handlers=new List<IModelActionHandler>();
+            handlers=new List<IModelActionHandler>();
         }
 
         public override void ClearCache()
-        {
-            _handlers.Clear();
-        }
+            => handlers.Clear();
 
         public override async Task ProcessRequest(HttpContext context)
         {
             string url = CleanURL(context);
             log?.LogTrace("Checking to see if {}:{} is handled by the Save Handler", ModelRequestHandlerBase.GetRequestMethod(context), url);
-            if (ModelRequestHandlerBase.GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT && _handlers.Any(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))
+            IModelActionHandler handler = null;
+            if (ModelRequestHandlerBase.GetRequestMethod(context)==ModelRequestHandler.RequestMethods.PUT 
+                && (handler=handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase)))!=null)
             {
-                var handler = _handlers.FirstOrDefault(h => h.BaseURLs.Contains(url, StringComparer.InvariantCultureIgnoreCase))
-                    ?? throw new CallNotFoundException("Model Not Found");
                 ModelRequestData requestData = await ExtractParts(context);
                 var model = (IModel)Activator.CreateInstance(handler.GetType().GetGenericArguments()[0]);
                 Utility.SetModelValues(requestData, ref model, true,log);
@@ -38,30 +36,24 @@ namespace VueJSMVCDotNet.Handlers.Model
                         return new Hashtable() { {"id", model.id }};
                     throw new SaveFailedException(model.GetType(), method);
                 });
-            }
-            await _next(context);
+            }else
+                await next(context);
         }
 
-       protected override void InternalLoadTypes(List<Type> types){
-            foreach (Type t in types)
-            {
-                MethodInfo saveMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
-                if (saveMethod != null)
-                {
-                    _handlers.Add((IModelActionHandler)
-                        typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
+       protected override void InternalLoadTypes(List<Type> types)
+            => handlers.AddRange(
+                types.Select(t => new { type = t, saveMethod = t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0) })
+                    .Where(pair => pair.saveMethod!=null)
+                    .Select(pair => (IModelActionHandler)
+                        typeof(ModelActionHandler<>).MakeGenericType(new Type[] { pair.type })
                         .GetConstructor(new Type[] { typeof(MethodInfo), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILogger) })
-                        .Invoke(new object[] { saveMethod, "save", _registerSlowMethod, log })
-                    );
-                }
-            }
-        }
+                        .Invoke(new object[] { pair.saveMethod, "save", registerSlowMethod, log })
+                    )
+            );
 
         protected override void InternalUnloadTypes(List<Type> types)
-        {
-            _handlers.RemoveAll(h =>
+            => handlers.RemoveAll(h =>
                 types.Contains(h.GetType().GetGenericArguments()[0])
             );
-        }
     }
 }

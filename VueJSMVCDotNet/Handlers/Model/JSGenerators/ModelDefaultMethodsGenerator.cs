@@ -6,28 +6,28 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelDefaultMethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
             log?.LogTrace("Generating Model Default Methods Definition javascript for {}",  modelType.Type.FullName);
             if (modelType.HasSave)
             {
                 log?.LogTrace("Adding save method for Model Definition[{}]", modelType.Type.FullName);
-                ModelDefaultMethodsGenerator.AppendSave(modelType,ref builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                ModelDefaultMethodsGenerator.AppendSave(modelType,builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
             }
             if (modelType.HasUpdate)
             {
                 log?.LogTrace("Adding update method for Model Definition[{}]", modelType.Type.FullName);
-                ModelDefaultMethodsGenerator.AppendUpdate(modelType, ref builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                ModelDefaultMethodsGenerator.AppendUpdate(modelType, builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
             }
             if(modelType.HasDelete)
             {
                 log?.LogTrace("Adding delete method for Model Definition[{}]", modelType.Type.FullName);
-                ModelDefaultMethodsGenerator.AppendDelete(modelType, ref builder);
+                ModelDefaultMethodsGenerator.AppendDelete(modelType, builder);
             }
-            ModelDefaultMethodsGenerator.AppendReloadMethod(modelType, ref builder, log);
+            ModelDefaultMethodsGenerator.AppendReloadMethod(modelType, builder, log);
         }
 
-        private static void AppendReloadMethod(SModelType modelType, ref WrappedStringBuilder builder, ILogger log)
+        private static void AppendReloadMethod(SModelType modelType, WrappedStringBuilder builder, ILogger log)
         {
             log?.LogTrace("Adding reload method for Model Definition[{}]", modelType.Type.FullName);
             builder.AppendLine(@$"     async #reload(){{
@@ -39,7 +39,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }}");
         }
 
-        private static void AppendDelete(SModelType modelType,ref WrappedStringBuilder builder)
+        private static void AppendDelete(SModelType modelType,WrappedStringBuilder builder)
         {
             builder.AppendLine(@$"         async #destroy(){{
                 let response = await ModelMethods.destroy({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew());
@@ -49,7 +49,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
         }
 
-        private static void AppendUpdate(SModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private static void AppendUpdate(SModelType modelType,WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(@$"         async #update(){{
                 let response = ModelMethods.update({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
@@ -65,7 +65,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
         }
 
-        private static void AppendSave(SModelType modelType,ref WrappedStringBuilder builder,bool useJSON)
+        private static void AppendSave(SModelType modelType,WrappedStringBuilder builder,bool useJSON)
         {
             builder.AppendLine(@$"             async #save(){{
                 let response = ModelMethods.save({modelType.Type.Name}.#baseURL,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});

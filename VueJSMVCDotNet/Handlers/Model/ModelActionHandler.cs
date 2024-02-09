@@ -7,19 +7,14 @@ namespace VueJSMVCDotNet.Handlers.Model
 {
     internal class ModelActionHandler<T> : IModelActionHandler where T : IModel
     {
-        private readonly IEnumerable<string> _baseURLs;
-        public IEnumerable<string> BaseURLs => _baseURLs;
-
-        private readonly InjectableMethod _loadMethod;
-        private readonly IEnumerable<InjectableMethod> _methods;
+        private readonly InjectableMethod loadMethod;
+        private readonly IEnumerable<InjectableMethod> methods;
         private readonly ILogger log;
+        private readonly delRegisterSlowMethodInstance registerSlowMethod;
+        protected readonly string callType;
 
-        public IEnumerable<string> MethodNames => _methods.Select(m => m.Name).Distinct();
-
-        private readonly delRegisterSlowMethodInstance _registerSlowMethod;
-
-        protected readonly string _callType;
-
+        public IEnumerable<string> BaseURLs { get; private init; } = Array.Empty<string>();
+        public IEnumerable<string> MethodNames => methods.Select(m => m.Name).Distinct();
         public ModelActionHandler(string callType, delRegisterSlowMethodInstance delRegisterSlowMethod, ILogger log)
             : this(Array.Empty<MethodInfo>(), callType, delRegisterSlowMethod,log)
         { }
@@ -30,26 +25,26 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         public ModelActionHandler(IEnumerable<MethodInfo> methods, string callType, delRegisterSlowMethodInstance delRegisterSlowMethod, ILogger log)
         {
-            _methods = methods.Select(m => new InjectableMethod(m,log));
-            _callType=callType;
-            _registerSlowMethod=delRegisterSlowMethod;
+            this.methods = methods.Select(m => new InjectableMethod(m, log));
+            this.callType=callType;
+            registerSlowMethod=delRegisterSlowMethod;
             this.log=log;
-            _baseURLs = typeof(T)
+            BaseURLs = typeof(T)
                .GetCustomAttributes(typeof(ModelRoute), false)
                .Select(ca => ((ModelRoute)ca).Path)
                .OrderByDescending(p => p.Length);
-            _loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log);
+            loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log);
         }
 
         public IModel Load(string url, ModelRequestData request, Func<string, string> extractID = null)
         {
-            if (_loadMethod != null)
+            if (loadMethod != null)
             {
                 var id = extractID == null ? url[(url.LastIndexOf("/") + 1)..] : extractID(url);
-                if (!_loadMethod.HasValidAccess(request, null, url, id))
+                if (!loadMethod.HasValidAccess(request, null, url, id))
                     throw new InsecureAccessException();
                 log?.LogTrace("Attempting to load model at url {}", url);
-                var result = (IModel)_loadMethod.Invoke(null,request, pars:new object[] { id });
+                var result = (IModel)loadMethod.Invoke(null,request, pars:new object[] { id });
                 if (result != null)
                     return result;
             }
@@ -57,22 +52,18 @@ namespace VueJSMVCDotNet.Handlers.Model
         }
 
         public async Task Invoke(string url, ModelRequestData request, HttpContext context, Func<string, string> extractID = null, Func<IModel, ModelRequestData, IModel> processLoadedModel = null)
-        {
-            await Invoke(url,request, context, Load(url, request, extractID: extractID),processLoadedModel: processLoadedModel);
-        }
+            => await Invoke(url,request, context, Load(url, request, extractID: extractID),processLoadedModel: processLoadedModel);
 
         public async Task InvokeWithoutLoad(string url, ModelRequestData request, HttpContext context, IModel model=null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
-        {
-            await Invoke(url, request, context, model, extractResponse: extractResponse);
-        }
+            => await Invoke(url, request, context, model, extractResponse: extractResponse);
 
         private async Task Invoke(string url, ModelRequestData request, HttpContext context,IModel model,Func<IModel, ModelRequestData, IModel> processLoadedModel = null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
         {
-            log?.LogTrace("calling {} method matching the url {}", _callType, url);
-            LocateMethod(request, _methods, out InjectableMethod method, out object[] pars);
+            log?.LogTrace("calling {} method matching the url {}", callType, url);
+            LocateMethod(request, methods, out InjectableMethod method, out object[] pars);
             if (method==null)
             {
-                method = _methods.First();
+                method = methods.First();
                 if (!method.IsModelUpdateOrSave)
                     throw new CallNotFoundException("Unable to locate method with matching parameters");
             }
@@ -80,10 +71,10 @@ namespace VueJSMVCDotNet.Handlers.Model
                 throw new InsecureAccessException();
             if (processLoadedModel != null)
                 model = (T)processLoadedModel(model, request);
-            log?.LogTrace("Invoking the {} method {}.{} for the url {}", _callType, typeof(T).FullName, method.Name, url);
+            log?.LogTrace("Invoking the {} method {}.{} for the url {}", callType, typeof(T).FullName, method.Name, url);
             if (method.IsSlow)
             {
-                string newPath = _registerSlowMethod(url, method, model, pars, request,log);
+                string newPath = registerSlowMethod(url, method, model, pars, request,log);
                 if (newPath!= null)
                 {
                     context.Response.ContentType = "text/json";

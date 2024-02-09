@@ -5,13 +5,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class FooterGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, string urlBase, SModelType[] models,bool useModuleExtension, ILogger log)
-        {
-            builder.Append("export {");
-            foreach (SModelType type in models)
-                builder.Append($"{type.Type.Name},");
-            builder.Length--;
-            builder.AppendLine("}");
-        }
+        public void GeneratorJS(WrappedStringBuilder builder, string urlBase, IEnumerable<SModelType> models, bool useModuleExtension, ILogger log)
+            => builder.AppendLine($"export {{{string.Join(',', models.Select(type => type.Type.Name))}}}");
     }
 }

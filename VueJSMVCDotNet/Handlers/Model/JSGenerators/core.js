@@ -1,16 +1,11 @@
 ﻿//START:HeaderGenerator
-const isString = function (value) {
-	return typeof value === 'string' || value instanceof String;
-};
+const isString = (value) 
+	=> typeof value === 'string' || value instanceof String;
 
-const isFunction = function (obj) {
-	if (obj === null) {
-		return false;
-	}
-	return typeof obj == 'function' || false;
-};
+const isFunction = (obj)
+	=> obj !== null && typeof obj === 'function';
 
-const _keys = function (obj) {
+const _keys =  (obj) => {
 	if (!_isObject(obj)) return [];
 	if (Object.keys) return Object.keys(obj);
 	let keys = [];
@@ -20,82 +15,52 @@ const _keys = function (obj) {
 	return keys;
 };
 
-const _isDate = function (obj) {
-	return Object.prototype.toString.call(obj) === '[object Date]';
-};
+const _isDate = (obj) 
+	=> Object.prototype.toString.call(obj) === '[object Date]';
 
-const _isObject = function (obj) {
-	if (obj !== null && obj !== undefined && (obj.toString() === '[object FileList]' || obj.toString() === '[object File]'))
-		return false;
-	let type = typeof obj;
-	return (type === 'function' || type === 'object' && !!obj) && !_isDate(obj);
-};
+const _isObject = (obj)
+	=> obj !== null && obj !== undefined && !(obj.toString() === '[object FileList]' || obj.toString() === '[object File]')
+	&& !_isDate(obj) && (['function', 'object'].indexOf(typeof obj) >= 0 && !!obj);
 
-const cloneData = function (obj) {
-	if (obj === null) {
-		return null;
-	}
-	if (!_isObject(obj) && !Array.isArray(obj)) {
-		return obj;
-	}
-	if (Array.isArray(obj)) {
-		let ret = [];
-		for (let x = 0; x < obj.length; x++) {
-			ret.push(cloneData(obj[x]));
-		}
-		return ret;
-	} else {
-		let ret = {};
-		let props = Object.getOwnPropertyNames(obj);
-		for (let x = 0; x < props.length; x++) {
-			if (!isFunction(obj[props[x]])) {
-				ret[props[x]] = cloneData(obj[props[x]]);
-			}
-		}
-		return ret;
-	}
+const cloneData = (obj) => {
+	if (obj === null) return null;
+	if (!_isObject(obj) && !Array.isArray(obj)) return obj;
+	if (Array.isArray(obj)) return obj.map(o => cloneData(o));
+	let ret = {};
+	Object.getOwnPropertyNames(obj)
+		.filter(prop => !isFunction(obj[prop]))
+		.forEach(prop => ret[prop] = cloneData(obj[prop]));
+	return ret;
 };
 
 const _dateRegex = new RegExp('^\\d{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([12]\\d)|(3[01]))T([0-5]\\d):([0-5]\\d):([0-5]\\d).\\d{3}Z$');
 
-const _fixDates = function (data) {
-	if (data !== null) {
-		if (Array.isArray(data)) {
-			for (let x = 0; x < data.length; x++) {
-				if (isString(data[x])) {
-					if (_dateRegex.test(data[x])) {
-						data[x] = new Date(data[x]);
-					}
-				} else if (Array.isArray(data[x]) || _isObject(data[x])) {
-					data[x] = _fixDates(data[x]);
-				}
-			}
-		} else if (_isObject(data)) {
-			for (let prop in data) {
-				data[prop] = _fixDates(data[prop]);
-			}
-		} else if (isString(data)) {
-			if (_dateRegex.test(data)) {
-				data = new Date(data);
-			}
-		}
+const _fixDates = (data) => {
+	if (data === null) return data;
+	else if (Array.isArray(data)) {
+		data = data.map(val => {
+			if (isString(val) && _dateRegex.test(val))
+				return new Date(val);
+			else if (Array.isArray(val) || _isObject(val))
+				return _fixDates(val);
+			return val;
+		});
 	}
+	else if (_isObject(data)) Object.keys(data).forEach(prop => data[prop] = _fixDates(data[prop]));
+	else if (isString(data) && _dateRegex.test(data)) data = new Date(data);
 	return data;
 };
 
-const _applySecurityHeaders = function (options) {
+const _applySecurityHeaders = (options) => {
 	options = Object.assign({}, {
 		headers: {
 		}
 	}, options);
-	for (let prop in securityHeaders) {
-		if (options.headers[prop] === undefined)
-			options.headers[prop] = securityHeaders[prop];
-	}
+	Object.keys(securityHeaders).forEach(prop => options.headers[prop] = options.headers[prop] ?? securityHeaders[prop]);
 	return options;
 };
 
-const ajax = async function (options) {
+const ajax = async (options) => {
 	if (options.isSlow !== undefined && options.isSlow) {
 		delete options.isSlow;
 		let isArray = (options.isArray == undefined ? false : options.isArray);
@@ -111,20 +76,16 @@ const ajax = async function (options) {
 				}).then(
 					res => {
 						res = res.json();
-						if (res.Data.length > 0) {
+						if (res.Data.length > 0)
 							Array.prototype.push.apply(ret, res.Data);
-						}
-						if (res.HasMore) {
-							pullCall();
-						} else if (res.IsFinished) {
+						if (res.IsFinished) {
 							resolve({
 								json: function () {
 									return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
 								}
 							});
-						} else {
-							setTimeout(pullCall, 200);
-						}
+						} else 
+							setTimeout(pullCall, (res.HasMore?0:200));
 					},
 					err => {
 						reject(err);
@@ -156,25 +117,19 @@ const ajax = async function (options) {
 				data = JSON.stringify(stripBigInt(options.data));
 			} else {
 				data = new FormData();
-				for (let prop in options.data) {
+				Object.keys(options.data).forEach(prop => {
 					if (Array.isArray(options.data[prop])) {
 						if (options.data[prop].length > 0) {
-							if (_isObject(options.data[prop][0])) {
-								for (let x = 0; x < options.data[prop].length; x++) {
-									data.append(prop + ':json', JSON.stringify(options.data[prop][x]));
-								}
-							} else {
-								for (let x = 0; x < options.data[prop].length; x++) {
-									data.append(prop, options.data[prop][x]);
-								}
-							}
+							if (_isObject(options.data[prop][0])) 
+								options.data[prop].forEach(val => data.append(`${prop}:json`, JSON.stringify(val)));
+							else 
+								options.data[prop].forEach(val => data.append(prop, val));
 						}
-					} else if (_isObject(options.data[prop])) {
-						data.append(prop + ':json', JSON.stringify(options.data[prop]));
-					} else {
+					} else if (_isObject(options.data[prop])) 
+						data.append(`${prop}:json`, JSON.stringify(options.data[prop]));
+					else 
 						data.append(prop, options.data[prop]);
-					}
-				}
+				});
 			}
 		}
 		if (options.method !== 'GET') {
@@ -186,10 +141,10 @@ const ajax = async function (options) {
 		delete options.url;
 		try {
 			let response = await fetch(url, options);
-			for (let prop in securityHeaders) {
-				if (response.headers.get(prop) !== undefined && response.headers.get(prop)!==null)
+			Object.keys(securityHeaders).forEach(prop => {
+				if (response.headers.get(prop) !== undefined && response.headers.get(prop) !== null)
 					securityHeaders[prop] = response.headers.get(prop);
-			}
+			});
 			let content = await response.text();
 			if (response.ok) {
 				return {
@@ -213,13 +168,12 @@ const ajax = async function (options) {
 };
 
 /*borrowed from undescore source*/
-const _has = function (obj, path) {
-	return obj !== null && Object.prototype.hasOwnProperty.call(obj, path);
-};
+const _has = (obj, path)
+	=> obj !== null && Object.prototype.hasOwnProperty.call(obj, path);
 
 let _eq, _deepEq;
 
-_eq = function (a, b, aStack, bStack) {
+_eq = (a, b, aStack, bStack) => {
 	// Identical objects are equal. `0 === -0`, but they aren't identical.
 	// See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
 	if (a === b) return a !== 0 || 1 / a === 1 / b;
@@ -234,7 +188,7 @@ _eq = function (a, b, aStack, bStack) {
 };
 
 // Internal recursive comparison function for `isEqual`.
-_deepEq = function (a, b, aStack, bStack) {
+_deepEq = (a, b, aStack, bStack) => {
 	// Compare `[[Class]]` names.
 	let className = toString.call(a);
 	if (className !== toString.call(b)) return false;
@@ -323,12 +277,8 @@ _deepEq = function (a, b, aStack, bStack) {
 };
 
 // Perform a deep comparison to check if two objects are equal.
-const isEqual = function (a, b) {
-	if (Array.isArray(a) || Array.isArray(b)) {
-		return _deepEq(a, b);
-	}
-	return _eq(a, b);
-};
+const isEqual = (a, b)
+	=> (Array.isArray(a) || Array.isArray(b) ? _deepEq(a, b) : _eq(a, b));
 
 const _numberRanges = {
 	'Int16': { low: -32768, high: 32767, hasDecimal: false },
@@ -352,29 +302,22 @@ const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:
 const _versionRegex = /^([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$/;
 const _guidRegex = /^(?:\{{0,1}(?:[0-9a-fA-F]){8}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){12}\}{0,1})$/;
 
-const _checkDataType = function (type, value, enumlist) {
+const _checkDataType = (type, value, enumlist) => {
 	if (type.indexOf('System.') === 0)
 		type = type.substring(7);
 	if (type.substring(type.length - 1) !== '?') {
-		if (type !== 'Boolean') {
-			if (value === null || value === undefined) {
-				throw 'invalid type: Value is not allowed to be null';
-			}
-		}
+		if (type !== 'Boolean' && (value === null || value === undefined)) 
+			throw 'invalid type: Value is not allowed to be null';
 	} else {
-		type = type.substring(0, type.length - 1);
-		if (value === null || value === undefined) {
+		if (value === null || value === undefined)
 			return value;
-		}
+		type = type.substring(0, type.length - 1);
 	}
-	if (type === 'IFormFile[]') {
-		if (value.toString() !== '[object FileList]')
-			throw 'invalid type: Value not a FileList and cannot be converted';
-	}
-	else if (type === 'IFormFile') {
-		if (value.toString() !== '[object File]')
-			throw 'invalid type: Value not a File and cannot be converted';
-	}else if (type.indexOf('[]') >= 0 && type !== 'Byte[]') {
+	if (type === 'IFormFile[]' && value.toString() !== '[object FileList]') 
+		throw 'invalid type: Value not a FileList and cannot be converted';
+	else if (type === 'IFormFile' && value.toString() !== '[object File]') 
+		throw 'invalid type: Value not a File and cannot be converted';
+	else if (type.indexOf('[]') >= 0 && type !== 'Byte[]') {
 		if (!Array.isArray(value))
 			throw 'invalid type: Value not an array';
 		type = type.substring(0, type.length - 2);
@@ -527,7 +470,7 @@ const _checkDataType = function (type, value, enumlist) {
 	return value;
 };
 
-const checkProperty = function (name, type, value, enumlist) {
+const checkProperty = (name, type, value, enumlist) => {
 	try {
 		return _checkDataType(type, value, enumlist);
 	} catch (err) {
@@ -535,37 +478,23 @@ const checkProperty = function (name, type, value, enumlist) {
 	}
 };
 
-const stripBigInt = function (data) {
-	let ret = data;
-	if (data !== null && data !== undefined) {
-		if (Object.prototype.toString.call(data) !== '[object Date]') {
-			if (Array.isArray(data)) {
-				ret = [];
-				for (let x = 0; x < data.length; x++) {
-					ret.push(stripBigInt(data[x]));
-				}
-			} else if (typeof data === 'bigint') {
-				ret = data.toString();
-			} else if (typeof data === 'object') {
-				ret = {};
-				for (let prop in data) {
-					if (prop !== '_hashCode') {
-						ret[prop] = stripBigInt(data[prop]);
-					}
-				}
-			}
-		}
+const stripBigInt = (data) => {
+	if (data === null || data === undefined || Object.prototype.toString.call(data) === '[object Date]') return data;
+	if (Array.isArray(data)) return data.map(value => stripBigInt(value));
+	else if (typeof data === 'bigint') return data.toString();
+	else if (typeof data === 'object') {
+		let result = {};
+		Object.keys(data).filter(prop => prop !== '_hashCode').forEach(prop => result[prop] = stripBigInt(data[prop]));
+		return result;
 	}
-	return ret;
+	return data;
 };
 
 class EventHandler {
 	#events;
 	constructor(events) {
 		this.#events = {};
-		for (let i in events) {
-			this.#events[events[i]] = [];
-		}
+		Object.keys(events).forEach(prop => this.#events[prop] = []);
 	}
 
 	on(event, callback) {
@@ -574,21 +503,15 @@ class EventHandler {
 	}
 
 	off(callback) {
-		for (let prop in this.#events) {
-			for (let x = 0; x < this.#events[prop].length; x++) {
-				if (this.#events[prop][x] === callback) {
-					this.#events[prop].splice(x, 1);
-					break;
-				}
-			}
-		}
+		Object.keys(this.#events)
+			.forEach(prop => {
+				this.#events[prop] = this.#events[prop].filter(c => c === callback);
+			});
 	}
 
 	trigger(event, data) {
 		if (this.#events[event] === undefined) { throw 'undefined event'; }
-		for (let i in this.#events[event]) {
-			this.#events[event][i](data);
-		}
+		this.#events[event].forEach(call => call(data));
 	}
 };
 
@@ -606,7 +529,8 @@ class ModelList {
 	#currentPageSize = undefined;
 	#pageVariableNames = undefined;
 
-	get #currentPage() {
+	get #currentPage() 
+	{
 		return (!this.#isPaged ? undefined : Math.floor(this.#currentIndex / this.#currentPageSize));
 	};
 
@@ -769,46 +693,30 @@ class ModelList {
 					tmp.#totalPages = data.TotalPages;
 					data = data.response;
 				}
-				for (let i in data) {
+				data = data.map(value => {
 					let mtmp = tmp.#constructModel();
-					mtmp._parse(data[i]);
-					data[i] = mtmp;
-					data[i].$on('destroyed', function (model) {
-						for (let x = 0; x < tmp.#data.length; x++) {
-							if (tmp.#data[x].id === model.id) {
-								tmp.#events.trigger('model_destroyed', model);
-								Array.prototype.splice.apply(tmp.#data, [x, 1]);
-								break;
-							}
-						}
+					mtmp._parse(value);
+					mtmp.$on('destroyed', (model) => {
+						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						tmp.#events.trigger('model_destroyed', model);
+						Array.prototype.splice.apply(tmp.#data, [idx, 1]);
 					});
-					data[i].$on('updated', function (model) {
-						for (let x = 0; x < tmp.#data.length; x++) {
-							if (tmp.#data[x].id === model.id) {
-								tmp.#events.trigger('model_updated', model);
-								Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
-								Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
-								break;
-							}
-						}
+					mtmp.$on('updated', (model) => {
+						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						tmp.#events.trigger('model_updated', model);
+						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
+						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
 					});
-					data[i].$on('loaded', function (model) {
-						for (let x = 0; x < tmp.#data.length; x++) {
-							if (tmp.#data[x].id === model.id) {
-								tmp.#events.trigger('model_loaded', model);
-								Array.prototype.splice.apply(tmp.#data, [x, 0, model]);
-								Array.prototype.splice.apply(tmp.#data, [x + 1, 1]);
-								break;
-							}
-						}
+					mtmp.$on('loaded', (model) => {
+						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						tmp.#events.trigger('model_loaded', model);
+						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
+						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
 					});
-					Array.prototype.push.apply(tmp.#data, data);
-					if (tmp.#data.length - data.length > 0) {
-						{
-							Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length - data.length]);
-						}
-					}
-				}
+					return mtmp;
+				});
+				Array.prototype.push.apply(tmp.#data, data);
+				if (tmp.#data.length - data.length > 0) Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length - data.length]);
 			}
 			let proxy = tmp.#toProxy();
 			tmp.#events.trigger('loaded', proxy);
@@ -1056,23 +964,21 @@ const vueSFCOptions = {
 
 //Messages section
 
-const _language = vue.ref((window===undefined || window.navigator===undefined ? 'en' : window.navigator.userLanguage || window.navigator.language));
-if (_language.value.indexOf('-') >= 0) {
-	_language.value = _language.value.substring(0, _language.value.indexOf('-'));
+const _language = vue.ref(null);
+
+const ResetLanguage = function () {
+	_language.value = (window === undefined || window.navigator === undefined ? 'en' : window.navigator.userLanguage || window.navigator.language);
+	if (_language.value.indexOf('-') >= 0) {
+		_language.value = _language.value.substring(0, _language.value.indexOf('-'));
+	}
 }
+
+ResetLanguage();
 
 const Language = vue.readonly(_language);
 
 const SetLanguage = function (language) {
 	_language.value = language;
 }
-
-const ResetLanguage = function () {
-	language.value = (window === undefined || window.navigator === undefined ? 'en' : window.navigator.userLanguage || window.navigator.language);
-	if (_language.value.indexOf('-') >= 0) {
-		_language.value = _language.value.substring(0, _language.value.indexOf('-'));
-	}
-}
-
 
 export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions,Language,SetLanguage,ResetLanguage};

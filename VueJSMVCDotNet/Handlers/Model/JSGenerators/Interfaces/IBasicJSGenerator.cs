@@ -4,6 +4,6 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces
 {
     internal interface IBasicJSGenerator
     {
-        void GeneratorJS(ref WrappedStringBuilder builder,string urlBase, SModelType[] models,bool useModuleExtension, ILogger log);
+        void GeneratorJS(WrappedStringBuilder builder,string urlBase, IEnumerable<SModelType> models,bool useModuleExtension, ILogger log);
     }
 }

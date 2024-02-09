@@ -7,38 +7,17 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log?.LogTrace("Generating toJSON method for {}",  modelType.Type.FullName);
+            log?.LogTrace("Generating toJSON method for {}", modelType.Type.FullName);
             builder.AppendLine(@$"     {Constants.TO_JSON_VARIABLE}(){{
         let attrs={{}};
         let prop=null;");
-            foreach (PropertyInfo p in modelType.Properties)
-            {
-                if (p.CanWrite)
+            modelType.Properties
+                .Where(p => p.CanWrite)
+                .ForEach(p =>
                 {
-                    Type propType = p.PropertyType;
-                    bool array = false;
-                    if (propType.FullName.StartsWith("System.Nullable"))
-                    {
-                        if (propType.IsGenericType)
-                            propType = propType.GetGenericArguments()[0];
-                        else
-                            propType = propType.GetElementType();
-                    }
-                    if (propType.IsArray)
-                    {
-                        array = true;
-                        propType = propType.GetElementType();
-                    }
-                    else if (propType.IsGenericType)
-                    {
-                        if (propType.GetGenericTypeDefinition() == typeof(List<>))
-                        {
-                            array = true;
-                            propType = propType.GetGenericArguments()[0];
-                        }
-                    }
+                    ExtractPropertyType(p.PropertyType,out bool array,out Type propType);
                     if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
                         builder.AppendLine($"            prop = (this.{Constants.INITIAL_DATA_KEY}===undefined||this.#{p.Name}===null ? (this.#{p.Name}!==undefined ? this.#{p.Name} : null) : (this.{Constants.INITIAL_DATA_KEY}.{p.Name}!==undefined ? this.{Constants.INITIAL_DATA_KEY}.{p.Name} : null));");
                     else
@@ -60,14 +39,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     }
                     else
                         builder.AppendLine($"        attrs.{p.Name}=prop;");
-                }
-            }
+                });
             builder.AppendLine(@$"     if (this.{Constants.INITIAL_DATA_KEY}!==undefined && this.{Constants.INITIAL_DATA_KEY}!==null){{
-            for(prop in this.{Constants.INITIAL_DATA_KEY}){{
-                if (isEqual(this.{Constants.INITIAL_DATA_KEY}[prop],attrs[prop])){{
-                    delete attrs[prop];
-                }}
-            }}
+            Object.keys(this.{Constants.INITIAL_DATA_KEY}).filter((prop)=>isEqual(this.{Constants.INITIAL_DATA_KEY}[prop],attrs[prop])).forEach((prop)=>delete attrs[prop]);
         }}
         return _stripBigInt(cloneData(attrs));
     }}");

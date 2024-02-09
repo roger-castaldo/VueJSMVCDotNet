@@ -5,7 +5,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelLoadGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
             log?.LogTrace("Appending Model Load method for Model Definition[{}]", modelType.Type.FullName);
             builder.AppendLine(@$"     static Load(id,callback){{

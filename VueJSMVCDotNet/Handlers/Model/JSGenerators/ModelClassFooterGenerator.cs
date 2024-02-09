@@ -5,9 +5,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelClassFooterGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
-        {
-            builder.AppendLine("    }");
-        }
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+            => builder.AppendLine("    }");
     }
 }

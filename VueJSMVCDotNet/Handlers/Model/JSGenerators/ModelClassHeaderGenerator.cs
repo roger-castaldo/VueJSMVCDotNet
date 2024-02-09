@@ -1,4 +1,5 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using Microsoft.AspNetCore.Authentication;
+using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
@@ -8,7 +9,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
     {
         
 
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
             log?.LogTrace("Generating Model Definition javascript for {}", modelType.Type.FullName);
 
@@ -18,34 +19,29 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         #events=undefined;
         static get #baseURL(){{return '{Utility.GetModelUrlRoot(modelType.Type, urlBase)}';}};");
 
-            foreach (PropertyInfo p in modelType.Properties)
-                builder.AppendLine($"      #{p.Name}=undefined;");
+            modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
-            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, ref builder,log);
-            ModelClassHeaderGenerator.AppendToProxy(ref builder,modelType.Properties, modelType.InstanceMethods, modelType);
+            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder,log);
+            ModelClassHeaderGenerator.AppendToProxy(builder,modelType.Properties, modelType.InstanceMethods, modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
             let data={Utility.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null),log)};
-            for(let prop in data){{
-                this['#'+prop]=data[prop];
-            }}
+            Object.keys(data).forEach((prop)=>this['#'+prop]=data[prop]);
             this.#events = new EventHandler(['{Constants.Events.MODEL_LOADED}','{Constants.Events.MODEL_UPDATED}','{Constants.Events.MODEL_SAVED}','{Constants.Events.MODEL_DESTROYED}','{Constants.Events.MODEL_PARSED}']);
             return this.#toProxy();
         }}");
         }
 
-        private static void AppendToProxy(ref WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, SModelType modelType)
+        private static void AppendToProxy(WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, SModelType modelType)
         {
             builder.AppendLine(@"#toProxy(){
     let me = this;
     return new Proxy(this,{
         get: function(target,prop,reciever){
             switch(prop){");
-            foreach (PropertyInfo p in props)
-                builder.AppendLine($"                  case '{p.Name}': return (me.#{p.Name}===undefined ? me.{Constants.INITIAL_DATA_KEY}.{p.Name} : me.#{p.Name}); break;");
-            foreach (MethodInfo m in methods)
-                builder.AppendLine($"                  case '{m.Name}': return function(){{ return me.#{m.Name}.apply(me,arguments);}}; break;");
+            props.ForEach(p => builder.AppendLine($"                  case '{p.Name}': return (me.#{p.Name}===undefined ? me.{Constants.INITIAL_DATA_KEY}.{p.Name} : me.#{p.Name}); break;"));
+            methods.ForEach(m => builder.AppendLine($"                  case '{m.Name}': return function(){{ return me.#{m.Name}.apply(me,arguments);}}; break;"));
             if (modelType.HasSave)
                 builder.AppendLine("                  case 'save': return function(){{ return me.#save.apply(me,arguments);}}; break;");
             if (modelType.HasUpdate)
@@ -68,16 +64,14 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 },
                 set: function(target,prop,value){
                     switch(prop) {");
-            foreach (PropertyInfo p in props)
-                if (p.CanWrite)
-                {
-                    builder.AppendLine($@"      case '{p.Name}':  
+            props.Where(p => p.CanWrite).ForEach(p =>
+            {
+                builder.AppendLine($@"      case '{p.Name}':  
                             me.#{p.Name} = checkProperty('{p.Name}','{Utility.GetTypeString(p.PropertyType, p.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',value,{Utility.GetEnumList(p.PropertyType)}); 
                             return true;
                             break;");
-                }
-            foreach (MethodInfo m in methods)
-                builder.AppendLine($"                  case '{m.Name}': return false; break;");
+            });
+            methods.ForEach(m=>builder.AppendLine($"                  case '{m.Name}': return false; break;"));
             builder.Append(@"                       case 'isNew': 
                         case 'isValid': 
                         case 'invalidFields':
@@ -89,11 +83,11 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     return Reflect.set(...arguments);
                 },
                 ownKeys:function(target){
-                    return ['id','isNew','isValid','invalidFields','reload','$on','$off'");
-            foreach (PropertyInfo p in props)
-                builder.Append($",'{p.Name}'");
-            foreach (MethodInfo mi in methods)
-                builder.Append($",'{mi.Name}'");
+                    return ['id','isNew','isValid','invalidFields','reload','$on','$off',");
+
+            builder.Append(string.Join(',', props.Select(p => $"'{p.Name}'").Concat(methods.Select(m => $"'{m.Name}'"))));
+            if (!props.Any()&&!methods.Any())
+                builder.Length--;
             if (modelType.HasSave)
                 builder.Append(",'save'");
             if (modelType.HasUpdate)
@@ -106,34 +100,21 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         };");
         }
 
-        private static void AppendValidations(IEnumerable<PropertyInfo> props, ref WrappedStringBuilder builder, ILogger log)
+        private static void AppendValidations(IEnumerable<PropertyInfo> props, WrappedStringBuilder builder, ILogger log)
         {
-            List<PropertyInfo> requiredProps = new();
-            foreach (PropertyInfo pi in props)
+            var requiredProps = props.Where(pi => pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0);
+            if (requiredProps.Any())
             {
-                if (pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0)
-                    requiredProps.Add(pi);
-            }
-            if (requiredProps.Count > 0)
-            {
-                builder.AppendLine(@"   #isValid(){
-                    let ret=true;");
-                foreach (PropertyInfo pi in requiredProps)
-                {
-                    log?.LogTrace("Appending Required Propert[{}] for Model Definition[{}] validations",
-                        pi.Name,
-                        pi.DeclaringType.FullName
-                    );
-                    builder.AppendLine($"          ret=ret&&(this.#{pi.Name}==undefined||this.#{pi.Name}==null ? false : true);");
-                }
-                builder.AppendLine(@"           return ret;
-        };
-    #invalidFields(){
+                builder.AppendLine(@$"   #isValid(){{ return {string.Join("&&",requiredProps.Select(p=>$"this.#{p.Name}!==undefined&&this.#{p.Name}!==null"))};
+        }};
+    #invalidFields(){{
             let ret=[];");
-                foreach (PropertyInfo pi in requiredProps)
-                    builder.AppendLine(@$"         if (this.#{pi.Name}==undefined||this.#{pi.Name}==null){{
+                requiredProps.ForEach(pi =>
+                {
+                    builder.AppendLine(@$"         if (this.#{pi.Name}===undefined||this.#{pi.Name}===null){{
                 ret.push('{pi.Name}');
             }}");
+                });
                 builder.AppendLine(@"           return ret;
     };");
             }

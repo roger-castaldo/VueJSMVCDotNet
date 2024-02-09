@@ -11,8 +11,13 @@ namespace VueJSMVCDotNet.Handlers.Model
     internal class ModelRequestData : IRequestData
     {
         private readonly ILogger log;
-        private readonly Dictionary<string, object> _formData;
-        public IEnumerable<string> Keys => _formData.Keys
+        private readonly Dictionary<string, object> formData;
+        private readonly IServiceProvider services;
+        private readonly IFeatureCollection features;
+        private readonly IFormFileCollection files;
+
+        public ISecureSession Session { get; private init; }
+        public IEnumerable<string> Keys => formData.Keys
             .Concat(files==null||files.Count==0 
             ? Array.Empty<string>()
             : files.Select(f=>f.Name));
@@ -22,9 +27,9 @@ namespace VueJSMVCDotNet.Handlers.Model
             key = Keys.FirstOrDefault(k => String.Equals(k, key, StringComparison.InvariantCultureIgnoreCase));
             if (key==null)
                 throw new KeyNotFoundException();
-            if (_formData.ContainsKey(key))
+            if (formData.ContainsKey(key))
             {
-                var obj = _formData[key];
+                var obj = formData[key];
                 try
                 {
                     if (obj is JsonDocument document)
@@ -56,28 +61,22 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
         }
 
-        private readonly ISecureSession _session;
-        public ISecureSession Session => _session;
-
-        private readonly IServiceProvider _services;
-        private readonly IFeatureCollection _features;
-        private readonly IFormFileCollection files;
         public object this[Type feature]
         {
             get {
-                return (_services?.GetService(feature))??
-                    (_features!=null ? (_features.Any(t=>t.Key==feature) ? _features.First(t=>t.Key==feature).Value : null) : null); 
+                return (services?.GetService(feature))??
+                    (features!=null ? (features.Any(t=>t.Key==feature) ? features.First(t=>t.Key==feature).Value : null) : null); 
             }
         }
 
         public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILogger log, IFormFileCollection files)
         {
-            _formData = formData;
-            _session = session;
-            _services=services;
-            _features=features;
+            this.formData = formData;
+            this.services=services;
+            this.features=features;
             this.log=log;
             this.files=files;
+            Session = session;
         }
 
         private object ConvertObjectToType(object obj, Type expectedType)
@@ -99,29 +98,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 return new Version(obj.ToString());
             if (expectedType.Equals(typeof(Guid)))
                 return new Guid(obj.ToString());
-            if (expectedType.IsArray || (obj is ArrayList))
-            {
-                int count = 1;
-                Type underlyingType;
-                if (expectedType.IsGenericType)
-                    underlyingType = expectedType.GetGenericArguments()[0];
-                else
-                    underlyingType = expectedType.GetElementType();
-                if (obj is ArrayList list)
-                    count = list.Count;
-                Array ret = Array.CreateInstance(underlyingType, count);
-                if (obj is not ArrayList list1)
-                    ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
-                else
-                {
-                    for (int x = 0; x < ret.Length; x++)
-                        ret.SetValue(ConvertObjectToType(list1[x], underlyingType), x);
-                }
-                if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
-                    return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
-                return ret;
-            }
-            if (expectedType.FullName.StartsWith("System.Collections.Generic.Dictionary"))
+            if (expectedType.GetInterfaces().Contains(typeof(IDictionary)))
             {
                 object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(Array.Empty<object>());
                 Type keyType = expectedType.GetGenericArguments()[0];
@@ -130,6 +107,32 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     ((IDictionary)ret).Add(ConvertObjectToType(str, keyType), ConvertObjectToType(((Hashtable)obj)[str], valType));
                 }
+                return ret;
+            }
+            if (obj is ICollection || expectedType.IsArray)
+            {
+                Type underlyingType;
+                if (expectedType.IsGenericType)
+                    underlyingType = expectedType.GetGenericArguments()[0];
+                else
+                    underlyingType = expectedType.GetElementType();
+                Array ret = Array.CreateInstance(underlyingType, 0);
+                if (obj is ICollection list)
+                {
+                    ret = Array.CreateInstance(underlyingType,list.Count);
+                    var idx = 0;
+                    foreach (var item in list)
+                    {
+                        ret.SetValue(ConvertObjectToType(item, underlyingType), idx);
+                        idx++;
+                    }   
+                }
+                else {
+                    ret = Array.CreateInstance(underlyingType, 1);
+                    ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
+                }
+                if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
+                    return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
                 return ret;
             }
             if (expectedType.FullName.StartsWith("System.Nullable"))

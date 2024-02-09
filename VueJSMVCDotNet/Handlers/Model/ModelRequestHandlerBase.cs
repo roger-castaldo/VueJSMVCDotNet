@@ -4,34 +4,35 @@ using System.Collections;
 using System.IO;
 using System.Text.Json;
 using static VueJSMVCDotNet.Handlers.ModelRequestHandler;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
     internal abstract class ModelRequestHandlerBase
     {
-        private const string _CONVERTED_URL_KEY = "PARSED_URL";
-        private const string _REQUEST_DATA_KEY = "CONVERTED_REQUEST_DATA";
+        private const string CONVERTED_URL_KEY = "PARSED_URL";
+        private const string REQUEST_DATA_KEY = "CONVERTED_REQUEST_DATA";
 
-        protected readonly RequestDelegate _next;
-        protected readonly delRegisterSlowMethodInstance _registerSlowMethod;
+        protected readonly RequestDelegate next;
+        protected readonly delRegisterSlowMethodInstance registerSlowMethod;
         protected readonly ILogger log;
-        private readonly ISecureSessionFactory _sessionFactory;
-        private readonly string _urlBase;
+        private readonly ISecureSessionFactory sessionFactory;
+        private readonly string urlBase;
 
         public ModelRequestHandlerBase(RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod,string urlBase, ILogger log)
         {
-            _next = next;
-            _sessionFactory=sessionFactory;
-            _registerSlowMethod=registerSlowMethod;
-            _urlBase=urlBase;
+            this.next = next;
+            this.sessionFactory=sessionFactory;
+            this.registerSlowMethod=registerSlowMethod;
+            this.urlBase=urlBase;
             this.log=log;
         }
 
         protected async Task<ModelRequestData> ExtractParts(HttpContext context)
         {
-            if (!context.Items.ContainsKey(_REQUEST_DATA_KEY))
+            if (!context.Items.ContainsKey(REQUEST_DATA_KEY))
             {
-                var session = _sessionFactory.ProduceFromContext(context);
+                var session = sessionFactory.ProduceFromContext(context);
                 var formData = new Dictionary<string,object>();
                 IFormFileCollection files = null;
                 if (context.Request.ContentType!=null &&
@@ -41,37 +42,24 @@ namespace VueJSMVCDotNet.Handlers.Model
                 ))
                 {
                     files=context.Request.Form.Files;
-                    foreach (string key in context.Request.Form.Keys)
+                    context.Request.Form.ForEach(pair =>
                     {
-                        log?.LogTrace("Loading form data value from key {}", key);
-                        if (key.EndsWith(":json"))
+                        log?.LogTrace("Loading form data value from key {}", pair.Key);
+                        if (pair.Key.EndsWith(":json"))
                         {
-                            if (context.Request.Form[key].Count>1)
-                            {
-                                StringBuilder sb = new();
-                                sb.Append('[');
-                                foreach (string str in context.Request.Form[key])
-                                    sb.Append($"{str},");
-                                sb.Length--;
-                                sb.Append(']');
-                                formData.Add(key[..^5], JsonDocument.Parse(sb.ToString()));
-                            }
+                            if (pair.Value.Count>1)
+                                formData.Add(pair.Key[..^5], JsonDocument.Parse($"[{string.Join(',', pair.Value)}]"));
                             else
-                                formData.Add(key[..^5], JsonDocument.Parse(context.Request.Form[key][0]));
+                                formData.Add(pair.Key[..^5], JsonDocument.Parse(pair.Value[0]));
                         }
                         else
                         {
-                            if (context.Request.Form[key].Count>1)
-                            {
-                                ArrayList al = new();
-                                foreach (string str in context.Request.Form[key])
-                                    al.Add(str);
-                                formData.Add(key, al);
-                            }
+                            if (pair.Value.Count>1)
+                                formData.Add(pair.Key, pair.Value.ToList());
                             else
-                                formData.Add(key, context.Request.Form[key][0]);
+                                formData.Add(pair.Key, pair.Value[0]);
                         }
-                    }
+                    });
                 }
                 else
                 {
@@ -79,35 +67,29 @@ namespace VueJSMVCDotNet.Handlers.Model
                     if (tmp!="")
                     {
                         log?.LogTrace("Loading form data from request body");
-                        foreach (var jsonProperty in JsonDocument.Parse(tmp).RootElement.EnumerateObject())
-                            formData.Add(jsonProperty.Name, jsonProperty.Value);
+                        JsonDocument.Parse(tmp).RootElement.EnumerateObject()
+                            .ForEach(jsonProperty => formData.Add(jsonProperty.Name, jsonProperty.Value));
                     }
                 }
-                context.Items.Add(_REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices,context.Features,log,files));
+                context.Items.Add(REQUEST_DATA_KEY, new ModelRequestData(formData, session,context.RequestServices,context.Features,log,files));
             }
-            return (ModelRequestData)context.Items[_REQUEST_DATA_KEY];
+            return (ModelRequestData)context.Items[REQUEST_DATA_KEY];
         }
 
         protected string CleanURL(HttpContext context)
         {
-            if (!context.Items.ContainsKey(_CONVERTED_URL_KEY))
-                context.Items.Add(_CONVERTED_URL_KEY,Utility.CleanURL(Utility.BuildURL(context, _urlBase)));
-            return (string)context.Items[_CONVERTED_URL_KEY];
+            if (!context.Items.ContainsKey(CONVERTED_URL_KEY))
+                context.Items.Add(CONVERTED_URL_KEY,Utility.CleanURL(Utility.BuildURL(context, urlBase)));
+            return (string)context.Items[CONVERTED_URL_KEY];
         }
 
         protected static RequestMethods GetRequestMethod(HttpContext context)
-        {
-            return (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
-        }
+            => (RequestMethods)Enum.Parse(typeof(RequestMethods), context.Request.Method.ToUpper());
 
         public void LoadTypes(List<Type> types)
-        {
-            InternalLoadTypes(types);
-        }
+            => InternalLoadTypes(types);
         public void UnloadTypes(List<Type> types)
-        {
-            InternalUnloadTypes(types);
-        }
+            => InternalUnloadTypes(types);
         public abstract void ClearCache();
         public abstract Task ProcessRequest(HttpContext context);
         protected abstract void InternalLoadTypes(List<Type> types);

@@ -7,7 +7,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(ref WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
             log?.LogTrace("Appending Parse method for Model Definition[{}]", modelType.Type.FullName);
             builder.AppendLine(@$"         {Constants.PARSE_FUNCTION_NAME}(jdata){{
@@ -17,13 +17,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         if (isString(jdata)){{
             jdata=JSON.parse(jdata);
         }}");
-            foreach (PropertyInfo pi in modelType.Properties)
+            modelType.Properties.ForEach(pi =>
             {
-                Type t = pi.PropertyType;
-                if (t.IsArray)
-                    t = t.GetElementType();
-                else if (t.IsGenericType)
-                    t = t.GetGenericArguments()[0];
+                JSHandler.ExtractPropertyType(pi.PropertyType, out bool array, out Type t);
                 if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                 {
                     if (Utility.IsArrayType(pi.PropertyType))
@@ -43,10 +39,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             }}");
                     }
                 }
-            }
+            });
             builder.AppendLine($"      this.{Constants.INITIAL_DATA_KEY} = jdata;");
-            foreach (PropertyInfo pi in modelType.Properties)
-                builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),{Utility.GetEnumList(pi.PropertyType)}); }}");
+            modelType.Properties.ForEach(pi => builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),{Utility.GetEnumList(pi.PropertyType)}); }}"));
             builder.AppendLine(@$"           this.#events.trigger('{Constants.Events.MODEL_PARSED}',this);
         return this;
         }}");
