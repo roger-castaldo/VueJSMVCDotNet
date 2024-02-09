@@ -4,17 +4,17 @@
         {
           "imports": {
             "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
-            "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"
+            "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js"
           }
         }
     </script>
     <script type="module">
-        import translator from './resources/messages/test.js';
+        import { Translate } from './resources/messages/test.js';
 
-        console.log(translator('Filtering'));
-        console.log(translator('Formatted', ['a single input from the array']));
-        console.log(translator('Name'));
-        console.log(translator('Name', null, 'fr'));
+        console.log(Translate('Filtering'));
+        console.log(Translate('Formatted', ['a single input from the array']));
+        console.log(Translate('Name'));
+        console.log(Translate('Name', null, 'fr'));
     </script>
     
 </head>
@@ -34,14 +34,12 @@
         import { User } from "/testing/resources/scripts/models/User.js";
         import { createApp, watch, ref, defineComponent, toRef, h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
-        import notification from "/resources/scripts/testLoader.js";
         import { List, FilteredList } from "/resources/vueFiles/lists.js";
 
         window.lst = createApp({
             components: { List }
         }).mount('#dvList');
 
-        createApp(notification).mount('#notification_container');
         window.lstFiltered = createApp(FilteredList).mount('#dvListFiltered');
 
         var person = mPerson.createInstance();

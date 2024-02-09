@@ -494,7 +494,7 @@ class EventHandler {
 	#events;
 	constructor(events) {
 		this.#events = {};
-		Object.keys(events).forEach(prop => this.#events[prop] = []);
+		events.forEach(prop => this.#events[prop] = []);
 	}
 
 	on(event, callback) {
@@ -697,18 +697,18 @@ class ModelList {
 					let mtmp = tmp.#constructModel();
 					mtmp._parse(value);
 					mtmp.$on('destroyed', (model) => {
-						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						let idx = Array.prototype.findIndex.apply(tmp.#data,[(element) => element.id === model.id]);
 						tmp.#events.trigger('model_destroyed', model);
 						Array.prototype.splice.apply(tmp.#data, [idx, 1]);
 					});
 					mtmp.$on('updated', (model) => {
-						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						let idx = Array.prototype.findIndex.apply(tmp.#data, [(element) => element.id === model.id]);
 						tmp.#events.trigger('model_updated', model);
 						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
 						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
 					});
 					mtmp.$on('loaded', (model) => {
-						let idx = tmp.#data.findIndexOf((element) => element.id === model.id);
+						let idx = Array.prototype.findIndex.apply(tmp.#data, [(element) => element.id === model.id]);
 						tmp.#events.trigger('model_loaded', model);
 						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
 						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
