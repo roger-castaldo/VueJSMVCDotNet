@@ -71,9 +71,9 @@ namespace VueJSMVCDotNet
         /// </summary>
         public string VueImportPath { get; init; } = "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js";
         /// <summary>
-        /// Optional: The import path for the Vue-Loader library: default="https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"
+        /// Optional: The import path for the Vue-Loader library: default="https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js"
         /// </summary>
-        public string VueLoaderImportPath { get; init; } = "https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js";
+        public string VueLoaderImportPath { get; init; } = "https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js";
         /// <summary>
         /// Optional: This will remap the core JS url that is imported by all classes to a different path
         /// </summary>

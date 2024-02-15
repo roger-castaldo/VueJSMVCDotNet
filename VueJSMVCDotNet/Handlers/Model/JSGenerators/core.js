@@ -519,49 +519,45 @@ class ModelList {
 	#events;
 	#data;
 	#isPaged;
-	#totalPages = undefined;
 	#constructModel;
 	#url;
 	#useGet;
 	#params = undefined;
 	#setParameters = undefined;
-	#currentIndex = undefined;
-	#currentPageSize = undefined;
+	#totalPages = vue.ref(null);
+	#currentIndex = vue.ref(null);
+	#currentPageSize = vue.ref(null);
 	#pageVariableNames = undefined;
-
-	get #currentPage() 
-	{
-		return (!this.#isPaged ? undefined : Math.floor(this.#currentIndex / this.#currentPageSize));
-	};
+	#currentPage = vue.computed(() => (!this.#isPaged ? undefined : Math.floor(this.#currentIndex.value / this.#currentPageSize.value)));
 
 
 	#moveToPage(pageNumber) {
-		if (pageNumber >= this.#totalPages || pageNumber < 0) {
+		if (pageNumber >= this.#totalPages.value || pageNumber < 0) {
 			throw 'Unable to move to Page that is outside the page range.';
 		} else {
-			this.#currentIndex = pageNumber * this.#currentPageSize;
+			this.#currentIndex.value = pageNumber * this.#currentPageSize.value;
 			return this.#reload();
 		}
 	};
 
 	#moveToNextPage() {
-		if ((this.#currentPage + 1) < this.#totalPages) {
-			return this.#moveToPage(this.#currentPage + 1);
+		if ((this.#currentPage.value + 1) < this.#totalPages.value) {
+			return this.#moveToPage(this.#currentPage.value + 1);
 		} else {
 			throw 'Unable to move to next Page as that will excess current total pages.';
 		}
 	};
 
 	#moveToPreviousPage() {
-		if ((this.#currentPage) >= 0) {
-			return this.moveToPage(this.#currentPage - 1);
+		if ((this.#currentPage.value) > 0) {
+			return this.moveToPage(this.#currentPage.value - 1);
 		} else {
 			throw 'Unable to move to previous Page as that will be before the first page.';
 		}
 	};
 
 	#changePageSize(size) {
-		this.#currentPageSize = size;
+		this.#currentPageSize.value = size;
 		return this.#reload();
 	};
 
@@ -575,8 +571,8 @@ class ModelList {
 		this.#params = currentParams;
 		this.#data = vue.reactive([]);
 		if (isPaged) {
-			this.#currentIndex = (currentIndex === undefined ? 0 : currentIndex);
-			this.#currentPageSize = (currentPageSize === undefined ? 10 : currentPageSize);
+			this.#currentIndex.value = currentIndex ?? 0;
+			this.#currentPageSize.value = currentPageSize ?? 10;
 			this.#pageVariableNames = pageVariableNames;
 		}
 		this.#reload();
@@ -670,8 +666,8 @@ class ModelList {
 		let tmp = this;
 		let data = {};
 		if (tmp.#isPaged) {
-			data[tmp.#pageVariableNames["PageStartIndex"]] = tmp.#currentIndex;
-			data[tmp.#pageVariableNames["PageSize"]] = tmp.#currentPageSize;
+			data[tmp.#pageVariableNames["PageStartIndex"]] = tmp.#currentIndex.value;
+			data[tmp.#pageVariableNames["PageSize"]] = tmp.#currentPageSize.value;
 		}
 		for (let prop in tmp.#params) {
 			data[prop] = tmp.#params[prop];
@@ -686,11 +682,11 @@ class ModelList {
 		if (response.ok) {
 			let data = response.json();
 			if (data === null) {
-				tmp.#totalPages = 0;
+				tmp.#totalPages.value = 0;
 				Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length]);
 			} else {
 				if (data.TotalPages !== undefined) {
-					tmp.#totalPages = data.TotalPages;
+					tmp.#totalPages.value = data.TotalPages;
 					data = data.response;
 				}
 				data = data.map(value => {
@@ -737,10 +733,10 @@ class ModelList {
 		};
 		if (this.#isPaged) {
 			Object.assign(ret, {
-				currentIndex: vue.readonly(vue.ref(me.#currentIndex)),
-				currentPage: vue.readonly(vue.ref(me.#currentPage)),
-				currentPageSize: vue.readonly(vue.ref(me.#currentPageSize)),
-				totalPages: vue.readonly(vue.ref(me.#totalPages)),
+				currentIndex: vue.readonly(me.#currentIndex),
+				currentPage: me.#currentPage,
+				currentPageSize: vue.readonly(me.#currentPageSize),
+				totalPages: vue.readonly(me.#totalPages),
 				moveToPage: function (pageNumber) { return me.#moveToPage(pageNumber); },
 				moveToNextPage: function () { return me.#moveToNextPage(); },
 				moveToPreviousPage: function () { return me.#moveToPreviousPage(); },
@@ -945,7 +941,7 @@ const vueSFCOptions = {
 		get(key) {
 			if (_cachedCode.indexOf(key) >= 0)
 				return window.sessionStorage.getItem(key);
-			return null;
+			return undefined;
 		}
 	},
 	async getFile(url) {

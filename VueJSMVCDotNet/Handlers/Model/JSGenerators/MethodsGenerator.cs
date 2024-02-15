@@ -24,9 +24,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                         && !mi.GetParameters().Any(p => p.ParameterType==typeof(IFormFile) || p.ParameterType==typeof(IReadOnlyList<IFormFile>))).ToString().ToLower()},
                         data:function_data{(isSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")}
                     }});
-                        {(returnType == typeof(void) ? "" : @"let ret=response.json();
-                    if (ret===undefined||ret===null)
-                        response = ret;")}");
+                    if (!response.ok)
+                        return Promise.reject(response.text());
+                        {(returnType == typeof(void) ? "" : "response = response.json();")}");
                     if (returnType != typeof(void))
                     {
                         builder.AppendLine(@$"if (response==null){{
@@ -35,12 +35,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                         if (new List<Type>(returnType.GetInterfaces()).Contains(typeof(IModel)))
                         {
                             if (array)
-                                builder.AppendLine(@$"         response = response.map((r)=>_{returnType.Name}(r));");
+                                builder.AppendLine($"         response = response.map((r)=>_{returnType.Name}(r));");
                             else
-                            {
-                                builder.AppendLine(@$"             ret = _{returnType.Name}(response);
-            response=ret;");
-                            }
+                                builder.AppendLine($"             response = _{returnType.Name}(response);");
                         }
                         builder.AppendLine(@"           return response;
         }");
