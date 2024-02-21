@@ -849,7 +849,16 @@ const ModelMethods = {
 ///Vue File Section
 
 const vueFileReg = new RegExp('^.+\.vue$');
+const mjsFileReg = new RegExp('^.+\.mjs$');
+const jsFileReg = new RegExp('^.+\.js$');
 const _vueFileCache = new Map();
+const _linkedDomains = [];
+
+const addLinkedDomain = (domain) => {
+	if (!_linkedDomains.some(l => l.toLowerCase() === domain.toLowerCase())) {
+		_linkedDomains.push(domain.toLowerCase());
+	}
+}
 
 const _formatURL = function(url)
 {
@@ -893,7 +902,8 @@ const _fetchVueFile = async function (url) {
 					getContentData: (asBinary) => _vueFileCache.get(nurl)
 				};
 			} else {
-				if (url.indexOf("http:") === 0 || url.indexOf("https:") === 0) {
+				if ((url.indexOf("http:") === 0 || url.indexOf("https:") === 0)
+					&& !_linkedDomains.some(l => new URL(url).origin.toLowerCase()===l)) {
 					const res = await ajax({
 						url: url,
 						useJSON: false
@@ -909,7 +919,9 @@ const _fetchVueFile = async function (url) {
 				};
 			}
 		}
-	} else {
+	} else if (mjsFileReg.test(url) || jsFileReg.test(url)) {
+		return { getContentData: (mjsFileReg.test(url) ? `${url.substring(0, url.length - 3)}js` : url) };
+	}else {
 		const res = await fetch(url, _applySecurityHeaders({}));
 		if (!res.ok) 
 			throw Object.assign(new Error(res.statusText + ' ' + url), { res });
@@ -952,9 +964,17 @@ const vueSFCOptions = {
 		const ref = document.head.getElementsByTagName('style')[0] || null;
 		document.head.insertBefore(style, ref);
 	},
-	async handleModule(type, source, path, options) {
-		if (type === '.json')
-			return JSON.parse(await source(false));
+	async handleModule(type, getContentData, path, options) {
+		switch (type) {
+			case '.json':
+				return JSON.parse(await getContentData(false));
+				break;
+			case '.js':
+			case '.mjs':
+				return await import(getContentData);
+				break;
+		}
+		return undefined;
 	}
 }
 
@@ -977,4 +997,4 @@ const SetLanguage = function (language) {
 	_language.value = language;
 }
 
-export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions,Language,SetLanguage,ResetLanguage};
+export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions, Language, SetLanguage, ResetLanguage, addLinkedDomain };

@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using VueJSMVCDotNet.Caching;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System;
 
 namespace VueJSMVCDotNet.Handlers
 {
@@ -14,7 +15,8 @@ namespace VueJSMVCDotNet.Handlers
         private static readonly Regex regImport = new(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled,TimeSpan.FromMilliseconds(500));
         private static readonly Regex regImportExtensions = new(@"^.+\.(js|vue)$", RegexOptions.Compiled|RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500));
         private static readonly Regex regImportParts = new(@"\{([^\}]+)\}", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-        private static readonly Regex regInlineImport = new(@"\s*import\((""[^""]+\.js""|'[^']+\.js')\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+        private static readonly Regex regInlineImport = new(@"\s*import\((""[^""]+\.js""|'[^']+\.js'|\\`[^`]+\.js\\`)\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+        private static readonly Regex regLoadModule = new(@"\s*loadModule\((""[^""]+\.vue""|'[^']+\.vue'|\\`[^`]+\.vue\\`)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
 
         private readonly struct SVueFile
         {
@@ -53,8 +55,12 @@ namespace VueJSMVCDotNet.Handlers
             {
                 var fixedContent = regImport.Replace(content, (m) => {
                     var import = (m.Groups[3].Value=="" ? m.Groups[4].Value : m.Groups[3].Value);
+                    var mergedURL = "";
                     if (import.EndsWith(".vue"))
-                        return $"import{m.Groups[1].Value}'{MergeUrl(absolutePath, import, isFolder)}';";
+                    {
+                        mergedURL=MergeUrl(absolutePath, import, isFolder);
+                        return $"import{m.Groups[1].Value}'{(mergedURL.StartsWith('/') ? "${hosturl.origin}" : "")}{mergedURL}';";
+                    }
                     else if (import.EndsWith("/"))
                     {
                         var subMatch = regImportParts.Match(m.Groups[1].Value);
@@ -62,19 +68,30 @@ namespace VueJSMVCDotNet.Handlers
                         {
                             var sb = new StringBuilder();
                             foreach (var imp in subMatch.Groups[1].Value.Split(',').Where(i => !string.IsNullOrEmpty(i.Trim())))
-                                sb.AppendLine($"import {imp.Trim()} from '{MergeUrl(absolutePath, $"{import}{imp.Trim()}.vue", isFolder)}';");
+                            {
+                                mergedURL = MergeUrl(absolutePath, $"{import}{imp.Trim()}.vue", isFolder);
+                                sb.AppendLine($"import {imp.Trim()} from '{(mergedURL.StartsWith('/') ? "${hosturl.origin}" : "")}{mergedURL}';");
+                            }
                             return sb.ToString();
                         }
                         else
-                            return m.Value;
+                            return (import.StartsWith('/') ? $"import {m.Groups[1].Value} '${{hosturl.origin}}{import}';" : m.Value);
                     }
-                    else if (isModelUrl(import))
-                        return (import.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase) ? m.Value.Replace(import,$"{import[..^2]}mjs") : m.Value);
                     else
-                        return m.Value;
+                        return (import.StartsWith('/') ? $"import {m.Groups[1].Value} '${{hosturl.origin}}{import}';" : m.Value);
                 });
-                fixedContent = regInlineImport.Replace(fixedContent, (m) => m.Value.Replace(m.Groups[1].Value, $"{m.Groups[1].Value[..^3]}mjs{m.Groups[1].Value[0]}"));
-                return $"cacheVueFile('{absolutePath}{Name}',`{fixedContent}`);";
+                fixedContent = regInlineImport.Replace(fixedContent, (m) => {
+                    var url = (m.Groups[1].Value[0]=='\\' ? m.Groups[1].Value[2..^2] : m.Groups[1].Value[1..^1]);
+                    var quote = (m.Groups[1].Value[0]=='\\' ? m.Groups[1].Value[..2] : m.Groups[1].Value[..1]);
+                    return m.Value.Replace(m.Groups[1].Value, $"{quote}{(url.StartsWith('/') ? "${hosturl.origin}" : "")}{url[..^2]}mjs{quote}");
+                });
+                fixedContent = regLoadModule.Replace(fixedContent, (m) =>
+                {
+                    var url = (m.Groups[1].Value[0]=='\\' ? m.Groups[1].Value[2..^2] : m.Groups[1].Value[1..^1]);
+                    var quote = (m.Groups[1].Value[0]=='\\' ? m.Groups[1].Value[..2] : m.Groups[1].Value[..1]);
+                    return m.Value.Replace(m.Groups[1].Value, $"{quote}{(url.StartsWith('/') ? "${hosturl.origin}" : "")}{url}{quote}");
+                });
+                return $"cacheVueFile(`${{hosturl.origin}}{absolutePath}{Name}`,`{fixedContent}`);";
             }
         }
 
@@ -135,7 +152,10 @@ namespace VueJSMVCDotNet.Handlers
                             StringBuilder sb = new();
                             sb.AppendLine(@$"import {{ loadModule }} from '{vueLoaderImportPath}';
 import {{defineAsyncComponent}} from '{vueImportPath}';
-import {{cacheVueFile, vueSFCOptions}} from '{coreImport}';");
+import {{cacheVueFile, vueSFCOptions, addLinkedDomain}} from '{coreImport}';
+
+{Constants.HOST_URL_CONSTRUCTOR}
+addLinkedDomain(hosturl.origin);");
 
                             var multipleFiles = files.Count()>1;
 
@@ -144,34 +164,27 @@ import {{cacheVueFile, vueSFCOptions}} from '{coreImport}';");
                                 .Select(imp => MergeUrl(absolutePath, imp, multipleFiles))
                                 .Distinct();
 
-                            //append vue file imports
-                            imports.Where(imp =>
-                                !isModelUrl(imp) && (
-                                    imp.Length<=4
+                            var importCaches = imports.Where(imp => imp.Length<=4
                                     || (imp.Length>4
                                         && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
                                         )
                                     )
-                                )
-                                .ForEach(imp => sb.AppendLine($"import * as {VueFilesHandler.ComputeKey(imp)} from '{imp}';"));
+                                .Select(imp => (isModelUrl(imp) ? $"{(imp.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? imp[..^3] : imp[..^2])}{(compressAllJS||spath.EndsWith(".min.js") ? "min." : "")}js" : imp))
+                                .Select(imp => $"`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`");
 
-                            //append non vue file imports
-                            VueFilesHandler.MergeVueImports((multipleFiles ? absolutePath.Trim('/') : baseURL),
-                                imports.Where(imp =>
-                                    imp.Length>3 && string.Equals(imp[^3..], "vue", StringComparison.InvariantCultureIgnoreCase)
-                                ), files)
-                                .ForEach(imp => sb.AppendLine($"import '{imp}';"));
-
-                            //append vue file module caching
-                            imports.Where(imp =>
-                                !isModelUrl(imp) && (
-                                    imp.Length<=4
-                                    || (imp.Length>4
-                                        && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
-                                        )
-                                    )
-                                )
-                                .ForEach(url => sb.AppendLine($"vueSFCOptions.moduleCache['{url}'] = {VueFilesHandler.ComputeKey(url)};"));
+                            if (importCaches.Any())
+                                sb.Append($"const imports = ");
+                            if (imports.Any())
+                            {
+                                sb.AppendLine($@"await Promise.all([
+{string.Join(",\n", importCaches.Select(c => $"import({c})"))}{(importCaches.Any()&&imports.Any(imp=>imp.EndsWith(".vue",StringComparison.InvariantCulture))?",":"")}
+{string.Join(",\n", VueFilesHandler.MergeVueImports((multipleFiles ? absolutePath.Trim('/') : baseURL),
+                                imports.Where(imp => imp.EndsWith(".vue", StringComparison.InvariantCulture)), files)
+                        .Select(imp=> $"import(`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`)"))}
+]);");
+                            }
+                            importCaches
+                            .ForEach((c,index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = imports[{index}];"));
 
                             //append file content cache
                             files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl)));
@@ -181,7 +194,7 @@ import {{cacheVueFile, vueSFCOptions}} from '{coreImport}';");
                                 .ForEach(file =>
                                 {
                                     var fileName = FormatFileName(file.Name);
-                                    sb.AppendLine($"const {fileName} = defineAsyncComponent(() => loadModule('{absolutePath}{file.Name}', vueSFCOptions));");
+                                    sb.AppendLine($"const {fileName} = defineAsyncComponent(() => loadModule(`${{hosturl.origin}}{absolutePath}{file.Name}`, vueSFCOptions));");
                                 });
 
                             if (files.Count()==1)

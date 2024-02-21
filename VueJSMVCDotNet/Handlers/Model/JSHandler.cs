@@ -86,6 +86,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         }
 
         private static readonly IBasicJSGenerator[] oneTimeInitialGenerators = new IBasicJSGenerator[]{
+            new HeaderGenerator(),
             new ParsersGenerator()
         };
 
@@ -111,7 +112,6 @@ namespace VueJSMVCDotNet.Handlers.Model
         private readonly IMemoryCache cache;
         private readonly ReaderWriterLockSlim locker;
         private readonly Dictionary<Type,ModelJSFilePath[]> types;
-        private readonly Dictionary<Type, IEnumerable<ASecurityCheck>> securityChecks;
         private readonly string urlBase;
         private readonly string vueImportPath;
         private readonly string coreImportPath;
@@ -126,7 +126,6 @@ namespace VueJSMVCDotNet.Handlers.Model
             this.coreImportPath=coreImportPath;
             this.compressAllJS=compressAllJS;
             keys = new List<string>();
-            securityChecks=new Dictionary<Type, IEnumerable<ASecurityCheck>>();
             types = new Dictionary<Type, ModelJSFilePath[]>();
             locker = new ReaderWriterLockSlim();
         }
@@ -136,7 +135,6 @@ namespace VueJSMVCDotNet.Handlers.Model
             locker.EnterWriteLock();
             keys.ForEach(key => cache.Remove(key));
             keys.Clear();
-            securityChecks.Clear();
             locker.ExitWriteLock();
         }
 
@@ -156,18 +154,6 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     found=true;
                     var reqData = await ExtractParts(context);
-                    if (models.SelectMany(model =>
-                        {
-                            locker.EnterWriteLock();
-                            if (!securityChecks.ContainsKey(model))
-                                securityChecks.Add(model, model.GetCustomAttributes().OfType<ASecurityCheck>());
-                            locker.ExitWriteLock();
-                            locker.EnterReadLock();
-                            var checks = securityChecks[model];
-                            locker.ExitReadLock();
-                            return checks;
-                        }).Any(check => !check.HasValidAccess(reqData, null, url, null)))
-                        throw new InsecureAccessException();
                     DateTime modDate = models.Select(model =>
                     {
                         FileInfo fi = new(model.Assembly.Location);

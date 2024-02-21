@@ -93,12 +93,12 @@ namespace AutomatedTesting
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
                 string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out _)).ReadToEnd();
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @$"
+                eng.Modules.Add("Translate", content);
+                eng.Modules.Add("custom", @$"
     import {{Translate as translator}} from 'Translate';
     import {{SetLanguage}} from 'VueJSMVCDotNet_core';
 {additionalCode}");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(result, ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)

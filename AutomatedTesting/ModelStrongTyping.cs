@@ -31,14 +31,14 @@ namespace AutomatedTesting
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.AddModule("mDataTypes", _content);
-                eng.AddModule("custom", string.Format(@"
+                eng.Modules.Add("mDataTypes", _content);
+                eng.Modules.Add("custom", string.Format(@"
     import {{ mDataTypes }} from 'mDataTypes';
     let mdl = new mDataTypes();
     {0}
     export const name = 'John';
 ", additionalCode));
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.IsTrue((errorMessage!=null ? false : ns.Get("name").AsString()=="John"));
             }
             catch (Esprima.ParserException e)

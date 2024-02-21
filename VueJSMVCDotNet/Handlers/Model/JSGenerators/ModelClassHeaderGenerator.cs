@@ -12,12 +12,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
             log?.LogTrace("Generating Model Definition javascript for {}", modelType.Type.FullName);
-
+            var url = Utility.GetModelUrlRoot(modelType.Type, urlBase);
             builder.AppendLine(@$" class {modelType.Type.Name} {{
         {Constants.INITIAL_DATA_KEY}=undefined;
         #isNew(){{ return this.{Constants.INITIAL_DATA_KEY}===undefined || this.{Constants.INITIAL_DATA_KEY}===null || this.{Constants.INITIAL_DATA_KEY}.id===undefined || this.{Constants.INITIAL_DATA_KEY}.id===null; }};
         #events=undefined;
-        static get #baseURL(){{return '{Utility.GetModelUrlRoot(modelType.Type, urlBase)}';}};");
+        static get #baseURL(){{return `{(url.StartsWith('/')? "${hosturl.origin}" : "")}{url}`;}};");
 
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 

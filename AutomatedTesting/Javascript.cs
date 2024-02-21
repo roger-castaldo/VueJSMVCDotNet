@@ -39,10 +39,10 @@ namespace AutomatedTesting
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("core", content);
-                eng.AddModule("custom", @"import {isEqual} from 'core';
+                eng.Modules.Add("core", content);
+                eng.Modules.Add("custom", @"import {isEqual} from 'core';
 export const testResult = isEqual('test','test');");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.IsTrue(ns.Get("testResult").AsBoolean());
             }
             catch (Esprima.ParserException e)
@@ -71,10 +71,10 @@ export const testResult = isEqual('test','test');");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+                eng.Modules.Add("mPerson", content);
+                eng.Modules.Add("custom", @"import { mPerson } from 'mPerson';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch(Esprima.ParserException e)
@@ -103,10 +103,10 @@ export const name = 'John';");
             Engine eng = Utility.CreateEngine(middleware:_middleware);
             try
             {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+                eng.Modules.Add("mPerson", content);
+                eng.Modules.Add("custom", @"import { mPerson } from 'mPerson';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -129,10 +129,10 @@ export const name = 'John';");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+                eng.Modules.Add("mPerson", content);
+                eng.Modules.Add("custom", @"import { mPerson } from 'mPerson';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -173,11 +173,11 @@ export const name = 'John';");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
-                eng.AddModule("mLocation", content);
-                eng.AddModule("custom", @"import { mLocation } from 'mLocation';
+                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -207,11 +207,11 @@ export const name = 'John';");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
-                eng.AddModule("mLocation", content);
-                eng.AddModule("custom", @"import { mLocation } from 'mLocation';
+                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -271,10 +271,10 @@ export const name = 'John';");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import {Translate} from 'Translate';
+                eng.Modules.Add("Translate", content);
+                eng.Modules.Add("custom", @"import {Translate} from 'Translate';
 export const name = Translate('Name',null);");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -297,10 +297,10 @@ export const name = Translate('Name',null);");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import {Translate} from 'Translate';
+                eng.Modules.Add("Translate", content);
+                eng.Modules.Add("custom", @"import {Translate} from 'Translate';
 export const name = Translate('Name',null,'en');");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -360,10 +360,10 @@ export const name = Translate('Name',null,'en');");
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("notification", content);
-                eng.AddModule("custom", @"import notification from 'notification';
+                eng.Modules.Add("notification", content);
+                eng.Modules.Add("custom", @"import notification from 'notification';
 export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
             }
             catch (Esprima.ParserException e)
@@ -388,10 +388,10 @@ export const check = notification!==undefined && notification!==null && notifica
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.AddModule("notification", content);
-                eng.AddModule("custom", @"import notification from 'notification';
+                eng.Modules.Add("notification", content);
+                eng.Modules.Add("custom", @"import notification from 'notification';
 export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
             }
             catch (Esprima.ParserException e)

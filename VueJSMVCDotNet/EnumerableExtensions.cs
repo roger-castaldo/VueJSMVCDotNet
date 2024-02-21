@@ -13,5 +13,16 @@ namespace VueJSMVCDotNet
             foreach (T item in enu) action(item);
             return enu; // make action Chainable/Fluent
         }
+
+        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> enu, Action<T,int> action)
+        {
+            int idx = 0;
+            foreach (T item in enu)
+            {
+                action(item, idx);
+                idx++;
+            }
+            return enu; // make action Chainable/Fluent
+        }
     }
 }

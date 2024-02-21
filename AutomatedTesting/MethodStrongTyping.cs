@@ -100,9 +100,9 @@ export const name = 'John';");
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.AddModule("mDataTypes", _content);
-                eng.AddModule("custom", _GenerateCalls(call, ignoreBytes));
-                var ns = eng.ImportModule("custom");
+                eng.Modules.Add("mDataTypes", _content);
+                eng.Modules.Add("custom", _GenerateCalls(call, ignoreBytes));
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)
@@ -140,8 +140,8 @@ export const name = 'John';");
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.AddModule("mDataTypes", _content);
-                eng.AddModule("custom", @"
+                eng.Modules.Add("mDataTypes", _content);
+                eng.Modules.Add("custom", @"
         import { mDataTypes } from 'mDataTypes';
         try{
             mDataTypes.TestSingleNotNullInput(' ',null);
@@ -159,7 +159,7 @@ export const name = 'John';");
             }
         }
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Esprima.ParserException e)

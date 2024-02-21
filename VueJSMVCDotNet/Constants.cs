@@ -10,6 +10,7 @@
         public static readonly BindingFlags INSTANCE_METHOD_FLAGS = BindingFlags.Public|BindingFlags.Instance;
         public static readonly BindingFlags STATIC_INSTANCE_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static;
         public const string VUE_IMPORT_NAME = "vue";
+        public const string HOST_URL_CONSTRUCTOR = "const hosturl = new URL((document===undefined ? (import.meta===undefined ? '' : import.meta.url) : (document.currentScript===null||document.currentScript===undefined ? import.meta.url : document.currentScript.src)));";
         public static class Events
         {
             public const string MODEL_LOADED = "loaded";

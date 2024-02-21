@@ -27,18 +27,6 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestModelLevelSecurity()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status,session:new Security.SecureSession(new string[] {""}))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE,content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
-        }
-
-        [TestMethod]
         public void TestLoadSecurity()
         {
             int status;

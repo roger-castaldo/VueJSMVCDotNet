@@ -127,24 +127,29 @@ namespace AutomatedTesting
             opt.EnableModules(typeof(Utility).Assembly.Location.Substring(0, typeof(Utility).Assembly.Location.LastIndexOf(Path.DirectorySeparatorChar)));
             Engine engine = new Engine(opt);
             StreamReader sr = new StreamReader(new FileStream("./resources/vue.esm-browser.prod.js", FileMode.Open, FileAccess.Read, FileShare.Read));
-            engine.AddModule(
+            engine.Modules.Add(
                 _VUE_IMPORT_PATH, 
                 sr.ReadToEnd()
             );
             sr.Close();
             sr = new StreamReader(new FileStream("./resources/vue3-sfc-loader.esm.js", FileMode.Open, FileAccess.Read, FileShare.Read));
-            engine.AddModule(
+            engine.Modules.Add(
                 _VUE_LOADER_PATH,
                 sr.ReadToEnd()
             );
             sr.Close();
-            int status;
-            engine.AddModule(
+            engine.Modules.Add(
                 "VueJSMVCDotNet_core",
-                ReadJavascriptResponse(ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", middleware,out status))
+                ReadJavascriptResponse(ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", middleware,out _))
             );
-            engine.SetValue("window", "{navigator:{language:'en-ca'}}");
-            return engine;
+            return engine
+                .SetValue("window", "{navigator:{language:'en-ca'}}")
+                .Execute("const document = {currentScript:{src:'http://localhost/'},createElement:function(elem){return {tag:elem};}}")
+                .Execute(@"class URL {
+  constructor(url) {
+    this.origin = url??'http://localhost/';
+  }
+}");
         }
 
         public static string ReadJavascriptResponse(MemoryStream stream)

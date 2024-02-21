@@ -28,6 +28,7 @@ const _format = function (str, args) {{
 }};
 
 const _translate = function(message,args,language){{
+    if (message===null) {{ return null; }}
     let splt = message.split('.');
     let ret = null;
     let langs = [Language.value, 'en'];
