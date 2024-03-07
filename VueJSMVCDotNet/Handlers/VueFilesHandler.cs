@@ -184,7 +184,7 @@ addLinkedDomain(hosturl.origin);");
 ]);");
                             }
                             importCaches
-                            .ForEach((c,index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = imports[{index}];"));
+                            .ForEach((c,index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = {{...{{__esModule:true}}, ...imports[{index}]}};"));
 
                             //append file content cache
                             files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl)));

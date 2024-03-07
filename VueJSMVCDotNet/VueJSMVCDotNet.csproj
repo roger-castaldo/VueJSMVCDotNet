@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-	  <AssemblyVersion>3.2.3</AssemblyVersion>
+	  <AssemblyVersion>3.3</AssemblyVersion>
     <PackageReleaseNotes>adjusted importing behaviour to use mjs for module loading</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <FileVersion>$(AssemblyVersion)</FileVersion>
