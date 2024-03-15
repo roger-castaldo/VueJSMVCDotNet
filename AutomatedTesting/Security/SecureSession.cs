@@ -3,6 +3,7 @@ using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting.Security
 {
@@ -43,12 +44,12 @@ namespace AutomatedTesting.Security
             context.Request.Headers.Add("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
         }
 
-        public ISecureSession ProduceFromContext(HttpContext context)
+        public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
         {
             if (context.Request.Headers.ContainsKey("RIGHTS"))
-                return new SecureSession((string[])System.Text.Json.JsonSerializer.Deserialize(context.Request.Headers["RIGHTS"].ToString(), typeof(string[])));
+                return Task.FromResult<ISecureSession>(new SecureSession((string[])System.Text.Json.JsonSerializer.Deserialize(context.Request.Headers["RIGHTS"].ToString(), typeof(string[]))));
             else
-                return new SecureSession();
+                return Task.FromResult<ISecureSession>(new SecureSession());
         }
     }
 }

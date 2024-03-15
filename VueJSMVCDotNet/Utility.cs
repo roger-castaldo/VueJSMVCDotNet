@@ -180,31 +180,56 @@ namespace VueJSMVCDotNet
 
         public static bool IsArrayType(Type type)
         {
-            return type.IsArray ||
-                (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
+            ExtractUnderlyingType(type, out var isArray, out _, out _);
+            return isArray;
+        }
+
+        public static Type ExtractUnderlyingType(Type type,out bool isArray,out bool isNullable,out bool isTask)
+        {
+            isArray = false;
+            isNullable = false;
+            isTask= false;
+            if (type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>)))
+            {
+                isTask=true;
+                if (type.IsGenericType)
+                    type=type.GetGenericArguments()[0];
+                else
+                    return typeof(void);
+            }
+            if (type.IsArray)
+            {
+                isArray=true;
+                type=type.GetElementType();
+            }else if (type.IsGenericType && type.GetGenericTypeDefinition().GetInterfaces().Any(t=>t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>)))
+            {
+                isArray=true;
+                type=type.GetGenericArguments()[0];
+            }
+            if (type.FullName.StartsWith("System.Nullable"))
+            {
+                isNullable=true;
+                if (type.IsGenericType)
+                    type=type.GetGenericArguments()[0];
+                else
+                    type=type.GetElementType();
+            }
+            return type;
         }
 
         internal static string GetTypeString(Type propertyType, bool notNullTagged)
         {
-            if (propertyType.IsArray)
-                return GetTypeString(propertyType.GetElementType(), false) + "[]"+(propertyType.GetElementType() == typeof(Byte) && !notNullTagged ? "?" : "");
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                return GetTypeString(propertyType.GetGenericArguments()[0], false) + "[]";
-            else if (propertyType.FullName.StartsWith("System.Nullable"))
-            {
-                if (propertyType.IsGenericType)
-                    return GetTypeString(propertyType.GetGenericArguments()[0], true)+"?";
-                else
-                    return GetTypeString(propertyType.GetElementType(), true)+"?";
-            }
-            else if (propertyType.IsEnum)
+            var ptype = ExtractUnderlyingType(propertyType,out var isArray,out var isNullable,out _);
+            if (isArray)
+                return $"{GetTypeString(ptype, false)}[]{(ptype==typeof(byte) && !notNullTagged ? "?" : "")}";
+            else if (isNullable)
+                return $"{GetTypeString(ptype, true)}?";
+            else if (ptype.IsEnum)
                 return "Enum";
-            else if (propertyType.IsSubclassOf(typeof(Exception)))
+            else if (ptype.IsSubclassOf(typeof(Exception)))
                 return "System.Exception";
-            else if (propertyType==typeof(IFormFile))
+            else if (ptype==typeof(IFormFile))
                 return "IFormFile"+(!notNullTagged ? "?" : "");
-            else if (propertyType==typeof(IReadOnlyList<IFormFile>))
-                return "IFormFile[]";
             else
             {
                 switch (propertyType.FullName)
@@ -237,30 +262,9 @@ namespace VueJSMVCDotNet
 
         internal static string GetEnumList(Type propertyType)
         {
-            if (propertyType.IsArray)
-                return GetEnumList(propertyType.GetElementType());
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                return GetEnumList(propertyType.GetGenericArguments()[0]);
-            else if (propertyType.FullName.StartsWith("System.Nullable"))
-            {
-                if (propertyType.IsGenericType)
-                    return GetEnumList(propertyType.GetGenericArguments()[0]);
-                else
-                    return GetEnumList(propertyType.GetElementType());
-            }
-            if (propertyType.IsEnum)
-            {
-                StringBuilder sb = new();
-                sb.Append('[');
-                bool isFirst = true;
-                foreach (string str in Enum.GetNames(propertyType))
-                {
-                    sb.Append($"{(isFirst ? "" : ",")}'{str}'");
-                    isFirst = false;
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
+            var type = ExtractUnderlyingType(propertyType, out _, out _, out _);
+            if (type.IsEnum)
+                return $"[{string.Join(',',Enum.GetNames(type).Select(s=>$"'{s}'"))}]";
             else
                 return "undefined";
         }

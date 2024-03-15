@@ -20,27 +20,18 @@ namespace VueJSMVCDotNet.Handlers.Model
             public IEnumerable<MethodInfo> InstanceMethods { get; private init; }
             public IEnumerable<MethodInfo> StaticMethods { get; private init; }
 
-            private static Type ExtractType(Type t)
-            {
-                if (t.IsArray)
-                    t = t.GetElementType();
-                else if (t.IsGenericType)
-                    t = t.GetGenericArguments()[0];
-                return t;
-            }
-
             private IEnumerable<SModelType> linkedTypes;
             public IEnumerable<SModelType> LinkedTypes
             {
                 get
                 {
                     return linkedTypes ??= Properties.Where(pi => pi.CanRead)
-                            .Select(pi => ExtractType(pi.PropertyType))
+                            .Select(pi => Utility.ExtractUnderlyingType(pi.PropertyType,out _,out _,out _))
                             .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                             .Select(t => new SModelType(t))
                             .Concat(
                                 InstanceMethods.Concat(StaticMethods)
-                                .Select(mi=>ExtractType(mi.ReturnType))
+                                .Select(mi=> Utility.ExtractUnderlyingType(mi.ReturnType,out _,out _,out _))
                                 .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                                 .Select(t => new SModelType(t))
                             )
@@ -277,32 +268,6 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             result = types?.Any(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))??false;
             locker.ExitReadLock();
             return result;
-        }
-
-        internal static void ExtractPropertyType(Type type, out bool array, out Type propType)
-        {
-            propType = type;
-            array = false;
-            if (propType.FullName.StartsWith("System.Nullable"))
-            {
-                if (propType.IsGenericType)
-                    propType = propType.GetGenericArguments()[0];
-                else
-                    propType = propType.GetElementType();
-            }
-            if (propType.IsArray)
-            {
-                array = true;
-                propType = propType.GetElementType();
-            }
-            else if (propType.IsGenericType)
-            {
-                if (propType.GetGenericTypeDefinition() == typeof(List<>))
-                {
-                    array = true;
-                    propType = propType.GetGenericArguments()[0];
-                }
-            }
         }
     }
 }

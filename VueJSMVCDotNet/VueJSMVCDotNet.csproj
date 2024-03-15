@@ -41,10 +41,10 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
-	    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="6.0.0" />
+	    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="6.0.0" />
     </ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
 		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />

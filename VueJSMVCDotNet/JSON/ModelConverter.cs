@@ -2,6 +2,7 @@
 using VueJSMVCDotNet.Interfaces;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Reflection.PortableExecutable;
 
 namespace VueJSMVCDotNet.JSON
 {
@@ -15,11 +16,18 @@ namespace VueJSMVCDotNet.JSON
             loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);
         }
 
+        private T Load(string id)
+        {
+            var task = loadMethod.InvokeAsync(null, requestData, pars: new object[] { id });
+            task.Wait();
+            return (T)task.Result;
+        }
+
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var result = default(T);
             if (reader.TokenType==JsonTokenType.String)
-                result = (T)loadMethod.Invoke(null,requestData,pars:new object[] { reader.GetString() });
+                result = Load(reader.GetString());
             else if (reader.TokenType==JsonTokenType.StartObject)
             {
                 reader.Read();
@@ -27,7 +35,7 @@ namespace VueJSMVCDotNet.JSON
                 if (pid=="id")
                 {
                     reader.Read();
-                    result = (T)loadMethod.Invoke(null, requestData, pars: new object[] { reader.GetString() });
+                    result = Load(reader.GetString());
                     reader.Read();
                 }
                 else

@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting.Models
 {
@@ -88,7 +89,7 @@ namespace AutomatedTesting.Models
 
         [ModelLoadMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD)]
-        public static mPerson Load(string id, ISecureSession session,IDataStore store)
+        public static Task<mPerson> Load(string id, ISecureSession session,IDataStore store)
         {
             mPerson ret = null;
             var persons = (mPerson[])store[KEY]??Persons;
@@ -100,7 +101,7 @@ namespace AutomatedTesting.Models
                     break;
                 }
             }
-            return ret;
+            return Task.FromResult<mPerson>(ret);
         }
 
         [ModelLoadAllMethod()]
@@ -369,7 +370,7 @@ namespace AutomatedTesting.Models
         public string GetInstanceSlowTimespan()
         {
             DateTime now = DateTime.Now;
-            System.Threading.Thread.Sleep(3456);
+            Task.Delay(3456).Wait();
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 

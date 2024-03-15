@@ -1,4 +1,5 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using System.Threading.Tasks;
+using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Security
@@ -12,9 +13,9 @@ namespace AutomatedTesting.Security
             _right = right;
         }
 
-        public override bool HasValidAccess(IRequestData data, IModel model, string url, string id)
+        public override Task<bool> HasValidAccessAsync(IRequestData data, IModel model, string url, string id)
         {
-            return ((SecureSession)data.Session).HasRight(_right);
+            return Task.FromResult<bool>(((SecureSession)data.Session).HasRight(_right));
         }
     }
 }

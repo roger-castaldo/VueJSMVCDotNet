@@ -19,7 +19,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         }}");
             modelType.Properties.ForEach(pi =>
             {
-                JSHandler.ExtractPropertyType(pi.PropertyType, out bool array, out Type t);
+                var t = Utility.ExtractUnderlyingType(pi.PropertyType, out var array, out _, out _);
                 if (new List<Type>(t.GetInterfaces()).Contains(typeof(IModel)))
                 {
                     if (Utility.IsArrayType(pi.PropertyType))

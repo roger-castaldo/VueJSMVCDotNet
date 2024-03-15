@@ -19,6 +19,6 @@ namespace VueJSMVCDotNet.Attributes
         /// <param name="url">The url that was called for the request</param>
         /// <param name="id">the extract id of the model</param>
         /// <returns>true if the supplied session can access</returns>
-        public abstract bool HasValidAccess(IRequestData data,IModel model,string url,string id);
+        public abstract Task<bool> HasValidAccessAsync(IRequestData data,IModel model,string url,string id);
     }
 }

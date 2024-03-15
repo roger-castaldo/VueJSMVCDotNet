@@ -139,7 +139,8 @@ namespace VueJSMVCDotNet
                 {
                     if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
                     {
-                        if (mi.ReturnType != t)
+                        Type rtype = Utility.ExtractUnderlyingType(mi.ReturnType, out var isArray, out _, out _);
+                        if (rtype != t || isArray)
                         {
                             if (!mi.ReturnType.IsAssignableFrom(t))
                             {
@@ -148,7 +149,7 @@ namespace VueJSMVCDotNet
                                 errors.Add(new InvalidLoadMethodReturnType(t, mi.Name));
                             }
                         }
-                        if (mi.ReturnType == t)
+                        if (rtype == t)
                         {
                             ParameterInfo[] pars = new InjectableMethod(mi,log).StrippedParameters;
                             if (pars.Length==1 && pars[0].ParameterType==typeof(string))
@@ -168,12 +169,8 @@ namespace VueJSMVCDotNet
                         }
                     }
                     if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod),false).Length>0){
-                        Type rtype = mi.ReturnType;
-                        if (rtype.IsArray){
-                            rtype=rtype.GetElementType();
-                        }else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(List<>)){
-                            rtype = rtype.GetGenericArguments()[0];
-                        }else{
+                        Type rtype = Utility.ExtractUnderlyingType(mi.ReturnType,out var isArray,out _,out _);
+                        if(!isArray){
                             rtype=null;
                             log?.LogTrace("Model {FullName} has an invalid return type for ModelLoadAllMethod", t.FullName);
                             invalidModels.Add(t);
@@ -203,14 +200,8 @@ namespace VueJSMVCDotNet
                     if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
                     {
                         ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
-                        Type rtype = mi.ReturnType;
-                        if (rtype.FullName.StartsWith("System.Nullable"))
-                            rtype = rtype.GetGenericArguments()[0];
-                        if (rtype.IsArray)
-                            rtype = rtype.GetElementType();
-                        else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition().GetInterfaces().Any(t=>t==typeof(System.Collections.IEnumerable)))
-                                rtype = rtype.GetGenericArguments()[0];
-                        if (rtype != t)
+                        Type rtype = Utility.ExtractUnderlyingType(mi.ReturnType,out var isArray,out _,out _);
+                        if (rtype != t || !isArray)
                         {
                             log?.LogTrace("Model {FullName} has an invalid return type for the model list method {Name}", t.FullName,mi.Name);
                             invalidModels.Add(t);

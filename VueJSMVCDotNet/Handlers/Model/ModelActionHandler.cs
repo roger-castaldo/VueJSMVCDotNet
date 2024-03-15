@@ -36,15 +36,15 @@ namespace VueJSMVCDotNet.Handlers.Model
             loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log);
         }
 
-        public IModel Load(string url, ModelRequestData request, Func<string, string> extractID = null)
+        public async Task<IModel> Load(string url, ModelRequestData request, Func<string, string> extractID = null)
         {
             if (loadMethod != null)
             {
                 var id = extractID == null ? url[(url.LastIndexOf("/") + 1)..] : extractID(url);
-                if (!loadMethod.HasValidAccess(request, null, url, id))
+                if (!await loadMethod.HasValidAccess(request, null, url, id))
                     throw new InsecureAccessException();
                 log?.LogTrace("Attempting to load model at url {}", url);
-                var result = (IModel)loadMethod.Invoke(null,request, pars:new object[] { id });
+                var result = (IModel)(await loadMethod.InvokeAsync(null,request, pars:new object[] { id }));
                 if (result != null)
                     return result;
             }
@@ -52,7 +52,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         }
 
         public async Task Invoke(string url, ModelRequestData request, HttpContext context, Func<string, string> extractID = null, Func<IModel, ModelRequestData, IModel> processLoadedModel = null)
-            => await Invoke(url,request, context, Load(url, request, extractID: extractID),processLoadedModel: processLoadedModel);
+            => await Invoke(url,request, context,await Load(url, request, extractID: extractID),processLoadedModel: processLoadedModel);
 
         public async Task InvokeWithoutLoad(string url, ModelRequestData request, HttpContext context, IModel model=null, Func<IModel, object, object[], InjectableMethod, object> extractResponse = null)
             => await Invoke(url, request, context, model, extractResponse: extractResponse);
@@ -67,7 +67,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 if (!method.IsModelUpdateOrSave)
                     throw new CallNotFoundException("Unable to locate method with matching parameters");
             }
-            if (!method.HasValidAccess(request, model, url, model?.id))
+            if (!await method.HasValidAccess(request, model, url, model?.id))
                 throw new InsecureAccessException();
             if (processLoadedModel != null)
                 model = (T)processLoadedModel(model, request);
@@ -88,15 +88,15 @@ namespace VueJSMVCDotNet.Handlers.Model
             {
                 if (method.ReturnType == typeof(void))
                 {
-                    method.Invoke(model,request, pars: pars, responseHeaders:context.Response.Headers);
+                    await method.InvokeAsync(model,request, pars: pars, responseHeaders:context.Response.Headers);
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
                 }
-                else if (method.ReturnType==typeof(string))
+                else if (method.ReturnType==typeof(string) && !method.IsArrayReturn)
                 {
                     context.Response.StatusCode= 200;
-                    string tmp = (string)method.Invoke(model,request, pars: pars, responseHeaders: context.Response.Headers);
+                    string tmp = (string)(await method.InvokeAsync(model,request, pars: pars, responseHeaders: context.Response.Headers));
                     context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
                     await context.Response.WriteAsync((tmp??Utility.JsonEncode(tmp, log)));
                 }
@@ -104,7 +104,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.ContentType= "text/json";
                     context.Response.StatusCode= 200;
-                    var resp = method.Invoke(model, request, pars: pars, responseHeaders: context.Response.Headers);
+                    var resp = await method.InvokeAsync(model, request, pars: pars, responseHeaders: context.Response.Headers);
                     if (extractResponse!=null)
                         resp = extractResponse(model, resp,pars,method);
                     await context.Response.WriteAsync(Utility.JsonEncode(resp,log));

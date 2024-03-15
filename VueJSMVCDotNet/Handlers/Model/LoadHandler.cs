@@ -24,7 +24,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             if (ModelRequestHandlerBase.GetRequestMethod(context) == ModelRequestHandler.RequestMethods.GET 
                 && (handler=handlers.FirstOrDefault(h => h.BaseURLs.Contains(url[..url.LastIndexOf("/")], StringComparer.InvariantCultureIgnoreCase)))!=null)
             {
-                var result = handler.Load(url, await ExtractParts(context));
+                var result = await handler.Load(url, await ExtractParts(context));
                 context.Response.ContentType = "text/json";
                 context.Response.StatusCode= 200;
                 await context.Response.WriteAsync(Utility.JsonEncode(result, log));

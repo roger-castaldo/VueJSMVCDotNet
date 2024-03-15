@@ -34,14 +34,14 @@ namespace VueJSMVCDotNet
             error=null;
             lastCall=DateTime.Now;
             token = new CancellationTokenSource();
-            execution = new Task(() =>
+            execution = new Task(async () =>
             {
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                        method.Invoke(model, requestData, pars: pars, addItem: new AddItem(AddItem));
+                        await method.InvokeAsync(model, requestData, pars: pars, addItem: new AddItem(AddItem));
                     else
-                        AddItem(method.Invoke(model, requestData, pars: pars, addItem: new AddItem(AddItem)), true);
+                        AddItem(await method.InvokeAsync(model, requestData, pars: pars, addItem: new AddItem(AddItem)), true);
                 }
                 catch (Exception e)
                 {

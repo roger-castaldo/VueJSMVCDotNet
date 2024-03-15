@@ -51,13 +51,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 
         private static void ExtractReturnType(MethodInfo method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse)
         {
+            returnType = Utility.ExtractUnderlyingType(method.ReturnType, out array, out _, out _);
             ExposedMethod em = (ExposedMethod)method.GetCustomAttributes(typeof(ExposedMethod), false)[0];
             isSlow=em.IsSlow;
             allowNullResponse=em.AllowNullResponse;
-            returnType = (em.ArrayElementType != null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : method.ReturnType);
-            array = false;
-            if (returnType != typeof(void))
-                JSHandler.ExtractPropertyType(returnType, out array, out returnType);
+            returnType = (em.ArrayElementType != null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : returnType);
+            array|=em.ArrayElementType!=null;
         }
 
         private static void AppendMethodCallDeclaration(MethodInfo method, WrappedStringBuilder builder, ILogger log)
@@ -68,7 +67,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             NotNullArguement nna = (method.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)method.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
             pars.ForEach(par =>
             {
-                JSHandler.ExtractPropertyType(par.ParameterType, out bool array, out Type propType);
+                var propType = Utility.ExtractUnderlyingType(par.ParameterType, out var array, out _, out _);
                 if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
                 {
                     if (array)

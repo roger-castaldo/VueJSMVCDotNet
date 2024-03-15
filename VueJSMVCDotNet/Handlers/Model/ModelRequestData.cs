@@ -149,8 +149,10 @@ namespace VueJSMVCDotNet.Handlers.Model
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                return new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log)
-                    .Invoke(null,this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
+                var task = new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log)
+                    .InvokeAsync(null,this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
+                task.Wait();
+                return task.Result;
             }
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
             {

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using VueJSMVCDotNet.Interfaces;
 
@@ -23,9 +24,9 @@ namespace TestApplication{
             }
         }
 
-        public ISecureSession ProduceFromContext(HttpContext context)
+        public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
         {
-            return new SessionManager(context);
+            return Task.FromResult<ISecureSession>(new SessionManager(context));
         }
     }
 }

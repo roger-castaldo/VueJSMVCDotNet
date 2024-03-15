@@ -32,7 +32,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         {
             if (!context.Items.ContainsKey(REQUEST_DATA_KEY))
             {
-                var session = sessionFactory.ProduceFromContext(context);
+                var session = await sessionFactory.ProduceFromContextAsync(context);
                 var formData = new Dictionary<string,object>();
                 IFormFileCollection files = null;
                 if (context.Request.ContentType!=null &&
