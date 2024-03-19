@@ -28,7 +28,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             changeParameters.apply(pars,arguments);
             return new ModelList(
                 function(){{ return new {modelType.Type.Name}(); }},
-                '{Utility.GetModelUrlRoot(modelType.Type)}/{mi.Name}',
+                `${{{modelType.Type.Name}.#baseURL}}/{mi.Name}`,
                 {mlm.Paged.ToString().ToLower()},
                 false,
                 changeParameters,

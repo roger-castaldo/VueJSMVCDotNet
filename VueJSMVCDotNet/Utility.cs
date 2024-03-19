@@ -201,9 +201,14 @@ namespace VueJSMVCDotNet
             {
                 isArray=true;
                 type=type.GetElementType();
-            }else if (type.IsGenericType && type.GetGenericTypeDefinition().GetInterfaces().Any(t=>t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>)))
+            }else if (type.IsGenericType && 
+                (
+                type.GetGenericTypeDefinition()==typeof(IEnumerable<>) ||
+                type.GetGenericTypeDefinition().GetInterfaces().Any(t=>t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>))
+             ))
             {
                 isArray=true;
+                isNullable=true;
                 type=type.GetGenericArguments()[0];
             }
             if (type.FullName.StartsWith("System.Nullable"))
