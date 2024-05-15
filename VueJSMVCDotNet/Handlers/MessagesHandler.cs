@@ -113,11 +113,7 @@ export {{Translate,ProduceComputedMessage}};";
                                     Timestamp=contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
                                     Content=(compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
                                 };
-                                fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.json").RegisterChangeCallback(state =>
-                                {
-                                    this[(string)state]=null;
-                                }, spath);
-                                this[spath] = cc;
+                                this[spath, contents.Select(f => fileProvider.Watch(f.PhysicalPath))] = cc;
                             }
                         }
                     }

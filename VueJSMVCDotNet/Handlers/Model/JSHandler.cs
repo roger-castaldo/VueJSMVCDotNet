@@ -186,7 +186,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                         {
                             log?.LogTrace("Caching generated js file for {}", url);
                             keys.Add(url);
-                            cache.Set<string>(url, ret, RequestHandlerBase.CACHE_ENTRY_OPTIONS);
+                            cache.Set<string>(url, ret, RequestHandlerBase.ProduceOptions());
                         }
                         locker.ExitWriteLock();
                     }

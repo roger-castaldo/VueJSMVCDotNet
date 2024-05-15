@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 using System.Security.Cryptography;
 using VueJSMVCDotNet.Caching;
 
@@ -7,11 +8,6 @@ namespace VueJSMVCDotNet.Handlers
 {
     internal abstract class RequestHandlerBase : IDisposable
     {
-        public static readonly MemoryCacheEntryOptions CACHE_ENTRY_OPTIONS = new()
-        {
-            SlidingExpiration=TimeSpan.FromHours(1)
-        };
-
         protected readonly RequestDelegate next;
         protected readonly ILogger log;
         private readonly IMemoryCache cache;
@@ -24,23 +20,31 @@ namespace VueJSMVCDotNet.Handlers
             this.log=log;
         }
 
+        internal static MemoryCacheEntryOptions ProduceOptions(IEnumerable<IChangeToken> changeTokens=null)
+        {
+            var result = new MemoryCacheEntryOptions()
+            {
+                SlidingExpiration=TimeSpan.FromHours(1)
+            };
+            if (changeTokens!=null)
+            {
+                foreach (var token in changeTokens)
+                    result.ExpirationTokens.Add(token);
+            }
+            return result;
+        }
+
         protected static async Task<bool> ReponseCached(HttpContext context, CachedContent cc)
         {
-            if (cc!=null)
+            if (cc!=null &&context.Request.Headers.TryGetValue("If-Modified-Since", out var modifiedSince) && cc.Timestamp.ToUniversalTime().ToString("R").Equals(modifiedSince.ToString(), StringComparison.InvariantCultureIgnoreCase))
             {
-                if (context.Request.Headers.ContainsKey("If-Modified-Since"))
-                {
-                    if (cc.Timestamp.ToUniversalTime().ToString("R").Equals(context.Request.Headers["If-Modified-Since"].ToString(), StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        context.Response.ContentType="text/javascript";
-                        context.Response.Headers.Append("accept-ranges", "bytes");
-                        context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
-                        context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
-                        context.Response.StatusCode = 304;
-                        await context.Response.WriteAsync("");
-                        return true;
-                    }
-                }
+                context.Response.ContentType="text/javascript";
+                context.Response.Headers.Append("accept-ranges", "bytes");
+                context.Response.Headers.Append("date", cc.Timestamp.ToUniversalTime().ToString("R"));
+                context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cc.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                context.Response.StatusCode = 304;
+                await context.Response.WriteAsync("");
+                return true;
             }
             return false;
         }
@@ -59,7 +63,7 @@ namespace VueJSMVCDotNet.Handlers
             await context.Response.WriteAsync(message);
         }
 
-        protected CachedContent? this[string url]
+        protected CachedContent? this[string url,IEnumerable<IChangeToken> expirationTokens=null]
         {
             get
             {
@@ -77,7 +81,7 @@ namespace VueJSMVCDotNet.Handlers
                     {
                         try
                         {
-                            cache.Set(url, value, CACHE_ENTRY_OPTIONS);
+                            cache.Set(url, value, ProduceOptions(expirationTokens));
                         }
                         catch (Exception) { }
                     }

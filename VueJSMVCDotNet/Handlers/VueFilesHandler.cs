@@ -21,12 +21,14 @@ namespace VueJSMVCDotNet.Handlers
         private readonly struct SVueFile
         {
             public string Name { get; private init; }
+            public string PhysicalPath { get;private init; }
             private readonly string content;
             public DateTimeOffset LastModified { get; private init; }
 
             public SVueFile(IFileInfo f)
             {
                 Name=f.Name;
+                PhysicalPath=f.PhysicalPath;
                 LastModified=f.LastModified;
                 StreamReader sr = new(f.CreateReadStream());
                 content=sr.ReadToEnd().Replace("\\","\\\\").Replace("`", "\\`").Replace("${","\\${");
@@ -210,11 +212,7 @@ addLinkedDomain(hosturl.origin);");
                                     Timestamp=files.OrderByDescending(f => f.LastModified.Ticks).Last().LastModified.DateTime,
                                     Content=(compressAllJS ? JSMinifier.Minify(sb.ToString()) : sb.ToString())
                                 };
-                                fileProvider.Watch($"{fpath}{Path.DirectorySeparatorChar}*.vue").RegisterChangeCallback(state =>
-                                {
-                                    this[(string)state]=null;
-                                }, spath);
-                                this[spath] = cc;
+                                this[spath,files.Select(f=>fileProvider.Watch(f.PhysicalPath))] = cc;
                             }
                         }
                     }

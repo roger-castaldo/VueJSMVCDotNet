@@ -848,9 +848,10 @@ const ModelMethods = {
 
 ///Vue File Section
 
-const vueFileReg = new RegExp('^.+\.vue$');
-const mjsFileReg = new RegExp('^.+\.mjs$');
-const jsFileReg = new RegExp('^.+\.js$');
+const vueFileReg = new RegExp('^.+\\.vue$');
+const mjsFileReg = new RegExp('^.+\\.mjs$');
+const jsFileReg = new RegExp('^.+\\.js$');
+const extReg = new RegExp('^.+\\.[0-9a-zA-Z]{1,5}$');
 const _vueFileCache = new Map();
 const _linkedDomains = [];
 
@@ -903,7 +904,7 @@ const _fetchVueFile = async function (url) {
 				};
 			} else {
 				if ((url.indexOf("http:") === 0 || url.indexOf("https:") === 0)
-					&& !_linkedDomains.some(l => new URL(url).origin.toLowerCase()===l)) {
+					&& !_linkedDomains.some(l => new URL(url).origin.toLowerCase() === l)) {
 					const res = await ajax({
 						url: url,
 						useJSON: false
@@ -921,13 +922,34 @@ const _fetchVueFile = async function (url) {
 		}
 	} else if (mjsFileReg.test(url) || jsFileReg.test(url)) {
 		return { getContentData: (mjsFileReg.test(url) ? `${url.substring(0, url.length - 3)}js` : url) };
-	}else {
-		const res = await fetch(url, _applySecurityHeaders({}));
-		if (!res.ok) 
-			throw Object.assign(new Error(res.statusText + ' ' + url), { res });
+	} else if (_moduleCache[url] !== undefined) {
 		return {
-			getContentData: (asBinary) => asBinary ? res.arrayBuffer() : res.text()
+			getContentData: () => _moduleCache[url]
 		};
+	} else {
+		let res = null;
+		if (!extReg.test(url)) {
+			try {
+				res = await import(url);
+				console.log(res);
+				_moduleCache[url] = res;
+				console.log(_moduleCache);
+				return {
+					getContentData: () => _moduleCache[url]
+				};
+			} catch (err) {
+				console.log(err);
+				res = null;
+			}
+		}
+		if (res === null) {
+			res = await fetch(url, _applySecurityHeaders({}));
+			if (!res.ok)
+				throw Object.assign(new Error(res.statusText + ' ' + url), { res });
+			return {
+				getContentData: (asBinary) => asBinary ? res.arrayBuffer() : res.text()
+			};
+		}
 	}
 }
 
