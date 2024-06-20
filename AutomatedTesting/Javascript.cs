@@ -1,37 +1,24 @@
 ﻿using Jint;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class Javascript
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
-        private delegate object _delCreateWeakMap();
-
         [TestMethod]
         public void CoreJavascriptValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = Utility.ReadResponse(Utility.ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", _middleware, out status));
+            string content = Utility.ReadResponse(Utility.ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", middleware, out status));
 
             Assert.AreEqual(200, status);
             Assert.IsTrue(content.Length>0);
@@ -59,14 +46,13 @@ export const testResult = isEqual('test','test');");
         [TestMethod]
         public void JavascriptGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
+            var watch = new Stopwatch();
+            watch.Start();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status));
+            watch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {watch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -77,10 +63,11 @@ export const name = 'John';");
                 var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
-            catch(Esprima.ParserException e)
+            catch (Esprima.ParserException e)
             {
                 Assert.Fail(e.Message);
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
                 Assert.Fail(e.Message);
             }
@@ -90,17 +77,15 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptGenerationWithSecurityHeadersValidation()
         {
-            _middleware = Utility.CreateMiddleware(true,securityHeaders:new string[] {"sechead1","sec_head_2"});
+            using var middleware = Utility.CreateMiddleware(true, securityHeaders: new string[] { "sechead1", "sec_head_2" });
             int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
+            var watch = new Stopwatch();
+            watch.Start();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status));
+            watch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {watch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine(middleware:_middleware);
+            Engine eng = Utility.CreateEngine(middleware: middleware);
             try
             {
                 eng.Modules.Add("mPerson", content);
@@ -123,8 +108,9 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptCompressedGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status));
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.min.js", middleware, out status));
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -149,10 +135,11 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptCompressionPerformance()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.min.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }
@@ -160,20 +147,19 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptGenerationWithLinkedTypesValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.js", middleware, out status));
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
+                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status)));
                 eng.Modules.Add("mLocation", content);
                 eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
@@ -194,20 +180,19 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptCompressedGenerationWithLinkedTypesValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.min.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.min.js", middleware, out status));
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
             Engine eng = Utility.CreateEngine();
             try
             {
-                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
+                eng.Modules.Add("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status)));
                 eng.Modules.Add("mLocation", content);
                 eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
@@ -228,45 +213,42 @@ export const name = 'John';");
         [TestMethod]
         public void JavascriptCacheControlHeaders()
         {
+            using var cache = new MemoryCache(new MemoryCacheOptions()
+            {
+                TrackStatistics = true
+            });
+            using var middleware = Utility.CreateMiddleware(true, cache: cache);
             int status;
             IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/scripts/mPerson.js", _middleware, out status, out headers);
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/scripts/mPerson.js", middleware, out status, out headers);
             Assert.AreEqual(200, status);
             Assert.IsTrue(stream.Length>0);
             Assert.IsTrue(headers.ContainsKey("Cache-Control"));
             Assert.IsTrue(headers.ContainsKey("Last-Modified"));
 
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
             string lastModified = headers["Last-Modified"].ToString();
 
-            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status, headers: new Dictionary<string, string>()
+            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", middleware, out status, headers: new Dictionary<string, string>()
             {
                 { "If-Modified-Since",lastModified}
             });
 
             Assert.AreEqual(304, status);
-            Assert.AreEqual(0,stream.Length);
-        }
-
-        [TestMethod]
-        public void JavascriptInternalCache()
-        {
-            int status;
-            var stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(stream.Length>0);
-
-            var length = stream.Length;
-
-            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
-            Assert.AreEqual(200, status);
-            Assert.AreEqual(length, stream.Length);
+            Assert.AreEqual(0, stream.Length);
         }
 
         [TestMethod]
         public void MessageScriptGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", middleware, out status)).ReadToEnd();
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -291,8 +273,13 @@ export const name = Translate('Name',null);");
         [TestMethod]
         public void MessageScriptCompressedGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", middleware, out status)).ReadToEnd();
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -317,10 +304,11 @@ export const name = Translate('Name',null,'en');");
         [TestMethod]
         public void MessageScriptCompressionPerformance()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }
@@ -329,17 +317,24 @@ export const name = Translate('Name',null,'en');");
         [TestMethod]
         public void MessageScriptCacheControlHeaders()
         {
+            using var cache = new MemoryCache(new MemoryCacheOptions()
+            {
+                TrackStatistics = true
+            });
+            using var middleware = Utility.CreateMiddleware(true, cache: cache);
             int status;
             IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out headers);
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", middleware, out status, out headers);
             Assert.AreEqual(200, status);
             Assert.IsTrue(stream.Length>0);
             Assert.IsTrue(headers.ContainsKey("Cache-Control"));
             Assert.IsTrue(headers.ContainsKey("Last-Modified"));
 
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
             string lastModified = headers["Last-Modified"].ToString();
 
-            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status,out headers, headers: new Dictionary<string, string>()
+            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", middleware, out status, out headers, headers: new Dictionary<string, string>()
             {
                 { "If-Modified-Since",lastModified}
             });
@@ -354,8 +349,13 @@ export const name = Translate('Name',null,'en');");
         [TestMethod]
         public void VueFileScriptGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", middleware, out status)).ReadToEnd();
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -382,8 +382,13 @@ export const check = notification!==undefined && notification!==null && notifica
         [TestMethod]
         public void VueFileScriptCompressedGenerationValidation()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", middleware, out status)).ReadToEnd();
+            stopwatch.Stop();
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {stopwatch.ElapsedMilliseconds}ms of size {content.Length}b");
             Assert.IsTrue(content.Length > 0);
             Engine eng = Utility.CreateEngine();
             try
@@ -408,10 +413,11 @@ export const check = notification!==undefined && notification!==null && notifica
         [TestMethod]
         public void VueFileScriptCompressionPerformance()
         {
+            using var middleware = Utility.CreateMiddleware(true);
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
+            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", middleware, out status)).ReadToEnd();
             Assert.IsTrue(minContent.Length > 0);
             Assert.IsTrue(minContent.Length < content.Length);
         }
@@ -419,17 +425,24 @@ export const check = notification!==undefined && notification!==null && notifica
         [TestMethod]
         public void VueFileScriptCacheControlHeaders()
         {
+            using var cache = new MemoryCache(new MemoryCacheOptions()
+            {
+                TrackStatistics = true
+            });
+            using var middleware = Utility.CreateMiddleware(true, cache: cache);
             int status;
             IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers);
+            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", middleware, out status, out headers);
             Assert.AreEqual(200, status);
             Assert.IsTrue(stream.Length>0);
             Assert.IsTrue(headers.ContainsKey("Cache-Control"));
             Assert.IsTrue(headers.ContainsKey("Last-Modified"));
 
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
             string lastModified = headers["Last-Modified"].ToString();
 
-            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers, headers: new Dictionary<string, string>()
+            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", middleware, out status, out headers, headers: new Dictionary<string, string>()
             {
                 { "If-Modified-Since",lastModified}
             });

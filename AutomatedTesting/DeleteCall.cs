@@ -28,7 +28,7 @@ namespace AutomatedTesting
         {
             int personCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", $"/models/mPerson/{mPerson.Persons[0].id}", _middleware, out status,store:_store));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", $"/models/mPerson/{mPerson.Persons[0].id}", _middleware, out status, store: _store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);

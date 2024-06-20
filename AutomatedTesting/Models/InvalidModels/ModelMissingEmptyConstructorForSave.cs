@@ -19,6 +19,6 @@ namespace AutomatedTesting.Models.InvalidModels
         public ModelMissingEmptyConstructorForSave(bool noEmpty) { }
 
         [ModelSaveMethod()]
-        public bool Save () { return true; }
+        public bool Save() { return true; }
     }
 }

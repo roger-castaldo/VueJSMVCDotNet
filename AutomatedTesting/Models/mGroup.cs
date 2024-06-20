@@ -1,9 +1,9 @@
 ﻿using AutomatedTesting.Security;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
@@ -37,7 +37,8 @@ namespace AutomatedTesting.Models
             }
         }
 
-        public mPerson PrimaryPerson { 
+        public mPerson PrimaryPerson
+        {
             get { return (People?.FirstOrDefault()); }
             set
             {
@@ -79,7 +80,7 @@ namespace AutomatedTesting.Models
             return _groups.FirstOrDefault(g => g.id==id);
         }
 
-        [ExposedMethod(allowNullResponse:true)]
+        [ExposedMethod(allowNullResponse: true)]
         public List<mPerson> Search(string name)
         {
             name=name.ToLower();
@@ -98,7 +99,7 @@ namespace AutomatedTesting.Models
             return persons.Count(p => ContainsPerson(p))==persons.Count;
         }
 
-        [ExposedMethod(allowNullResponse:true)]
+        [ExposedMethod(allowNullResponse: true)]
         public mPerson? FindFirst(string name)
         {
             name=name.ToLower();

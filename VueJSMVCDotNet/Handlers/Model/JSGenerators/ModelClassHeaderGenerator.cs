@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
 
@@ -7,7 +6,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelClassHeaderGenerator : IJSGenerator
     {
-        
+
 
         public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
@@ -17,16 +16,16 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         {Constants.INITIAL_DATA_KEY}=undefined;
         #isNew(){{ return this.{Constants.INITIAL_DATA_KEY}===undefined || this.{Constants.INITIAL_DATA_KEY}===null || this.{Constants.INITIAL_DATA_KEY}.id===undefined || this.{Constants.INITIAL_DATA_KEY}.id===null; }};
         #events=undefined;
-        static get #baseURL(){{return `{(url.StartsWith('/')? "${hosturl.origin}" : "")}{url}`;}};");
+        static get #baseURL(){{return `{(url.StartsWith('/') ? "${hosturl.origin}" : "")}{url}`;}};");
 
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
-            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder,log);
-            ModelClassHeaderGenerator.AppendToProxy(builder,modelType.Properties, modelType.InstanceMethods, modelType);
+            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder, log);
+            ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods, modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
-            let data={Utility.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null),log)};
+            let data={Utility.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null), log)};
             Object.keys(data).forEach((prop)=>this['#'+prop]=data[prop]);
             this.#events = new EventHandler(['{Constants.Events.MODEL_LOADED}','{Constants.Events.MODEL_UPDATED}','{Constants.Events.MODEL_SAVED}','{Constants.Events.MODEL_DESTROYED}','{Constants.Events.MODEL_PARSED}']);
             return this.#toProxy();
@@ -46,7 +45,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 builder.AppendLine("                  case 'save': return function(){{ return me.#save.apply(me,arguments);}}; break;");
             if (modelType.HasUpdate)
                 builder.AppendLine("                  case 'update': return function(){{ return me.#update.apply(me,arguments);}}; break;");
-            if(modelType.HasDelete)
+            if (modelType.HasDelete)
                 builder.AppendLine("                  case 'destroy': return function(){{ return me.#destroy.apply(me,arguments);}}; break;");
             builder.AppendLine($"              case 'id': return (me.{Constants.INITIAL_DATA_KEY}===null || me.{Constants.INITIAL_DATA_KEY}===undefined ? null : me.{Constants.INITIAL_DATA_KEY}.id); break;");
             builder.AppendLine(@"                        case 'isNew': return function(){return me.#isNew();}; break;
@@ -71,7 +70,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                             return true;
                             break;");
             });
-            methods.ForEach(m=>builder.AppendLine($"                  case '{m.Name}': return false; break;"));
+            methods.ForEach(m => builder.AppendLine($"                  case '{m.Name}': return false; break;"));
             builder.Append(@"                       case 'isNew': 
                         case 'isValid': 
                         case 'invalidFields':
@@ -105,7 +104,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             var requiredProps = props.Where(pi => pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0);
             if (requiredProps.Any())
             {
-                builder.AppendLine(@$"   #isValid(){{ return {string.Join("&&",requiredProps.Select(p=>$"this.#{p.Name}!==undefined&&this.#{p.Name}!==null"))};
+                builder.AppendLine(@$"   #isValid(){{ return {string.Join("&&", requiredProps.Select(p => $"this.#{p.Name}!==undefined&&this.#{p.Name}!==null"))};
         }};
     #invalidFields(){{
             let ret=[];");

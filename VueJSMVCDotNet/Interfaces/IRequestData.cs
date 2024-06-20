@@ -25,6 +25,6 @@
         /// </summary>
         /// <param name="feature">The type of feature</param>
         /// <returns>The value of the feature, if implemented</returns>
-        object this[Type feature]{get;}
+        object this[Type feature] { get; }
     }
 }

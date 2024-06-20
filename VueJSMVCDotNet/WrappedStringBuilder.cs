@@ -12,7 +12,7 @@
         }
 
         public new string ToString()
-            =>(minimize ? JSMinifier.Minify(sb.ToString()) : sb.ToString());
+            => (minimize ? JSMinifier.Minify(sb.ToString()) : sb.ToString());
 
         public void AppendLine(string line)
         {

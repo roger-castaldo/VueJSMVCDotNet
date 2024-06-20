@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace VueJSMVCDotNet
+﻿namespace VueJSMVCDotNet
 {
     internal static class EnumerableExtensions
     {
@@ -14,7 +8,7 @@ namespace VueJSMVCDotNet
             return enu; // make action Chainable/Fluent
         }
 
-        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> enu, Action<T,int> action)
+        public static IEnumerable<T> ForEach<T>(this IEnumerable<T> enu, Action<T, int> action)
         {
             int idx = 0;
             foreach (T item in enu)
@@ -23,6 +17,16 @@ namespace VueJSMVCDotNet
                 idx++;
             }
             return enu; // make action Chainable/Fluent
+        }
+
+        public static R? SelectFirst<T,R>(this IEnumerable<T> enu,Func<T,R> convert,Func<R,bool> match)
+        {
+            foreach(T item in enu)
+            {
+                var res = convert(item);
+                if (match(res)) return res;
+            }
+            return default;
         }
     }
 }

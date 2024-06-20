@@ -12,7 +12,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         {
             List<SModelType> types = new();
             models.ForEach(modelType => ParsersGenerator.RecurLocateLinkedTypes(ref types, modelType));
-            
+
             types.RemoveAll(t => models.Contains(t));
             types.Where(t => t.Type.GetCustomAttributes().Any(att => att is ModelJSFilePath))
                 .ForEach(type => builder.AppendLine($"        import {{ {type.Type.Name} }} from '{(useModuleExtension ? type.Type.GetCustomAttribute<ModelJSFilePath>().ModulePath : type.Type.GetCustomAttribute<ModelJSFilePath>().Path)}';"));
@@ -26,7 +26,8 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             return ret;
         }};"));
 
-            types.ForEach(type => {
+            types.ForEach(type =>
+            {
                 log?.LogTrace("Appending Parser Call for Linked Type[{}]", type.Type.FullName);
                 if (type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
                 {
@@ -54,7 +55,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                             builder.Append(@$"          ret.{pi.Name} = null;
             if (data.{pi.Name}!==null){{");
                             if (array)
-                                builder.AppendLine(@$"ret.{pi.Name} = data.{pi.Name}.map(val=>{{ {(t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0 
+                                builder.AppendLine(@$"ret.{pi.Name} = data.{pi.Name}.map(val=>{{ {(t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0
                 ? $@"let result = new {t.Name}();
                     result.{Constants.PARSE_FUNCTION_NAME}(data.{pi.Name}[x]);
                     return result;"
@@ -77,7 +78,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             });
         }
 
-        private static void RecurLocateLinkedTypes(ref List<SModelType> types,SModelType modelType)
+        private static void RecurLocateLinkedTypes(ref List<SModelType> types, SModelType modelType)
         {
             if (!types.Contains(modelType))
             {

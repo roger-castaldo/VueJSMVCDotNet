@@ -1,8 +1,8 @@
 ﻿using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -33,11 +33,11 @@ namespace AutomatedTesting
             DateTime birthDay = DateTime.Now;
             int currentCount = mPerson.Persons.Length;
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() { 
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() {
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            },store:_store));
+            }, store: _store));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.IsTrue(((Hashtable)result).ContainsKey("id"));
@@ -58,7 +58,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestSaveMethodFailure ()
+        public void TestSaveMethodFailure()
         {
             string firstName = "DoNotSave";
             string lastName = "Testing321";
@@ -69,7 +69,7 @@ namespace AutomatedTesting
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            },store: _store));
+            }, store: _store));
             Assert.IsNotNull(result);
             Assert.AreEqual(500, status);
             Assert.AreEqual(currentCount, mPerson.Persons.Length);

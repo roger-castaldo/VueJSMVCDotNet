@@ -1,7 +1,7 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models.InvalidModels
 {
@@ -67,7 +67,7 @@ namespace AutomatedTesting.Models.InvalidModels
         public void InvalidDelete() { }
 
         [ModelUpdateMethod()]
-        public void InvalidUpdate() {  }
+        public void InvalidUpdate() { }
 
     }
 }

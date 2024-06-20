@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
-using VueJSMVCDotNet;
 using TestApplication.Handlers;
+using VueJSMVCDotNet;
 
 namespace TestApplication
 {
@@ -31,21 +31,24 @@ namespace TestApplication
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseSession();
-            app.UseVueMiddleware(new VueMiddlewareOptions() {
-                    VueImportPath= "vue",
-                    VueModelsOptions = new VueModelsOptions() {
-                        SessionFactory = new SessionManager(),
-                        BaseURL= "testing"
-                    },
-                    FileProvider = env.WebRootFileProvider,
-                    MessageOptions = new MessageHandlerOptions()
-                    {
-                        BaseURL="/resources/messages"
-                    },
-                    VueFilesOptions= new VueFilesHandlerOptions() { 
-                        BaseURL = "/resources/vueFiles" 
-                    }
+            app.UseVueMiddleware(new VueMiddlewareOptions()
+            {
+                VueImportPath= "vue",
+                VueModelsOptions = new VueModelsOptions()
+                {
+                    SessionFactory = new SessionManager(),
+                    BaseURL= "testing"
+                },
+                FileProvider = env.WebRootFileProvider,
+                MessageOptions = new MessageHandlerOptions()
+                {
+                    BaseURL="/resources/messages"
+                },
+                VueFilesOptions= new VueFilesHandlerOptions()
+                {
+                    BaseURL = "/resources/vueFiles"
                 }
+            }
             );
             app.UseVueComponentMiddleware(new VueComponentMiddlewareOptions(new System.IO.DirectoryInfo(env.WebRootPath), "/resources/components"));
         }

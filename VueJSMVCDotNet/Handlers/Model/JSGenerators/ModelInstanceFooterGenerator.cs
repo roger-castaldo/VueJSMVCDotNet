@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
     {
         public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
         {
-            log?.LogTrace("Appending Model Instance Footer for Model Definition[{}]",  modelType.Type.FullName);
+            log?.LogTrace("Appending Model Instance Footer for Model Definition[{}]", modelType.Type.FullName);
             builder.Append(@"
         static createInstance(){
             console.warn(""WARNING! Obsolete function called. Function 'createInstance' has been deprecated, please use new '"+modelType.Type.Name+@"' function instead!"");
@@ -28,7 +28,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 $on:function(event,callback){curObj.$on(event,callback);},
                 $off:function(callback){curObj.$off(callback);}
             };");
-            modelType.Properties.ForEach(pi => builder.AppendLine($"              Object.defineProperty(data,'{pi.Name}',{{get:function(){{return curObj.#{pi.Name};}}{(pi.CanWrite?$",set:function(val){{curObj.{pi.Name} = val;}}":"")}}});"));
+            modelType.Properties.ForEach(pi => builder.AppendLine($"              Object.defineProperty(data,'{pi.Name}',{{get:function(){{return curObj.#{pi.Name};}}{(pi.CanWrite ? $",set:function(val){{curObj.{pi.Name} = val;}}" : "")}}});"));
             builder.AppendLine(@"           Object.defineProperty(data,'id',{get:function(){return curObj.id;}});");
             modelType.InstanceMethods
                 .Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
@@ -36,7 +36,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 {
                     ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
                     Type returnType = (em.ArrayElementType!=null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : mi.ReturnType);
-                    builder.AppendLine($@"          methods.{mi.Name} = function({string.Join(",",mi.GetParameters().Select(p=>p.Name))}){{
+                    builder.AppendLine($@"          methods.{mi.Name} = function({string.Join(",", mi.GetParameters().Select(p => p.Name))}){{
             {(returnType == typeof(void) ? "" : "return")} curObj.{mi.Name}({string.Join(",", mi.GetParameters().Select(p => p.Name))}); 
         }};");
                 });
@@ -60,7 +60,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 builder.AppendLine("            save:function(){ return me.save.apply(me,arguments); },");
             if (modelType.HasDelete)
                 builder.AppendLine("            destroy:function(){ return me.destroy.apply(me,arguments); },");
-            if(modelType.HasUpdate)
+            if (modelType.HasUpdate)
                 builder.AppendLine("            update:function(){ return me.update.apply(me,arguments); },");
             builder.AppendLine(@"           isNew: function(){return me.isNew(); },
             isValid: function(){return me.isValid();},

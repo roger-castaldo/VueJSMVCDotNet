@@ -22,7 +22,7 @@
         /// that the potential for the connection to timeout exists, so additional code calls will be made to handle 
         /// running the method in the background.</param>
         /// <param name="arrayElementType">Set to the type of element that is going to be supplied in a slow response array.</param>
-        public ExposedMethod(bool allowNullResponse=false,bool isSlow=false,Type arrayElementType=null)
+        public ExposedMethod(bool allowNullResponse = false, bool isSlow = false, Type arrayElementType = null)
         {
             AllowNullResponse = allowNullResponse;
             IsSlow = isSlow||arrayElementType!=null;

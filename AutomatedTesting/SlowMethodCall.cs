@@ -1,9 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.IO;
 using System.Threading.Tasks;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -33,7 +33,7 @@ namespace AutomatedTesting
             bool done = false;
             string result = null;
             int cnt = 0;
-            while(!done && cnt < 5)
+            while (!done && cnt < 5)
             {
                 object content = Utility.ReadJSONResponse(Utility.ExecuteRequest("PULL", (string)url, _middleware, out status));
                 Assert.IsInstanceOfType(content, typeof(Hashtable));

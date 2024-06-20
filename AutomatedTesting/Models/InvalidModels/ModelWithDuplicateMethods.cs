@@ -1,6 +1,6 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using System.Collections.Generic;
+using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
-using System.Collections.Generic;
 
 namespace AutomatedTesting.Models.InvalidModels
 {

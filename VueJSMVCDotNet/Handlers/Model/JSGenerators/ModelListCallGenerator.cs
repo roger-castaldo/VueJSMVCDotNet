@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     log?.LogTrace("Adding List Call[{}] for Model Definition[{}]", mi.Name, modelType.Type.FullName);
                     NotNullArguement nna = (mi.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)mi.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
                     ParameterInfo[] pars = new InjectableMethod(mi, log).StrippedParameters;
-                    builder.Append($"     static {mi.Name}({string.Join(',',pars.Take((mlm.Paged?pars.Length-3:pars.Length)).Select(p=>p.Name))}");
+                    builder.Append($"     static {mi.Name}({string.Join(',', pars.Take((mlm.Paged ? pars.Length-3 : pars.Length)).Select(p => p.Name))}");
                     if (mlm.Paged)
                         builder.Append($"{(pars.Length > 3 ? "," : "")}pageStartIndex,pageSize");
 

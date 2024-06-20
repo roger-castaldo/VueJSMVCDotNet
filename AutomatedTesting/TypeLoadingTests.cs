@@ -11,11 +11,12 @@ namespace AutomatedTesting
         public void AssemblyAdded()
         {
             var middleware = Utility.CreateMiddleware(true);
-            Exception error=null;
+            Exception error = null;
             try
             {
                 middleware.Options.AssemblyAdded();
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }
@@ -23,13 +24,15 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void ReloadingAssemblyContext(){
+        public void ReloadingAssemblyContext()
+        {
             var middleware = Utility.CreateMiddleware(true);
-            Exception error=null;
+            Exception error = null;
             try
             {
                 middleware.Options.UnloadAssemblyContext(AssemblyLoadContext.Default);
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }
@@ -37,7 +40,8 @@ namespace AutomatedTesting
             try
             {
                 middleware.Options.AsssemblyLoadContextAdded(AssemblyLoadContext.Default);
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }

@@ -1,8 +1,8 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
@@ -124,28 +124,28 @@ namespace AutomatedTesting.Models
         [ExposedMethod()]
         [NotNullArguement(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
         public void TestInputs(
-            string stringArg, string nullStringArg, 
-            char charArg, char? nullCharArg, 
-            short shortArg, short? nullShortArg, 
-            ushort ushortArg, ushort? nullUShortArg, 
-            int intArg, int? nullIntArg, 
-            uint uintArg, uint? nullUIntArg, 
-            long longArg, long? nullLongArg, 
-            ulong ulongArg, ulong? nullULongArg, 
-            float floatArg, float? nullFloatArg, 
-            decimal decimalArg, decimal? nullDecimalArg, 
-            double doubleArg, double? nullDoubleArg, 
-            byte byteArg, byte? nullByteArg, 
-            bool boolArg, bool? nullBooleanArg, 
-            TestEnums enumArg, TestEnums? nullEnumArg, 
-            DateTime DateTimeArg, DateTime? nullDateTimeArg, 
-            byte[] byteArrayArg, byte[] nullByteArrayArg, 
-            IPAddress IPAddressArg, IPAddress nullIPAddressArg, 
-            Version VersionArg, Version nullVersionArg, 
+            string stringArg, string nullStringArg,
+            char charArg, char? nullCharArg,
+            short shortArg, short? nullShortArg,
+            ushort ushortArg, ushort? nullUShortArg,
+            int intArg, int? nullIntArg,
+            uint uintArg, uint? nullUIntArg,
+            long longArg, long? nullLongArg,
+            ulong ulongArg, ulong? nullULongArg,
+            float floatArg, float? nullFloatArg,
+            decimal decimalArg, decimal? nullDecimalArg,
+            double doubleArg, double? nullDoubleArg,
+            byte byteArg, byte? nullByteArg,
+            bool boolArg, bool? nullBooleanArg,
+            TestEnums enumArg, TestEnums? nullEnumArg,
+            DateTime DateTimeArg, DateTime? nullDateTimeArg,
+            byte[] byteArrayArg, byte[] nullByteArrayArg,
+            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
+            Version VersionArg, Version nullVersionArg,
             Exception ExceptionArg, Exception nullExceptionArg
         )
         {
-            
+
         }
 
         [ExposedMethod()]

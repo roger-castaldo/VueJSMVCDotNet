@@ -1,8 +1,8 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using TestApplication.Security;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication
 {
@@ -21,7 +21,7 @@ namespace TestApplication
         public string FirstName { get { return _firstName; } set { _firstName = value; } }
 
         private string _lastName;
-        public string LastName { get { return _lastName; }set{ _lastName = value; } }
+        public string LastName { get { return _lastName; } set { _lastName = value; } }
 
         private string _test;
         [ReadOnlyModelProperty()]
@@ -44,7 +44,7 @@ namespace TestApplication
             get { return new Random().Next(0, 100); }
         }
 
-        private User(string firstName,string lastName)
+        private User(string firstName, string lastName)
         {
             _firstName = firstName;
             _lastName = lastName;
@@ -80,11 +80,13 @@ namespace TestApplication
         public string id { get { return _id; } }
 
         [ModelSaveMethod()]
-        public bool Save() {
+        public bool Save()
+        {
             byte[] buff = new byte[16];
             new Random((int)DateTime.Now.Ticks).NextBytes(buff);
             _id = new Guid(buff).ToString();
-            lock (_USERS) {
+            lock (_USERS)
+            {
                 User[] tmp = new User[_USERS.Length + 1];
                 Array.Copy(_USERS, tmp, _USERS.Length);
                 tmp[_USERS.Length] = this;
@@ -94,7 +96,8 @@ namespace TestApplication
         }
 
         [ModelUpdateMethod()]
-        public bool Update() {
+        public bool Update()
+        {
             bool ret = false;
             for (int x = 0; x < _USERS.Length; x++)
             {
@@ -109,12 +112,14 @@ namespace TestApplication
         }
 
         [ModelDeleteMethod()]
-        public bool Delete() {
+        public bool Delete()
+        {
             bool ret = false;
             lock (_USERS)
             {
                 var idx = -1;
-                for (int x = 0; x < _USERS.Length; x++) {
+                for (int x = 0; x < _USERS.Length; x++)
+                {
                     if (_USERS[x].id == this.id)
                     {
                         idx = x;
@@ -126,7 +131,7 @@ namespace TestApplication
                     ret = true;
                     User[] tmp = new User[_USERS.Length - 1];
                     var index = 0;
-                    for(int x = 0; x < _USERS.Length; x++)
+                    for (int x = 0; x < _USERS.Length; x++)
                     {
                         if (x != idx)
                         {
@@ -141,8 +146,9 @@ namespace TestApplication
         }
 
         [ExposedMethod()]
-        public void Logout() {
-            System.Diagnostics.Debug.WriteLine("Logging out User {0}, {1}...",new object[]{
+        public void Logout()
+        {
+            System.Diagnostics.Debug.WriteLine("Logging out User {0}, {1}...", new object[]{
                 LastName,
                 FirstName
             });
@@ -154,14 +160,15 @@ namespace TestApplication
             return new Random().Next(0, 10)>=5;
         }
 
-        [ExposedMethod(allowNullResponse:true)]
-        public static User Login(string username,string password) {
+        [ExposedMethod(allowNullResponse: true)]
+        public static User Login(string username, string password)
+        {
             User ret = null;
             lock (_USERS)
             {
                 foreach (User u in _USERS)
                 {
-                    if (string.Format("{0}_{1}",new object[] { u.FirstName, u.LastName }).ToLower() == username.ToLower())
+                    if (string.Format("{0}_{1}", new object[] { u.FirstName, u.LastName }).ToLower() == username.ToLower())
                     {
                         if (password.ToLower() == u.LastName.ToLower())
                         {
@@ -185,7 +192,8 @@ namespace TestApplication
                 {
                     tmp.AddRange(_USERS);
                 }
-                else {
+                else
+                {
                     foreach (User u in _USERS)
                     {
                         if (u.FirstName.ToLower().Contains(filter.ToLower()) || u.LastName.ToLower().Contains(filter.ToLower()))
@@ -197,7 +205,8 @@ namespace TestApplication
             List<User> ret = new List<User>();
             if (tmp.Count > pageStartIndex)
             {
-                for (int x = pageStartIndex; x < tmp.Count; x++) {
+                for (int x = pageStartIndex; x < tmp.Count; x++)
+                {
                     ret.Add(tmp[x]);
                     if (ret.Count >= pageSize)
                         break;

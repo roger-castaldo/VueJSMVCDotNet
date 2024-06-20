@@ -1,10 +1,9 @@
-﻿using System.Text.Json.Nodes;
-using System.Text.Json;
-using VueJSMVCDotNet.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
 using System.Collections;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using VueJSMVCDotNet.Attributes;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Http;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
@@ -12,15 +11,14 @@ namespace VueJSMVCDotNet.Handlers.Model
     {
         private readonly ILogger log;
         private readonly Dictionary<string, object> formData;
-        private readonly IServiceProvider services;
-        private readonly IFeatureCollection features;
+        private readonly HttpContext httpContext;
         private readonly IFormFileCollection files;
 
         public ISecureSession Session { get; private init; }
         public IEnumerable<string> Keys => formData.Keys
-            .Concat(files==null||files.Count==0 
+            .Concat(files==null||files.Count==0
             ? Array.Empty<string>()
-            : files.Select(f=>f.Name));
+            : files.Select(f => f.Name));
 
         public T GetValue<T>(string key)
         {
@@ -45,17 +43,20 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     throw new InvalidCastException();
                 }
-            } else if (typeof(T)==typeof(IReadOnlyList<IFormFile>))
+            }
+            else if (typeof(T)==typeof(IReadOnlyList<IFormFile>))
                 return (T)files.GetFiles(key);
             else
                 return (T)files[key];
         }
 
-        internal object GetValue(Type t,string key) {
+        internal object GetValue(Type t, string key)
+        {
             try
             {
                 return GetType().GetMethod("GetValue").MakeGenericMethod(new Type[] { t }).Invoke(this, new object[] { key });
-            }catch (Exception)
+            }
+            catch (Exception)
             {
                 throw new InvalidCastException();
             }
@@ -63,17 +64,30 @@ namespace VueJSMVCDotNet.Handlers.Model
 
         public object this[Type feature]
         {
-            get {
-                return (services?.GetService(feature))??
-                    (features!=null ? (features.Any(t=>t.Key==feature) ? features.First(t=>t.Key==feature).Value : null) : null); 
+            get
+            {
+                if (feature==typeof(ISecureSession)
+                    || feature.GetInterfaces().Contains(typeof(ISecureSession)))
+                    return Session;
+                else if (feature==typeof(ILogger))
+                    return log;
+                else if (feature == typeof(HttpContext))
+                    return httpContext;
+                else if (feature==typeof(IHeaderDictionary))
+                    return httpContext.Response.Headers;
+                else if (feature==typeof(IRequestCookieCollection))
+                    return httpContext.Request.Cookies;
+                else if (feature==typeof(IResponseCookies))
+                    return httpContext.Response.Cookies;
+                return (httpContext.RequestServices?.GetService(feature))??
+                    (httpContext.Features!=null ? (httpContext.Features.Any(t => t.Key==feature) ? httpContext.Features.First(t => t.Key==feature).Value : null) : null);
             }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, IServiceProvider services, IFeatureCollection features, ILogger log, IFormFileCollection files)
+        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, HttpContext httpContext, ILogger log, IFormFileCollection files)
         {
             this.formData = formData;
-            this.services=services;
-            this.features=features;
+            this.httpContext=httpContext;
             this.log=log;
             this.files=files;
             Session = session;
@@ -119,15 +133,16 @@ namespace VueJSMVCDotNet.Handlers.Model
                 Array ret = Array.CreateInstance(underlyingType, 0);
                 if (obj is ICollection list)
                 {
-                    ret = Array.CreateInstance(underlyingType,list.Count);
+                    ret = Array.CreateInstance(underlyingType, list.Count);
                     var idx = 0;
                     foreach (var item in list)
                     {
                         ret.SetValue(ConvertObjectToType(item, underlyingType), idx);
                         idx++;
-                    }   
+                    }
                 }
-                else {
+                else
+                {
                     ret = Array.CreateInstance(underlyingType, 1);
                     ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
                 }
@@ -149,8 +164,8 @@ namespace VueJSMVCDotNet.Handlers.Model
             MethodInfo conMethod = null;
             if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                var task = new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0),log)
-                    .InvokeAsync(null,this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
+                var task = new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0), log)
+                    .InvokeAsync(null, this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
                 task.Wait();
                 return task.Result;
             }
@@ -184,7 +199,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
             catch (Exception e)
             {
-                log?.LogError("Type conversion error: {}",e.Message);
+                log?.LogError("Type conversion error: {}", e.Message);
             }
             return obj;
         }

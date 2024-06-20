@@ -1,19 +1,18 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection.PortableExecutable;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.JSON
 {
-    internal class ModelConverter<T> : JsonConverter<T> where T :IModel
+    internal class ModelConverter<T> : JsonConverter<T> where T : IModel
     {
         private readonly IRequestData requestData;
         private readonly InjectableMethod loadMethod;
-        public ModelConverter(IRequestData requestData,ILogger log)
+        public ModelConverter(IRequestData requestData, ILogger log)
         {
             this.requestData=requestData;
-            loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()),log);
+            loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()), log);
         }
 
         private T Load(string id)

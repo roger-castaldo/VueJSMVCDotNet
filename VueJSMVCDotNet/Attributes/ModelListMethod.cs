@@ -13,7 +13,7 @@
         /// Constructor to tag a model listing method
         /// </summary>
         /// <param name="paged">Indicates wheter or not the list is paged</param>
-        public ModelListMethod(bool paged=false)
+        public ModelListMethod(bool paged = false)
         {
             Paged = paged;
         }

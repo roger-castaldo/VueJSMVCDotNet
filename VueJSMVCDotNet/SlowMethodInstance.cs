@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet.Interfaces;
 using System.Collections.Concurrent;
 using System.Threading;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet
 {
@@ -25,7 +25,7 @@ namespace VueJSMVCDotNet
         private readonly CancellationTokenSource token;
         private readonly ILogger log;
 
-        public SlowMethodInstance(InjectableMethod method,object model, object[] pars, IRequestData requestData, ILogger log)
+        public SlowMethodInstance(InjectableMethod method, object model, object[] pars, IRequestData requestData, ILogger log)
         {
             this.log=log;
             data=new ConcurrentQueue<object>();
@@ -45,7 +45,7 @@ namespace VueJSMVCDotNet
                 }
                 catch (Exception e)
                 {
-                    log?.LogError("Slow method execution error, {}",e.Message);
+                    log?.LogError("Slow method execution error, {}", e.Message);
                     error=e;
                 }
             }, token.Token);
@@ -63,14 +63,14 @@ namespace VueJSMVCDotNet
         public bool IsFinished
             => completed;
 
-        public bool IsExpired 
+        public bool IsExpired
             => DateTime.Now.Subtract(lastCall).TotalMilliseconds > TIMEOUT_MILLISECONDS;
 
         public Task HandleRequest(HttpContext context)
         {
             if (error!=null)
             {
-                log?.LogError("Slow method request handling error, {}",error.Message);
+                log?.LogError("Slow method request handling error, {}", error.Message);
                 context.Response.ContentType= "text/text";
                 context.Response.StatusCode = 500;
                 finished=true;
@@ -108,8 +108,9 @@ namespace VueJSMVCDotNet
                 {
                     token.Cancel();
                 }
-                catch (Exception ex) { 
-                    log?.LogError("Error disposing SlowMethodInstance, {}",ex.Message);
+                catch (Exception ex)
+                {
+                    log?.LogError("Error disposing SlowMethodInstance, {}", ex.Message);
                 }
             }
         }

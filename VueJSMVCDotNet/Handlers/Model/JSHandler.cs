@@ -1,18 +1,19 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
-using System.IO;
+using Microsoft.Extensions.Primitives;
 using System.Threading;
 using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Caching;
+using VueJSMVCDotNet.Handlers.Base;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
 using VueJSMVCDotNet.Interfaces;
-using static VueJSMVCDotNet.Handlers.ModelRequestHandler;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
-    internal class JSHandler : ModelRequestHandlerBase
+    internal class JSHandler(string urlBase, string vueImportPath, string coreImportPath,
+        ISecureSessionFactory sessionFactory, bool compressAllJS, ILogger log) : 
+        ModelRequestHandlerBase(sessionFactory, urlBase, log),ICachingRequestHandler
     {
-
         public struct SModelType
         {
             public Type Type { get; private init; }
@@ -26,12 +27,12 @@ namespace VueJSMVCDotNet.Handlers.Model
                 get
                 {
                     return linkedTypes ??= Properties.Where(pi => pi.CanRead)
-                            .Select(pi => Utility.ExtractUnderlyingType(pi.PropertyType,out _,out _,out _))
+                            .Select(pi => Utility.ExtractUnderlyingType(pi.PropertyType, out _, out _, out _))
                             .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                             .Select(t => new SModelType(t))
                             .Concat(
                                 InstanceMethods.Concat(StaticMethods)
-                                .Select(mi=> Utility.ExtractUnderlyingType(mi.ReturnType,out _,out _,out _))
+                                .Select(mi => Utility.ExtractUnderlyingType(mi.ReturnType, out _, out _, out _))
                                 .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                                 .Select(t => new SModelType(t))
                             )
@@ -54,9 +55,9 @@ namespace VueJSMVCDotNet.Handlers.Model
             public SModelType(Type type)
             {
                 Type = type;
-                Properties=type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi=> pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id"
+                Properties=type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi => pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id"
                                 && !pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0);
-                InstanceMethods=type.GetMethods(Constants.INSTANCE_METHOD_FLAGS).Where(mi=> mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
+                InstanceMethods=type.GetMethods(Constants.INSTANCE_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
                 StaticMethods=type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
                 linkedTypes = null;
                 SaveMethod = type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
@@ -99,111 +100,15 @@ namespace VueJSMVCDotNet.Handlers.Model
             new ModelClassFooterGenerator()
         };
 
-        private readonly List<string> keys;
-        private readonly IMemoryCache cache;
-        private readonly ReaderWriterLockSlim locker;
-        private readonly Dictionary<Type,ModelJSFilePath[]> types;
-        private readonly string urlBase;
-        private readonly string vueImportPath;
-        private readonly string coreImportPath;
-        private readonly bool compressAllJS;
-        public JSHandler(string urlBase,string vueImportPath, string coreImportPath,
-            RequestDelegate next, ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, bool compressAllJS,IMemoryCache cache, ILogger log)
-            : base(next, sessionFactory, registerSlowMethod, urlBase,log)
-        {
-            this.cache = cache;
-            this.urlBase=urlBase;
-            this.vueImportPath=vueImportPath;
-            this.coreImportPath=coreImportPath;
-            this.compressAllJS=compressAllJS;
-            keys = new List<string>();
-            types = new Dictionary<Type, ModelJSFilePath[]>();
-            locker = new ReaderWriterLockSlim();
-        }
+        private readonly InternalChangeToken changeToken = new();
+        private readonly ReaderWriterLockSlim locker = new();
+        private readonly Dictionary<Type, ModelJSFilePath[]> types = [];
 
-        public override void ClearCache()
-        {
-            locker.EnterWriteLock();
-            keys.ForEach(key => cache.Remove(key));
-            keys.Clear();
-            locker.ExitWriteLock();
-        }
-
-        public override async Task ProcessRequest(HttpContext context)
-        {
-            bool found = false;
-            if (context.Request.Method.ToUpper()=="GET")
-            {
-                string url = CleanURL(context);
-                IEnumerable<Type> models = Array.Empty<Type>();
-                locker.EnterReadLock();
-                if (types!=null)
-                    models = types.Where(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))
-                        .Select(pair => pair.Key).ToList();
-                locker.ExitReadLock();
-                if (models.Any())
-                {
-                    found=true;
-                    var reqData = await ExtractParts(context);
-                    DateTime modDate = models.Select(model =>
-                    {
-                        FileInfo fi = new(model.Assembly.Location);
-                        return (fi.Exists ? fi.LastWriteTime : DateTime.MinValue);
-                    }).Max();
-                    if (modDate == DateTime.MinValue)
-                        modDate = ModelRequestHandler.StartTime;
-                    if (context.Request.Headers.TryGetValue("If-Modified-Since",out var value)
-                        && DateTime.Parse(value).ToString()==modDate.ToString())
-                    {
-                        context.Response.StatusCode = 304;
-                        return;
-                    }
-
-                    string ret = null;
-                    log?.LogTrace("Checking cache for existing js file for {}", url);
-                    context.Response.ContentType= "text/javascript";
-                    context.Response.StatusCode= 200;
-                    locker.EnterWriteLock();
-                    if (keys.Contains(url))
-                    {
-                        try
-                        {
-                            ret = cache.Get<string>(url);
-                        }
-                        catch (Exception)
-                        {
-                            keys.Remove(url);
-                        }
-                        if (ret==null)
-                            keys.Remove(url);
-                    }
-                    locker.ExitWriteLock();
-                    if (ret == null && models.Any())
-                    {
-                        ret = GenerateCode(models, url, url.EndsWith(".mjs", StringComparison.InvariantCultureIgnoreCase));
-                        locker.EnterWriteLock();
-                        if (!keys.Contains(url))
-                        {
-                            log?.LogTrace("Caching generated js file for {}", url);
-                            keys.Add(url);
-                            cache.Set<string>(url, ret, RequestHandlerBase.ProduceOptions());
-                        }
-                        locker.ExitWriteLock();
-                    }
-                    context.Response.Headers.Append("Last-Modified", modDate.ToUniversalTime().ToString("R"));
-                    context.Response.Headers.Append("Cache-Control", "public");
-                    await context.Response.WriteAsync(ret);
-                }
-            }
-            if (!found)
-                await next(context);
-        }
-
-        private string GenerateCode(IEnumerable<Type> models,string url,bool useModuleExtension)
+        private string GenerateCode(IEnumerable<Type> models, string url, bool useModuleExtension)
         {
             var amodels = models.Select(mod => new SModelType(mod));
             log?.LogTrace("No cached js file for {}, generating new...", url);
-            WrappedStringBuilder builder = new(compressAllJS || url.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase)|| url.EndsWith(".min.mjs", StringComparison.InvariantCultureIgnoreCase));
+            WrappedStringBuilder builder = new(compressAllJS || url.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase)|| url.EndsWith(".min.mjs", StringComparison.InvariantCultureIgnoreCase));
             builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
 import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}");
@@ -238,7 +143,44 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             return builder.ToString();
         }
 
-        protected override void InternalLoadTypes(List<Type> types)
+        public bool HandlesJSPath(string url)
+        {
+            var result = false;
+            locker.EnterReadLock();
+            result = types?.Any(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))??false;
+            locker.ExitReadLock();
+            return result;
+        }
+
+        protected override bool InternalHandlesRequest(HttpContext context, out object state, out string cacheURL)
+        {
+            state=null;
+            cacheURL=null;
+            if (string.Equals(context.Request.Method, "GET", StringComparison.InvariantCultureIgnoreCase))
+            {
+                var url = CleanURL(context);
+                locker.EnterReadLock();
+                var locatedTypes = types?.Where(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))
+                    .Select(pair => pair.Key);
+                locker.ExitReadLock();
+                cacheURL=url;
+                state = (locatedTypes?? []).Any() ? new ModelRequestState(locatedTypes, url) : null;
+            }
+            return state!=null;
+        }
+
+        public Task<ICachableResponse> ProduceResponseAsync(HttpContext context, object state)
+        {
+            var cachedState = (ModelRequestState)state;
+            return Task.FromResult<ICachableResponse>(new CachableResponse(
+                GenerateCode((IEnumerable<Type>)cachedState.State,cachedState.URL,cachedState.URL.EndsWith(".mjs",StringComparison.InvariantCultureIgnoreCase)),
+                "text/javascript",
+                DateTime.Now,
+                [changeToken]
+            ));
+        }
+
+        public override void LoadTypes(IEnumerable<Type> types)
         {
             locker.EnterWriteLock();
             types.ForEach(t =>
@@ -253,21 +195,19 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             locker.ExitWriteLock();
         }
 
-        protected override void InternalUnloadTypes(List<Type> types)
+        public override void UnloadTypes(IEnumerable<Type> types)
         {
-            ClearCache();
             locker.EnterWriteLock();
             types.ForEach(t => this.types.Remove(t));
             locker.ExitWriteLock();
+            changeToken.HasChanged=true;
         }
 
-        public bool HandlesJSPath(string url)
+        public override void ClearTypes()
         {
-            var result = false;
-            locker.EnterReadLock();
-            result = types?.Any(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))??false;
-            locker.ExitReadLock();
-            return result;
+            locker.EnterWriteLock();
+            types.Clear();
+            locker.ExitWriteLock();
         }
     }
 }

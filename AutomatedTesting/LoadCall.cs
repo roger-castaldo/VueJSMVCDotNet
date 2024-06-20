@@ -1,13 +1,13 @@
 ﻿using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
     [TestClass]
-    public  class LoadCall
+    public class LoadCall
     {
         private VueMiddleware _middleware;
 
@@ -27,7 +27,7 @@ namespace AutomatedTesting
         public void TestLoadPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET",String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
             Assert.AreEqual(mPerson.Persons[0].id, ((Hashtable)result)["id"]);
@@ -37,7 +37,7 @@ namespace AutomatedTesting
         public void TestInvalidIDLoadPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson/0", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status));
             Assert.IsNull(result);
         }
 
@@ -45,11 +45,11 @@ namespace AutomatedTesting
         public void TestLoadAllPerson()
         {
             int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson", _middleware, out status));
+            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status));
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
             Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)result).Count);
-            for(int x = 0; x < mPerson.Persons.Length; x++)
+            for (int x = 0; x < mPerson.Persons.Length; x++)
             {
                 Assert.IsInstanceOfType(((ArrayList)result)[x], typeof(Hashtable));
                 Assert.AreEqual(mPerson.Persons[x].id, ((Hashtable)((ArrayList)result)[x])["id"]);

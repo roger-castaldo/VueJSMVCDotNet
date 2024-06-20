@@ -1,8 +1,8 @@
 ﻿using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Text;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -25,7 +25,7 @@ namespace AutomatedTesting
             _content = null;
         }
 
-        private static string _GenerateCalls(string call,bool ignoreBytes)
+        private static string _GenerateCalls(string call, bool ignoreBytes)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(@"
@@ -94,7 +94,7 @@ export const name = 'John';");
             return sb.ToString();
         }
 
-        private void _ExecuteTest(string call,bool ignoreBytes)
+        private void _ExecuteTest(string call, bool ignoreBytes)
         {
             Engine eng = Utility.CreateEngine();
             try

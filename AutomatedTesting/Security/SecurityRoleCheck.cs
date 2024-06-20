@@ -7,7 +7,7 @@ namespace AutomatedTesting.Security
     internal class SecurityRoleCheck : ASecurityCheck
     {
         private string _right;
-        
+
         public SecurityRoleCheck(string right)
         {
             _right = right;

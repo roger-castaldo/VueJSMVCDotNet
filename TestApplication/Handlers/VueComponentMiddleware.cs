@@ -23,7 +23,7 @@ namespace TestApplication.Handlers
         private readonly RequestDelegate _next;
         private readonly VueComponentMiddlewareOptions _options;
 
-        private static string ReadFile(DirectoryInfo di,FileInfo fi)
+        private static string ReadFile(DirectoryInfo di, FileInfo fi)
         {
             StreamReader sr = new(fi.OpenRead());
             string ret = sr.ReadToEnd().Trim();

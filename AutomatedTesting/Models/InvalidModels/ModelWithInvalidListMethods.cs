@@ -1,7 +1,7 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models.InvalidModels
 {
@@ -29,7 +29,7 @@ namespace AutomatedTesting.Models.InvalidModels
             return null;
         }
 
-        [ModelListMethod(paged:true)]
+        [ModelListMethod(paged: true)]
         public static List<ModelWithInvalidListMethods> InvalidPagedSignature()
         {
             return null;
@@ -42,7 +42,7 @@ namespace AutomatedTesting.Models.InvalidModels
             return null;
         }
 
-        [ModelListMethod(paged:true)]
+        [ModelListMethod(paged: true)]
         public static List<ModelWithInvalidListMethods> PagedInvalidParameterType(decimal pageStartIndex, int pageSize, out int totalPages)
         {
             totalPages=0;
@@ -50,7 +50,7 @@ namespace AutomatedTesting.Models.InvalidModels
         }
 
         [ModelListMethod(paged: true)]
-        public static List<ModelWithInvalidListMethods> PagedInvalidOutParameter(out int totalPages,int pageStartIndex, int pageSize)
+        public static List<ModelWithInvalidListMethods> PagedInvalidOutParameter(out int totalPages, int pageStartIndex, int pageSize)
         {
             totalPages=0;
             return null;

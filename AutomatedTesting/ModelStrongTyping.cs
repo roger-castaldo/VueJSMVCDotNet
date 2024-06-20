@@ -1,8 +1,8 @@
 ﻿using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Net;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -369,7 +369,7 @@ if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }"
         {
             _ExecuteTest("mdl.NullVersionField='0.0.0';", null);
             _ExecuteTest("mdl.NullVersionField='testing';", "Cannot set NullVersionField: invalid type: Value is not a Version");
-            _ExecuteTest("mdl.NullVersionField=null;",null);
+            _ExecuteTest("mdl.NullVersionField=null;", null);
         }
 
         [TestMethod]

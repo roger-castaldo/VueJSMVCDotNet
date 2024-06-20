@@ -1,12 +1,20 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
-using VueJSMVCDotNet.Handlers;
-using VueJSMVCDotNet.Handlers.Model;
-using VueJSMVCDotNet.Interfaces;
+using Microsoft.Extensions.Primitives;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Cryptography;
+using System.Threading;
+using VueJSMVCDotNet.Caching;
+using VueJSMVCDotNet.Handlers;
+using VueJSMVCDotNet.Handlers.Base;
+using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet
 {
@@ -160,14 +168,26 @@ namespace VueJSMVCDotNet
     /// </summary>
     public class VueMiddleware : IDisposable
     {
+        private record CachedResponse(string Content,string ContentType,DateTime Timestamp);
+
+        internal delegate string delRegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, IRequestData requestData, ILogger log);
+
         private readonly VueMiddlewareOptions options;
         /// <summary>
         /// The Options that were supplied to construct the VueMiddleware
         /// </summary>
         public VueMiddlewareOptions Options => options;
-        private readonly IEnumerable<RequestHandlerBase> handlers;
+        private readonly IEnumerable<IRequestHandler> handlers;
         private readonly string compressedCore;
         private readonly IMemoryCache cache;
+        private readonly Dictionary<string, SlowMethodInstance> methodInstances = [];
+        private readonly ReaderWriterLockSlim locker=new();
+        private bool isInitialized;
+        private bool disposedValue;
+        private readonly Timer cleanupTimer;
+        private readonly List<Type> invalidModelTypes = [];
+        private readonly RequestDelegate next;
+
 
         /// <summary>
         /// default constructor as per dotnet standards
@@ -175,85 +195,110 @@ namespace VueJSMVCDotNet
         /// <param name="next">next delegate call as per dotnet standards</param>
         /// <param name="options">the supplied options for creating the middle ware</param>
         /// <param name="cache">optionally supplied caching mechanism to use</param>
-        public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options, IMemoryCache cache=null)
+        public VueMiddleware(RequestDelegate next, VueMiddlewareOptions options, IMemoryCache cache = null)
         {
             if ((options.VueFilesOptions!=null||options.MessageOptions!=null) && options.FileProvider==null)
-                throw new ArgumentNullException(nameof(options),$"{nameof(options.FileProvider)} must be provided");
+                throw new ArgumentNullException(nameof(options), $"{nameof(options.FileProvider)} must be provided");
             var log = options.LogWriter;
             options.VueMiddleware=this;
             this.options=options;
-
-            this.cache = cache ?? new MemoryCache(new MemoryCacheOptions() { });
+            this.cache=cache;
+            this.next=next ??= new RequestDelegate(NotFound);
+            cleanupTimer=new(new TimerCallback(CleanupTimer_Elapsed), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
 
             StreamReader sr = new(typeof(JSHandler).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Handlers.Model.JSGenerators.core.js"));
             var builder = new StringBuilder();
             builder.Append(@$"import * as vue from ""{options.VueImportPath}"";
-const securityHeaders = {{{
-                string.Join(',',(this.options.VueModelsOptions?.SecurityHeaders??Array.Empty<string>()).Select(t=>$"'{t.Replace("'","\\'")}':null"))
-            }}};
+const securityHeaders = {{{string.Join(',', (this.options.VueModelsOptions?.SecurityHeaders??Array.Empty<string>()).Select(t => $"'{t.Replace("'", "\\'")}':null"))}}};
 {sr.ReadToEnd()}");
 
             compressedCore = JSMinifier.Minify(builder.ToString());
             sr.Close();
 
-            next ??= new RequestDelegate(NotFound);
-            handlers = Array.Empty<RequestHandlerBase>()
-                .Concat(
-                    options.VueFilesOptions?.BaseURL.Split(';')
-                    .Where(t => !string.IsNullOrEmpty(t.Trim()))
+            var slowMethodDelegate = new delRegisterSlowMethodInstance(RegisterSlowMethodInstance);
+
+            handlers =
+            [
+                .. options.VueFilesOptions?.BaseURL.Split(';')
+                .Where(t => !string.IsNullOrEmpty(t.Trim()))
+                .Select(url =>
+                    new VueFilesHandler(
+                        options.FileProvider,
+                        url,
+                        options.VueImportPath,
+                        options.VueLoaderImportPath,
+                        options.CoreJSImport??options.CoreJSURL,
+                        options.CompressAllJS,
+                        (url) => (handlers.FirstOrDefault(h => h is JSHandler)==null ? false : handlers.OfType<JSHandler>().FirstOrDefault().HandlesJSPath(url)),
+                        log
+                    )
+                )
+,
+                .. options.MessageOptions?.BaseURL.Split(';')
+                    .Where(url => !string.IsNullOrEmpty(url.Trim()))
                     .Select(url =>
-                    {
-                        var handler = new VueFilesHandler(
+                    new MessagesHandler(
                             options.FileProvider,
                             url,
-                            options.VueImportPath,
-                            options.VueLoaderImportPath,
-                            options.CoreJSImport??options.CoreJSURL,
                             options.CompressAllJS,
-                            (url) => (handlers.FirstOrDefault(h=>h is ModelRequestHandler)==null ? false : handlers.OfType<ModelRequestHandler>().FirstOrDefault().HandlesJSPath(url)),
-                            next,
-                            this.cache,
-                            log
-                        );
-                        next = new RequestDelegate(handler.ProcessRequest);
-                        return handler;
-                    })
-                )
-                .Concat(
-                    options.MessageOptions?.BaseURL.Split(';')
-                        .Where(url => !string.IsNullOrEmpty(url.Trim()))
-                        .Select(url =>
-                        {
-                            var handler = new MessagesHandler(
-                                options.FileProvider,
-                                url,
-                                log,
-                                options.CompressAllJS,
-                                next,
-                                this.cache,
-                                options.CoreJSImport??options.CoreJSURL,
-                                options.VueImportPath
-                            );
-                            next = new RequestDelegate(handler.ProcessRequest);
-                            return handler;
-                        })
-                )
-                .ToArray();
+                            options.CoreJSImport??options.CoreJSURL,
+                            options.VueImportPath
+                        )
+                    )
+            ];
             if (options.VueModelsOptions!=null)
-                handlers = handlers.Append(new ModelRequestHandler(log, options.VueModelsOptions.BaseURL, options.VueModelsOptions.IgnoreInvalidModels, options.VueImportPath,
-                    options.CoreJSImport??options.CoreJSURL,
-                options.VueModelsOptions.SessionFactory, options.CompressAllJS, next, this.cache));
+            {
+                handlers = handlers.Concat(
+                    [
+                        new JSHandler(options.VueModelsOptions.BaseURL,options.VueImportPath,options.CoreJSImport??options.CoreJSURL,options.VueModelsOptions.SessionFactory,options.CompressAllJS,log),
+                        new LoadHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new LoadAllHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new SaveHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new DeleteHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new UpdateHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new ModelListCallHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new InstanceMethodHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log),
+                        new StaticMethodHandler(options.VueModelsOptions.SessionFactory,slowMethodDelegate,options.VueModelsOptions.BaseURL,log)
+                    ]
+                );
+                AssemblyAdded();
+            }
         }
 
-        /// <summary>
-        /// Disposable implementation to allow for cleanup and proper disposal
-        /// </summary>
-        public void Dispose()
+        private string RegisterSlowMethodInstance(string url, InjectableMethod method, object model, object[] pars, IRequestData requestData, ILogger log)
         {
-            foreach (var handler in handlers)
-                handler.Dispose();
-            cache.Dispose();
-            GC.SuppressFinalize(this);
+            string ret = $"{url}/{Guid.NewGuid()}".ToLower();
+            locker.EnterWriteLock();
+            try
+            {
+                SlowMethodInstance smi = new(method, model, pars, requestData, log);
+                methodInstances.Add(ret, smi);
+            }
+            catch (Exception e)
+            {
+                log?.LogError("Attempting to register a slow method caused an error. {}", e.Message);
+                ret=null;
+            }
+            locker.ExitWriteLock();
+            return ret;
+        }
+        private void CleanupTimer_Elapsed(object state)
+        {
+            locker.EnterWriteLock();
+            string[] keys = new string[methodInstances.Count];
+            methodInstances.Keys.CopyTo(keys, 0);
+            keys.ForEach(key =>
+            {
+                if (methodInstances[key].IsExpired)
+                {
+                    SlowMethodInstance smi = methodInstances[key];
+                    try { smi.Dispose(); } catch (Exception ex) { options.LogWriter?.LogError("SlowMethodInstance diposal error {}", ex.Message); }
+                    methodInstances.Remove(key);
+                }
+                else if (methodInstances[key].IsFinished)
+                    methodInstances.Remove(key);
+            });
+            locker.ExitWriteLock();
         }
 
         /// <summary>
@@ -269,23 +314,214 @@ const securityHeaders = {{{
                 context.Response.ContentType="text/javascript";
                 context.Response.StatusCode= 200;
                 await context.Response.WriteAsync(compressedCore);
+                return;
             }
-            else
-                await handlers.Last().ProcessRequest(context);
+            if (string.Equals(context.Request.Method, "PULL", StringComparison.InvariantCultureIgnoreCase)
+                && options.VueModelsOptions!=null)
+            {
+                string url = Utility.CleanURL(Utility.BuildURL(context, options.VueModelsOptions.BaseURL));
+                locker.EnterReadLock();
+                methodInstances.TryGetValue(url.ToLower(), out SlowMethodInstance smi);
+                locker.ExitReadLock();
+                if (!(smi?.IsExpired??true))
+                {
+                    await smi.HandleRequest(context);
+                    if (smi.IsFinished)
+                    {
+                        locker.EnterWriteLock();
+                        methodInstances.Remove(url.ToLower());
+                        locker.ExitWriteLock();
+                    }
+                    return;
+                }
+                else
+                {
+                    if (smi?.IsExpired??false)
+                    {
+                        locker.EnterWriteLock();
+                        methodInstances.Remove(url.ToLower());
+                        try { smi.Dispose(); } catch (Exception e) { options.LogWriter?.LogError("SlowMethodInstance disposal error {}", e.Message); }
+                        locker.ExitWriteLock();
+                    }
+                }
+            }
+            var handler = handlers.SelectFirst(h => h.HandlesRequest(context), h => h.Result);
+            if (handler!=null)
+            {
+                if (handler.RequestHandler is ICachingRequestHandler handlerCachingRequestHandler)
+                {
+                    if (cache?.TryGetValue<CachedResponse>(handler.CacheURL,out var cachedResponse)??false)
+                    {
+                        if (context.Request.Headers.TryGetValue("If-Modified-Since", out var modifiedSince)
+                            && (
+                                string.Equals(modifiedSince.ToString().Trim(),cachedResponse.Timestamp.ToUniversalTime().ToString("R"))
+                                || cachedResponse.Timestamp.ToUniversalTime()>=DateTime.Parse(modifiedSince,null,System.Globalization.DateTimeStyles.AssumeUniversal)
+                            )
+                        )
+                        {
+                            context.Response.ContentType=cachedResponse.ContentType;
+                            context.Response.Headers.Append("accept-ranges", "bytes");
+                            context.Response.Headers.Append("date", cachedResponse.Timestamp.ToUniversalTime().ToString("R"));
+                            context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cachedResponse.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                            context.Response.StatusCode = 304;
+                            await context.Response.WriteAsync("");
+                        }
+                        else
+                            await OutputCachedResponse(context, cachedResponse.ContentType, cachedResponse.Timestamp, cachedResponse.Content);
+                    }
+                    else
+                    {
+                        var cachableResponse = await handlerCachingRequestHandler.ProduceResponseAsync(context, handler.State);
+                        if (cachableResponse!=null)
+                        {
+                            cachedResponse = cache?.Set<CachedResponse>(handler.CacheURL, new(cachableResponse.Content, cachableResponse.ContentType, cachableResponse.Timestamp), new MemoryCacheEntryOptions()
+                            {
+                                SlidingExpiration=TimeSpan.FromHours(1),
+                                AbsoluteExpiration=DateTimeOffset.UtcNow.AddHours(12)
+                            });
+                            (cachableResponse.ChangeTokens?? []).ForEach(token => token.RegisterChangeCallback((state) =>
+                            {
+                                try
+                                {
+                                    cache?.Remove(state);
+                                }
+                                catch (Exception) { }
+                            }, handler.CacheURL));
+                            await OutputCachedResponse(context, cachableResponse.ContentType, cachableResponse.Timestamp, cachableResponse.Content);
+                        }
+                    }
+                    return;
+                }else if (handler.RequestHandler is INonCachingRequestHandler nonCachingRequestHandler)
+                {
+                    try
+                    {
+                        await nonCachingRequestHandler.ProduceResponseAsync(context, handler.State);
+                    }
+                    catch (CallNotFoundException cnfe)
+                    {
+                        options.LogWriter?.LogError("Request Error, call not found: {}", cnfe.Message);
+                        context.Response.ContentType = "text/text";
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync(cnfe.Message);
+                    }
+                    catch (InsecureAccessException iae)
+                    {
+                        options.LogWriter?.LogError("Request Error, insecure access: {}", iae.Message);
+                        context.Response.ContentType = "text/text";
+                        context.Response.StatusCode = 403;
+                        await context.Response.WriteAsync(iae.Message);
+                    }
+                    catch (Exception e)
+                    {
+                        options.LogWriter?.LogError("Request Error: {}", e.Message);
+                        context.Response.ContentType= "text/text";
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync("Error");
+                    }
+                }
+            } else
+                await next(context);
         }
         private async Task NotFound(HttpContext context)
         {
             context.Response.StatusCode = 404;
             await context.Response.WriteAsync("Not Found");
         }
+
+        private static async Task OutputCachedResponse(HttpContext context,string contentType,DateTime timestamp,string content)
+        {
+            context.Response.ContentType=contentType;
+            context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
+            context.Response.Headers.Append("Last-Modified", timestamp.ToUniversalTime().ToString("R"));
+            context.Response.StatusCode = 200;
+            await context.Response.WriteAsync(content);
+        }
+
+
         internal void UnloadAssemblyContext(string contextName)
-            => handlers.OfType<ModelRequestHandler>().FirstOrDefault<ModelRequestHandler>()?.UnloadAssemblyContext(contextName);
+        {
+            var types = Utility.UnloadAssemblyContext(contextName)?? [];
+            handlers.OfType<ITypeSensitiveHandler>().ForEach(h => h.UnloadTypes(types));
+        }
 
         internal void AssemblyAdded()
-            => handlers.OfType<ModelRequestHandler>().FirstOrDefault()?.AssemblyAdded();
+        {
+            isInitialized=false;
+            handlers.OfType<ITypeSensitiveHandler>()
+                .ForEach(h => h.ClearTypes());
+            AssemblyLoadContext.All
+                .ForEach(alc => AsssemblyLoadContextAdded(alc));
+        }
 
         internal void AsssemblyLoadContextAdded(string contextName)
-            => handlers.OfType<ModelRequestHandler>().FirstOrDefault()?.AsssemblyLoadContextAdded(contextName);
+        {
+            var alc = AssemblyLoadContext.All.FirstOrDefault(alc => string.Equals(alc.Name,contextName,StringComparison.InvariantCultureIgnoreCase));
+            if (alc!=null)
+                AsssemblyLoadContextAdded(alc);
+        }
+
+        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc)
+        {
+            options.LogWriter?.LogDebug("Loading Assembly Load Context {}", alc.Name);
+            List<Exception> errors = DefinitionValidator.Validate(alc, options.LogWriter, out List<Type> invalidModels, out List<Type> models);
+            invalidModelTypes.AddRange(invalidModels.Where(t=>!invalidModelTypes.Contains(t)));
+            if (errors.Count > 0)
+            {
+                options.LogWriter?.LogError("Validation errors:");
+                errors.ForEach(e => options.LogWriter?.LogError("Validation Error: {}", e.Message));
+                options.LogWriter?.LogError("Invalid IModels:");
+                invalidModels.ForEach(t => options.LogWriter?.LogError("Invalid Model: {}", t.FullName));
+            }
+            if (errors.Count > 0 && !options.VueModelsOptions.IgnoreInvalidModels)
+                throw new ModelValidationException(errors);
+            models.RemoveAll(m => invalidModelTypes.Contains(m));
+            handlers.OfType<ITypeSensitiveHandler>()
+                .ForEach(handler => handler.LoadTypes(models));
+            isInitialized=true;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    try
+                    {
+                        cleanupTimer.Dispose();
+                    }
+                    catch (Exception e) { options.LogWriter?.LogError("CleanupTimer disposal error {}", e.Message); }
+                    locker.EnterWriteLock();
+                    string[] keys = new string[methodInstances.Count];
+                    methodInstances.Keys.CopyTo(keys, 0);
+                    keys.ForEach(key =>
+                    {
+                        try { methodInstances[key].Dispose(); } catch (Exception e) { options.LogWriter?.LogError("Method Instance disposal error {}", e.Message); };
+                        methodInstances.Remove(key);
+                    });
+                    locker.ExitWriteLock();
+                    locker.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue=true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~VueMiddleware()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 
     /// <summary>

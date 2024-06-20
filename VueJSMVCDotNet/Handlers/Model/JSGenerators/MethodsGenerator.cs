@@ -1,8 +1,8 @@
-﻿using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
+using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Model.JSGenerators.Interfaces;
+using VueJSMVCDotNet.Interfaces;
 using static VueJSMVCDotNet.Handlers.Model.JSHandler;
-using Microsoft.AspNetCore.Http;
 
 namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
@@ -62,7 +62,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         private static void AppendMethodCallDeclaration(MethodInfo method, WrappedStringBuilder builder, ILogger log)
         {
             ParameterInfo[] pars = new InjectableMethod(method, log).StrippedParameters;
-            builder.AppendLine($@"          {(method.IsStatic ? "static async " : "async #")}{method.Name}({string.Join(',',pars.Select(p=>p.Name))}){{
+            builder.AppendLine($@"          {(method.IsStatic ? "static async " : "async #")}{method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
                 let function_data = {{}};");
             NotNullArguement nna = (method.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)method.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
             pars.ForEach(par =>

@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System.IO;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {

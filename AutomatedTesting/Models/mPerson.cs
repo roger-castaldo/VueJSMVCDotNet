@@ -1,13 +1,13 @@
 ﻿using AutomatedTesting.Security;
-using VueJSMVCDotNet;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
+using VueJSMVCDotNet;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
@@ -16,7 +16,7 @@ namespace AutomatedTesting.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
-        public sName(string firstname,string lastname)
+        public sName(string firstname, string lastname)
         {
             FirstName=firstname;
             LastName=lastname;
@@ -67,7 +67,7 @@ namespace AutomatedTesting.Models
         }
 
 
-        private mPerson(int id,string firstName, string lastName)
+        private mPerson(int id, string firstName, string lastName)
         {
             _firstName = firstName;
             _lastName = lastName;
@@ -89,7 +89,7 @@ namespace AutomatedTesting.Models
 
         [ModelLoadMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD)]
-        public static Task<mPerson> Load(string id, ISecureSession session,IDataStore store)
+        public static Task<mPerson> Load(string id, ISecureSession session, IDataStore store)
         {
             mPerson ret = null;
             var persons = (mPerson[])store[KEY]??Persons;
@@ -106,14 +106,14 @@ namespace AutomatedTesting.Models
 
         [ModelLoadAllMethod()]
         [SecurityRoleCheck(Constants.Rights.LOAD_ALL)]
-        public static List<mPerson> LoadAll(ISecureSession session,IDataStore store)
+        public static List<mPerson> LoadAll(ISecureSession session, IDataStore store)
         {
             return new List<mPerson>((mPerson[])store[KEY]??Persons);
         }
 
         [ModelDeleteMethod()]
         [SecurityRoleCheck(Constants.Rights.DELETE)]
-        public bool Delete(ISecureSession session,IDataStore store)
+        public bool Delete(ISecureSession session, IDataStore store)
         {
             bool ret = false;
             var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
@@ -152,13 +152,13 @@ namespace AutomatedTesting.Models
 
         [ModelSaveMethod()]
         [SecurityRoleCheck(Constants.Rights.SAVE)]
-        public bool Save(ISecureSession session,IDataStore store)
+        public bool Save(ISecureSession session, IDataStore store)
         {
             if (this.FirstName=="DoNotSave")
                 return false;
             this._id = new Random().Next(999999);
             var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
-            persons.Add(this);  
+            persons.Add(this);
             store[KEY] = persons.ToArray();
             return true;
         }
@@ -169,8 +169,8 @@ namespace AutomatedTesting.Models
             return new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToList();
         }
 
-        [ModelListMethod(paged:true)]
-        public static List<mPerson> ListBobsPaged(IDataStore store,int pageStartIndex, int pageSize, out int totalPages)
+        [ModelListMethod(paged: true)]
+        public static List<mPerson> ListBobsPaged(IDataStore store, int pageStartIndex, int pageSize, out int totalPages)
         {
             mPerson[] bobs = new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToArray();
             totalPages=(int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
@@ -281,7 +281,7 @@ namespace AutomatedTesting.Models
 
         [ModelListMethod(true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]
-        public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session,IDataStore store)
+        public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session, IDataStore store)
         {
             List<mPerson> ret = new List<mPerson>();
             totalPages = 0;
@@ -325,7 +325,7 @@ namespace AutomatedTesting.Models
         [SecurityRoleCheck(Constants.Rights.METHOD)]
         public string GetFullName(string middleName)
         {
-            return string.Format("{0}, {1} {2}", new object[] { LastName, FirstName,middleName });
+            return string.Format("{0}, {1} {2}", new object[] { LastName, FirstName, middleName });
         }
 
         [ExposedMethod]
@@ -336,7 +336,7 @@ namespace AutomatedTesting.Models
         }
 
         [ExposedMethod]
-        public void SetFullName(string fullName,IDataStore store)
+        public void SetFullName(string fullName, IDataStore store)
         {
             string[] tmp = fullName.Split(',');
             var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
@@ -389,8 +389,8 @@ namespace AutomatedTesting.Models
 
         [ExposedMethod(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
-        [NotNullArguement(new string[] {"lastName","firstName"})]
-        public static string FormatName(ISecureSession session,string lastName,string firstName)
+        [NotNullArguement(new string[] { "lastName", "firstName" })]
+        public static string FormatName(ISecureSession session, string lastName, string firstName)
         {
             return string.Format("{0}, {1}", new object[] { firstName, lastName });
         }
@@ -400,19 +400,19 @@ namespace AutomatedTesting.Models
         public static string[] FormatNames(ISecureSession session, string[] lastName, string[] firstName)
         {
             List<string> result = new List<string>();
-            for(int x = 0; x<lastName.Length; x++)
+            for (int x = 0; x<lastName.Length; x++)
             {
                 result.Add(FormatName(session, lastName[x], firstName[x]));
             }
             return result.ToArray();
         }
-        
+
 
         [ExposedMethod(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
-        public static string FormatName(ISecureSession session, string lastName,string middleName, string firstName)
+        public static string FormatName(ISecureSession session, string lastName, string middleName, string firstName)
         {
-            return string.Format("{2}, {0} {1}", new object[] { firstName,middleName, lastName });
+            return string.Format("{2}, {0} {1}", new object[] { firstName, middleName, lastName });
         }
 
         [ExposedMethod(true)]

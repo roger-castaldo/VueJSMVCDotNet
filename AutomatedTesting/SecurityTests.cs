@@ -1,9 +1,9 @@
 ﻿using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.IO;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -36,7 +36,7 @@ namespace AutomatedTesting
             content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
@@ -51,7 +51,7 @@ namespace AutomatedTesting
             content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
             content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD_ALL }))).ReadToEnd();
@@ -63,7 +63,7 @@ namespace AutomatedTesting
         public void TestDeleteSecurity()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}",new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
             content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
@@ -90,7 +90,7 @@ namespace AutomatedTesting
             content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.UPDATE }),parameters:new Hashtable() { { "FirstName", "Testing123" } })).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.UPDATE }), parameters: new Hashtable() { { "FirstName", "Testing123" } })).ReadToEnd();
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }
@@ -171,7 +171,7 @@ namespace AutomatedTesting
             content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
             Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" }})).ReadToEnd();
+            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
             Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
             Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
         }

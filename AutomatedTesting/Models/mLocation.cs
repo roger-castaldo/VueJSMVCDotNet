@@ -1,9 +1,9 @@
 ﻿using AutomatedTesting.Security;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {

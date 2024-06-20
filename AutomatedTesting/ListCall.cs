@@ -1,18 +1,18 @@
 ﻿using AutomatedTesting.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Microsoft.Extensions.Logging;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
     [TestClass]
-    public  class ListCall
+    public class ListCall
     {
         private VueMiddleware _middleware;
         private Mock<ILogger> _writer;
@@ -21,7 +21,7 @@ namespace AutomatedTesting
         public void Init()
         {
             _writer = new Mock<ILogger>();
-            _middleware =Utility.CreateMiddleware(true,logWriter:_writer.Object);
+            _middleware =Utility.CreateMiddleware(true, logWriter: _writer.Object);
         }
 
         [TestCleanup]
@@ -106,7 +106,7 @@ namespace AutomatedTesting
             Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
             Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Length / (decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
             Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.AreEqual((int)Math.Min(mPerson.Persons.Length-2,2), ((ArrayList)((Hashtable)result)["response"]).Count);
+            Assert.AreEqual((int)Math.Min(mPerson.Persons.Length-2, 2), ((ArrayList)((Hashtable)result)["response"]).Count);
         }
 
         [TestMethod]
@@ -135,7 +135,7 @@ namespace AutomatedTesting
             Assert.IsTrue(((ArrayList)((Hashtable)result)["response"]).Count<=2);
         }
 
-        private void TestParameterListCall(string url,Hashtable pars,int? expectedStatus=null)
+        private void TestParameterListCall(string url, Hashtable pars, int? expectedStatus = null)
         {
             MemoryStream ms = Utility.ExecuteRequest("LIST", url, _middleware, out int status, parameters: pars);
             if (expectedStatus!=null)
@@ -152,7 +152,7 @@ namespace AutomatedTesting
         [TestMethod()]
         public void TestListDateTimeParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByDate",new Hashtable()
+            TestParameterListCall("/models/mPerson/ListByDate", new Hashtable()
             {
                 {"date",DateTime.Now }
             });

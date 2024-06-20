@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Security
 {
-    internal class SecureSession : ISecureSession,ISecureSessionFactory
+    internal class SecureSession : ISecureSession, ISecureSessionFactory
     {
         private string[] _rights = null;
 
@@ -25,7 +25,7 @@ namespace AutomatedTesting.Security
             if (arrayList!=null)
             {
                 _rights = new string[arrayList.Count];
-                for(int x = 0; x<arrayList.Count; x++)
+                for (int x = 0; x<arrayList.Count; x++)
                 {
                     _rights[x] = (string)arrayList[x];
                 }

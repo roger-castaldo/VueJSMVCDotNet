@@ -1,10 +1,10 @@
 ﻿using AutomatedTesting.Models;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -31,12 +31,12 @@ namespace AutomatedTesting
             string firstName = "Testing123";
             string lastName = "Testing1234";
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() { 
-                { "firstName", firstName }, 
-                { "lastName", lastName } 
+            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() {
+                { "firstName", firstName },
+                { "lastName", lastName }
             })).ReadToEnd();
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(mPerson.FormatName(null,lastName,firstName),content);
+            Assert.AreEqual(mPerson.FormatName(null, lastName, firstName), content);
         }
 
         [TestMethod]
@@ -176,7 +176,7 @@ namespace AutomatedTesting
                 {"parameter","" }
             });
             Assert.AreEqual(200, status);
-            Assert.AreEqual(0,result.Length);
+            Assert.AreEqual(0, result.Length);
         }
     }
 }

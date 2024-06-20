@@ -12,7 +12,7 @@ namespace AutomatedTesting.FileProvider
             private object _state;
             private EmbeddedChangeToken _container;
 
-            public sCallBack(Action<object> callback, object state,EmbeddedChangeToken container)
+            public sCallBack(Action<object> callback, object state, EmbeddedChangeToken container)
             {
                 _callback=callback;
                 _state=state;
@@ -29,7 +29,7 @@ namespace AutomatedTesting.FileProvider
                 _callback.Invoke(_state);
             }
 
-            
+
         }
 
         private bool _changed;
@@ -47,7 +47,7 @@ namespace AutomatedTesting.FileProvider
 
         public IDisposable RegisterChangeCallback(Action<object> callback, object state)
         {
-            sCallBack ret = new  sCallBack(callback, state,this);
+            sCallBack ret = new sCallBack(callback, state, this);
             _callbacks.Add(ret);
             return ret;
         }

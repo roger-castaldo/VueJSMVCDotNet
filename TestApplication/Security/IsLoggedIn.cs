@@ -10,7 +10,7 @@ namespace TestApplication.Security
         {
         }
 
-        public override Task<bool> HasValidAccessAsync(IRequestData data, IModel model, string url,string id)
+        public override Task<bool> HasValidAccessAsync(IRequestData data, IModel model, string url, string id)
         {
             return Task.FromResult<bool>(data.Session!= null);
         }

@@ -1,13 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Primitives;
 using System.IO;
 using VueJSMVCDotNet.Caching;
+using VueJSMVCDotNet.Handlers.Base;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers
 {
-    internal class MessagesHandler : RequestHandlerBase
+    internal class MessagesHandler(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath) 
+        : RequestHandler, ICachingRequestHandler
     {
         private string CompileToCode(StringBuilder messages)
         {
@@ -62,69 +64,44 @@ const ProduceComputedMessage = function(message,args) {{
 export {{Translate,ProduceComputedMessage}};";
         }
 
-        private readonly IFileProvider fileProvider;
-        private readonly string baseURL;
-        private readonly bool compressAllJS;
-        private readonly string corePath;
-        private readonly string vuePath;
-
-
-        public MessagesHandler(IFileProvider fileProvider, string baseURL, ILogger log,bool compressAllJS, RequestDelegate next, IMemoryCache cache, string corePath, string vuePath)
-            : base(next, cache, log)
+        protected override bool InternalHandlesRequest(HttpContext context, out object state, out string cacheURL)
         {
-            this.fileProvider=fileProvider;
-            this.baseURL=baseURL;
-            this.compressAllJS=compressAllJS;
-            this.corePath=corePath;
-            this.vuePath=vuePath;
+            cacheURL = context.Request.Path.ToString().ToLower();
+            state=cacheURL;
+            return context.Request.Path.StartsWithSegments(new PathString(baseURL))
+                && context.Request.Method=="GET"
+                && context.Request.Path.ToString().ToLower().EndsWith(".js");
         }
 
-        public override async Task ProcessRequest(HttpContext context)
+        public async Task<ICachableResponse> ProduceResponseAsync(HttpContext context, object state)
         {
-            if (context.Request.Path.StartsWithSegments(new PathString(baseURL))
-                && context.Request.Method=="GET"
-                && context.Request.Path.ToString().ToLower().EndsWith(".js"))
+            var spath = state as string;
+            string fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
+            if (fpath!=null)
             {
-                string spath = context.Request.Path.ToString().ToLower();
-                CachedContent cc = null;
-                cc = this[spath];
-                if (!await ReponseCached(context, cc))
+                StringBuilder sb = new();
+                var contents = fileProvider.GetDirectoryContents(fpath)
+                    .Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
+
+                contents.ForEach(f =>
                 {
-                    if (cc==null)
-                    {
-                        string fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
-                        if (fpath!=null)
-                        {
-                            StringBuilder sb = new();
-                            var contents = fileProvider.GetDirectoryContents(fpath)
-                                .Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
-                                
-                            contents.ForEach(f =>
-                                {
-                                    StreamReader sr = new(f.CreateReadStream());
-                                    sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
-                                    sr.Close();
-                                });
-                            if (sb.Length>0)
-                            {
-                                sb.Length-=2;
-                                cc = new()
-                                {
-                                    Timestamp=contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
-                                    Content=(compressAllJS ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb))
-                                };
-                                this[spath, contents.Select(f => fileProvider.Watch(f.PhysicalPath))] = cc;
-                            }
-                        }
-                    }
-                    if (cc!=null)
-                        await ProduceResponse(context, "text/javascript", cc.Timestamp, (!compressAllJS && spath.EndsWith(".min.js") ? JSMinifier.Minify(cc.Content) : cc.Content));
-                    else
-                        await ProduceNotFound(context, "Unable to locate requested file.");
+                    StreamReader sr = new(f.CreateReadStream());
+                    sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
+                    sr.Close();
+                });
+                if (sb.Length>0)
+                {
+                    sb.Length-=2;
+                    return new CachableResponse(
+                        (compressAllJS || spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
+                        "text/javascript",
+                        contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
+                        contents.Select(f => fileProvider.Watch(f.PhysicalPath))
+                    );
                 }
             }
-            else
-                await next(context);
+            await ProduceNotFound(context, "Unable to locate requested file.");
+            return null;
         }
     }
 }

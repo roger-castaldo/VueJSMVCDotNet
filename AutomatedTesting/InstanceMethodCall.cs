@@ -1,10 +1,10 @@
 ﻿using AutomatedTesting.Models;
 using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System.Collections;
 using System.IO;
 using System.Linq;
+using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -127,10 +127,10 @@ namespace AutomatedTesting
             store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
             string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
-                parameters:new Hashtable()
+                parameters: new Hashtable()
                 {
                     {"middleName","John" }
-                },store:store)).ReadToEnd();
+                }, store: store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length>0);
             Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName("John"), content);
@@ -140,7 +140,7 @@ namespace AutomatedTesting
         public void MethodSecurityBlocked()
         {
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
             Assert.AreEqual(SecurityTests._NOT_ALLOWED_MESSAGE, content);
             Assert.AreEqual(SecurityTests._NOT_ALLOWED_STATUS, status);
         }
@@ -169,7 +169,7 @@ namespace AutomatedTesting
                 parameters: new Hashtable()
                 {
                     {"fullName","Bob, Loblaw" }
-                },store: store)).ReadToEnd();
+                }, store: store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length==0);
             Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession()), "Bob, Loblaw");
@@ -181,14 +181,14 @@ namespace AutomatedTesting
             var store = new DataStore();
             store[mPerson.KEY] = mPerson.Persons.ToArray();
             int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsFullName", new object[] {((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
+            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
                 parameters: new Hashtable()
                 {
                     {"fullName", ((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession())}
-                },store:store)).ReadToEnd();
+                }, store: store)).ReadToEnd();
             Assert.AreEqual(status, 200);
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual("true",content);
+            Assert.AreEqual("true", content);
         }
 
         [TestMethod]

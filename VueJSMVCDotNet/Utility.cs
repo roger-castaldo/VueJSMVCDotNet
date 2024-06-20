@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Handlers.Model;
-using VueJSMVCDotNet.Interfaces;
-using VueJSMVCDotNet.JSON;
-using System.Collections;
 using System.Data;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.JSON;
 
 namespace VueJSMVCDotNet
 {
@@ -25,7 +24,7 @@ namespace VueJSMVCDotNet
         //houses the assembly load contexts for types
         private static readonly Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES = new();
 
-        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew,ILogger log)
+        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew, ILogger log)
         {
             foreach (string str in data.Keys)
             {
@@ -39,7 +38,7 @@ namespace VueJSMVCDotNet
                             if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length==0 || isNew)
                             {
                                 log?.LogTrace("Attempting to convert the value supplied for property {}.{} to {}", model.GetType().FullName, pi.Name, pi.PropertyType);
-                                pi.SetValue(model,data.GetValue(pi.PropertyType,str));
+                                pi.SetValue(model, data.GetValue(pi.PropertyType, str));
                             }
                         }
                     }
@@ -47,11 +46,13 @@ namespace VueJSMVCDotNet
             }
         }
 
-        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc, ILogger log) {
-            log?.LogTrace("Locating Instance types of {} in the Load Context {}",  parent.FullName, alc.Name);
-            List<Type> ret = LocateTypeInstances(parent, alc.Assemblies,log);
-            foreach (Type t in ret) {
-                MarkTypeSource(alc.Name, t,log);
+        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc, ILogger log)
+        {
+            log?.LogTrace("Locating Instance types of {} in the Load Context {}", parent.FullName, alc.Name);
+            List<Type> ret = LocateTypeInstances(parent, alc.Assemblies, log);
+            foreach (Type t in ret)
+            {
+                MarkTypeSource(alc.Name, t, log);
             }
             return ret;
         }
@@ -65,7 +66,8 @@ namespace VueJSMVCDotNet
                 {
                     foreach (Type t in GetLoadableTypes(ass, log))
                     {
-                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))) {
+                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent)))
+                        {
                             ret.Add(t);
                         }
                     }
@@ -85,12 +87,12 @@ namespace VueJSMVCDotNet
             }
             catch (ReflectionTypeLoadException rtle)
             {
-                log?.LogError("Reflection Load Exception from getting loadable types: {}",rtle.Message);
+                log?.LogError("Reflection Load Exception from getting loadable types: {}", rtle.Message);
                 ret = rtle.Types;
             }
             catch (Exception e)
             {
-                log?.LogError("General Error attempting to load types from assembly: {}",e.Message);
+                log?.LogError("General Error attempting to load types from assembly: {}", e.Message);
                 if (e.Message != "The invoked member is not supported in a dynamic assembly."
                             && !e.Message.StartsWith("Unable to load one or more of the requested types."))
                     throw;
@@ -100,26 +102,32 @@ namespace VueJSMVCDotNet
             return ret;
         }
 
-        private static void MarkTypeSource(string contextName, Type type, ILogger log) {
+        private static void MarkTypeSource(string contextName, Type type, ILogger log)
+        {
             log?.LogTrace("Marking the Assembly Load Context of {} for the type {}", contextName, type.FullName);
             lock (_LOAD_CONTEXT_TYPE_SOURCES)
             {
                 List<Type> types = new();
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName))
+                {
                     types = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
-                if (!types.Contains(type)) {
+                if (!types.Contains(type))
+                {
                     types.Add(type);
                 }
                 _LOAD_CONTEXT_TYPE_SOURCES.Add(contextName, types);
             }
         }
 
-        internal static List<Type> UnloadAssemblyContext(string contextName) {
+        internal static List<Type> UnloadAssemblyContext(string contextName)
+        {
             List<Type> ret = null;
-            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
+            lock (_LOAD_CONTEXT_TYPE_SOURCES)
+            {
+                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName))
+                {
                     ret = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
@@ -137,7 +145,8 @@ namespace VueJSMVCDotNet
             {
                 _TYPE_CACHE.Clear();
             }
-            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
+            lock (_LOAD_CONTEXT_TYPE_SOURCES)
+            {
                 _LOAD_CONTEXT_TYPE_SOURCES.Clear();
             }
         }
@@ -158,7 +167,7 @@ namespace VueJSMVCDotNet
             return urlRoot.Replace("//", "/");
         }
 
-        private static readonly Regex _regNoCache = new("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript,TimeSpan.FromMilliseconds(500));
+        private static readonly Regex _regNoCache = new("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript, TimeSpan.FromMilliseconds(500));
 
         public static string CleanURL(Uri url)
         {
@@ -184,7 +193,7 @@ namespace VueJSMVCDotNet
             return isArray;
         }
 
-        public static Type ExtractUnderlyingType(Type type,out bool isArray,out bool isNullable,out bool isTask)
+        public static Type ExtractUnderlyingType(Type type, out bool isArray, out bool isNullable, out bool isTask)
         {
             isArray = false;
             isNullable = false;
@@ -201,10 +210,11 @@ namespace VueJSMVCDotNet
             {
                 isArray=true;
                 type=type.GetElementType();
-            }else if (type.IsGenericType && 
+            }
+            else if (type.IsGenericType &&
                 (
                 type.GetGenericTypeDefinition()==typeof(IEnumerable<>) ||
-                type.GetGenericTypeDefinition().GetInterfaces().Any(t=>t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>))
+                type.GetGenericTypeDefinition().GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>))
              ))
             {
                 isArray=true;
@@ -224,7 +234,7 @@ namespace VueJSMVCDotNet
 
         internal static string GetTypeString(Type propertyType, bool notNullTagged)
         {
-            var ptype = ExtractUnderlyingType(propertyType,out var isArray,out var isNullable,out _);
+            var ptype = ExtractUnderlyingType(propertyType, out var isArray, out var isNullable, out _);
             if (isArray)
                 return $"{GetTypeString(ptype, false)}[]{(ptype==typeof(byte) && !notNullTagged ? "?" : "")}";
             else if (isNullable)
@@ -269,7 +279,7 @@ namespace VueJSMVCDotNet
         {
             var type = ExtractUnderlyingType(propertyType, out _, out _, out _);
             if (type.IsEnum)
-                return $"[{string.Join(',',Enum.GetNames(type).Select(s=>$"'{s}'"))}]";
+                return $"[{string.Join(',', Enum.GetNames(type).Select(s => $"'{s}'"))}]";
             else
                 return "undefined";
         }
@@ -284,12 +294,13 @@ namespace VueJSMVCDotNet
                 {
                     if (curPath.Contains(Path.DirectorySeparatorChar.ToString()))
                         curPath=curPath[..curPath.LastIndexOf(Path.DirectorySeparatorChar)];
-                } else if (sub!="" && sub!=".")
+                }
+                else if (sub!="" && sub!=".")
                 {
                     bool changed = false;
                     foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
                     {
-                        if (ifi.IsDirectory && string.Equals(ifi.Name,sub.Trim(),StringComparison.InvariantCultureIgnoreCase))
+                        if (ifi.IsDirectory && string.Equals(ifi.Name, sub.Trim(), StringComparison.InvariantCultureIgnoreCase))
                         {
                             curPath+=(curPath=="" ? "" : Path.DirectorySeparatorChar.ToString())+ifi.Name;
                             changed=true;
@@ -310,7 +321,7 @@ namespace VueJSMVCDotNet
 
         #region JSON
 
-        private static JsonSerializerOptions ProduceJsonOptions(ILogger log,IRequestData requestData = null)
+        private static JsonSerializerOptions ProduceJsonOptions(ILogger log, IRequestData requestData = null)
         {
             var result = new JsonSerializerOptions
             {
@@ -320,7 +331,7 @@ namespace VueJSMVCDotNet
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
             result.Converters.Add(new DecimalConverter());
-            result.Converters.Add(new ModelConverterFactory(requestData,log));
+            result.Converters.Add(new ModelConverterFactory(requestData, log));
             result.Converters.Add(new EnumConverterFactory());
             return result;
         }
@@ -334,7 +345,7 @@ namespace VueJSMVCDotNet
 
         public static T JsonDecode<T>(JsonDocument document, IRequestData requestData, ILogger log)
         {
-            return (T)JsonSerializer.Deserialize(document, typeof(T), options: ProduceJsonOptions(log,requestData));
+            return (T)JsonSerializer.Deserialize(document, typeof(T), options: ProduceJsonOptions(log, requestData));
         }
 
         public static T JsonDecode<T>(JsonNode node, IRequestData requestData, ILogger log)

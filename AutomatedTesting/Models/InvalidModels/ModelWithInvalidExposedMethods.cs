@@ -25,7 +25,7 @@ namespace AutomatedTesting.Models.InvalidModels
         [ExposedMethod]
         public static void NotSlowWithAddItem(AddItem addItem) { }
 
-        [ExposedMethod(isSlow:true)]
+        [ExposedMethod(isSlow: true)]
         public static bool SlowWithAddItemAndReturn(AddItem addItem) { return true; }
     }
 }

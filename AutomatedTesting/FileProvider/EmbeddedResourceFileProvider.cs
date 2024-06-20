@@ -34,12 +34,12 @@ namespace AutomatedTesting.FileProvider
 
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
-            return new EmbeddedDirectoryContents(string.Format("{0}.{1}",new object[] { basePath, subpath }),this);
+            return new EmbeddedDirectoryContents(string.Format("{0}.{1}", new object[] { basePath, subpath }), this);
         }
 
         public IFileInfo GetFileInfo(string subpath)
         {
-            return new EmbeddedFileInfo(String.Format("{0}.{1}", new object[] { basePath, subpath.Replace(Path.DirectorySeparatorChar, '.') }),this);
+            return new EmbeddedFileInfo(String.Format("{0}.{1}", new object[] { basePath, subpath.Replace(Path.DirectorySeparatorChar, '.') }), this);
         }
 
         public IChangeToken Watch(string filter)
