@@ -81,7 +81,7 @@ namespace VueJSMVCDotNet
                 else
                     ret = [];
             }
-            return ret;
+            return ret.Where(t=>t!=null);
         }
 
         private static void MarkTypeSource(string contextName, Type type, ILogger? log)
