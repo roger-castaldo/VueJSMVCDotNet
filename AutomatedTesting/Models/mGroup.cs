@@ -7,7 +7,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    [ModelRoute("/models/mGroup")]
+    [ModelRouteAttribute("/models/mGroup")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
 #pragma warning disable IDE1006 // Naming Styles
     public class mGroup : IModel
@@ -15,11 +15,11 @@ namespace AutomatedTesting.Models
     {
         private static readonly Random _rnd = new((int)DateTime.Now.Ticks);
 
-        [ModelRequiredField()]
-        [ReadOnlyModelProperty()]
+        [ModelRequiredFieldAttribute()]
+        [ReadOnlyModelPropertyAttribute()]
         public string Name { get; set; }
 
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public mPerson[] People { get; set; }
 
         public List<mPerson> PeopleList
@@ -74,36 +74,26 @@ namespace AutomatedTesting.Models
             });
         }
 
-        [ModelLoadMethod]
+        [ModelLoadMethodAttribute]
         public static mGroup Load(string id)
         {
             return _groups.FirstOrDefault(g => g.id==id);
         }
 
-        [ExposedMethod(allowNullResponse: true)]
+        [ExposedMethodAttribute(allowNullResponse: true)]
         public List<mPerson> Search(string name)
-        {
-            name=name.ToLower();
-            return People.Where(p => p.FirstName.ToLower().Contains(name) || p.LastName.ToLower().Contains(name)).ToList();
-        }
+            => People.Where(p => p.FirstName.Contains(name, StringComparison.InvariantCultureIgnoreCase)||p.LastName.Contains(name, StringComparison.InvariantCultureIgnoreCase)).ToList();
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool ContainsPerson(mPerson person)
-        {
-            return People.Any(p => p.id==person.id);
-        }
+            => Array.Exists(People, p => Equals(p.id, person.id));
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool ContainsPeople(List<mPerson> persons)
-        {
-            return persons.Count(p => ContainsPerson(p))==persons.Count;
-        }
+            => persons.Count(p => ContainsPerson(p))==persons.Count;
 
-        [ExposedMethod(allowNullResponse: true)]
-        public mPerson? FindFirst(string name)
-        {
-            name=name.ToLower();
-            return People.FirstOrDefault(p => p.FirstName.ToLower().Contains(name) || p.LastName.ToLower().Contains(name));
-        }
+        [ExposedMethodAttribute(allowNullResponse: true)]
+        public mPerson FindFirst(string name)
+            => Array.Find(People, p => p.FirstName.Contains(name, StringComparison.InvariantCultureIgnoreCase)||p.LastName.Contains(name, StringComparison.InvariantCultureIgnoreCase));
     }
 }

@@ -1,17 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
-using System.Security.Cryptography;
 using VueJSMVCDotNet.Caching;
 using VueJSMVCDotNet.Handlers.Base;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers
 {
-    internal class VueFilesHandler(IFileProvider fileProvider, string baseURL, string vueImportPath, string vueLoaderImportPath, 
-        string coreImport, bool compressAllJS, Func<string, bool> isModelUrl,ILogger log) 
-        : RequestHandler,ICachingRequestHandler
+    internal class VueFilesHandler(IFileProvider fileProvider, string baseURL, string vueImportPath, string vueLoaderImportPath,
+        string coreImport, bool compressAllJS, Func<string, bool> isModelUrl)
+        : RequestHandler, ICachingRequestHandler
     {
 
         private static readonly Regex regImport = new(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
@@ -23,7 +21,7 @@ namespace VueJSMVCDotNet.Handlers
         private readonly struct SVueFile
         {
             public string Name { get; private init; }
-            public string PhysicalPath { get; private init; }
+            public string? PhysicalPath { get; private init; }
             private readonly string content;
             public DateTimeOffset LastModified { get; private init; }
 
@@ -108,23 +106,24 @@ namespace VueJSMVCDotNet.Handlers
             return (context.Request.Path.StartsWithSegments(new PathString(baseURL))
                 ||string.Equals(context.Request.Path, baseURL+".js", StringComparison.InvariantCultureIgnoreCase))
                 && context.Request.Method=="GET"
-                && context.Request.Path.ToString().EndsWith(".js",StringComparison.InvariantCultureIgnoreCase);
+                && context.Request.Path.ToString().EndsWith(".js", StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public async Task<ICachableResponse> ProduceResponseAsync(HttpContext context, object state)
+        public async Task<ICachableResponse?> ProduceResponseAsync(HttpContext context, object? state)
         {
-            var spath = state as string;
-            IEnumerable<SVueFile> files = Array.Empty<SVueFile>();
-            string absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js") ? 7 : 3)], "/");
-            string fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js") ? 7 : 3)]);
+            if (state is not string spath)
+                return null;
+            IEnumerable<SVueFile> files = [];
+            var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js") ? 7 : 3)], "/");
+            var fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js") ? 7 : 3)]);
             if (fpath!=null)
                 files = fileProvider.GetDirectoryContents(fpath)
                     .Where(f => f.Name.ToLower().EndsWith(".vue"))
                     .Select(f => new SVueFile(f));
             else
             {
-                string name = spath[(spath.LastIndexOf('/')+1)..];
-                absolutePath=spath[..(spath.LastIndexOf("/")+1)];
+                var name = spath[(spath.LastIndexOf('/')+1)..];
+                absolutePath=spath[..(spath.LastIndexOf('/')+1)];
                 fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^name.Length]);
                 name = (name.EndsWith(".min.js") ? name[..^7] : name[..^3]).ToLower()+".vue";
                 if (fpath!=null)
@@ -154,7 +153,12 @@ addLinkedDomain(hosturl.origin);");
                             && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
                             )
                         )
-                    .Select(imp => (isModelUrl(imp) ? $"{(imp.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? imp[..^3] : imp[..^2])}{(compressAllJS||spath.EndsWith(".min.js") ? "min." : "")}js" : imp))
+                    .Select(imp =>
+                    {
+                        if (isModelUrl(imp))
+                            return $"{(!imp.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? imp[..^2] : imp[..^3])}{(compressAllJS||spath.EndsWith(".min.js") ? "min." : "")}js";
+                        return imp;
+                    })
                     .Select(imp => $"`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`");
 
                 if (importCaches.Any())
@@ -191,10 +195,10 @@ addLinkedDomain(hosturl.origin);");
                 {
                     sb.Length-=2;
                     return new CachableResponse(
-                        (compressAllJS || spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(sb.ToString()) : sb.ToString()),
+                        (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(sb.ToString()) : sb.ToString()),
                         "text/javascript",
                         files.OrderByDescending(f => f.LastModified.Ticks).Last().LastModified.DateTime,
-                        files.Select(f => fileProvider.Watch(f.PhysicalPath))
+                        files.Where(f => !string.IsNullOrEmpty(f.PhysicalPath)).Select(f => fileProvider.Watch(f.PhysicalPath!))
                         );
                 }
             }
@@ -207,9 +211,6 @@ addLinkedDomain(hosturl.origin);");
                     .Select(imp => MergeUrl(baseURL, imp, files.Count()>1))
                     .Select(url => (url.EndsWith(".js") ? url : string.Concat(url.AsSpan(0, url.Length-4), ".js")))
                     .Distinct();
-
-        private static string ComputeKey(string str)
-            => $"_{new Guid(MD5.HashData(UTF8Encoding.UTF8.GetBytes(str))).ToString().Replace("-", "")}";
 
         private static List<SVueFile> SortFiles(IEnumerable<SVueFile> files, string baseURL)
         {

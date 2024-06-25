@@ -7,25 +7,21 @@ namespace VueJSMVCDotNet
 {
     internal class SlowMethodInstance : IDisposable
     {
-        public readonly struct SPullResponse
-        {
-            public IEnumerable<object> Data { get; init; }
-            public bool IsFinished { get; init; }
-            public bool HasMore { get; init; }
-        }
+        public record PullResponse(IEnumerable<object> Data, bool IsFinished, bool HasMore);
 
         private static readonly int TIMEOUT_MILLISECONDS = 60*1000;
 
         private readonly ConcurrentQueue<object> data;
         private bool finished;
         private bool completed;
-        private Exception error;
+        private Exception? error;
         private DateTime lastCall;
+        private bool disposedValue;
         private readonly Task execution;
         private readonly CancellationTokenSource token;
-        private readonly ILogger log;
+        private readonly ILogger? log;
 
-        public SlowMethodInstance(InjectableMethod method, object model, object[] pars, IRequestData requestData, ILogger log)
+        public SlowMethodInstance(InjectableMethod method, object? model, object?[] pars, IRequestData requestData, ILogger? log)
         {
             this.log=log;
             data=new ConcurrentQueue<object>();
@@ -33,19 +29,19 @@ namespace VueJSMVCDotNet
             completed=false;
             error=null;
             lastCall=DateTime.Now;
-            token = new CancellationTokenSource();
+            token = new();
             execution = new Task(async () =>
             {
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                        await method.InvokeAsync(model, requestData, pars: pars, addItem: new AddItem(AddItem));
+                        await method.InvokeAsync<object>(model, requestData, pars: pars, addItem: new AddItem(AddItem));
                     else
-                        AddItem(await method.InvokeAsync(model, requestData, pars: pars, addItem: new AddItem(AddItem)), true);
+                        AddItem(await method.InvokeAsync<object>(model, requestData, pars: pars, addItem: new AddItem(AddItem)), true);
                 }
                 catch (Exception e)
                 {
-                    log?.LogError("Slow method execution error, {}", e.Message);
+                    log?.LogError(e, "Slow method execution error, {ErrorMessage}", e.Message);
                     error=e;
                 }
             }, token.Token);
@@ -53,7 +49,7 @@ namespace VueJSMVCDotNet
             execution.Start();
         }
 
-        public void AddItem(object item, bool isLast)
+        public void AddItem(object? item, bool isLast)
         {
             if (item!=null)
                 data.Enqueue(item);
@@ -64,13 +60,15 @@ namespace VueJSMVCDotNet
             => completed;
 
         public bool IsExpired
+#pragma warning disable S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
             => DateTime.Now.Subtract(lastCall).TotalMilliseconds > TIMEOUT_MILLISECONDS;
+#pragma warning restore S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
 
         public Task HandleRequest(HttpContext context)
         {
             if (error!=null)
             {
-                log?.LogError("Slow method request handling error, {}", error.Message);
+                log?.LogError(error, "Slow method request handling error, {ErrorMessage}", error.Message);
                 context.Response.ContentType= "text/text";
                 context.Response.StatusCode = 500;
                 finished=true;
@@ -80,10 +78,10 @@ namespace VueJSMVCDotNet
             else
             {
                 lastCall = DateTime.Now;
-                List<object> ret = new();
+                List<object> ret = [];
                 while (ret.Count<5&&!data.IsEmpty)
                 {
-                    if (data.TryDequeue(out object obj))
+                    if (data.TryDequeue(out var obj))
                         ret.Add(obj);
                     else
                         break;
@@ -91,28 +89,35 @@ namespace VueJSMVCDotNet
                 context.Response.ContentType= "text/json";
                 context.Response.StatusCode = 200;
                 completed = finished&&data.IsEmpty;
-                return context.Response.WriteAsync(Utility.JsonEncode(new SPullResponse()
+                return context.Response.WriteAsync(Utility.JsonEncode(new PullResponse(ret, finished&&data.IsEmpty, !data.IsEmpty), log));
+            }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing && execution.Status==TaskStatus.Running)
                 {
-                    Data=ret,
-                    IsFinished=finished&&data.IsEmpty,
-                    HasMore=!data.IsEmpty
-                }, log));
+                    try
+                    {
+                        token.Cancel();
+                        token.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        log?.LogError(ex, "Error disposing SlowMethodInstance, {ErrorMessage}", ex.Message);
+                    }
+                }
+                disposedValue=true;
             }
         }
 
         public void Dispose()
         {
-            if (execution.Status==TaskStatus.Running)
-            {
-                try
-                {
-                    token.Cancel();
-                }
-                catch (Exception ex)
-                {
-                    log?.LogError("Error disposing SlowMethodInstance, {}", ex.Message);
-                }
-            }
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -5,48 +5,48 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Models.InvalidModels
 {
     [ModelJSFilePath("/resources/scripts/ModelWithDuplicateMethods.js")]
-    [ModelRoute("/models/ModelWithDuplicateMethods")]
+    [ModelRouteAttribute("/models/ModelWithDuplicateMethods")]
     internal class ModelWithDuplicateMethods : IModel
     {
         public string id => null;
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithDuplicateMethods Load(string id)
         {
             return null;
         }
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithDuplicateMethods DuplicateLoadMethod(string id)
         {
             return null;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<ModelWithDuplicateMethods> LoadAll() { return null; }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<ModelWithDuplicateMethods> DuplicateLoadAllMethod() { return null; }
 
         public ModelWithDuplicateMethods() { }
 
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         public bool Save() { return true; }
 
-        [ModelSaveMethod]
+        [ModelSaveMethodAttribute]
         public bool DuplicateSaveMethod() { return true; }
 
-        [ModelDeleteMethod()]
+        [ModelDeleteMethodAttribute()]
         public bool Delete() { return true; }
 
-        [ModelDeleteMethod]
+        [ModelDeleteMethodAttribute]
         public bool DuplicateDeleteMethod() { return true; }
 
-        [ModelUpdateMethod()]
+        [ModelUpdateMethodAttribute()]
         public bool Update() { return true; }
 
-        [ModelUpdateMethod]
+        [ModelUpdateMethodAttribute]
         public bool DuplicateUpdateMethod() { return true; }
     }
 }

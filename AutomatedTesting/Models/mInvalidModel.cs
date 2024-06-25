@@ -3,7 +3,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    [ModelRoute("/models/mInvalidModel")]
+    [ModelRouteAttribute("/models/mInvalidModel")]
     [ModelJSFilePath("/resources/scripts/mInvalidModel.js")]
     internal class mInvalidModel : IModel
     {

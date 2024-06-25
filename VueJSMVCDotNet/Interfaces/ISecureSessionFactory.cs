@@ -12,6 +12,6 @@ namespace VueJSMVCDotNet.Interfaces
         /// </summary>
         /// <param name="context">the current context request</param>
         /// <returns>An instance of the ISecureSession extracted from the current request</returns>
-        Task<ISecureSession> ProduceFromContextAsync(HttpContext context);
+        Task<ISecureSession?> ProduceFromContextAsync(HttpContext context);
     }
 }

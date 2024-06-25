@@ -9,7 +9,7 @@ namespace VueJSMVCDotNet.Attributes
     /// or in the case of a method, any time that method is called.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class|AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
-    public abstract class ASecurityCheck : Attribute
+    public abstract class ASecurityCheckAttribute : Attribute
     {
         /// <summary>
         /// Called to check if the current secure session has access to make the given call
@@ -19,6 +19,6 @@ namespace VueJSMVCDotNet.Attributes
         /// <param name="url">The url that was called for the request</param>
         /// <param name="id">the extract id of the model</param>
         /// <returns>true if the supplied session can access</returns>
-        public abstract Task<bool> HasValidAccessAsync(IRequestData data, IModel model, string url, string id);
+        public abstract Task<bool> HasValidAccessAsync(IRequestData data, IModel? model, string url, string? id);
     }
 }

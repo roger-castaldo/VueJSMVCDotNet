@@ -4,21 +4,13 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.JSON
 {
-    internal class ModelConverterFactory : JsonConverterFactory
+    internal class ModelConverterFactory(IRequestData? requestData)
+        : JsonConverterFactory
     {
-        private readonly IRequestData requestData;
-        private readonly ILogger log;
-
-        public ModelConverterFactory(IRequestData requestData, ILogger log)
-        {
-            this.requestData= requestData;
-            this.log=log;
-        }
-
         public override bool CanConvert(Type typeToConvert)
-            => typeToConvert.GetInterfaces().Any(iface => iface == typeof(IModel));
+            => Array.Exists(typeToConvert.GetInterfaces(), iface => iface == typeof(IModel));
 
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
-            => (JsonConverter)Activator.CreateInstance(typeof(ModelConverter<>).MakeGenericType(new Type[] { typeToConvert }), new object[] { requestData, log });
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions? options)
+            => (JsonConverter)Activator.CreateInstance(typeof(ModelConverter<>).MakeGenericType(typeToConvert), requestData)!;
     }
 }

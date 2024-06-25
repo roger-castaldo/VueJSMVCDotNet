@@ -1,10 +1,10 @@
 ﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
-    /// Used to mark the model save method which returns a bool 
+    /// Used to indicate the Update method for the model called to update its items, return bool. 
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ModelSaveMethod : Attribute
+    public class ModelUpdateMethodAttribute : Attribute
     {
     }
 }

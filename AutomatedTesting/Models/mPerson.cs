@@ -37,7 +37,7 @@ namespace AutomatedTesting.Models
         }
     }
 
-    [ModelRoute("/models/mPerson")]
+    [ModelRouteAttribute("/models/mPerson")]
     [ModelJSFilePath("/resources/scripts/mPerson.js")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
     public class mPerson : IModel
@@ -45,11 +45,11 @@ namespace AutomatedTesting.Models
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
 
         private string _firstName;
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public string FirstName { get { return _firstName; } set { _firstName = value; } }
 
         private string _lastName;
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public string LastName { get { return _lastName; } set { _lastName = value; } }
         private DateTime _birthday = DateTime.Now.AddYears(-20);
         public DateTime BirthDay
@@ -87,7 +87,7 @@ namespace AutomatedTesting.Models
 
         public const string KEY = "Persons";
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.LOAD)]
         public static Task<mPerson> Load(string id, ISecureSession session, IDataStore store)
         {
@@ -104,14 +104,14 @@ namespace AutomatedTesting.Models
             return Task.FromResult<mPerson>(ret);
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.LOAD_ALL)]
         public static List<mPerson> LoadAll(ISecureSession session, IDataStore store)
         {
             return new List<mPerson>((mPerson[])store[KEY]??Persons);
         }
 
-        [ModelDeleteMethod()]
+        [ModelDeleteMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.DELETE)]
         public bool Delete(ISecureSession session, IDataStore store)
         {
@@ -130,7 +130,7 @@ namespace AutomatedTesting.Models
             return ret;
         }
 
-        [ModelUpdateMethod()]
+        [ModelUpdateMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.UPDATE)]
         public bool Update(ISecureSession session, IDataStore store)
         {
@@ -150,7 +150,7 @@ namespace AutomatedTesting.Models
             return ret;
         }
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.SAVE)]
         public bool Save(ISecureSession session, IDataStore store)
         {
@@ -163,13 +163,13 @@ namespace AutomatedTesting.Models
             return true;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static List<mPerson> ListBobs(IDataStore store)
         {
             return new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToList();
         }
 
-        [ModelListMethod(paged: true)]
+        [ModelListMethodAttribute(paged: true)]
         public static List<mPerson> ListBobsPaged(IDataStore store, int pageStartIndex, int pageSize, out int totalPages)
         {
             mPerson[] bobs = new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToArray();
@@ -179,98 +179,98 @@ namespace AutomatedTesting.Models
 
         #region List Pars
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByDate(DateTime date, ILogger log)
         {
             log.LogTrace("Called List By Date");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByInt(int val, ILogger log)
         {
             log.LogTrace("Called List By Integer");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByLong(long val, ILogger log)
         {
             log.LogTrace("Called List By Long");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByShort(short val, ILogger log)
         {
             log.LogTrace("Called List By Short");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByByte(byte val, ILogger log)
         {
             log.LogTrace("Called List By Byte");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByUInt(uint val, ILogger log)
         {
             log.LogTrace("Called List By UInteger");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByULong(ulong val, ILogger log)
         {
             log.LogTrace("Called List By ULong");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByUShort(ushort val, ILogger log)
         {
             log.LogTrace("Called List By UShort");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByDouble(double val, ILogger log)
         {
             log.LogTrace("Called List By Double");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByFloat(float val, ILogger log)
         {
             log.LogTrace("Called List By Float");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByDecimal(decimal val, ILogger log)
         {
             log.LogTrace("Called List By Decimal");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByGuid(Guid val, ILogger log)
         {
             log.LogTrace("Called List By Guid");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByEnum(mDataTypes.TestEnums val, ILogger log)
         {
             log.LogTrace("Called List By Enum");
             return Persons;
         }
 
-        [ModelListMethod()]
+        [ModelListMethodAttribute()]
         public static mPerson[] ListByBoolean(bool val, ILogger log)
         {
             log.LogTrace("Called List By Boolean");
@@ -279,7 +279,7 @@ namespace AutomatedTesting.Models
 
         #endregion
 
-        [ModelListMethod(true)]
+        [ModelListMethodAttribute(true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]
         public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session, IDataStore store)
         {
@@ -314,28 +314,28 @@ namespace AutomatedTesting.Models
             return ret;
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.METHOD)]
         public string GetFullName(ISecureSession session)
         {
             return string.Format("{0}, {1}", new object[] { LastName, FirstName });
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.METHOD)]
         public string GetFullName(string middleName)
         {
             return string.Format("{0}, {1} {2}", new object[] { LastName, FirstName, middleName });
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool IsNameMatch(sName name)
         {
             return string.Equals(FirstName, name.FirstName, StringComparison.InvariantCultureIgnoreCase)
                 &&string.Equals(LastName, name.LastName, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public void SetFullName(string fullName, IDataStore store)
         {
             string[] tmp = fullName.Split(',');
@@ -354,19 +354,19 @@ namespace AutomatedTesting.Models
             store[KEY]=persons.ToArray();
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool IsFullName(string fullName)
         {
             return fullName==string.Format("{0}, {1}", new object[] { LastName, FirstName });
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public void ThrowInstanceException()
         {
             throw new Exception("Error in Instance Method");
         }
 
-        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public string GetInstanceSlowTimespan()
         {
             DateTime now = DateTime.Now;
@@ -374,7 +374,7 @@ namespace AutomatedTesting.Models
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        [ExposedMethodAttribute(isSlow: true, arrayElementType: typeof(int))]
         public void InstanceSlowAddCall(AddItem addCall)
         {
             int idx = 0;
@@ -387,15 +387,15 @@ namespace AutomatedTesting.Models
             addCall(idx, true);
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
-        [NotNullArguement(new string[] { "lastName", "firstName" })]
+        [NotNullArguementAttribute(new string[] { "lastName", "firstName" })]
         public static string FormatName(ISecureSession session, string lastName, string firstName)
         {
             return string.Format("{0}, {1}", new object[] { firstName, lastName });
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
         public static string[] FormatNames(ISecureSession session, string[] lastName, string[] firstName)
         {
@@ -408,14 +408,14 @@ namespace AutomatedTesting.Models
         }
 
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
         public static string FormatName(ISecureSession session, string lastName, string middleName, string firstName)
         {
             return string.Format("{2}, {0} {1}", new object[] { firstName, middleName, lastName });
         }
 
-        [ExposedMethod(true)]
+        [ExposedMethodAttribute(true)]
         public static object ProduceObject(bool isnull)
         {
             return (isnull ? null : new Hashtable()
@@ -424,12 +424,12 @@ namespace AutomatedTesting.Models
             });
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public static void VoidMethodCall(string parameter) { }
 
         #region SlowCalls
 
-        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        [ExposedMethodAttribute(isSlow: true, arrayElementType: typeof(int))]
         public static void SlowAddCall(AddItem addCall)
         {
             int idx = 0;
@@ -442,7 +442,7 @@ namespace AutomatedTesting.Models
             addCall(idx, true);
         }
 
-        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public static string GetSlowTimespan()
         {
             DateTime now = DateTime.Now;
@@ -450,7 +450,7 @@ namespace AutomatedTesting.Models
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public static string GetSlowTimeout()
         {
             DateTime now = DateTime.Now;
@@ -458,7 +458,7 @@ namespace AutomatedTesting.Models
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public static string GetSlowException()
         {
             DateTime now = DateTime.Now;

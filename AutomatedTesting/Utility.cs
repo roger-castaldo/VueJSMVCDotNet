@@ -2,17 +2,14 @@
 using AutomatedTesting.Security;
 using Jint;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Interfaces;
-using static System.Formats.Asn1.AsnWriter;
+using VueJSMVCDotNet.Options;
 
 namespace AutomatedTesting
 {
@@ -79,13 +76,13 @@ namespace AutomatedTesting
         }
 
         public static object ReadJSONResponse(MemoryStream ms)
-            =>JSON.JsonDecode(ReadResponse(ms));
+            => JSON.JsonDecode(ReadResponse(ms));
 
         private const string _VUE_IMPORT_PATH = "vue";
         private const string _VUE_LOADER_PATH = "vue-loader";
         private static readonly EmbeddedResourceFileProvider _fileProvider = new();
 
-        public static EmbeddedResourceFileProvider FileProvider=> _fileProvider;
+        public static EmbeddedResourceFileProvider FileProvider => _fileProvider;
 
         public static VueMiddleware CreateMiddleware(bool ignoreInvalidModels, bool blockFileProvider = false, ILogger logWriter = null, string[] securityHeaders = null, IMemoryCache cache = null)
         {

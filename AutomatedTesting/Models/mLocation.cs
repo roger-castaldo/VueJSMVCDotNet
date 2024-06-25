@@ -7,18 +7,18 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    [ModelRoute("/models/mLocation")]
+    [ModelRouteAttribute("/models/mLocation")]
     [ModelJSFilePath("/resources/scripts/mLocation.js")]
     [SecurityRoleCheck(Constants.Rights.CAN_ACCESS)]
     public class mLocation : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
 
-        [ModelRequiredField()]
-        [ReadOnlyModelProperty()]
+        [ModelRequiredFieldAttribute()]
+        [ReadOnlyModelPropertyAttribute()]
         public string Name { get; set; }
 
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public mGroup[] Groups { get; set; }
 
         public List<mGroup> GroupList
@@ -73,13 +73,13 @@ namespace AutomatedTesting.Models
             });
         }
 
-        [ModelLoadMethod]
+        [ModelLoadMethodAttribute]
         public static mLocation Load(string id)
         {
             return _locations.FirstOrDefault(g => g.id==id);
         }
 
-        [ExposedMethod(allowNullResponse: true)]
+        [ExposedMethodAttribute(allowNullResponse: true)]
         public List<mPerson> Search(string name)
         {
             name=name.ToLower();
@@ -89,20 +89,20 @@ namespace AutomatedTesting.Models
             return results;
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool ContainsPerson(mPerson person)
         {
             return Groups.Any(g => g.ContainsPerson(person));
         }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public bool ContainsPeople(List<mPerson> persons)
         {
             return Groups.Any(g => g.ContainsPeople(persons));
         }
 
-        [ExposedMethod(allowNullResponse: true)]
-        public mPerson? FindFirst(string name)
+        [ExposedMethodAttribute(allowNullResponse: true)]
+        public mPerson FindFirst(string name)
         {
             name=name.ToLower();
             mPerson result = null;

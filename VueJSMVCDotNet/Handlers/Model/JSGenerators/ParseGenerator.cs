@@ -7,9 +7,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
-            log?.LogTrace("Appending Parse method for Model Definition[{}]", modelType.Type.FullName);
+            log?.LogTrace("Appending Parse method for Model Definition[{TypeName}]", modelType.Type.FullName);
             builder.AppendLine(@$"         {Constants.PARSE_FUNCTION_NAME}(jdata){{
         if (jdata==null) {{
             throw 'Unable to parse null result for a model';
@@ -41,7 +41,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 }
             });
             builder.AppendLine($"      this.{Constants.INITIAL_DATA_KEY} = jdata;");
-            modelType.Properties.ForEach(pi => builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),{Utility.GetEnumList(pi.PropertyType)}); }}"));
+            modelType.Properties.ForEach(pi => builder.AppendLine($"    if (jdata.{pi.Name}!==undefined){{ this.#{pi.Name}=checkProperty('{pi.Name}','{Utility.GetTypeString(pi.PropertyType, pi.GetCustomAttribute(typeof(NotNullPropertyAttribute), false)!=null)}',(jdata.{pi.Name}===null ? null : (Array.isArray(jdata.{pi.Name}) ? jdata.{pi.Name}.slice() : jdata.{pi.Name})),{Utility.GetEnumList(pi.PropertyType)}); }}"));
             builder.AppendLine(@$"           this.#events.trigger('{Constants.Events.MODEL_PARSED}',this);
         return this;
         }}");

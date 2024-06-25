@@ -6,7 +6,7 @@ namespace VueJSMVCDotNet.Attributes
     /// where JSON encoding the values might be a problem.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class UseFormData : Attribute
+    public class UseFormDataAttribute : Attribute
     {
 
     }

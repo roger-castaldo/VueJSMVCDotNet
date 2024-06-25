@@ -4,7 +4,7 @@
     /// Used to Ignore a property for model generation. 
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class ModelIgnoreProperty : Attribute
+    public class ModelIgnorePropertyAttribute : Attribute
     {
     }
 }

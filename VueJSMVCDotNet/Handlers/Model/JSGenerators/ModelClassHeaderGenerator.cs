@@ -8,9 +8,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
     {
 
 
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
-            log?.LogTrace("Generating Model Definition javascript for {}", modelType.Type.FullName);
+            log?.LogTrace("Generating Model Definition javascript for {TypeName}", modelType.Type.FullName);
             var url = Utility.GetModelUrlRoot(modelType.Type, urlBase);
             builder.AppendLine(@$" class {modelType.Type.Name} {{
         {Constants.INITIAL_DATA_KEY}=undefined;
@@ -20,12 +20,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
-            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder, log);
+            ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder);
             ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods, modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
-            let data={Utility.JsonEncode(modelType.Type.GetConstructor(Type.EmptyTypes).Invoke(null), log)};
+            let data={Utility.JsonEncode(Activator.CreateInstance(modelType.Type), log)};
             Object.keys(data).forEach((prop)=>this['#'+prop]=data[prop]);
             this.#events = new EventHandler(['{Constants.Events.MODEL_LOADED}','{Constants.Events.MODEL_UPDATED}','{Constants.Events.MODEL_SAVED}','{Constants.Events.MODEL_DESTROYED}','{Constants.Events.MODEL_PARSED}']);
             return this.#toProxy();
@@ -66,7 +66,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
             props.Where(p => p.CanWrite).ForEach(p =>
             {
                 builder.AppendLine($@"      case '{p.Name}':  
-                            me.#{p.Name} = checkProperty('{p.Name}','{Utility.GetTypeString(p.PropertyType, p.GetCustomAttribute(typeof(NotNullProperty), false)!=null)}',value,{Utility.GetEnumList(p.PropertyType)}); 
+                            me.#{p.Name} = checkProperty('{p.Name}','{Utility.GetTypeString(p.PropertyType, p.GetCustomAttribute(typeof(NotNullPropertyAttribute), false)!=null)}',value,{Utility.GetEnumList(p.PropertyType)}); 
                             return true;
                             break;");
             });
@@ -99,9 +99,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         };");
         }
 
-        private static void AppendValidations(IEnumerable<PropertyInfo> props, WrappedStringBuilder builder, ILogger log)
+        private static void AppendValidations(IEnumerable<PropertyInfo> props, WrappedStringBuilder builder)
         {
-            var requiredProps = props.Where(pi => pi.GetCustomAttributes(typeof(ModelRequiredField), false).Length > 0);
+            var requiredProps = props.Where(pi => pi.GetCustomAttributes(typeof(ModelRequiredFieldAttribute), false).Length > 0);
             if (requiredProps.Any())
             {
                 builder.AppendLine(@$"   #isValid(){{ return {string.Join("&&", requiredProps.Select(p => $"this.#{p.Name}!==undefined&&this.#{p.Name}!==null"))};

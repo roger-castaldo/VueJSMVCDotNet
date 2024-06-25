@@ -4,13 +4,13 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Models.InvalidModels
 {
     [ModelJSFilePath("/resources/scripts/ModelMissingEmptyConstructorForSave.js")]
-    [ModelRoute("/models/ModelMissingEmptyConstructorForSave")]
+    [ModelRouteAttribute("/models/ModelMissingEmptyConstructorForSave")]
     internal class ModelMissingEmptyConstructorForSave : IModel
     {
 
         public string id => null;
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelMissingEmptyConstructorForSave Load(string id)
         {
             return null;
@@ -18,7 +18,7 @@ namespace AutomatedTesting.Models.InvalidModels
 
         public ModelMissingEmptyConstructorForSave(bool noEmpty) { }
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         public bool Save() { return true; }
     }
 }

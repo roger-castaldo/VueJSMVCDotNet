@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.JSON
     {
         private const string DatetimeFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
         public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => DateTime.ParseExact(reader.GetString(), DatetimeFormat, null, DateTimeStyles.AssumeUniversal);
+            => DateTime.ParseExact(reader.GetString()!, DatetimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
             => writer.WriteStringValue(value.ToString(DatetimeFormat));

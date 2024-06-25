@@ -5,27 +5,27 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Models.InvalidModels
 {
     [ModelJSFilePath("/resources/scripts/ModelWithInvalidExposedMethods.js")]
-    [ModelRoute("/models/ModelWithInvalidExposedMethods")]
+    [ModelRouteAttribute("/models/ModelWithInvalidExposedMethods")]
     internal class ModelWithInvalidExposedMethods : IModel
     {
         public string id => null;
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithInvalidExposedMethods Load(string id)
         {
             return null;
         }
 
-        [ExposedMethod()]
+        [ExposedMethodAttribute()]
         public static void DuplicateExposedStaticMethod(int par1) { }
 
-        [ExposedMethod()]
+        [ExposedMethodAttribute()]
         public static void DuplicateExposedStaticMethod(string par1) { }
 
-        [ExposedMethod]
+        [ExposedMethodAttribute]
         public static void NotSlowWithAddItem(AddItem addItem) { }
 
-        [ExposedMethod(isSlow: true)]
+        [ExposedMethodAttribute(isSlow: true)]
         public static bool SlowWithAddItemAndReturn(AddItem addItem) { return true; }
     }
 }

@@ -3,86 +3,67 @@ using System.IO;
 
 namespace VueJSMVCDotNet
 {
-    internal class JSMinifier
+    internal static class JSMinifier
     {
         internal static string StripComments(string originalString)
         {
-            string ret = "";
-            for (int x = 0; x < originalString.Length; x++)
+            if (originalString.Length==0)
+                return string.Empty;
+            var result = new StringBuilder();
+            var lastChar = ' ';
+            var index = 0;
+            while (index<originalString.Length)
             {
-                if ((originalString[x] == '/') && ret.EndsWith("/"))
+                switch (originalString[index])
                 {
-                    ret = ret[..^1];
-                    while (x < originalString.Length)
-                    {
-                        if (originalString[x] == '\n')
-                            break;
-                        x++;
-                    }
-                }
-                else if ((originalString[x] == '*') && ret.EndsWith("/"))
-                {
-                    ret = ret[..^1];
-                    x++;
-                    if (x < originalString.Length)
-                    {
-                        string tmp = originalString[x].ToString();
-                        while (x < originalString.Length)
+                    case '/':
+                        if (lastChar=='/')
                         {
-                            if (originalString[x] == '/' && tmp.EndsWith("*"))
-                            {
-                                x++;
-                                break;
-                            }
-                            tmp += originalString[x];
-                            x++;
+                            result.Length-=1;
+                            index=originalString.IndexOf('\n', index+1);
+                            if (index==-1)
+                                index=originalString.Length-1;
                         }
-                    }
+                        else
+                            result.Append(originalString[index]);
+                        break;
+                    case '*':
+                        if (lastChar=='/')
+                        {
+                            result.Length-=1;
+                            index=originalString.IndexOf("*/", index+1);
+                        }
+                        else
+                            result.Append(originalString[index]);
+                        break;
+                    case '"':
+                    case '\'':
+                    case '`':
+                        var startIndex = index;
+                        index=originalString.IndexOf(originalString[startIndex], index+1);
+                        while ($"{originalString[index-1]}{originalString[index]}"==$"\\{originalString[startIndex]}")
+                            index=originalString.IndexOf(originalString[startIndex], index+1);
+                        result.Append(originalString[startIndex..(index+1)]);
+                        break;
+                    default:
+                        result.Append(originalString[index]);
+                        break;
                 }
-                else if (originalString[x] == '\"')
-                {
-                    ret += originalString[x];
-                    x++;
-                    while (x < originalString.Length)
-                    {
-                        if ((originalString[x] == '\"') && !ret.EndsWith("\\"))
-                            break;
-                        ret += originalString[x];
-                        x++;
-                    }
-                }
-                else if (originalString[x] == '\'')
-                {
-                    ret += originalString[x];
-                    x++;
-                    while (x < originalString.Length)
-                    {
-                        if ((originalString[x] == '\'') && !ret.EndsWith("\\"))
-                            break;
-                        ret += originalString[x];
-                        x++;
-                    }
-                }
-                if (x < originalString.Length)
-                    ret += originalString[x];
+                index++;
             }
-            return ret;
+            return result.ToString();
         }
 
-        public static string Minify(string js)
+        public static string Minify(string js,bool ignoreComments=false)
         {
-            string[] lines = js.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            StringBuilder emptyLines = new();
-            foreach (string line in lines)
-            {
-                string s = line.Trim();
-                if (s.Length > 0 && !s.StartsWith("//"))
-                    emptyLines.AppendLine(s.Trim());
-            }
-
-            string ret = StripComments(emptyLines.ToString());
-            Stream inMS = new MemoryStream(ASCIIEncoding.ASCII.GetBytes(ret));
-            ret = new JsMin().Minify((TextReader)new StreamReader(inMS));
+            string ret = (ignoreComments ? js : StripComments(
+                string.Join(Environment.NewLine, js.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Trim())
+                    .Where(line => !string.IsNullOrEmpty(line)&&!line.StartsWith("//"))
+                )
+            ));
+            using var inMS = new MemoryStream(ASCIIEncoding.ASCII.GetBytes(ret));
+            ret = new JsMin((TextReader)new StreamReader(inMS)).Minify();
             return ret;
         }
 
@@ -92,7 +73,8 @@ namespace VueJSMVCDotNet
     internal class JsMin
     {
         private const int Eof = -1;
-        private TextReader _sr;
+        private readonly TextReader _sr;
+        private readonly StringBuilder sb;
         private TextWriter _sw;
         private int _theA;
         private int _theB;
@@ -102,10 +84,16 @@ namespace VueJSMVCDotNet
         private int _retStatement = -1;
         private bool _start = false;
 
-        public string Minify(TextReader reader)
+        public JsMin(TextReader reader)
         {
-            _sr = reader;
-            var sb = new StringBuilder();
+            _sr=reader;
+            sb=new();
+            _sw=new StringWriter(sb);
+        }
+
+        public string Minify()
+        {
+            sb.Clear();
             using (_sw = new StringWriter(sb))
             {
                 ExecuteJsMin();

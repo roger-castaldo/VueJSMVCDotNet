@@ -1,15 +1,10 @@
 ﻿using Microsoft.Extensions.Primitives;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VueJSMVCDotNet.Caching
 {
     internal class InternalChangeToken : IChangeToken
     {
-        private record ChangeCallback(Action<object> CallBack, object State, InternalChangeToken Container) : IDisposable
+        private record ChangeCallback(Action<object?> CallBack, object? State, InternalChangeToken Container) : IDisposable
         {
             private bool disposedValue;
 
@@ -47,14 +42,15 @@ namespace VueJSMVCDotNet.Caching
         private readonly List<ChangeCallback> CallBacks = [];
         private bool hasChanged = false;
 
-        public bool ActiveChangeCallbacks => CallBacks.Any();
+        public bool ActiveChangeCallbacks => CallBacks.Count!=0;
 
-        public bool HasChanged {
+        public bool HasChanged
+        {
             get => hasChanged;
             set
             {
                 hasChanged=value;
-                if (hasChanged && CallBacks.Count()>0)
+                if (hasChanged && CallBacks.Count>0)
                 {
                     CallBacks.ForEach(cb => cb.CallBack(cb.State));
                     hasChanged=false;
@@ -62,7 +58,7 @@ namespace VueJSMVCDotNet.Caching
             }
         }
 
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
             var result = new ChangeCallback(callback, state, this);
             CallBacks.Add(result);

@@ -6,12 +6,12 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelLoadAllGenerator : IJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
-            var mi = modelType.Type.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadAllMethod), false).Length > 0);
+            var mi = Array.Find(modelType.Type.GetMethods(Constants.LOAD_METHOD_FLAGS), mi => mi.GetCustomAttribute<ModelLoadAllMethodAttribute>(false)!=null);
             if (mi!=null)
             {
-                log?.LogTrace("Adding Load All Method for Model Definition[{}]", modelType.Type.FullName);
+                log?.LogTrace("Adding Load All Method for Model Definition[{TypeName}]", modelType.Type.FullName);
                 builder.AppendLine(@$"     static LoadAll(){{
                             return new ModelList(
                                 function(){{ return new {modelType.Type.Name}(); }},

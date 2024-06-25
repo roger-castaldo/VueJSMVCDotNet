@@ -40,9 +40,7 @@ namespace AutomatedTesting.Security
         }
 
         public void LinkToRequest(HttpContext context)
-        {
-            context.Request.Headers.Add("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
-        }
+            => context.Request.Headers.Append("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
 
         public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
         {

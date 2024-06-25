@@ -4,7 +4,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Security
 {
-    internal class SecurityRoleCheck : ASecurityCheck
+    internal class SecurityRoleCheck : ASecurityCheckAttribute
     {
         private string _right;
 

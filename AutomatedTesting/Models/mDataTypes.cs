@@ -6,7 +6,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    [ModelRoute("/models/mDataTypes")]
+    [ModelRouteAttribute("/models/mDataTypes")]
     [ModelJSFilePath("/resources/scripts/mDataTypes.js")]
     public class mDataTypes : IModel
     {
@@ -16,7 +16,7 @@ namespace AutomatedTesting.Models
         }
 
         private string _stringField = "Testing123";
-        [NotNullProperty()]
+        [NotNullPropertyAttribute()]
         public string StringField { get { return _stringField; } set { _stringField = value; } }
         private string _nullStringField = null;
         public string NullStringField { get { return _nullStringField; } set { _nullStringField = value; } }
@@ -88,41 +88,41 @@ namespace AutomatedTesting.Models
         public DateTime? NullDateTimeField { get { return _nullDateTimeField; } set { _nullDateTimeField = value; } }
 
         private byte[] _byteArrayField = System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123");
-        [NotNullProperty()]
+        [NotNullPropertyAttribute()]
         public byte[] ByteArrayField { get { return _byteArrayField; } set { _byteArrayField = value; } }
         private byte[] _nullByteArrayField = null;
         public byte[] NullByteArrayField { get { return _nullByteArrayField; } set { _nullByteArrayField = value; } }
 
         private IPAddress _IPAddressField = IPAddress.Loopback;
-        [NotNullProperty()]
+        [NotNullPropertyAttribute()]
         public IPAddress IPAddressField { get { return _IPAddressField; } set { _IPAddressField = value; } }
         private IPAddress _nullIPAddressField = null;
         public IPAddress NullIPAddressField { get { return _nullIPAddressField; } set { _nullIPAddressField = value; } }
 
         private Version _VersionField = new Version("0.0.0");
-        [NotNullProperty()]
+        [NotNullPropertyAttribute()]
         public Version VersionField { get { return _VersionField; } set { _VersionField = value; } }
         private Version _nullVersionField = null;
         public Version NullVersionField { get { return _nullVersionField; } set { _nullVersionField = value; } }
 
         private Exception _ExceptionField = new Exception("Testing");
-        [NotNullProperty()]
+        [NotNullPropertyAttribute()]
         public Exception ExceptionField { get { return _ExceptionField; } set { _ExceptionField = value; } }
         private Exception _nullExceptionField = null;
         public Exception NullExceptionField { get { return _nullExceptionField; } set { _nullExceptionField = value; } }
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static mDataTypes Load(string id)
         {
             return null;
         }
 
-        [ExposedMethod()]
-        [NotNullArguement("stringArg")]
+        [ExposedMethodAttribute()]
+        [NotNullArguementAttribute("stringArg")]
         public static void TestSingleNotNullInput(string stringArg, string nullStringArg) { }
 
-        [ExposedMethod()]
-        [NotNullArguement(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
+        [ExposedMethodAttribute()]
+        [NotNullArguementAttribute(["stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg"])]
         public void TestInputs(
             string stringArg, string nullStringArg,
             char charArg, char? nullCharArg,
@@ -148,8 +148,8 @@ namespace AutomatedTesting.Models
 
         }
 
-        [ExposedMethod()]
-        [NotNullArguement(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
+        [ExposedMethodAttribute()]
+        [NotNullArguementAttribute(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
         public static void StaticTestInputs(
             string stringArg, string nullStringArg,
             char charArg, char? nullCharArg,
@@ -175,8 +175,8 @@ namespace AutomatedTesting.Models
 
         }
 
-        [ModelListMethod()]
-        [NotNullArguement(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
+        [ModelListMethodAttribute()]
+        [NotNullArguementAttribute(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
         public static List<mDataTypes> TestListInputs(
             string stringArg, string nullStringArg,
             char charArg, char? nullCharArg,

@@ -6,30 +6,30 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ModelDefaultMethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
-            log?.LogTrace("Generating Model Default Methods Definition javascript for {}", modelType.Type.FullName);
+            log?.LogTrace("Generating Model Default Methods Definition javascript for {TypeName}", modelType.Type.FullName);
             if (modelType.HasSave)
             {
-                log?.LogTrace("Adding save method for Model Definition[{}]", modelType.Type.FullName);
-                ModelDefaultMethodsGenerator.AppendSave(modelType, builder, (modelType.SaveMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                log?.LogTrace("Adding save method for Model Definition[{TypeName}]", modelType.Type.FullName);
+                ModelDefaultMethodsGenerator.AppendSave(modelType, builder, modelType.SaveMethod!.GetCustomAttribute<UseFormDataAttribute>(false)==null);
             }
             if (modelType.HasUpdate)
             {
-                log?.LogTrace("Adding update method for Model Definition[{}]", modelType.Type.FullName);
-                ModelDefaultMethodsGenerator.AppendUpdate(modelType, builder, (modelType.UpdateMethod.GetCustomAttributes(typeof(UseFormData), false).Length == 0));
+                log?.LogTrace("Adding update method for Model Definition[{TypeName}]", modelType.Type.FullName);
+                ModelDefaultMethodsGenerator.AppendUpdate(modelType, builder, modelType.UpdateMethod!.GetCustomAttribute<UseFormDataAttribute>(false) == null);
             }
             if (modelType.HasDelete)
             {
-                log?.LogTrace("Adding delete method for Model Definition[{}]", modelType.Type.FullName);
+                log?.LogTrace("Adding delete method for Model Definition[{TypeName}]", modelType.Type.FullName);
                 ModelDefaultMethodsGenerator.AppendDelete(modelType, builder);
             }
             ModelDefaultMethodsGenerator.AppendReloadMethod(modelType, builder, log);
         }
 
-        private static void AppendReloadMethod(SModelType modelType, WrappedStringBuilder builder, ILogger log)
+        private static void AppendReloadMethod(SModelType modelType, WrappedStringBuilder builder, ILogger? log)
         {
-            log?.LogTrace("Adding reload method for Model Definition[{}]", modelType.Type.FullName);
+            log?.LogTrace("Adding reload method for Model Definition[{TypeName}]", modelType.Type.FullName);
             builder.AppendLine(@$"     async #reload(){{
                 let response = await ModelMethods.reload({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY},this.#isNew());
                 this.{Constants.PARSE_FUNCTION_NAME}(response);

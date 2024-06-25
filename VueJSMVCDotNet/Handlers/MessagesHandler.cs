@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using VueJSMVCDotNet.Caching;
@@ -8,7 +7,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers
 {
-    internal class MessagesHandler(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath) 
+    internal class MessagesHandler(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath)
         : RequestHandler, ICachingRequestHandler
     {
         private string CompileToCode(StringBuilder messages)
@@ -73,10 +72,11 @@ export {{Translate,ProduceComputedMessage}};";
                 && context.Request.Path.ToString().ToLower().EndsWith(".js");
         }
 
-        public async Task<ICachableResponse> ProduceResponseAsync(HttpContext context, object state)
+        public async Task<ICachableResponse?> ProduceResponseAsync(HttpContext context, object? state)
         {
-            var spath = state as string;
-            string fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
+            if (state is not string spath)
+                return null;
+            var fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
             if (fpath!=null)
             {
                 StringBuilder sb = new();
@@ -93,10 +93,10 @@ export {{Translate,ProduceComputedMessage}};";
                 {
                     sb.Length-=2;
                     return new CachableResponse(
-                        (compressAllJS || spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
+                        (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
                         "text/javascript",
                         contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
-                        contents.Select(f => fileProvider.Watch(f.PhysicalPath))
+                        contents.Where(f => f.PhysicalPath!=null).Select(f => fileProvider.Watch(f.PhysicalPath!))
                     );
                 }
             }

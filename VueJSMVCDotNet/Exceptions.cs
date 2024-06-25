@@ -33,10 +33,10 @@
         /// The name of the method causing the error
         /// </summary>
         public string MethodName { get; private init; }
-        internal ModelTypeMethodException(Type t, string methodName, string message)
+        internal ModelTypeMethodException(Type t, MethodInfo method, string message)
             : base(t, message)
         {
-            MethodName=methodName;
+            MethodName=method.Name;
         }
     }
 
@@ -99,8 +99,8 @@
     ///</summary>
     public class DuplicateLoadMethodException : ModelTypeMethodException
     {
-        internal DuplicateLoadMethodException(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} is tagged as a load method when a valid load method already exists.") { }
+        internal DuplicateLoadMethodException(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} is tagged as a load method when a valid load method already exists.") { }
     }
 
     /// <summary>
@@ -108,8 +108,8 @@
     /// </summary>
     public class DuplicateLoadAllMethodException : ModelTypeMethodException
     {
-        internal DuplicateLoadAllMethodException(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} is tagged as a load all method when a valid load all method already exists.") { }
+        internal DuplicateLoadAllMethodException(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} is tagged as a load all method when a valid load all method already exists.") { }
     }
 
     /// <summary>
@@ -117,8 +117,8 @@
     /// </summary>
     public class InvalidLoadMethodReturnType : ModelTypeMethodException
     {
-        internal InvalidLoadMethodReturnType(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for loading.")
+        internal InvalidLoadMethodReturnType(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for loading.")
         { }
     }
 
@@ -127,8 +127,8 @@
     /// </summary>
     public class InvalidLoadMethodArguements : ModelTypeMethodException
     {
-        internal InvalidLoadMethodArguements(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for load all.")
+        internal InvalidLoadMethodArguements(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for load all.")
         { }
     }
 
@@ -138,8 +138,8 @@
     /// </summary>
     public class InvalidLoadAllMethodReturnType : ModelTypeMethodException
     {
-        internal InvalidLoadAllMethodReturnType(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for load all.")
+        internal InvalidLoadAllMethodReturnType(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for load all.")
         { }
     }
 
@@ -148,8 +148,8 @@
     /// </summary>
     public class InvalidLoadAllArguements : ModelTypeMethodException
     {
-        internal InvalidLoadAllArguements(Type t, string methodName)
-            : base(t, methodName, $"The IModel type {t.FullName} is not valid because the method {methodName} does not have a valid signature for a LoadAll call.")
+        internal InvalidLoadAllArguements(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not have a valid signature for a LoadAll call.")
         { }
     }
 
@@ -170,9 +170,9 @@
         /// <summary>
         /// All the exceptions found when validating the model definitions
         /// </summary>
-        public List<Exception> InnerExceptions { get; private init; }
+        public IEnumerable<Exception> InnerExceptions { get; private init; }
 
-        internal ModelValidationException(List<Exception> exceptions)
+        internal ModelValidationException(IEnumerable<Exception> exceptions)
             : base("Model Definition Validations have failed.")
         {
             InnerExceptions = exceptions;
@@ -205,7 +205,7 @@
     public class InvalidModelListMethodReturnException : ModelTypeMethodException
     {
         internal InvalidModelListMethodReturnException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
         { }
     }
 
@@ -216,7 +216,7 @@
     {
 
         internal InvalidModelListParameterCountException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the number of parameters for the method {mi.Name} does not match the number of variables")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the number of parameters for the method {mi.Name} does not match the number of variables")
         {
         }
     }
@@ -231,7 +231,7 @@
         /// </summary>
         public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListPageParameterTypeException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not a usable as a paging parameter for a ModelListMethod.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not a usable as a paging parameter for a ModelListMethod.")
         {
             Parameter=pi;
         }
@@ -247,7 +247,7 @@
         /// </summary>
         public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListPageTotalPagesNotOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not an out parameter which is needed to indicate the total number of pages.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not an out parameter which is needed to indicate the total number of pages.")
         {
             Parameter=pi;
         }
@@ -263,7 +263,7 @@
         /// </summary>
         public ParameterInfo Parameter { get; private init; }
         internal InvalidModelListParameterOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is an out parameter.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is an out parameter.")
         {
             Parameter=pi;
         }
@@ -275,7 +275,7 @@
     public class DuplicateModelSaveMethodException : ModelTypeMethodException
     {
         internal DuplicateModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -285,7 +285,7 @@
     public class DuplicateModelDeleteMethodException : ModelTypeMethodException
     {
         internal DuplicateModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -295,7 +295,7 @@
     public class DuplicateModelUpdateMethodException : ModelTypeMethodException
     {
         internal DuplicateModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -305,7 +305,7 @@
     public class InvalidModelSaveMethodException : ModelTypeMethodException
     {
         internal InvalidModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Save() for ModelSaveMethod.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Save() for ModelSaveMethod.")
         { }
     }
 
@@ -315,7 +315,7 @@
     public class InvalidModelDeleteMethodException : ModelTypeMethodException
     {
         internal InvalidModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
         { }
     }
 
@@ -325,7 +325,7 @@
     public class InvalidModelUpdateMethodException : ModelTypeMethodException
     {
         internal InvalidModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
         { }
     }
 
@@ -335,7 +335,7 @@
     public class DuplicateMethodSignatureException : ModelTypeMethodException
     {
         internal DuplicateMethodSignatureException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same same.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same same.")
         { }
     }
 
@@ -345,7 +345,7 @@
     public class MethodNotMarkedAsSlow : ModelTypeMethodException
     {
         internal MethodNotMarkedAsSlow(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
         { }
     }
 
@@ -355,7 +355,7 @@
     public class MethodWithAddItemNotVoid : ModelTypeMethodException
     {
         internal MethodWithAddItemNotVoid(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
+            : base(t, mi, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
         { }
     }
 
@@ -374,6 +374,6 @@
     public class SaveFailedException : ModelTypeMethodException
     {
         internal SaveFailedException(Type t, InjectableMethod mi)
-            : base(t, mi.Name, $"The save call for the model type {t.FullName} failed.") { }
+            : base(t, mi.Method, $"The save call for the model type {t.FullName} failed.") { }
     }
 }

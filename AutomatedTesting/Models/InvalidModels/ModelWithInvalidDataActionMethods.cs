@@ -6,25 +6,25 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Models.InvalidModels
 {
     [ModelJSFilePath("/resources/scripts/ModelWithInvalidDataActionMethods.js")]
-    [ModelRoute("/models/ModelWithInvalidDataActionMethods")]
+    [ModelRouteAttribute("/models/ModelWithInvalidDataActionMethods")]
     internal class ModelWithInvalidDataActionMethods : IModel
     {
         public string id => null;
 
         #region Loads
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithInvalidDataActionMethods NoArgumentLoad()
         {
             return null;
         }
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithInvalidDataActionMethods NotStringLoad(Guid id)
         {
             return null;
         }
 
-        [ModelLoadMethod]
+        [ModelLoadMethodAttribute]
         public static void InvalidReturnLoad(string id)
         {
 
@@ -32,25 +32,25 @@ namespace AutomatedTesting.Models.InvalidModels
         #endregion
 
         #region LoadAlls
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static ModelWithInvalidDataActionMethods NotArrayReturnAll()
         {
             return null;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static int[] WrongArrayTypeLoadAll()
         {
             return null;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<int> WrongListTypeLoadAll()
         {
             return null;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<ModelWithInvalidDataActionMethods> LoadAllWithInvalidArguements(string id)
         {
             return null;
@@ -60,13 +60,13 @@ namespace AutomatedTesting.Models.InvalidModels
         public ModelWithInvalidDataActionMethods() { }
 
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         public void InvalidSave() { }
 
-        [ModelDeleteMethod()]
+        [ModelDeleteMethodAttribute()]
         public void InvalidDelete() { }
 
-        [ModelUpdateMethod()]
+        [ModelUpdateMethodAttribute()]
         public void InvalidUpdate() { }
 
     }

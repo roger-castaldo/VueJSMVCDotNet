@@ -5,46 +5,42 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.JSON
 {
-    internal class ModelConverter<T> : JsonConverter<T> where T : IModel
+    internal class ModelConverter<T>(IRequestData requestData)
+        : JsonConverter<T> where T : IModel
     {
-        private readonly IRequestData requestData;
-        private readonly InjectableMethod loadMethod;
-        public ModelConverter(IRequestData requestData, ILogger log)
-        {
-            this.requestData=requestData;
-            loadMethod = new InjectableMethod(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(m => m.GetCustomAttributes(typeof(ModelLoadMethod)).Any()), log);
-        }
+        private readonly IRequestData requestData = requestData;
+        private readonly InjectableMethod loadMethod = new(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).First(m => m.GetCustomAttributes(typeof(ModelLoadMethodAttribute)).Any()));
 
         private T Load(string id)
         {
-            var task = loadMethod.InvokeAsync(null, requestData, pars: new object[] { id });
+            var task = loadMethod.InvokeAsync<T>(null, requestData, pars: [id]);
             task.Wait();
-            return (T)task.Result;
+            return task.Result!;
         }
 
-        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var result = default(T);
             if (reader.TokenType==JsonTokenType.String)
-                result = Load(reader.GetString());
+                result = Load(reader.GetString()!);
             else if (reader.TokenType==JsonTokenType.StartObject)
             {
                 reader.Read();
-                string pid = reader.GetString();
+                string pid = reader.GetString()!;
                 if (pid=="id")
                 {
                     reader.Read();
-                    result = Load(reader.GetString());
+                    result = Load(reader.GetString()!);
                     reader.Read();
                 }
                 else
                 {
-                    result = (T)Activator.CreateInstance(typeof(T));
+                    result = Activator.CreateInstance<T>();
                     while (reader.TokenType!=JsonTokenType.EndObject)
                     {
-                        var prop = typeof(T).GetProperty(reader.GetString());
+                        var prop = typeof(T).GetProperty(reader.GetString()!);
                         reader.Read();
-                        prop.SetValue(result, JsonSerializer.Deserialize(ref reader, prop.PropertyType, options));
+                        prop?.SetValue(result, JsonSerializer.Deserialize(ref reader, prop.PropertyType, options));
                     }
                     reader.Read();
                 }
@@ -52,20 +48,24 @@ namespace VueJSMVCDotNet.JSON
             return result;
         }
 
-        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
         {
-            if (value==null)
+            if (Equals(value, default(T?)))
                 writer.WriteNullValue();
             else
             {
                 writer.WriteStartObject();
 
-                foreach (var pi in value.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && !p.PropertyType.FullName.Contains("+KeyCollection") && p.GetGetMethod().GetParameters().Length == 0))
-                {
-                    writer.WritePropertyName(pi.Name);
-                    JsonSerializer.Serialize(writer, pi.GetValue(value), pi.PropertyType, options);
-                }
+                value!.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p =>
+                        p.GetCustomAttribute<ModelIgnorePropertyAttribute>(false)==null
+                        && !(p.PropertyType.FullName?.Contains("+KeyCollection")??false)
+                        && (p.GetGetMethod()?.GetParameters()?? []).Length == 0)
+                    .ForEach(pi =>
+                    {
+                        writer.WritePropertyName(pi.Name);
+                        JsonSerializer.Serialize(writer, pi.GetValue(value), pi.PropertyType, options);
+                    });
 
                 writer.WriteEndObject();
             }

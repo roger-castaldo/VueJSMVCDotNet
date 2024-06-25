@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using TestApplication.Handlers;
 using VueJSMVCDotNet;
+using VueJSMVCDotNet.Options;
 
 namespace TestApplication
 {

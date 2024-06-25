@@ -6,7 +6,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication
 {
-    [ModelRoute("/models/User")]
+    [ModelRouteAttribute("/models/User")]
     [ModelJSFilePath("/resources/scripts/models/User.js")]
     [IsLoggedIn()]
     public class User : IModel
@@ -24,7 +24,7 @@ namespace TestApplication
         public string LastName { get { return _lastName; } set { _lastName = value; } }
 
         private string _test;
-        [ReadOnlyModelProperty()]
+        [ReadOnlyModelPropertyAttribute()]
         public string Test { get { return _test; } set { _test = value; } }
 
         public DateTime CreateDate
@@ -55,7 +55,7 @@ namespace TestApplication
 
         public User() { }
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static User Load(string id)
         {
             User ret = null;
@@ -70,7 +70,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<User> LoadAll()
         {
             return new List<User>(_USERS);
@@ -79,7 +79,7 @@ namespace TestApplication
         private string _id;
         public string id { get { return _id; } }
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         public bool Save()
         {
             byte[] buff = new byte[16];
@@ -95,7 +95,7 @@ namespace TestApplication
             return true;
         }
 
-        [ModelUpdateMethod()]
+        [ModelUpdateMethodAttribute()]
         public bool Update()
         {
             bool ret = false;
@@ -111,7 +111,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelDeleteMethod()]
+        [ModelDeleteMethodAttribute()]
         public bool Delete()
         {
             bool ret = false;
@@ -145,7 +145,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ExposedMethod()]
+        [ExposedMethodAttribute()]
         public void Logout()
         {
             System.Diagnostics.Debug.WriteLine("Logging out User {0}, {1}...", new object[]{
@@ -154,13 +154,13 @@ namespace TestApplication
             });
         }
 
-        [ExposedMethod()]
+        [ExposedMethodAttribute()]
         public bool CanAccess(string path)
         {
             return new Random().Next(0, 10)>=5;
         }
 
-        [ExposedMethod(allowNullResponse: true)]
+        [ExposedMethodAttribute(allowNullResponse: true)]
         public static User Login(string username, string password)
         {
             User ret = null;
@@ -181,7 +181,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelListMethod(true)]
+        [ModelListMethodAttribute(true)]
         public static List<User> Search(string filter, int pageStartIndex, int pageSize, out int totalPages)
         {
             totalPages = 0;
@@ -215,7 +215,7 @@ namespace TestApplication
             return (ret.Count == 0 ? null : ret);
         }
 
-        [ModelListMethod(false)]
+        [ModelListMethodAttribute(false)]
         public static List<User> SearchAll(string filter)
         {
             List<User> ret = new List<User>();

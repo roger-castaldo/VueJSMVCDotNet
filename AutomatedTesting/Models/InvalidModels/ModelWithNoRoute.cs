@@ -8,7 +8,7 @@ namespace AutomatedTesting.Models.InvalidModels
     {
         public string id => null;
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithNoRoute Load(string id)
         {
             return null;

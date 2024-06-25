@@ -6,10 +6,10 @@ using static VueJSMVCDotNet.VueMiddleware;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
-    internal class StaticMethodHandler(ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILogger log) 
+    internal class StaticMethodHandler(ISecureSessionFactory? sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string? urlBase, ILogger? log)
         : ModelActionRequestHandler(sessionFactory, urlBase, log)
     {
-        protected override bool CanHandleRequest(HttpContext httpContext, out IModelActionHandler handler, out string cacheURL)
+        protected override bool CanHandleRequest(HttpContext httpContext, out IModelActionHandler? handler, out string? cacheURL)
         {
             handler=null;
             cacheURL=null;
@@ -26,14 +26,21 @@ namespace VueJSMVCDotNet.Handlers.Model
             => await handler.InvokeWithoutLoad(url, await ExtractParts(context), context);
 
         protected override IEnumerable<IModelActionHandler> GetHandlers(IEnumerable<Type> types)
-            => types.SelectMany(t => t.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS)
-                .Where(m => m.GetCustomAttributes(typeof(ExposedMethod), false).Length>0)
-                .GroupBy(m => m.Name)
-                .Select(grp => (IModelActionHandler)
-                typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILogger) })
-                .Invoke(new object[] { grp.ToList(), "staticMethod", registerSlowMethod, log }))
-            );
+            => types
+                .SelectMany(t =>
+                    t.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS)
+                        .Where(m => m.GetCustomAttributes<ExposedMethodAttribute>(false)!=null)
+                        .GroupBy(m => m.Name)
+                        .Select(grp =>
+                            (IModelActionHandler)Activator.CreateInstance(
+                                typeof(ModelActionHandler<>).MakeGenericType(t),
+                                grp.ToList(),
+                                "staticMethod",
+                                registerSlowMethod,
+                                Log
+                            )!
+                        )
+                );
 
         protected override void RemoveHandlers(IEnumerable<Type> types, ref List<IModelActionHandler> handlers)
             => handlers.RemoveAll(h =>

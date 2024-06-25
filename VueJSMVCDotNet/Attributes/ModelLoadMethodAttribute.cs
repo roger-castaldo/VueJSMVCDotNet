@@ -1,10 +1,10 @@
 ﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
-    /// Used to tag the Load All Models method
+    /// Used to tag the Load Method for a given model 
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ModelLoadAllMethod : Attribute
+    public class ModelLoadMethodAttribute : Attribute
     {
     }
 }

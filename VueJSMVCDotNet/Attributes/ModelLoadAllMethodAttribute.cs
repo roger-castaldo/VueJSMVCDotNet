@@ -1,10 +1,10 @@
 ﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
-    /// Used to indicate the Update method for the model called to update its items, return bool. 
+    /// Used to tag the Load All Models method
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ModelUpdateMethod : Attribute
+    public class ModelLoadAllMethodAttribute : Attribute
     {
     }
 }

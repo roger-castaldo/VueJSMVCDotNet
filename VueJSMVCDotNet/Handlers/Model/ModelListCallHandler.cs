@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
 using System.Collections;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Handlers.Base;
@@ -8,18 +7,19 @@ using static VueJSMVCDotNet.VueMiddleware;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
-    internal class ModelListCallHandler(ISecureSessionFactory sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string urlBase, ILogger log) 
+    internal class ModelListCallHandler(ISecureSessionFactory? sessionFactory, delRegisterSlowMethodInstance registerSlowMethod, string? urlBase, ILogger? log)
         : ModelActionRequestHandler(sessionFactory, urlBase, log)
     {
 
-        protected override bool CanHandleRequest(HttpContext httpContext, out IModelActionHandler handler, out string cacheURL)
+        protected override bool CanHandleRequest(HttpContext httpContext, out IModelActionHandler? handler, out string? cacheURL)
         {
             handler=null;
             cacheURL=null;
             if (GetRequestMethod(httpContext)==RequestMethods.LIST)
             {
                 var url = CleanURL(httpContext);
-                handler=FirstOrDefault(h => h.BaseURLs.Contains(url[..url.LastIndexOf("/")], StringComparer.InvariantCultureIgnoreCase) && h.MethodNames.Contains(url[(url.LastIndexOf("/")+1)..], StringComparer.InvariantCultureIgnoreCase));
+                handler=FirstOrDefault(h => h.BaseURLs.Contains(url[..url.LastIndexOf('/')], StringComparer.InvariantCultureIgnoreCase)
+                && h.MethodNames.Contains(url[(url.LastIndexOf('/')+1)..], StringComparer.InvariantCultureIgnoreCase));
                 cacheURL=url;
             }
             return handler!=null;
@@ -28,7 +28,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         protected override async Task ExecuteActionHandlerAsync(HttpContext context, string url, IModelActionHandler handler)
             => await handler.InvokeWithoutLoad(url, await ExtractParts(context), context, extractResponse: (model, result, opars, method) =>
             {
-                if (method.GetCustomAttributes().OfType<ModelListMethod>().Any(mlm => mlm.Paged))
+                if (method.GetCustomAttributes().OfType<ModelListMethodAttribute>().Any(mlm => mlm.Paged))
                 {
                     var pars = method.StrippedParameters;
                     int pageIndex = opars.Length-1;
@@ -40,7 +40,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                             break;
                         }
                     }
-                    log?.LogTrace("Outputting page information TotalPages:{} for {}:{}", opars[pageIndex], method, Utility.SantizeLogValue(url));
+                    Log?.LogTrace("Outputting page information TotalPages:{TotalPages} for {Method}:{URL}", opars[pageIndex], method, Utility.SantizeLogValue(url));
                     return new Hashtable()
                             {
                                 {"response",result },
@@ -53,12 +53,16 @@ namespace VueJSMVCDotNet.Handlers.Model
         protected override IEnumerable<IModelActionHandler> GetHandlers(IEnumerable<Type> types)
             => types.SelectMany(t =>
                         t.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS)
-                        .Where(m => m.GetCustomAttributes(typeof(ModelListMethod), false).Length>0)
+                        .Where(m => m.GetCustomAttribute<ModelListMethodAttribute>(false)!=null)
                         .GroupBy(m => m.Name)
-                        .Select(grp => (IModelActionHandler)
-                            typeof(ModelActionHandler<>).MakeGenericType(new Type[] { t })
-                            .GetConstructor(new Type[] { typeof(MethodInfo[]), typeof(string), typeof(delRegisterSlowMethodInstance), typeof(ILogger) })
-                            .Invoke(new object[] { grp.ToList(), "listMethod", registerSlowMethod, log })
+                        .Select(grp =>
+                            (IModelActionHandler)Activator.CreateInstance(
+                                typeof(ModelActionHandler<>).MakeGenericType(t),
+                                grp.ToList(),
+                                "listMethod",
+                                registerSlowMethod,
+                                Log
+                            )!
                         )
                     );
 

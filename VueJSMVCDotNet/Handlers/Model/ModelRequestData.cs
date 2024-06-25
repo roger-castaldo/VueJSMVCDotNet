@@ -7,37 +7,34 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
-    internal class ModelRequestData : IRequestData
+    internal class ModelRequestData(Dictionary<string, object> formData, ISecureSession? session, HttpContext httpContext,
+        ILogger? log, IFormFileCollection? files) : IRequestData
     {
-        private readonly ILogger log;
-        private readonly Dictionary<string, object> formData;
-        private readonly HttpContext httpContext;
-        private readonly IFormFileCollection files;
 
-        public ISecureSession Session { get; private init; }
-        public IEnumerable<string> Keys => formData.Keys
+        public ISecureSession? Session => session;
+        public IEnumerable<string> Keys
+            => formData.Keys
             .Concat(files==null||files.Count==0
-            ? Array.Empty<string>()
+            ? []
             : files.Select(f => f.Name));
 
-        public T GetValue<T>(string key)
+        public T? GetValue<T>(string key)
         {
-            key = Keys.FirstOrDefault(k => String.Equals(k, key, StringComparison.InvariantCultureIgnoreCase));
-            if (key==null)
+            key = Keys.FirstOrDefault(k => String.Equals(k, key, StringComparison.InvariantCultureIgnoreCase))??string.Empty;
+            if (string.IsNullOrEmpty(key))
                 throw new KeyNotFoundException();
-            if (formData.ContainsKey(key))
+            if (formData.TryGetValue(key, out object? value))
             {
-                var obj = formData[key];
                 try
                 {
-                    if (obj is JsonDocument document)
+                    if (value is JsonDocument document)
                         return Utility.JsonDecode<T>(document, this, log);
-                    else if (obj is JsonNode node)
+                    else if (value is JsonNode node)
                         return Utility.JsonDecode<T>(node, this, log);
-                    else if (obj is JsonElement element)
+                    else if (value is JsonElement element)
                         return Utility.JsonDecode<T>(element, this, log);
                     else
-                        return (T)ConvertObjectToType(obj, typeof(T));
+                        return (T?)ConvertObjectToType(value, typeof(T));
                 }
                 catch (Exception)
                 {
@@ -45,16 +42,16 @@ namespace VueJSMVCDotNet.Handlers.Model
                 }
             }
             else if (typeof(T)==typeof(IReadOnlyList<IFormFile>))
-                return (T)files.GetFiles(key);
+                return (T?)files?.GetFiles(key);
             else
-                return (T)files[key];
+                return (T?)files?[key];
         }
 
-        internal object GetValue(Type t, string key)
+        internal object? GetValue(Type t, string key)
         {
             try
             {
-                return GetType().GetMethod("GetValue").MakeGenericMethod(new Type[] { t }).Invoke(this, new object[] { key });
+                return GetType().GetMethod("GetValue")?.MakeGenericMethod(t).Invoke(this, [key]);
             }
             catch (Exception)
             {
@@ -62,7 +59,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
         }
 
-        public object this[Type feature]
+        public object? this[Type feature]
         {
             get
             {
@@ -80,101 +77,91 @@ namespace VueJSMVCDotNet.Handlers.Model
                 else if (feature==typeof(IResponseCookies))
                     return httpContext.Response.Cookies;
                 return (httpContext.RequestServices?.GetService(feature))??
-                    (httpContext.Features!=null ? (httpContext.Features.Any(t => t.Key==feature) ? httpContext.Features.First(t => t.Key==feature).Value : null) : null);
+                    (httpContext.Features?.FirstOrDefault(t => t.Key==feature).Value);
             }
         }
 
-        public ModelRequestData(Dictionary<string, object> formData, ISecureSession session, HttpContext httpContext, ILogger log, IFormFileCollection files)
+        private object? ConvertObjectToType(object? obj, Type expectedType)
         {
-            this.formData = formData;
-            this.httpContext=httpContext;
-            this.log=log;
-            this.files=files;
-            Session = session;
-        }
-
-        private object ConvertObjectToType(object obj, Type expectedType)
-        {
-            log?.LogTrace("Attempting to convert object of type {} to {}", (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName);
+            log?.LogTrace("Attempting to convert object of type {SourceTyp} to {DestinationType}", (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName);
             if (expectedType.Equals(typeof(object)))
                 return obj;
-            if (expectedType.Equals(typeof(bool)) && (obj == null))
-                return false;
-            if (obj == null)
+            else if (Equals(expectedType, typeof(bool)))
+                return Equals(obj, true);
+            else if (obj == null)
                 return null;
-            if (obj.GetType().Equals(expectedType))
+            else if (Equals(obj.GetType(), expectedType))
                 return obj;
-            if (expectedType.Equals(typeof(string)))
+            else if (Equals(expectedType, typeof(string)))
                 return obj.ToString();
-            if (expectedType.IsEnum)
-                return Enum.Parse(expectedType, obj.ToString());
-            if (expectedType.Equals(typeof(Version)))
-                return new Version(obj.ToString());
-            if (expectedType.Equals(typeof(Guid)))
-                return new Guid(obj.ToString());
-            if (expectedType.GetInterfaces().Contains(typeof(IDictionary)))
+            else if (expectedType.IsEnum)
             {
-                object ret = expectedType.GetConstructor(Type.EmptyTypes).Invoke(Array.Empty<object>());
-                Type keyType = expectedType.GetGenericArguments()[0];
-                Type valType = expectedType.GetGenericArguments()[1];
+                Enum.TryParse(expectedType, obj.ToString(), out var enumValue);
+                return enumValue;
+            }
+            else if (expectedType.Equals(typeof(Version)))
+                return new Version(obj.ToString()!);
+            else if (expectedType.Equals(typeof(Guid)))
+                return new Guid(obj!.ToString()!);
+            else if (expectedType.GetInterfaces().Contains(typeof(IDictionary)))
+            {
+                var keyType = expectedType.GetGenericArguments()[0];
+                var valType = expectedType.GetGenericArguments()[1];
+                var ret = (IDictionary)Activator.CreateInstance(expectedType)!;
+
                 foreach (string str in ((Hashtable)obj).Keys)
-                {
-                    ((IDictionary)ret).Add(ConvertObjectToType(str, keyType), ConvertObjectToType(((Hashtable)obj)[str], valType));
-                }
+                    ret.Add(ConvertObjectToType(str, keyType)!, ConvertObjectToType(((Hashtable)obj)[str], valType));
                 return ret;
             }
-            if (obj is ICollection || expectedType.IsArray)
+            else if (obj is ICollection || expectedType.IsArray)
             {
                 Type underlyingType;
                 if (expectedType.IsGenericType)
                     underlyingType = expectedType.GetGenericArguments()[0];
                 else
-                    underlyingType = expectedType.GetElementType();
-                Array ret = Array.CreateInstance(underlyingType, 0);
+                    underlyingType = expectedType.GetElementType()!;
                 if (obj is ICollection list)
                 {
-                    ret = Array.CreateInstance(underlyingType, list.Count);
+                    var ret = Array.CreateInstance(underlyingType, list.Count);
                     var idx = 0;
                     foreach (var item in list)
                     {
                         ret.SetValue(ConvertObjectToType(item, underlyingType), idx);
                         idx++;
                     }
+                    if (expectedType.FullName?.StartsWith("System.Collections.Generic.List")??false)
+                        return Activator.CreateInstance(expectedType, ret);
+                    return ret;
                 }
                 else
                 {
-                    ret = Array.CreateInstance(underlyingType, 1);
+                    var ret = Array.CreateInstance(underlyingType, 1);
                     ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
+                    if (expectedType.FullName?.StartsWith("System.Collections.Generic.List")??false)
+                        return Activator.CreateInstance(expectedType, ret);
                 }
-                if (expectedType.FullName.StartsWith("System.Collections.Generic.List"))
-                    return expectedType.GetConstructor(new Type[] { ret.GetType() }).Invoke(new object[] { ret });
-                return ret;
+                return Array.CreateInstance(underlyingType, 0);
             }
-            if (expectedType.FullName.StartsWith("System.Nullable"))
+            else if (expectedType.FullName?.StartsWith("System.Nullable")??false)
             {
                 Type underlyingType;
                 if (expectedType.IsGenericType)
                     underlyingType = expectedType.GetGenericArguments()[0];
                 else
-                    underlyingType = expectedType.GetElementType();
-                if (obj == null)
-                    return null;
+                    underlyingType = expectedType.GetElementType()!;
                 return ConvertObjectToType(obj, underlyingType);
             }
-            MethodInfo conMethod = null;
-            if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
+            else if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                var task = new InjectableMethod(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0), log)
-                    .InvokeAsync(null, this, pars: new object[] { ((Hashtable)obj)["id"].ToString() });
+                var task = new InjectableMethod(Array.Find(expectedType.GetMethods(Constants.LOAD_METHOD_FLAGS), mi => mi.GetCustomAttribute<ModelLoadMethodAttribute>(false)!=null)!)
+                    .InvokeAsync<IModel>(null, this, pars: [((Hashtable)obj)["id"]!.ToString()!]);
                 task.Wait();
                 return task.Result;
             }
+            MethodInfo? conMethod = null;
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))
             {
-                if (mi.Name == "op_Implicit" || mi.Name == "op_Explicit")
-                {
-                    if (
-                        (
+                if ((mi.Name == "op_Implicit" || mi.Name == "op_Explicit")&&                        (
                             mi.ReturnType.Equals(expectedType)
                             || mi.ReturnType.Equals(typeof(Nullable<>).MakeGenericType(expectedType))
                         )
@@ -183,15 +170,14 @@ namespace VueJSMVCDotNet.Handlers.Model
                             mi.GetParameters()[0].ParameterType.Equals(obj.GetType())
                             || mi.GetParameters()[0].ParameterType.Equals(typeof(Nullable<>).MakeGenericType(obj.GetType()))
                         )
-                    )
-                    {
-                        conMethod = mi;
-                        break;
-                    }
+)
+                {
+                    conMethod = mi;
+                    break;
                 }
             }
             if (conMethod != null)
-                return conMethod.Invoke(null, new object[] { obj });
+                return conMethod.Invoke(null, [obj]);
             try
             {
                 object ret = Convert.ChangeType(obj, expectedType);
@@ -199,7 +185,7 @@ namespace VueJSMVCDotNet.Handlers.Model
             }
             catch (Exception e)
             {
-                log?.LogError("Type conversion error: {}", e.Message);
+                log?.LogError(e, "Type conversion error: {ErrorMessage}", e.Message);
             }
             return obj;
         }

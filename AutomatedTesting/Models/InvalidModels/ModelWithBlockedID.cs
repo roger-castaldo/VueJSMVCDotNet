@@ -4,13 +4,13 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Models.InvalidModels
 {
     [ModelJSFilePath("/resources/scripts/ModelWithBlockedID.js")]
-    [ModelRoute("/models/ModelWithBlockedID")]
+    [ModelRouteAttribute("/models/ModelWithBlockedID")]
     internal class ModelWithBlockedID : IModel
     {
-        [ModelIgnoreProperty]
+        [ModelIgnorePropertyAttribute]
         public string id => null;
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static ModelWithBlockedID Load(string id)
         {
             return null;

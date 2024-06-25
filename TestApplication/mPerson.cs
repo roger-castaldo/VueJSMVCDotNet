@@ -8,18 +8,18 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication
 {
-    [ModelRoute("/models/mPerson")]
+    [ModelRouteAttribute("/models/mPerson")]
     [ModelJSFilePath("/resources/scripts/mPerson.js")]
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);
 
         private string _firstName;
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public string FirstName { get { return _firstName; } set { _firstName=value; } }
 
         private string _lastName;
-        [ModelRequiredField()]
+        [ModelRequiredFieldAttribute()]
         public string LastName { get { return _lastName; } set { _lastName=value; } }
         private DateTime _birthday;
         public DateTime BirthDay
@@ -53,7 +53,7 @@ namespace TestApplication
             new mPerson("Barney","Rumble")
         });
 
-        [ModelLoadMethod()]
+        [ModelLoadMethodAttribute()]
         public static mPerson Load(string id, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -69,14 +69,14 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelLoadAllMethod()]
+        [ModelLoadAllMethodAttribute()]
         public static List<mPerson> LoadAll(ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             return _persons;
         }
 
-        [ModelDeleteMethod()]
+        [ModelDeleteMethodAttribute()]
         public bool Delete(ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -93,7 +93,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelUpdateMethod()]
+        [ModelUpdateMethodAttribute()]
         public bool Update(ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -111,7 +111,7 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelSaveMethod()]
+        [ModelSaveMethodAttribute()]
         public bool Save(ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -120,7 +120,7 @@ namespace TestApplication
             return true;
         }
 
-        [ModelListMethod(true)]
+        [ModelListMethodAttribute(true)]
         public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
@@ -151,38 +151,38 @@ namespace TestApplication
             return ret;
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         public string GetFullName(ISessionManager session)
         {
             System.Diagnostics.Debug.WriteLine(session.Start);
             return string.Format("{0}, {1}", new object[] { LastName, FirstName });
         }
 
-        [ExposedMethod(true)]
+        [ExposedMethodAttribute(true)]
         public static mPerson TestNull()
         {
             return null;
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         public static bool IsGuid(Guid id)
         {
             return true;
         }
 
-        [ExposedMethod(false)]
+        [ExposedMethodAttribute(false)]
         public static bool AreGuids(ISessionManager session, Guid[] guids)
         {
             return true;
         }
 
-        [ModelListMethod(false)]
+        [ModelListMethodAttribute(false)]
         public static List<mPerson> ByGuid(Guid id)
         {
             return _persons;
         }
 
-        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        [ExposedMethodAttribute(isSlow: true, arrayElementType: typeof(int))]
         public static void SlowStatic(AddItem addCall)
         {
             int idx = 0;
@@ -195,7 +195,7 @@ namespace TestApplication
             addCall(idx, true);
         }
 
-        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public static string GetSlowTimespan()
         {
             DateTime now = DateTime.Now;
@@ -203,7 +203,7 @@ namespace TestApplication
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethod(allowNullResponse: false, arrayElementType: typeof(string))]
+        [ExposedMethodAttribute(allowNullResponse: false, arrayElementType: typeof(string))]
         public void GenerateNames(AddItem addCall)
         {
             for (int x = 0; x<3; x++)
@@ -225,7 +225,7 @@ namespace TestApplication
             addCall(string.Format("{1} {0}", new Object[] { _lastName, _firstName }), true);
         }
 
-        [ExposedMethod()]
+        [ExposedMethodAttribute()]
         public static string ReadFile(IFormFile contentFile)
         {
             var reader = new StreamReader(contentFile.OpenReadStream());

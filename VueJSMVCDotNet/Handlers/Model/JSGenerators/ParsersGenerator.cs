@@ -8,14 +8,15 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class ParsersGenerator : IBasicJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, string urlBase, IEnumerable<SModelType> models, bool useModuleExtension, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, string? urlBase, IEnumerable<SModelType> models, bool useModuleExtension, ILogger? log)
         {
-            List<SModelType> types = new();
+            List<SModelType> types = [];
             models.ForEach(modelType => ParsersGenerator.RecurLocateLinkedTypes(ref types, modelType));
 
             types.RemoveAll(t => models.Contains(t));
-            types.Where(t => t.Type.GetCustomAttributes().Any(att => att is ModelJSFilePath))
-                .ForEach(type => builder.AppendLine($"        import {{ {type.Type.Name} }} from '{(useModuleExtension ? type.Type.GetCustomAttribute<ModelJSFilePath>().ModulePath : type.Type.GetCustomAttribute<ModelJSFilePath>().Path)}';"));
+            types.Select(t => new { type = t, Path = t.Type.GetCustomAttribute<ModelJSFilePathAttribute>() })
+                .Where(gt => gt.Path!=null)
+                .ForEach(gt => builder.AppendLine($"        import {{ {gt.type.Type.Name} }} from '{(useModuleExtension ? gt.Path!.ModulePath : gt.Path!.Path)}';"));
 
             models.ForEach(modelType => builder.AppendLine(@$"     const _{modelType.Type.Name} = function(data){{
             let ret=null;
@@ -28,8 +29,8 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 
             types.ForEach(type =>
             {
-                log?.LogTrace("Appending Parser Call for Linked Type[{}]", type.Type.FullName);
-                if (type.Type.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0)
+                log?.LogTrace("Appending Parser Call for Linked Type[{TypeName}]", type.Type.FullName);
+                if (type.Type.GetCustomAttributes(typeof(ModelJSFilePathAttribute), false).Length>0)
                 {
                     builder.AppendLine(@$"     const _{type.Type.Name} = function(data){{
             let ret=null;
@@ -55,14 +56,14 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                             builder.Append(@$"          ret.{pi.Name} = null;
             if (data.{pi.Name}!==null){{");
                             if (array)
-                                builder.AppendLine(@$"ret.{pi.Name} = data.{pi.Name}.map(val=>{{ {(t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length>0
+                                builder.AppendLine(@$"ret.{pi.Name} = data.{pi.Name}.map(val=>{{ {(t.GetCustomAttribute<ModelJSFilePathAttribute>(false)!=null
                 ? $@"let result = new {t.Name}();
                     result.{Constants.PARSE_FUNCTION_NAME}(data.{pi.Name}[x]);
                     return result;"
                 : $"return _{t.Name}(data.{pi.Name}[x]);")}
 }});");
                             else
-                                builder.AppendLine(@$"                {(t.GetCustomAttributes(typeof(ModelJSFilePath), false).Length==0 ? $"ret.{pi.Name} = data.{pi.Name};"
+                                builder.AppendLine(@$"                {(t.GetCustomAttribute<ModelJSFilePathAttribute>(false)!=null ? $"ret.{pi.Name} = data.{pi.Name};"
                 : $@"ret.{pi.Name} = new {t.Name}();
                 ret.{pi.Name}.{Constants.PARSE_FUNCTION_NAME}(data.{pi.Name});"
                 )}");

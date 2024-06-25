@@ -1,10 +1,10 @@
 ﻿namespace VueJSMVCDotNet.Attributes
 {
     /// <summary>
-    /// Used to tag the Load Method for a given model 
+    /// Used to mark the model save method which returns a bool 
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ModelLoadMethod : Attribute
+    public class ModelSaveMethodAttribute : Attribute
     {
     }
 }

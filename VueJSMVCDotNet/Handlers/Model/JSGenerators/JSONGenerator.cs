@@ -7,9 +7,9 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class JSONGenerator : IJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
-            log?.LogTrace("Generating toJSON method for {}", modelType.Type.FullName);
+            log?.LogTrace("Generating toJSON method for {TypeName}", modelType.Type.FullName);
             builder.AppendLine(@$"     {Constants.TO_JSON_VARIABLE}(){{
         let attrs={{}};
         let prop=null;");
@@ -18,7 +18,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                 .ForEach(p =>
                 {
                     var propType = Utility.ExtractUnderlyingType(p.PropertyType, out var array, out _, out _);
-                    if (p.GetCustomAttributes(typeof(ReadOnlyModelProperty), false).Length > 0)
+                    if (p.GetCustomAttribute<ReadOnlyModelPropertyAttribute>(false)!=null)
                         builder.AppendLine($"            prop = (this.{Constants.INITIAL_DATA_KEY}===undefined||this.#{p.Name}===null ? (this.#{p.Name}!==undefined ? this.#{p.Name} : null) : (this.{Constants.INITIAL_DATA_KEY}.{p.Name}!==undefined ? this.{Constants.INITIAL_DATA_KEY}.{p.Name} : null));");
                     else
                         builder.AppendLine($"            prop = (this.#{p.Name}!==undefined ? this.#{p.Name} : null);");

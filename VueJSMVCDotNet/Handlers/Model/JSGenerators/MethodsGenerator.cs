@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 {
     internal class MethodsGenerator : IJSGenerator
     {
-        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string urlBase, ILogger log)
+        public void GeneratorJS(WrappedStringBuilder builder, SModelType modelType, string? urlBase, ILogger? log)
         {
             Array.Empty<MethodInfo>()
                 .Concat(modelType.InstanceMethods)
@@ -20,7 +20,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
                     builder.AppendLine(@$"let response = await ajax({{
                         url:`${{{modelType.Type.Name}.#baseURL}}/{(mi.IsStatic ? mi.Name : $"${{this.{Constants.INITIAL_DATA_KEY}.id}}/{mi.Name}")}`,
                         method:'{(mi.IsStatic ? "S" : "")}METHOD',
-                        useJSON:{(mi.GetCustomAttributes(typeof(UseFormData), false).Length==0
+                        useJSON:{(mi.GetCustomAttributes(typeof(UseFormDataAttribute), false).Length==0
                         && !mi.GetParameters().Any(p => p.ParameterType==typeof(IFormFile) || p.ParameterType==typeof(IReadOnlyList<IFormFile>))).ToString().ToLower()},
                         data:function_data{(isSlow ? ",isSlow:true,isArray:"+array.ToString().ToLower() : "")}
                     }});
@@ -52,19 +52,19 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         private static void ExtractReturnType(MethodInfo method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse)
         {
             returnType = Utility.ExtractUnderlyingType(method.ReturnType, out array, out _, out _);
-            ExposedMethod em = (ExposedMethod)method.GetCustomAttributes(typeof(ExposedMethod), false)[0];
+            ExposedMethodAttribute em = (ExposedMethodAttribute)method.GetCustomAttributes(typeof(ExposedMethodAttribute), false)[0];
             isSlow=em.IsSlow;
             allowNullResponse=em.AllowNullResponse;
             returnType = (em.ArrayElementType != null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : returnType);
             array|=em.ArrayElementType!=null;
         }
 
-        private static void AppendMethodCallDeclaration(MethodInfo method, WrappedStringBuilder builder, ILogger log)
+        private static void AppendMethodCallDeclaration(MethodInfo method, WrappedStringBuilder builder, ILogger? log)
         {
-            ParameterInfo[] pars = new InjectableMethod(method, log).StrippedParameters;
+            var pars = InjectableMethod.StripMethodParameters(method);
             builder.AppendLine($@"          {(method.IsStatic ? "static async " : "async #")}{method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
                 let function_data = {{}};");
-            NotNullArguement nna = (method.GetCustomAttributes(typeof(NotNullArguement), false).Length == 0 ? null : (NotNullArguement)method.GetCustomAttributes(typeof(NotNullArguement), false)[0]);
+            var nna = method.GetCustomAttribute<NotNullArguementAttribute>(false);
             pars.ForEach(par =>
             {
                 var propType = Utility.ExtractUnderlyingType(par.ParameterType, out var array, out _, out _);

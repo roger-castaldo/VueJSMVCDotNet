@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using System.Threading;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Caching;
@@ -10,18 +9,28 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Handlers.Model
 {
-    internal class JSHandler(string urlBase, string vueImportPath, string coreImportPath,
-        ISecureSessionFactory sessionFactory, bool compressAllJS, ILogger log) : 
-        ModelRequestHandlerBase(sessionFactory, urlBase, log),ICachingRequestHandler
+    internal class JSHandler(string? urlBase, string vueImportPath, string coreImportPath,
+        ISecureSessionFactory? sessionFactory, bool compressAllJS, ILogger? Log) :
+        ModelRequestHandlerBase(sessionFactory, urlBase, Log), ICachingRequestHandler
     {
-        public struct SModelType
+        public struct SModelType(Type type)
         {
-            public Type Type { get; private init; }
-            public IEnumerable<PropertyInfo> Properties { get; private init; }
-            public IEnumerable<MethodInfo> InstanceMethods { get; private init; }
-            public IEnumerable<MethodInfo> StaticMethods { get; private init; }
+            public readonly Type Type
+                => type;
+            public readonly IEnumerable<PropertyInfo> Properties
+                => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(pi => pi.GetCustomAttribute<ModelIgnorePropertyAttribute>(false)==null
+                        && !Equals(pi.Name, "id")
+                        && !(pi.PropertyType.FullName?.Contains("+KeyCollection")??false)
+                        && (pi.GetGetMethod()?.GetParameters()?? []).Length == 0);
+            public readonly IEnumerable<MethodInfo> InstanceMethods
+                => type.GetMethods(Constants.INSTANCE_METHOD_FLAGS)
+                    .Where(mi => mi.GetCustomAttribute<ExposedMethodAttribute>(false)!=null);
+            public readonly IEnumerable<MethodInfo> StaticMethods
+                => type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS)
+                    .Where(mi => mi.GetCustomAttribute<ExposedMethodAttribute>(false)!=null);
 
-            private IEnumerable<SModelType> linkedTypes;
+            private IEnumerable<SModelType>? linkedTypes = null;
             public IEnumerable<SModelType> LinkedTypes
             {
                 get
@@ -38,56 +47,55 @@ namespace VueJSMVCDotNet.Handlers.Model
                             )
                             .Concat(
                                 InstanceMethods.Concat(StaticMethods)
-                                .Select(mi => ((ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0]).ArrayElementType)
+                                .Select(mi => ((ExposedMethodAttribute)mi.GetCustomAttributes(typeof(ExposedMethodAttribute), false)[0]).ArrayElementType)
                                 .Where(t => t!=null && t.GetInterfaces().Contains(typeof(IModel)))
-                                .Select(t => new SModelType(t))
+                                .Select(t => new SModelType(t!))
                             )
                             .Distinct();
                 }
             }
-            public readonly bool HasSave => SaveMethod!=null;
-            public MethodInfo SaveMethod { get; private init; }
-            public readonly bool HasUpdate => UpdateMethod!=null;
-            public MethodInfo UpdateMethod { get; private init; }
-            public readonly bool HasDelete => DeleteMethod!=null;
-            public MethodInfo DeleteMethod { get; private init; }
+            public readonly bool HasSave
+                => SaveMethod!=null;
+            public readonly MethodInfo? SaveMethod
+                => Array.Find(
+                        type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS),
+                        mi => mi.GetCustomAttribute<ModelSaveMethodAttribute>(false)!=null
+                    );
+            public readonly bool HasUpdate
+                => UpdateMethod!=null;
+            public readonly MethodInfo? UpdateMethod
+                => Array.Find(
+                        type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS),
+                        mi => mi.GetCustomAttribute<ModelUpdateMethodAttribute>(false)!=null
+                    );
+            public readonly bool HasDelete
+                => DeleteMethod!=null;
+            public readonly MethodInfo? DeleteMethod
+                => Array.Find(
+                        type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS),
+                        mi => mi.GetCustomAttribute<ModelDeleteMethodAttribute>(false)!=null
+                    );
 
-            public SModelType(Type type)
+            public override readonly bool Equals(object? obj)
             {
-                Type = type;
-                Properties=type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(pi => pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0 && pi.Name != "id"
-                                && !pi.PropertyType.FullName.Contains("+KeyCollection") && pi.GetGetMethod().GetParameters().Length == 0);
-                InstanceMethods=type.GetMethods(Constants.INSTANCE_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
-                StaticMethods=type.GetMethods(Constants.STATIC_INSTANCE_METHOD_FLAGS).Where(mi => mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0);
-                linkedTypes = null;
-                SaveMethod = type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0);
-                UpdateMethod=type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0);
-                DeleteMethod=type.GetMethods(Constants.STORE_DATA_METHOD_FLAGS).FirstOrDefault(mi => mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0);
-            }
-
-            public override readonly bool Equals(object obj)
-            {
-                return (obj is SModelType model && Type.FullName==model.Type.FullName)
-                    || (obj is Type type && Type.FullName==type.FullName);
+                return (obj is SModelType model && Equals(type.FullName, model.Type.FullName))
+                    || (obj is Type etype && Equals(type.FullName, etype.FullName));
             }
 
             public override readonly int GetHashCode()
-            {
-                return Type.FullName.GetHashCode();
-            }
+                => type.FullName?.GetHashCode()??int.MaxValue;
         }
 
-        private static readonly IBasicJSGenerator[] oneTimeInitialGenerators = new IBasicJSGenerator[]{
-            new HeaderGenerator(),
-            new ParsersGenerator()
-        };
+        private static readonly IEnumerable<IBasicJSGenerator> OneTimeInitialGenerators = [
+                new HeaderGenerator(),
+                new ParsersGenerator()
+            ];
 
-        private static readonly IBasicJSGenerator[] oneTimeFinishGenerators = new IBasicJSGenerator[]{
+        private static readonly IEnumerable<IBasicJSGenerator> OneTimeFinishGenerators = [
             new FooterGenerator()
-        };
+        ];
 
-        private static readonly IJSGenerator[] classGenerators = new IJSGenerator[]
-        {
+        private static readonly IEnumerable<IJSGenerator> ClassGenerators = [
             new ModelClassHeaderGenerator(),
             new JSONGenerator(),
             new ModelDefaultMethodsGenerator(),
@@ -98,45 +106,45 @@ namespace VueJSMVCDotNet.Handlers.Model
             new MethodsGenerator(),
             new ModelListCallGenerator(),
             new ModelClassFooterGenerator()
-        };
+        ];
 
         private readonly InternalChangeToken changeToken = new();
         private readonly ReaderWriterLockSlim locker = new();
-        private readonly Dictionary<Type, ModelJSFilePath[]> types = [];
+        private readonly Dictionary<Type, ModelJSFilePathAttribute[]> types = [];
 
         private string GenerateCode(IEnumerable<Type> models, string url, bool useModuleExtension)
         {
             var amodels = models.Select(mod => new SModelType(mod));
-            log?.LogTrace("No cached js file for {}, generating new...", url);
+            Log?.LogTrace("No cached js file for {URL}, generating new...", url);
             WrappedStringBuilder builder = new(compressAllJS || url.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase)|| url.EndsWith(".min.mjs", StringComparison.InvariantCultureIgnoreCase));
             builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
 import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.0'; }}");
             //generate one times
-            oneTimeInitialGenerators.ForEach(generator =>
+            OneTimeInitialGenerators.ForEach(generator =>
             {
                 builder.AppendLine($"//START:{generator.GetType().Name}");
-                generator.GeneratorJS(builder, urlBase, amodels, useModuleExtension, log);
+                generator.GeneratorJS(builder, URLBase, amodels, useModuleExtension, Log);
                 builder.AppendLine($"//END:{generator.GetType().Name}");
             });
 
             //generate class items
             amodels.ForEach(model =>
             {
-                log?.LogTrace("Processing module {} for js url {}", model.Type.FullName, url);
-                classGenerators.ForEach(generator =>
+                Log?.LogTrace("Processing module {TypeName} for js url {URL}", model.Type.FullName, url);
+                ClassGenerators.ForEach(generator =>
                 {
                     builder.AppendLine($"//START:{generator.GetType().Name}");
-                    generator.GeneratorJS(builder, model, urlBase, log);
+                    generator.GeneratorJS(builder, model, URLBase, Log);
                     builder.AppendLine($"//END:{generator.GetType().Name}");
                 });
             });
 
             //generate finishers
-            oneTimeFinishGenerators.ForEach(generator =>
+            OneTimeFinishGenerators.ForEach(generator =>
             {
                 builder.AppendLine($"//START:{generator.GetType().Name}");
-                generator.GeneratorJS(builder, urlBase, amodels, useModuleExtension, log);
+                generator.GeneratorJS(builder, URLBase, amodels, useModuleExtension, Log);
                 builder.AppendLine($"//END:{generator.GetType().Name}");
             });
 
@@ -147,12 +155,12 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
         {
             var result = false;
             locker.EnterReadLock();
-            result = types?.Any(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))??false;
+            result = types?.Any(pair => Array.Exists(pair.Value, mjsfp => mjsfp.IsMatch(url)))??false;
             locker.ExitReadLock();
             return result;
         }
 
-        protected override bool InternalHandlesRequest(HttpContext context, out object state, out string cacheURL)
+        protected override bool InternalHandlesRequest(HttpContext context, out object? state, out string? cacheURL)
         {
             state=null;
             cacheURL=null;
@@ -160,20 +168,20 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             {
                 var url = CleanURL(context);
                 locker.EnterReadLock();
-                var locatedTypes = types?.Where(pair => pair.Value.Any(mjsfp => mjsfp.IsMatch(url)))
+                var locatedTypes = types?.Where(pair => Array.Exists(pair.Value, mjsfp => mjsfp.IsMatch(url)))
                     .Select(pair => pair.Key);
                 locker.ExitReadLock();
                 cacheURL=url;
-                state = (locatedTypes?? []).Any() ? new ModelRequestState(locatedTypes, url) : null;
+                state = (locatedTypes?? []).Any() ? new ModelRequestState(locatedTypes!, url) : null;
             }
             return state!=null;
         }
 
-        public Task<ICachableResponse> ProduceResponseAsync(HttpContext context, object state)
+        public Task<ICachableResponse?> ProduceResponseAsync(HttpContext context, object? state)
         {
-            var cachedState = (ModelRequestState)state;
-            return Task.FromResult<ICachableResponse>(new CachableResponse(
-                GenerateCode((IEnumerable<Type>)cachedState.State,cachedState.URL,cachedState.URL.EndsWith(".mjs",StringComparison.InvariantCultureIgnoreCase)),
+            var cachedState = (ModelRequestState)state!;
+            return Task.FromResult<ICachableResponse?>(new CachableResponse(
+                GenerateCode((IEnumerable<Type>)cachedState.State, cachedState.URL, cachedState.URL.EndsWith(".mjs", StringComparison.InvariantCultureIgnoreCase)),
                 "text/javascript",
                 DateTime.Now,
                 [changeToken]
@@ -185,7 +193,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             locker.EnterWriteLock();
             types.ForEach(t =>
             {
-                ModelJSFilePath[] paths = (ModelJSFilePath[])t.GetCustomAttributes(typeof(ModelJSFilePath), false);
+                ModelJSFilePathAttribute[] paths = (ModelJSFilePathAttribute[])t.GetCustomAttributes(typeof(ModelJSFilePathAttribute), false);
                 if (paths != null && paths.Length > 0)
                 {
                     this.types.Remove(t);

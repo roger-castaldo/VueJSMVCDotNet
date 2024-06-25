@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using VueJSMVCDotNet;
 
 namespace AutomatedTesting
 {
@@ -92,9 +91,9 @@ namespace AutomatedTesting
             middleware.Dispose();
         }
 
-        private void ExecuteTest(string additionalCode, string result,IMemoryCache cache=null)
+        private void ExecuteTest(string additionalCode, string result, IMemoryCache cache = null)
         {
-            using var middleware = Utility.CreateMiddleware(true,cache:cache);
+            using var middleware = Utility.CreateMiddleware(true, cache: cache);
             Engine eng = Utility.CreateEngine(middleware);
             try
             {
@@ -160,11 +159,11 @@ export const name = translator('Name');", "Nome");
             });
             Utility.FileProvider.HidePath("AutomatedTesting.resources.messages.test.sp.json");
             ExecuteTest(@"SetLanguage('sp');
-export const name = translator('Name');", "Name",cache);
+export const name = translator('Name');", "Name", cache);
             Utility.FileProvider.ShowPath("AutomatedTesting.resources.messages.test.sp.json");
             await Task.Delay(TimeSpan.FromSeconds(5));
             ExecuteTest(@"SetLanguage('sp');
-export const name = translator('Name');", "Nombre",cache);
+export const name = translator('Name');", "Nombre", cache);
         }
 
         [TestMethod]

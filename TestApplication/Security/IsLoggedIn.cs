@@ -4,7 +4,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication.Security
 {
-    public class IsLoggedIn : ASecurityCheck
+    public class IsLoggedIn : ASecurityCheckAttribute
     {
         public IsLoggedIn()
         {

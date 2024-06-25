@@ -18,7 +18,7 @@ namespace VueJSMVCDotNet.JSON
                 return Convert.ToDecimal(flt);
             }
             else if (reader.TokenType==JsonTokenType.String)
-                return decimal.Parse(reader.GetString());
+                return decimal.Parse(reader.GetString()!);
             throw new InvalidCastException();
         }
 
