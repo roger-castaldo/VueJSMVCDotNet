@@ -66,7 +66,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 var newPath = delRegisterSlowMethod(url, method, model, pars, request, log);
                 if (newPath!= null)
                 {
-                    context.Response.ContentType = "text/json";
+                    context.Response.ContentType = "application/json";
                     context.Response.StatusCode = 200;
                     await context.Response.WriteAsync(Utility.JsonEncode(newPath, log));
                 }
@@ -78,7 +78,7 @@ namespace VueJSMVCDotNet.Handlers.Model
                 if (method.ReturnType == typeof(void))
                 {
                     await method.InvokeAsync<object>(model, request, pars: pars, responseHeaders: context.Response.Headers);
-                    context.Response.ContentType= "text/json";
+                    context.Response.ContentType= "application/json";
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
                 }
@@ -86,12 +86,12 @@ namespace VueJSMVCDotNet.Handlers.Model
                 {
                     context.Response.StatusCode= 200;
                     var tmp = await method.InvokeAsync<string>(model, request, pars: pars, responseHeaders: context.Response.Headers);
-                    context.Response.ContentType= (tmp==null ? "text/json" : "text/text");
+                    context.Response.ContentType= (tmp==null ? "application/json" : "text/text");
                     await context.Response.WriteAsync((tmp??Utility.JsonEncode(tmp, log)));
                 }
                 else
                 {
-                    context.Response.ContentType= "text/json";
+                    context.Response.ContentType= "application/json";
                     context.Response.StatusCode= 200;
                     var resp = await method.InvokeAsync<object>(model, request, pars: pars, responseHeaders: context.Response.Headers);
                     if (extractResponse!=null)

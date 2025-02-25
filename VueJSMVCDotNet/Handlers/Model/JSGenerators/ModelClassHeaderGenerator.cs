@@ -16,7 +16,8 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
         {Constants.INITIAL_DATA_KEY}=undefined;
         #isNew(){{ return this.{Constants.INITIAL_DATA_KEY}===undefined || this.{Constants.INITIAL_DATA_KEY}===null || this.{Constants.INITIAL_DATA_KEY}.id===undefined || this.{Constants.INITIAL_DATA_KEY}.id===null; }};
         #events=undefined;
-        static get #baseURL(){{return `{(url.StartsWith('/') ? "${hosturl.origin}" : "")}{url}`;}};");
+        static get #baseURL(){{return `{(url.StartsWith('/') ? "${hosturl.origin}" : "")}{url}`;}};
+        static get #constructorBaseData(){{return {Utility.JsonEncode(Activator.CreateInstance(modelType.Type), log)};}};");
 
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
@@ -25,8 +26,7 @@ namespace VueJSMVCDotNet.Handlers.Model.JSGenerators
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
-            let data={Utility.JsonEncode(Activator.CreateInstance(modelType.Type), log)};
-            Object.keys(data).forEach((prop)=>this['#'+prop]=data[prop]);
+            {string.Join('\n',modelType.Properties.Select(p=>$"         this.#{p.Name} = {modelType.Type.Name}.#constructorBaseData.{p.Name};"))}
             this.#events = new EventHandler(['{Constants.Events.MODEL_LOADED}','{Constants.Events.MODEL_UPDATED}','{Constants.Events.MODEL_SAVED}','{Constants.Events.MODEL_DESTROYED}','{Constants.Events.MODEL_PARSED}']);
             return this.#toProxy();
         }}");

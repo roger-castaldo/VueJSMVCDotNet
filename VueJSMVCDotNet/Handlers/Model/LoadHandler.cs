@@ -24,7 +24,7 @@ namespace VueJSMVCDotNet.Handlers.Model
         protected override async Task ExecuteActionHandlerAsync(HttpContext context, string url, IModelActionHandler handler)
         {
             var result = await handler.Load(url, await ExtractParts(context));
-            context.Response.ContentType = "text/json";
+            context.Response.ContentType = "application/json";
             context.Response.StatusCode= 200;
             await context.Response.WriteAsync(Utility.JsonEncode(result, Log));
         }

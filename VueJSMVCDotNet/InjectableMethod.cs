@@ -76,11 +76,13 @@ namespace VueJSMVCDotNet
             {
                 if (x!=addItemIndex)
                 {
-                    if (parameters[x].ParameterType.IsInterface
-                        && !(
-                            parameters[x].ParameterType==typeof(IFormFile)
-                            || parameters[x].ParameterType==typeof(IReadOnlyList<IFormFile>)
-                        )
+                    if ((
+                        parameters[x].ParameterType.IsInterface
+                            && !(
+                                parameters[x].ParameterType==typeof(IFormFile)
+                                || parameters[x].ParameterType==typeof(IReadOnlyList<IFormFile>)
+                            )
+                        ) || Equals(parameters[x].ParameterType,typeof(HttpContext))
                     )
                     {
                         ignoredIndexes.Add(x);

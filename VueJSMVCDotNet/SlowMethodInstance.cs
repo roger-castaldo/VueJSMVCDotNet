@@ -86,7 +86,7 @@ namespace VueJSMVCDotNet
                     else
                         break;
                 }
-                context.Response.ContentType= "text/json";
+                context.Response.ContentType= "application/json";
                 context.Response.StatusCode = 200;
                 completed = finished&&data.IsEmpty;
                 return context.Response.WriteAsync(Utility.JsonEncode(new PullResponse(ret, finished&&data.IsEmpty, !data.IsEmpty), log));
