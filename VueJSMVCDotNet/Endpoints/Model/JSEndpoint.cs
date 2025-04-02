@@ -1,0 +1,86 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.Caching.Memory;
+using System.Reflection.Emit;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Caching;
+using VueJSMVCDotNet.Endpoints.DataSources;
+using VueJSMVCDotNet.Endpoints.Model.JSGenerators;
+using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
+using VueJSMVCDotNet.Extensions;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
+
+namespace VueJSMVCDotNet.Endpoints.Model
+{
+    internal class JSEndpoint<H, T>(string vueImportPath, string coreImportPath, bool compressAllJS, ModelsDataSource modelsDataSource, ILogger? logger, IMemoryCache? cache) :
+        ACachingEndpoint(logger, cache), IEndpointHandler
+        where H : IModelHandler<T>
+        where T : IModel
+    {
+        private const string ExtensionKey = "ext";
+        private const string BaseURLKey = "_JSBaseURL";
+
+        private static readonly IEnumerable<IGenerator> Generators = [
+            new HeaderGenerator(),
+            new ParsersGenerator(),
+            new ModelClassHeaderGenerator(),
+            new JSONGenerator(),
+            new ModelDefaultMethodsGenerator(),
+            new ParseGenerator(),
+            new ModelInstanceFooterGenerator(),
+            new ModelLoadAllGenerator(),
+            new ModelLoadGenerator(),
+            new MethodsGenerator(),
+            new ModelListCallGenerator(),
+            new ModelClassFooterGenerator(),
+            new FooterGenerator()
+        ];
+
+        private readonly ModelType modelType = new ModelType(typeof(T), typeof(H), (type) => modelsDataSource.GetModelImportURL(type));
+
+        IEnumerable<RouteEndpoint> IEndpointHandler.AsEndpoints
+            => typeof(H)
+                .GetCustomAttributes<ModelRouteAttribute>()
+            .Select(mra => new RouteEndpoint(
+                requestDelegate: (context) => {
+                    context.Items[BaseURLKey] = mra.Path;
+                    return ExecuteRequestAsync(context);
+                },
+                routePattern: RoutePatternFactory.Parse($"{mra.Path}.{{{ExtensionKey}:regex(^mjs|min\\.mjs|min\\.js|js$)}}"),
+                order: 0,
+                metadata: new(
+                    new HttpMethodMetadata([HttpMethods.Get]
+                )),
+                displayName: $"JS call for {typeof(T).Name}"
+            ));
+
+        protected override Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
+        {
+            var baseURL = (string?)context.Items[BaseURLKey]??string.Empty;
+            var useModuleExtension = ((string?)context.Request.RouteValues[ExtensionKey])?.EndsWith("mjs",StringComparison.InvariantCultureIgnoreCase)??false;
+            var isMin = ((string?)context.Request.RouteValues[ExtensionKey])?.StartsWith("min", StringComparison.InvariantCultureIgnoreCase)??false;
+            var builder = new WrappedStringBuilder(compressAllJS||isMin);
+            builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
+import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
+if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.x'; }}");
+            Generators.ForEach(gen =>
+            {
+                builder.AppendLine($"//START:{gen.GetType().Name}");
+                if (gen is IBaseJSGenerator baseJSGenerator)
+                    baseJSGenerator.GeneratorJS(builder, modelType, baseURL, useModuleExtension, isMin, Logger);
+                else if (gen is IJSGenerator jsGenerator)
+                    jsGenerator.GeneratorJS(builder, modelType, baseURL, Logger);
+                builder.AppendLine($"//END:{gen.GetType().Name}");
+            });
+
+            return Task.FromResult<CachableResponse?>(new(
+                builder.ToString(),
+                "text/javascript",
+                DateTime.Now,
+                []
+            ));
+        }
+    }
+}

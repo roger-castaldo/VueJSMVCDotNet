@@ -1,26 +1,28 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Endpoints.DataSources;
+using VueJSMVCDotNet.Endpoints.Model;
+using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.JSON
 {
-    internal class ModelConverter<T>(IRequestData requestData)
-        : JsonConverter<T> where T : IModel
+    internal class ModelConverter<M>(IInternalRequestData? requestData)
+        : JsonConverter<M> where M : IModel
     {
-        private readonly IRequestData requestData = requestData;
-        private readonly InjectableMethod loadMethod = new(typeof(T).GetMethods(Constants.LOAD_METHOD_FLAGS).First(m => m.GetCustomAttributes(typeof(ModelLoadMethodAttribute)).Any()));
-
-        private T Load(string id)
+        private M Load(string id)
         {
-            var task = loadMethod.InvokeAsync<T>(null, requestData, pars: [id]);
+            ArgumentNullException.ThrowIfNull(requestData,nameof(requestData));
+            var task = requestData.LoadModelAsync<M>(id).AsTask();
             task.Wait();
             return task.Result!;
         }
 
-        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override M? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var result = default(T);
+            var result = default(M);
             if (reader.TokenType==JsonTokenType.String)
                 result = Load(reader.GetString()!);
             else if (reader.TokenType==JsonTokenType.StartObject)
@@ -35,10 +37,10 @@ namespace VueJSMVCDotNet.JSON
                 }
                 else
                 {
-                    result = Activator.CreateInstance<T>();
+                    result = Activator.CreateInstance<M>();
                     while (reader.TokenType!=JsonTokenType.EndObject)
                     {
-                        var prop = typeof(T).GetProperty(reader.GetString()!);
+                        var prop = typeof(M).GetProperty(reader.GetString()!);
                         reader.Read();
                         prop?.SetValue(result, JsonSerializer.Deserialize(ref reader, prop.PropertyType, options));
                     }
@@ -48,9 +50,9 @@ namespace VueJSMVCDotNet.JSON
             return result;
         }
 
-        public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, M? value, JsonSerializerOptions options)
         {
-            if (Equals(value, default(T?)))
+            if (Equals(value, default(M?)))
                 writer.WriteNullValue();
             else
             {

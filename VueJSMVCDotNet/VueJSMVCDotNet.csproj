@@ -23,10 +23,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Handlers\Model\JSGenerators\core.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Handlers\Model\JSGenerators\core.js" />
+    <EmbeddedResource Include="Endpoints\Model\JSGenerators\core.js" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">
@@ -40,12 +37,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
 		<PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
 	</ItemGroup>
-	<ItemGroup>
-    <Folder Include="Handlers\Model\JSGenerators\Interfaces\" />
-  </ItemGroup>
 </Project>

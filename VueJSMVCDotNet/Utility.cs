@@ -6,8 +6,11 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Handlers.Model;
+using VueJSMVCDotNet.Endpoints.DataSources;
+using VueJSMVCDotNet.Endpoints.Model;
+using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
 using VueJSMVCDotNet.JSON;
 
 namespace VueJSMVCDotNet
@@ -25,7 +28,7 @@ namespace VueJSMVCDotNet
         //houses the assembly load contexts for types
         private static readonly Dictionary<string, IEnumerable<Type>> _LOAD_CONTEXT_TYPE_SOURCES = [];
 
-        internal static IModel SetModelValues(ModelRequestData data, IModel model, bool isNew, ILogger? log)
+        internal static IModel SetModelValues(IInternalRequestData data, IModel model, bool isNew, ILogger? log)
         {
             data.Keys.Where(key => !string.Equals(key, "id", StringComparison.InvariantCulture))
             .Select(key => model.GetType().GetProperty(key))
@@ -40,11 +43,12 @@ namespace VueJSMVCDotNet
             return model;
         }
 
-        public static IEnumerable<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc, ILogger? log)
+        public static IEnumerable<(Type HandlerType,Type ModelType)> LocateModelHandlers(AssemblyLoadContext alc, ILogger? log)
         {
-            log?.LogTrace("Locating Instance types of {FullName} in the Load Context {Name}", parent.FullName, alc.Name);
-            return LocateTypeInstances(parent, alc.Assemblies, log)
-                .ForEach(t => MarkTypeSource(alc.Name!, t, log));
+            log?.LogTrace("Locating Instance types of {FullName} in the Load Context {Name}", typeof(IModelHandler<>).FullName, alc.Name);
+            return LocateTypeInstances(typeof(IModelHandler<>), alc.Assemblies, log)
+                .ForEach(t => MarkTypeSource(alc.Name!, t, log))
+                .Select(handlerType => (handlerType, handlerType.GetInterfaces().First(t => t.IsGenericType && Equals(t.GetGenericTypeDefinition(), typeof(IModelHandler<>))).GetGenericArguments()[0]));
         }
 
         private static IEnumerable<Type> LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies, ILogger? log)
@@ -56,7 +60,20 @@ namespace VueJSMVCDotNet
             )
             .SelectMany(ass =>
                 GetLoadableTypes(ass, log)
-                .Where(t => t.IsSubclassOf(parent) || (parent.IsInterface && t.GetInterfaces().Contains(parent)))
+                .Where(t => 
+                    t.IsSubclassOf(parent) || 
+                    (
+                        parent.IsInterface 
+                        && Array.Exists(t.GetInterfaces(),(t)=>
+                            Equals(t,parent) || 
+                            (
+                                parent.IsGenericType && 
+                                t.IsGenericType && 
+                                Equals(t.GetGenericTypeDefinition(),parent)
+                            )
+                        )
+                    )
+                )
             );
 
         private static IEnumerable<Type> GetLoadableTypes(Assembly ass, ILogger? log)
@@ -291,7 +308,7 @@ namespace VueJSMVCDotNet
 
         #region JSON
 
-        private static JsonSerializerOptions ProduceJsonOptions(ILogger? log, IRequestData? requestData = null)
+        private static JsonSerializerOptions ProduceJsonOptions(IInternalRequestData? requestData = null)
         {
             var result = new JsonSerializerOptions
             {
@@ -306,21 +323,29 @@ namespace VueJSMVCDotNet
             return result;
         }
 
-        public static string JsonEncode(object? value, ILogger? log)
+        public static string JsonEncode(object? value, IInternalRequestData? requestData)
         {
             if (value==null)
                 return "null";
-            return JsonSerializer.Serialize(value, value.GetType(), options: ProduceJsonOptions(log));
+            return JsonSerializer.Serialize(value, value.GetType(), options: ProduceJsonOptions(requestData));
         }
 
-        public static T? JsonDecode<T>(JsonDocument document, IRequestData requestData, ILogger? log)
-            => JsonSerializer.Deserialize<T>(document, options: ProduceJsonOptions(log, requestData));
+        public static async ValueTask JsonEncode<T>(HttpContext context, Task<(T? result, IInternalRequestData requestData)> task)
+        {
+            var data = await task;
+            context.Response.ContentType= "application/json";
+            context.Response.StatusCode= 200;
+            await context.Response.WriteAsync(JsonEncode(data.result, data.requestData));
+        }
 
-        public static T? JsonDecode<T>(JsonNode node, IRequestData requestData, ILogger? log)
-            => JsonSerializer.Deserialize<T>(node, options: ProduceJsonOptions(log, requestData));
+        public static T? JsonDecode<T>(JsonDocument document, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(document, options: ProduceJsonOptions(requestData));
 
-        public static T? JsonDecode<T>(JsonElement element, IRequestData requestData, ILogger? log)
-            => JsonSerializer.Deserialize<T>(element, options: ProduceJsonOptions(log, requestData));
+        public static T? JsonDecode<T>(JsonNode node, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(node, options: ProduceJsonOptions(requestData));
+
+        public static T? JsonDecode<T>(JsonElement element, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(element, options: ProduceJsonOptions(requestData));
         #endregion
 
         public static string? SantizeLogValue(string? value) => value?.Replace('\r', '_').Replace('\n', '_');

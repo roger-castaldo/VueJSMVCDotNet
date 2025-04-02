@@ -1,4 +1,6 @@
-﻿namespace VueJSMVCDotNet
+﻿using VueJSMVCDotNet.Endpoints.Model;
+
+namespace VueJSMVCDotNet
 {
     internal class CallNotFoundException : Exception
     {
