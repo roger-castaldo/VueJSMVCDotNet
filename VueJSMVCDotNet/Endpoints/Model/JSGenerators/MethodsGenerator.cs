@@ -21,8 +21,8 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         private static void AppendMethodCallDeclaration(MethodInfo method, bool isStatic, WrappedStringBuilder builder)
         {
             var pars = InjectableMethod.StripMethodParameters(method.GetParameters())
-                .Where(pair=>!pair.IsStrippable)
-                .Select(pair=>pair.ParameterInfo);
+                .Where(pair => !pair.IsStrippable)
+                .Select(pair => pair.ParameterInfo);
             builder.AppendLine($@"          {(isStatic ? "static async " : "async #")}{method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
                 let function_data = {{}};");
             var nna = method.GetCustomAttribute<NotNullArguementAttribute>(false);
@@ -41,7 +41,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             });
         }
 
-        private static void AppendMethodContent(ModelType modelType, MethodInfo mi,bool isStatic,WrappedStringBuilder builder)
+        private static void AppendMethodContent(ModelType modelType, MethodInfo mi, bool isStatic, WrappedStringBuilder builder)
         {
             MethodsGenerator.ExtractReturnType(mi, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse);
             MethodsGenerator.AppendMethodCallDeclaration(mi, isStatic, builder);

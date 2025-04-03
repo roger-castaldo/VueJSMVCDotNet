@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace VueJSMVCDotNet.Interfaces.Internal
+﻿namespace VueJSMVCDotNet.Interfaces.Internal
 {
     internal interface IInternalRequestData : IRequestData
     {
@@ -17,6 +11,6 @@ namespace VueJSMVCDotNet.Interfaces.Internal
         ValueTask<M?> LoadModelAsync<M>(string modelID)
             where M : IModel;
 
-        ValueTask<object?> LoadModelAsync(Type modelType,string modelID);
+        ValueTask<object?> LoadModelAsync(Type modelType, string modelID);
     }
 }

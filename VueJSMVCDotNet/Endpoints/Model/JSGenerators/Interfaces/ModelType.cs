@@ -12,7 +12,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                         && !(pi.PropertyType.FullName?.Contains("+KeyCollection")??false)
                         && (pi.GetGetMethod()?.GetParameters()?? []).Length == 0);
 
-        public ModelType(Type type,Type handlerType, Func<Type,string?> mapImport)
+        public ModelType(Type type, Type handlerType, Func<Type, string?> mapImport)
         {
             Type=type;
             HandlerType=handlerType;
@@ -46,19 +46,19 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                                 .Select(mi => ((ExposedMethodAttribute)mi.GetCustomAttributes(typeof(ExposedMethodAttribute), false)[0]).ArrayElementType)
                                 .Where(t => t!=null && t.GetInterfaces().Contains(typeof(IModel)))
                             )
-                            .Where(t=>!Equals(t,type))
+                            .Where(t => !Equals(t, type))
                             .Distinct()
-                            .Select(t => Tuple.Create<Type, string?>(t!,mapImport(t!)));
+                            .Select(t => Tuple.Create<Type, string?>(t!, mapImport(t!)));
         }
         public Type Type { get; private init; }
         public Type HandlerType { get; private init; }
-        public IEnumerable<PropertyInfo> Properties { get; private init; } 
+        public IEnumerable<PropertyInfo> Properties { get; private init; }
         public IEnumerable<MethodInfo> InstanceMethods { get; private init; }
         public IEnumerable<MethodInfo> StaticMethods { get; private init; }
         public MethodInfo? SaveMethod { get; private init; }
         public MethodInfo? UpdateMethod { get; private init; }
         public MethodInfo? DeleteMethod { get; private init; }
-        public IEnumerable<Tuple<Type,string?>> LinkedTypes { get; private init; }
-            
+        public IEnumerable<Tuple<Type, string?>> LinkedTypes { get; private init; }
+
     }
 }

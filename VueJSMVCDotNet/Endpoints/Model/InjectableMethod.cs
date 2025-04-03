@@ -19,7 +19,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     StrippableTypes.Contains(p.ParameterType)
                     || p.ParameterType.IsInterface
                     || p.GetCustomAttribute<FromServicesAttribute>()!=null
-                    || p.GetCustomAttribute<ModelIDParameterAttribute>()!=null 
+                    || p.GetCustomAttribute<ModelIDParameterAttribute>()!=null
                     || p.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null
                 ));
 
@@ -28,7 +28,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         public string Name => method.Name;
         public bool IsModelUpdateOrSave => method.GetCustomAttributes().Any(att => att is ModelUpdateMethodAttribute || att is ModelSaveMethodAttribute);
         public bool IsSlow => method.GetCustomAttributes().OfType<ExposedMethodAttribute>().Any(em => em.IsSlow);
-        public bool RequiresModel => Array.Exists(parameters,p => p.GetCustomAttribute<ModelIDParameterAttribute>()!=null
+        public bool RequiresModel => Array.Exists(parameters, p => p.GetCustomAttribute<ModelIDParameterAttribute>()!=null
                     || p.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null);
         public bool UsesModel => Array.Exists(parameters, p => p.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null);
         public Type ReturnType { get; private init; }
@@ -70,7 +70,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             return true;
         }
 
-        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T,M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
+        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
             where M : IModel
         {
             var requestData = await Helper.ExtractPartsAsync(httpContext, logger);
@@ -90,7 +90,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         if (strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelIDParameterAttribute>()!=null)
                             mpars[x] = requestData.ModelID;
                         else if (strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null)
-                            mpars[x] = modelInstance ?? (requestData.ModelID!=null ? (await handler.LoadAsync(requestData.ModelID!)) : default );
+                            mpars[x] = modelInstance ?? (requestData.ModelID!=null ? (await handler.LoadAsync(requestData.ModelID!)) : default);
                         else
                             mpars[x] = requestData[parameters[x].ParameterType];
                     }

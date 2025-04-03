@@ -54,7 +54,7 @@ namespace VueJSMVCDotNet
             return result.ToString();
         }
 
-        public static string Minify(string js,bool ignoreComments=false)
+        public static string Minify(string js, bool ignoreComments = false)
         {
             string ret = (ignoreComments ? js : StripComments(
                 string.Join(Environment.NewLine, js.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)

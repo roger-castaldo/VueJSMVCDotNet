@@ -1,8 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Endpoints.DataSources;
-using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
@@ -14,7 +12,7 @@ namespace VueJSMVCDotNet.JSON
     {
         private M Load(string id)
         {
-            ArgumentNullException.ThrowIfNull(requestData,nameof(requestData));
+            ArgumentNullException.ThrowIfNull(requestData, nameof(requestData));
             var task = requestData.LoadModelAsync<M>(id).AsTask();
             task.Wait();
             return task.Result!;

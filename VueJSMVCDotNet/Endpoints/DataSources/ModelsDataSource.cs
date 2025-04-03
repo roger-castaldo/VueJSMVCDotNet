@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.IO;
 using System.Threading;
@@ -15,20 +14,20 @@ using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.DataSources
 {
-    internal class ModelsDataSource(ILogger? logger, 
+    internal class ModelsDataSource(ILogger? logger,
             string vueImportPath,
             string coreJSImport,
             bool ignoreInvalidModels,
             bool compressJS,
-            IMemoryCache? cache) : EndpointDataSource,IDisposable
+            IMemoryCache? cache) : EndpointDataSource, IDisposable
     {
         private static readonly Type[] ModelEndpoints = [.. typeof(AModelEndpoint<,>)
             .Assembly
             .GetTypes()
-            .Where(handler => !handler.IsAbstract 
-                && !handler.IsInterface 
+            .Where(handler => !handler.IsAbstract
+                && !handler.IsInterface
                 && handler.IsGenericType
-                && handler.BaseType!=null 
+                && handler.BaseType!=null
                 && handler.BaseType.IsGenericType
                 && Equals(handler.BaseType.GetGenericTypeDefinition(),typeof(AModelEndpoint<,>)))
         ];
@@ -72,7 +71,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
 {sr.ReadToEnd()}");
                     sr.Close();
                 }
-                var results = endpoints.Values.SelectMany(g => g.SelectMany(m=>m.AsEndpoints))
+                var results = endpoints.Values.SelectMany(g => g.SelectMany(m => m.AsEndpoints))
                     .Append(new(
                         requestDelegate: async (context) =>
                         {
@@ -81,7 +80,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                             await context.Response.WriteAsync(compressedCore);
                         },
                         routePattern: RoutePatternFactory.Parse(coreJSImport),
-                        order:0,
+                        order: 0,
                         metadata: new(
                             new HttpMethodMetadata([HttpMethods.Get])
                         ),
@@ -117,7 +116,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             endpoints.Clear();
             locker.ExitWriteLock();
             AssemblyLoadContext.All
-                .ForEach(alc => AsssemblyLoadContextAdded(alc,false));
+                .ForEach(alc => AsssemblyLoadContextAdded(alc, false));
             TriggerChange();
         }
 
@@ -128,7 +127,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                 AsssemblyLoadContextAdded(alc);
         }
 
-        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc,bool triggerChange=true)
+        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc, bool triggerChange = true)
         {
             logger?.LogDebug("Loading Assembly Load Context {Name}", alc.Name);
             IEnumerable<Exception> errors = DefinitionValidator.Validate(alc, logger, out var invalidModels, out var models);
@@ -145,15 +144,16 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             locker.EnterWriteLock();
             try
             {
-                foreach(var handler in models)
+                foreach (var handler in models)
                 {
                     var producedEndpoints = new List<IEndpointHandler>();
-                    foreach(var endpointType in ModelEndpoints)
-                        producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(endpointType.MakeGenericType(handler.HandlerType,handler.ModelType), logger)!);
+                    foreach (var endpointType in ModelEndpoints)
+                        producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(endpointType.MakeGenericType(handler.HandlerType, handler.ModelType), logger)!);
                     producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(typeof(JSEndpoint<,>).MakeGenericType(handler.HandlerType, handler.ModelType), vueImportPath, coreJSImport, compressJS, this, logger, cache));
                     endpoints.Add(handler.HandlerType, producedEndpoints);
                 }
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }

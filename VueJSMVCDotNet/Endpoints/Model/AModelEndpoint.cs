@@ -1,15 +1,13 @@
-﻿using VueJSMVCDotNet.Interfaces.Internal;
-using VueJSMVCDotNet.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using VueJSMVCDotNet.Attributes;
-using Microsoft.AspNetCore.Http;
-using System.IO;
-using System.Text.Json;
 using Microsoft.AspNetCore.Routing.Patterns;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
-    internal abstract class AModelEndpoint<H, M>(ILogger? logger) : AEndpoint(logger),IEndpointHandler
+    internal abstract class AModelEndpoint<H, M>(ILogger? logger) : AEndpoint(logger), IEndpointHandler
         where H : IModelHandler<M>
         where M : IModel
     {
@@ -23,7 +21,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         protected static string GetModelID(HttpContext context)
             => context.Request.RouteValues[Helper.ID_PARAMETER_NAME]?.ToString()??throw new ArgumentNullException("id");
 
-        protected static RoutePattern ProduceRoute(string baseURL,bool includeID,string additional="")
+        protected static RoutePattern ProduceRoute(string baseURL, bool includeID, string additional = "")
         {
             var result = new StringBuilder(baseURL);
             if (includeID)
@@ -37,7 +35,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => method.DeclaringType!.GetCustomAttributes().OfType<ASecurityCheckAttribute>()
                 .Concat(method.GetCustomAttributes().OfType<ASecurityCheckAttribute>());
 
-        protected async static ValueTask<bool> ValidateAccessAsync(HttpContext context,ILogger? logger, IModel? model, ASecurityCheckAttribute[] securityChecks,bool loadID=true)
+        protected async static ValueTask<bool> ValidateAccessAsync(HttpContext context, ILogger? logger, IModel? model, ASecurityCheckAttribute[] securityChecks, bool loadID = true)
         {
             var id = (loadID ? GetModelID(context) : model?.id);
             var data = await Helper.ExtractPartsAsync(context, logger);
@@ -50,14 +48,14 @@ namespace VueJSMVCDotNet.Endpoints.Model
             return true;
         }
 
-        protected static async Task<(InjectableMethod method,object[] pars)?> LocateMethodAsync(HttpContext context, IEnumerable<InjectableMethod> methods,ILogger? logger)
+        protected static async Task<(InjectableMethod method, object[] pars)?> LocateMethodAsync(HttpContext context, IEnumerable<InjectableMethod> methods, ILogger? logger)
         {
             var request = await Helper.ExtractPartsAsync(context, logger);
             InjectableMethod? method = null;
             object[] pars = [];
             if (!request.Keys.Any())
                 method = methods.FirstOrDefault(imi => imi.StrippedParameters.Length==0 && (
-                    (string.IsNullOrWhiteSpace(request.ModelID) && !imi.RequiresModel) 
+                    (string.IsNullOrWhiteSpace(request.ModelID) && !imi.RequiresModel)
                     || (!string.IsNullOrWhiteSpace(request.ModelID) && imi.RequiresModel)
                 ));
             else
@@ -89,7 +87,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     break;
                                 }
                                 pars[index] = val;
-                            }else
+                            }
+                            else
                             {
                                 isMethod = false;
                                 break;

@@ -1,9 +1,8 @@
-﻿using VueJSMVCDotNet.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using VueJSMVCDotNet.Attributes;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
@@ -23,7 +22,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 return routes.Select(mra => new RouteEndpoint(
                     requestDelegate: async (context) =>
                     {
-                        if (!await ValidateAccessAsync(context, Logger, null, securityChecks,false))
+                        if (!await ValidateAccessAsync(context, Logger, null, securityChecks, false))
                             await ReturnInsecure(context);
                         else
                         {
@@ -32,12 +31,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             context.Response.ContentType = "application/json";
                             context.Response.StatusCode= 200;
                             await Utility.JsonEncode<bool>(
-                                context, 
+                                context,
                                 injectableSaveMethod.InvokeAsync<bool, M>(handler, context, Logger, modelInstance: Utility.JsonDecode<M>(((ModelRequestData)data).RawBody!, data))
                             );
                         }
                     },
-                    routePattern: ProduceRoute(mra.Path,false),
+                    routePattern: ProduceRoute(mra.Path, false),
                     order: 0,
                     metadata: new(
                         new HttpMethodMetadata([HttpMethods.Put]

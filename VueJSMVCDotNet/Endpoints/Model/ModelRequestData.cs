@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Endpoints.DataSources;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
@@ -99,7 +96,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 .MakeGenericMethod(modelType)
                 .Invoke(this, null) ?? throw new ArgumentNullException("Unable to locate loader");
             var valueTask = typeof(IModelHandler<>).GetMethod("LoadAsync")?
-                .Invoke(loader,[modelID]);
+                .Invoke(loader, [modelID]);
             var task = (Task)typeof(ValueTask<>).GetMethod(nameof(ValueTask.AsTask))?
                 .Invoke(valueTask, null)!;
             await task;

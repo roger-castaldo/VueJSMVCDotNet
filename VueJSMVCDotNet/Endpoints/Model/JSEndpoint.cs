@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
-using System.Reflection.Emit;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Caching;
 using VueJSMVCDotNet.Endpoints.DataSources;
@@ -44,7 +43,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => typeof(H)
                 .GetCustomAttributes<ModelRouteAttribute>()
             .Select(mra => new RouteEndpoint(
-                requestDelegate: (context) => {
+                requestDelegate: (context) =>
+                {
                     context.Items[BaseURLKey] = mra.Path;
                     return ExecuteRequestAsync(context);
                 },
@@ -59,7 +59,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         protected override Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
         {
             var baseURL = (string?)context.Items[BaseURLKey]??string.Empty;
-            var useModuleExtension = ((string?)context.Request.RouteValues[ExtensionKey])?.EndsWith("mjs",StringComparison.InvariantCultureIgnoreCase)??false;
+            var useModuleExtension = ((string?)context.Request.RouteValues[ExtensionKey])?.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase)??false;
             var isMin = ((string?)context.Request.RouteValues[ExtensionKey])?.StartsWith("min", StringComparison.InvariantCultureIgnoreCase)??false;
             var builder = new WrappedStringBuilder(compressAllJS||isMin);
             builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';

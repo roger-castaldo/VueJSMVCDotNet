@@ -9,8 +9,8 @@ using VueJSMVCDotNet.Extensions;
 
 namespace VueJSMVCDotNet.Endpoints
 {
-    internal class MessagesEndpoint(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath,ILogger? logger, IMemoryCache? cache)
-        : ACachingEndpoint(logger,cache)
+    internal class MessagesEndpoint(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath, ILogger? logger, IMemoryCache? cache)
+        : ACachingEndpoint(logger, cache)
     {
         private const string PathParameter = "path";
         private string CompileToCode(StringBuilder messages)

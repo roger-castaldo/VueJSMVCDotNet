@@ -111,9 +111,10 @@ namespace VueJSMVCDotNet.Endpoints
         protected override async Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
         {
             var spath = $"{baseURL}/{context.Request.RouteValues[PathParameter]!}";
-            if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase)) {
+            if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
+            {
                 IEnumerable<SVueFile> files = [];
-                var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
+                var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
                 var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
                 if (fpath!=null)
                     files = fileProvider.GetDirectoryContents(fpath)

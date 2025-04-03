@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
 
@@ -16,8 +15,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => typeof(H).GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<ModelListMethodAttribute>(false)!=null)
                 .GroupBy(m => m.Name)
-                .SelectMany(grp => {
-                    var methods = grp.Select(m=>new InjectableMethod(m)).ToArray();
+                .SelectMany(grp =>
+                {
+                    var methods = grp.Select(m => new InjectableMethod(m)).ToArray();
                     return routes.Select(mra =>
                         new RouteEndpoint(
                             requestDelegate: async (context) =>

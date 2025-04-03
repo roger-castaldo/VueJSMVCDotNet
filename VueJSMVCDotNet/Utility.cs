@@ -6,8 +6,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Endpoints.DataSources;
-using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
@@ -43,7 +41,7 @@ namespace VueJSMVCDotNet
             return model;
         }
 
-        public static IEnumerable<(Type HandlerType,Type ModelType)> LocateModelHandlers(AssemblyLoadContext alc, ILogger? log)
+        public static IEnumerable<(Type HandlerType, Type ModelType)> LocateModelHandlers(AssemblyLoadContext alc, ILogger? log)
         {
             log?.LogTrace("Locating Instance types of {FullName} in the Load Context {Name}", typeof(IModelHandler<>).FullName, alc.Name);
             return LocateTypeInstances(typeof(IModelHandler<>), alc.Assemblies, log)
@@ -60,16 +58,16 @@ namespace VueJSMVCDotNet
             )
             .SelectMany(ass =>
                 GetLoadableTypes(ass, log)
-                .Where(t => 
-                    t.IsSubclassOf(parent) || 
+                .Where(t =>
+                    t.IsSubclassOf(parent) ||
                     (
-                        parent.IsInterface 
-                        && Array.Exists(t.GetInterfaces(),(t)=>
-                            Equals(t,parent) || 
+                        parent.IsInterface
+                        && Array.Exists(t.GetInterfaces(), (t) =>
+                            Equals(t, parent) ||
                             (
-                                parent.IsGenericType && 
-                                t.IsGenericType && 
-                                Equals(t.GetGenericTypeDefinition(),parent)
+                                parent.IsGenericType &&
+                                t.IsGenericType &&
+                                Equals(t.GetGenericTypeDefinition(), parent)
                             )
                         )
                     )
@@ -98,7 +96,7 @@ namespace VueJSMVCDotNet
                 else
                     ret = [];
             }
-            return ret.Where(t=>t!=null);
+            return ret.Where(t => t!=null);
         }
 
         private static void MarkTypeSource(string contextName, Type type, ILogger? log)

@@ -60,15 +60,15 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             .ForEach(jsonProperty => formData.Add(jsonProperty.Name, jsonProperty.Value));
                     }
                 }
-                context.Items.Add(REQUEST_DATA_KEY, 
+                context.Items.Add(REQUEST_DATA_KEY,
                     new ModelRequestData(
-                        formData, 
-                        session, 
-                        context, 
-                        logger, 
-                        files, 
-                        rawBody, 
-                        context.Request.RouteValues[ID_PARAMETER_NAME]?.ToString(), 
+                        formData,
+                        session,
+                        context,
+                        logger,
+                        files,
+                        rawBody,
+                        context.Request.RouteValues[ID_PARAMETER_NAME]?.ToString(),
                         context.RequestServices.GetRequiredService<ModelsDataSource>()
                     )
                 );

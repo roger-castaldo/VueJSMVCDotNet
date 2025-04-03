@@ -1,8 +1,8 @@
-﻿using VueJSMVCDotNet.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using VueJSMVCDotNet.Attributes;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
@@ -30,7 +30,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             await Utility.JsonEncode<bool>(context, injectableDelMethod.InvokeAsync<bool, M>(handler, context, Logger));
                         }
                     },
-                    routePattern: ProduceRoute(mra.Path,true),
+                    routePattern: ProduceRoute(mra.Path, true),
                     order: 0,
                     metadata: new(
                         new HttpMethodMetadata([HttpMethods.Delete]

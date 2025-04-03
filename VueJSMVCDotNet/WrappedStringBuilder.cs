@@ -5,7 +5,7 @@
         private readonly StringBuilder sb = new();
 
         public new string ToString()
-            => (minimize ? JSMinifier.Minify(sb.ToString(),ignoreComments:true) : sb.ToString());
+            => (minimize ? JSMinifier.Minify(sb.ToString(), ignoreComments: true) : sb.ToString());
 
         public void AppendLine(string line)
         {

@@ -22,7 +22,7 @@ namespace VueJSMVCDotNet.Extensions
             bool compressJS = true,
             IMemoryCache? cache = null
         )
-            => services.AddSingleton<ModelsDataSource>((provider)=>new(logger,
+            => services.AddSingleton<ModelsDataSource>((provider) => new(logger,
                 vueImportPath,
                 coreJSImport??coreJSURL,
                 ignoreInvalidModels,
@@ -58,7 +58,7 @@ namespace VueJSMVCDotNet.Extensions
             bool compressJS = true,
             ILogger? logger = null,
             IMemoryCache? cache = null)
-        => new VueFilesEndpoint(fileProvider, baseURL,vueImportPath,vueLoaderImportPath,coreJSImport,compressJS,(path)=>CheckModelPath(builder,path),logger,cache)
+        => new VueFilesEndpoint(fileProvider, baseURL, vueImportPath, vueLoaderImportPath, coreJSImport, compressJS, (path) => CheckModelPath(builder, path), logger, cache)
             .AddEndpoint(builder);
 
         private static bool CheckModelPath(IEndpointRouteBuilder builder, string path)

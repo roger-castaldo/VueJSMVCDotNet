@@ -7,7 +7,7 @@ using VueJSMVCDotNet.Extensions;
 
 namespace VueJSMVCDotNet.Endpoints
 {
-    internal abstract class ACachingEndpoint(ILogger? logger,IMemoryCache? cache)
+    internal abstract class ACachingEndpoint(ILogger? logger, IMemoryCache? cache)
         : AEndpoint(logger)
     {
         private sealed record CachedResponse(string Content, string ContentType, DateTime Timestamp);
@@ -24,7 +24,7 @@ namespace VueJSMVCDotNet.Endpoints
         public async Task ExecuteRequestAsync(HttpContext context)
         {
             var cacheURL = Convert.ToBase64String(SHA512.HashData(UTF8Encoding.UTF8.GetBytes(context.Request.Path.ToString())));
-            if (cache?.TryGetValue<CachedResponse>(cacheURL,out var cachedResponse)??false)
+            if (cache?.TryGetValue<CachedResponse>(cacheURL, out var cachedResponse)??false)
             {
                 if (context.Request.Headers.TryGetValue("If-Modified-Since", out var modifiedSince)
                             && (

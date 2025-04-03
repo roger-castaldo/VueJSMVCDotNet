@@ -2,7 +2,6 @@
 using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace VueJSMVCDotNet
 {
@@ -14,7 +13,7 @@ namespace VueJSMVCDotNet
             public Type ModelType { get; init; }
         }
 
-        private static bool IsValidDataActionMethod(MethodInfo method,Type returnType, bool requiresInstance)
+        private static bool IsValidDataActionMethod(MethodInfo method, Type returnType, bool requiresInstance)
         {
             var iMethod = new InjectableMethod(method);
             return Equals(returnType, iMethod.ReturnType)
@@ -54,11 +53,11 @@ namespace VueJSMVCDotNet
                     var methods = handler.HandlerType.GetMethods(Constants.METHOD_FLAGS);
 
                     CheckExposedMethods(methods, handler, exceptions, log);
-                    CheckLoadAllMethod(methods,handler, exceptions, log);
+                    CheckLoadAllMethod(methods, handler, exceptions, log);
                     CheckListMethods(methods, handler, exceptions, log);
                     CheckModelMethod<ModelSaveMethodAttribute>(methods, handler, exceptions, log, "save", typeof(string), true,
-                        (type,method)=>new DuplicateModelSaveMethodException(type,method),
-                        (type,method)=>new InvalidModelSaveMethodException(type,method)
+                        (type, method) => new DuplicateModelSaveMethodException(type, method),
+                        (type, method) => new InvalidModelSaveMethodException(type, method)
                     );
                     CheckModelMethod<ModelUpdateMethodAttribute>(methods, handler, exceptions, log, "update", typeof(bool), true,
                         (type, method) => new DuplicateModelUpdateMethodException(type, method),
@@ -78,16 +77,16 @@ namespace VueJSMVCDotNet
             return errors;
         }
 
-        private static IEnumerable<MethodInfo> CheckModelMethod<MA>(MethodInfo[] methods, 
-            (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log, 
+        private static IEnumerable<MethodInfo> CheckModelMethod<MA>(MethodInfo[] methods,
+            (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log,
             string methodType, Type returnType, bool requiresInstance,
-            Func<Type,MethodInfo,ModelTypeMethodException> constructDuplicateException,
-            Func<Type,MethodInfo,ModelTypeMethodException> constructInvalidException)
+            Func<Type, MethodInfo, ModelTypeMethodException> constructDuplicateException,
+            Func<Type, MethodInfo, ModelTypeMethodException> constructInvalidException)
             where MA : Attribute
         {
             var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<MA>(false)!=null);
             if (filteredMethods.Count()>1)
-                filteredMethods.ForEach(mi => AppendError(exceptions, log, constructDuplicateException(handler.HandlerType,mi),
+                filteredMethods.ForEach(mi => AppendError(exceptions, log, constructDuplicateException(handler.HandlerType, mi),
                     $"Handler {{FullName}} has more than 1 {methodType} method", handler.HandlerType.FullName));
             else if (filteredMethods.Count()==1 && !IsValidDataActionMethod(filteredMethods.First(), returnType, requiresInstance))
                 AppendError(exceptions, log, constructInvalidException(handler.HandlerType, filteredMethods.First()),
@@ -116,7 +115,7 @@ namespace VueJSMVCDotNet
         {
             var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<ModelLoadAllMethodAttribute>(false)!=null);
             if (filteredMethods.Count()>1)
-                filteredMethods.ForEach(mi=>AppendError(exceptions, log, new DuplicateLoadAllMethodException(handler.HandlerType, mi),
+                filteredMethods.ForEach(mi => AppendError(exceptions, log, new DuplicateLoadAllMethodException(handler.HandlerType, mi),
                     "Handler {FullName} has more than 1 ModelLoadAllMethod", handler.HandlerType.FullName));
             else if (filteredMethods.Count()==1)
             {
@@ -125,10 +124,10 @@ namespace VueJSMVCDotNet
                 if (!isArray)
                     AppendError(exceptions, log, new InvalidLoadAllMethodReturnType(handler.HandlerType, loadAllMethod),
                         "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
-                else if (!Equals(rtype,handler.ModelType))
+                else if (!Equals(rtype, handler.ModelType))
                     AppendError(exceptions, log, new InvalidLoadAllMethodReturnType(handler.HandlerType, loadAllMethod),
                         "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
-                else if (InjectableMethod.StripMethodParameters(loadAllMethod.GetParameters()).Any(pair=>!pair.IsStrippable))
+                else if (InjectableMethod.StripMethodParameters(loadAllMethod.GetParameters()).Any(pair => !pair.IsStrippable))
                     exceptions.Add(new InvalidLoadAllArguements(handler.HandlerType, loadAllMethod));
             }
         }
@@ -151,7 +150,7 @@ namespace VueJSMVCDotNet
                         AppendError(exceptions, log, new Exception("Invalid Page return type"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, Return Type expected to be PagedResult<M>", handler.HandlerType.FullName, method.Name);
                 }
-                else if(!Equals(rtype, handler.ModelType) || !isArray)
+                else if (!Equals(rtype, handler.ModelType) || !isArray)
                     AppendError(exceptions, log, new InvalidModelListMethodReturnException(handler.HandlerType, method),
                         "Handler {FullName} has an invalid return type for the model list method {Name}", handler.HandlerType.FullName, method.Name);
             });

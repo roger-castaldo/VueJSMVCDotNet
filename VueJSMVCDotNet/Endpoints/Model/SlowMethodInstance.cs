@@ -91,7 +91,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 context.Response.ContentType= "application/json";
                 context.Response.StatusCode = 200;
                 completed = finished&&data.IsEmpty;
-                await context.Response.WriteAsync(Utility.JsonEncode(new PullResponse(ret, finished&&data.IsEmpty, !data.IsEmpty), await Helper.ExtractPartsAsync(context,log)));
+                await context.Response.WriteAsync(Utility.JsonEncode(new PullResponse(ret, finished&&data.IsEmpty, !data.IsEmpty), await Helper.ExtractPartsAsync(context, log)));
             }
         }
 

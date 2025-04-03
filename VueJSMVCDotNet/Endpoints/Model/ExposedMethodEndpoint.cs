@@ -13,15 +13,16 @@ namespace VueJSMVCDotNet.Endpoints.Model
         where M : IModel
     {
         private const string SlowMethodIdKey = "instance";
-        private readonly ConcurrentDictionary<Guid, SlowMethodInstance<H,M>> slowMethods = [];
+        private readonly ConcurrentDictionary<Guid, SlowMethodInstance<H, M>> slowMethods = [];
 
         protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
             => typeof(H).GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<ExposedMethodAttribute>(false)!=null)
                 .GroupBy(m => m.Name)
-                .SelectMany(grp => {
+                .SelectMany(grp =>
+                {
                     var staticMethods = grp
-                        .Where(m=>!Helper.IsExposedMethodInstance(m))
+                        .Where(m => !Helper.IsExposedMethodInstance(m))
                         .Select(method => new InjectableMethod(method))
                         .ToArray();
                     var instanceMethods = grp
@@ -72,7 +73,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}"
                                 )
                             );
-                        if (Array.Exists(staticMethods,m=>m.IsSlow) || Array.Exists(instanceMethods,m => m.IsSlow))
+                        if (Array.Exists(staticMethods, m => m.IsSlow) || Array.Exists(instanceMethods, m => m.IsSlow))
                         {
                             result = result.Append(
                                 new(
@@ -80,7 +81,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     {
                                         if (context.GetRouteValue(SlowMethodIdKey)==null
                                         || !slowMethods.TryGetValue((Guid)context.GetRouteValue(SlowMethodIdKey)!, out var slowMethodInstance)
-                                        || slowMethodInstance.IsExpired) {
+                                        || slowMethodInstance.IsExpired)
+                                        {
                                             slowMethods.TryRemove((Guid)context.GetRouteValue(SlowMethodIdKey)!, out _);
                                             await ReturnNotFound(context);
                                             return;
@@ -89,8 +91,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                         if (slowMethodInstance.IsFinished)
                                             slowMethods.TryRemove((Guid)context.GetRouteValue(SlowMethodIdKey)!, out _);
                                     },
-                                    routePattern: ProduceRoute(mra.Path,false, $"/{grp.Key}/{{{SlowMethodIdKey}:guid}}"),
-                                    order:0,
+                                    routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}/{{{SlowMethodIdKey}:guid}}"),
+                                    order: 0,
                                     metadata: new(
                                         new HttpMethodMetadata(["PULL"])
                                     ),
@@ -101,8 +103,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         return result;
                     });
                 });
-        
-        private async ValueTask InvokeMethodAsync(InjectableMethod method, object[] pars,HttpContext context, H instance, string slowBasePath)
+
+        private async ValueTask InvokeMethodAsync(InjectableMethod method, object[] pars, HttpContext context, H instance, string slowBasePath)
         {
             if (method.IsSlow)
             {
@@ -136,7 +138,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             }
             else
                 await Utility.JsonEncode<object>(context, method.InvokeAsync<object, M>(instance, context, Logger, pars: pars));
-                
+
         }
     }
 }
