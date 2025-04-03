@@ -1,62 +1,27 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using TestApplication.Models;
 using VueJSMVCDotNet;
 using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Interfaces;
 
-namespace TestApplication
+namespace TestApplication.Handlers
 {
-    [ModelRouteAttribute("/models/mPerson")]
-    [ModelJSFilePath("/resources/scripts/mPerson.js")]
-    public class mPerson : IModel
+    [ModelRoute("/models/mPerson")]
+    public class mPersonHandler : IModelHandler<mPerson>
     {
-        private static Random _rnd = new Random((int)DateTime.Now.Ticks);
-
-        private string _firstName;
-        [ModelRequiredFieldAttribute()]
-        public string FirstName { get { return _firstName; } set { _firstName=value; } }
-
-        private string _lastName;
-        [ModelRequiredFieldAttribute()]
-        public string LastName { get { return _lastName; } set { _lastName=value; } }
-        private DateTime _birthday;
-        public DateTime BirthDay
-        {
-            get { return _birthday; }
-            set { _birthday=value; }
-        }
-
-
-        private Guid? _testNullable;
-        public Guid? TestNullable
-        {
-            get { return _testNullable; }
-            set { _testNullable=value; }
-        }
-
-        private mPerson(string firstName, string lastName)
-        {
-            _firstName=firstName;
-            _lastName=lastName;
-            _id = Math.Abs(_rnd.Next());
-        }
-
-        public mPerson() { }
-        private int _id = 0;
-        public string id { get { return _id.ToString(); } }
-
         private static List<mPerson> _persons = new List<mPerson>(new mPerson[]{
             new mPerson("Bob","Loblaw"),
             new mPerson("Fred","Flinston"),
             new mPerson("Barney","Rumble")
         });
-
-        [ModelLoadMethodAttribute()]
-        public static mPerson Load(string id, ISecureSession session)
+        ValueTask<mPerson> IModelHandler<mPerson>.LoadAsync(string id)
         {
-            System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             mPerson ret = null;
             foreach (mPerson per in _persons)
             {
@@ -66,24 +31,24 @@ namespace TestApplication
                     break;
                 }
             }
-            return ret;
+            return ValueTask.FromResult(ret);
         }
 
-        [ModelLoadAllMethodAttribute()]
-        public static List<mPerson> LoadAll(ISecureSession session)
+        [ModelLoadAllMethod()]
+        public List<mPerson> LoadAll(ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             return _persons;
         }
 
-        [ModelDeleteMethodAttribute()]
-        public bool Delete(ISecureSession session)
+        [ModelDeleteMethod()]
+        public bool Delete(ISecureSession session, [ModelIDParameter()] string id)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             bool ret = false;
             for (int x = 0; x<_persons.Count; x++)
             {
-                if (_persons[x].id==this.id)
+                if (_persons[x].id==id)
                 {
                     _persons.RemoveAt(x);
                     ret=true;
@@ -93,17 +58,17 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelUpdateMethodAttribute()]
-        public bool Update(ISecureSession session)
+        [ModelUpdateMethod()]
+        public bool Update(ISecureSession session, [ModelInstanceParameter()]mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             bool ret = false;
             for (int x = 0; x<_persons.Count; x++)
             {
-                if (_persons[x].id==this.id)
+                if (_persons[x].id==person.id)
                 {
                     _persons.RemoveAt(x);
-                    _persons.Insert(x, this);
+                    _persons.Insert(x, person);
                     ret=true;
                     break;
                 }
@@ -111,21 +76,20 @@ namespace TestApplication
             return ret;
         }
 
-        [ModelSaveMethodAttribute()]
-        public bool Save(ISecureSession session)
+        [ModelSaveMethod()]
+        public string Save(ISecureSession session, [ModelInstanceParameter()]mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
-            this._id = new Random().Next(999999);
-            _persons.Add(this);
-            return true;
+            _persons.Add(person);
+            return person.id;
         }
 
-        [ModelListMethodAttribute(true)]
-        public static List<mPerson> Search(string q, int pageStartIndex, int pageSize, out int totalPages, ISecureSession session)
+        [ModelListMethod(true)]
+        public PagedResult<mPerson> Search(string? q, [PageStartIndexParameter()] int pageStartIndex, [PageSizeParameter()] int pageSize, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             List<mPerson> ret = new List<mPerson>();
-            totalPages=0;
+            var totalPages=0;
             if (q != null)
             {
                 q = q.ToLower();
@@ -138,7 +102,7 @@ namespace TestApplication
                         matches.Add(_persons[x]);
                     }
                 }
-                totalPages = (int)Math.Ceiling((decimal)matches.Count / (decimal)pageSize);
+                totalPages = (int)Math.Ceiling(matches.Count / (decimal)pageSize);
                 for (int x = 0; x < pageSize; x++)
                 {
                     if (pageStartIndex + x >= matches.Count)
@@ -148,42 +112,42 @@ namespace TestApplication
                     ret.Add(matches[pageStartIndex + x]);
                 }
             }
-            return ret;
+            return new(ret,totalPages);
         }
 
-        [ExposedMethodAttribute(false)]
-        public string GetFullName(ISessionManager session)
+        [ExposedMethod(false)]
+        public string GetFullName(ISessionManager session, [ModelInstanceParameter()]mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(session.Start);
-            return string.Format("{0}, {1}", new object[] { LastName, FirstName });
+            return $"{person.LastName}, {person.FirstName}";
         }
 
-        [ExposedMethodAttribute(true)]
-        public static mPerson TestNull()
+        [ExposedMethod(true)]
+        public mPerson TestNull()
         {
             return null;
         }
 
-        [ExposedMethodAttribute(false)]
-        public static bool IsGuid(Guid id)
+        [ExposedMethod(false)]
+        public bool IsGuid(Guid id)
         {
             return true;
         }
 
-        [ExposedMethodAttribute(false)]
-        public static bool AreGuids(ISessionManager session, Guid[] guids)
+        [ExposedMethod(false)]
+        public bool AreGuids(ISessionManager session, Guid[] guids)
         {
             return true;
         }
 
-        [ModelListMethodAttribute(false)]
-        public static List<mPerson> ByGuid(Guid id)
+        [ModelListMethod(false)]
+        public List<mPerson> ByGuid(Guid id)
         {
             return _persons;
         }
 
-        [ExposedMethodAttribute(isSlow: true, arrayElementType: typeof(int))]
-        public static void SlowStatic(AddItem addCall)
+        [ExposedMethod(isSlow: true, arrayElementType: typeof(int))]
+        public void SlowStatic(AddItem addCall)
         {
             int idx = 0;
             while (idx<10)
@@ -195,38 +159,38 @@ namespace TestApplication
             addCall(idx, true);
         }
 
-        [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
-        public static string GetSlowTimespan()
+        [ExposedMethod(allowNullResponse: false, isSlow: true)]
+        public string GetSlowTimespan()
         {
             DateTime now = DateTime.Now;
             System.Threading.Thread.Sleep(3456);
             return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
         }
 
-        [ExposedMethodAttribute(allowNullResponse: false, arrayElementType: typeof(string))]
-        public void GenerateNames(AddItem addCall)
+        [ExposedMethod(allowNullResponse: false, arrayElementType: typeof(string))]
+        public void GenerateNames(AddItem addCall, [ModelInstanceParameter()] mPerson person)
         {
             for (int x = 0; x<3; x++)
             {
                 switch (x)
                 {
                     case 0:
-                        addCall(_firstName, false);
+                        addCall(person.FirstName, false);
                         break;
                     case 1:
-                        addCall(_lastName, false);
+                        addCall(person.LastName, false);
                         break;
                     case 2:
-                        addCall(string.Format("{0}, {1}", new Object[] { _lastName, _firstName }), false);
+                        addCall($"{person.LastName}, {person.FirstName}", false);
                         break;
                 }
                 System.Threading.Thread.Sleep(1000);
             }
-            addCall(string.Format("{1} {0}", new Object[] { _lastName, _firstName }), true);
+            addCall($"{person.LastName} {person.FirstName}", true);
         }
 
-        [ExposedMethodAttribute()]
-        public static string ReadFile(IFormFile contentFile)
+        [ExposedMethod()]
+        public string ReadFile(IFormFile contentFile)
         {
             var reader = new StreamReader(contentFile.OpenReadStream());
             var result = $"{contentFile.Name} = {reader.ReadToEnd()}";

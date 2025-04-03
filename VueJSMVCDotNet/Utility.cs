@@ -271,7 +271,7 @@ namespace VueJSMVCDotNet
                 return "undefined";
         }
 
-        internal static string? TranslatePath(IFileProvider fileProvider, string? baseURL, string path)
+        internal static string? TranslatePath(IFileProvider fileProvider, string path)
         {
             string[] split = path.TrimStart('/').Split('/');
             string? curPath = "";
@@ -301,8 +301,6 @@ namespace VueJSMVCDotNet
                     }
                 }
             }
-            if (curPath==null && baseURL!=null)
-                return TranslatePath(fileProvider, null, path[baseURL.Length..]);
             return (curPath==null || curPath=="" ? null : curPath);
         }
 

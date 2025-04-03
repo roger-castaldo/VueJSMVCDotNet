@@ -18,12 +18,12 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             array|=em.ArrayElementType!=null;
         }
 
-        private static void AppendMethodCallDeclaration(MethodInfo method, WrappedStringBuilder builder)
+        private static void AppendMethodCallDeclaration(MethodInfo method, bool isStatic, WrappedStringBuilder builder)
         {
             var pars = InjectableMethod.StripMethodParameters(method.GetParameters())
                 .Where(pair=>!pair.IsStrippable)
                 .Select(pair=>pair.ParameterInfo);
-            builder.AppendLine($@"          {(method.IsStatic ? "static async " : "async #")}{method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
+            builder.AppendLine($@"          {(isStatic ? "static async " : "async #")}{method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
                 let function_data = {{}};");
             var nna = method.GetCustomAttribute<NotNullArguementAttribute>(false);
             pars.ForEach(par =>
@@ -44,7 +44,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         private static void AppendMethodContent(ModelType modelType, MethodInfo mi,bool isStatic,WrappedStringBuilder builder)
         {
             MethodsGenerator.ExtractReturnType(mi, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse);
-            MethodsGenerator.AppendMethodCallDeclaration(mi, builder);
+            MethodsGenerator.AppendMethodCallDeclaration(mi, isStatic, builder);
             builder.AppendLine(@$"let response = await ajax({{
                         url:`${{{modelType.Type.Name}.#baseURL}}/{(isStatic ? mi.Name : $"${{this.{Constants.INITIAL_DATA_KEY}.id}}/{mi.Name}")}`,
                         method:'POST',

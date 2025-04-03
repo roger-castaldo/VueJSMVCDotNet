@@ -3,7 +3,7 @@
     <script type="importmap">
         {
           "imports": {
-            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+            "vue": "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js",
             "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js"
           }
         }
@@ -19,26 +19,22 @@
     
 </head>
 <body>
-    <section id="dvList">
-        <Suspense>
-            <component is="List"/>
-        </Suspense>
-    </section>
+    <section id="dvList"/>
     <section id="dvListFiltered" />
     <section id="list_items_module" />
     <section id="notification_container" />
     <section id="dvedit" />
 
     <script type="module">
-        import { mPerson } from "/testing/resources/scripts/mPerson.js";
-        import { User } from "/testing/resources/scripts/models/User.js";
+        import { mPerson } from "/models/mPerson.js";
+        import { User } from "/models/User.js";
         import { createApp, watch, ref, defineComponent, toRef, h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
         import { List, FilteredList } from "/resources/vueFiles/lists.js";
 
-        window.lst = createApp({
-            components: { List }
-        }).mount('#dvList');
+
+
+        window.lst = createApp(List).mount('#dvList');
 
         window.lstFiltered = createApp(FilteredList).mount('#dvListFiltered');
 

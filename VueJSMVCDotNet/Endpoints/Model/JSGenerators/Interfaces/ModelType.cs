@@ -46,6 +46,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                                 .Select(mi => ((ExposedMethodAttribute)mi.GetCustomAttributes(typeof(ExposedMethodAttribute), false)[0]).ArrayElementType)
                                 .Where(t => t!=null && t.GetInterfaces().Contains(typeof(IModel)))
                             )
+                            .Where(t=>!Equals(t,type))
                             .Distinct()
                             .Select(t => Tuple.Create<Type, string?>(t!,mapImport(t!)));
         }

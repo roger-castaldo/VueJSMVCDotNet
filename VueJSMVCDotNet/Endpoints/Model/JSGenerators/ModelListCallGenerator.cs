@@ -16,12 +16,14 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                     log?.LogTrace("Adding List Call[{MethodName}] for Model Definition[{TypeName}]", gm.Method.Name, modelType.Type.FullName);
                     var nna = gm.Method.GetCustomAttribute<NotNullArguementAttribute>(false);
                     var pars = InjectableMethod.StripMethodParameters(gm.Method.GetParameters())
-                    .Where(pair=>!pair.IsStrippable)
-                    .Select(pair=>pair.ParameterInfo)
-                    .ToArray();
-                    builder.Append(@$"     static {gm.Method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
-            let pars = {{}};
-            let changeParameters = function({string.Join(',', pars.Select(p => p.Name))}){{");
+                    .Where(pair => !pair.IsStrippable)
+                    .Select(pair => pair.ParameterInfo);
+                    var startIndexParameter = pars.FirstOrDefault(p => p.GetCustomAttribute<PageStartIndexParameterAttribute>()!=null);
+                    var pageSizeParameter = pars.FirstOrDefault(p => p.GetCustomAttribute<PageSizeParameterAttribute>() != null);
+                    builder.AppendLine(@$"     static {gm.Method.Name}({string.Join(',', pars.Select(p => p.Name))}){{
+            let pars = {{}};");
+                    pars = pars.Where(p => p.GetCustomAttribute<PageStartIndexParameterAttribute>()==null && p.GetCustomAttribute<PageSizeParameterAttribute>()==null);
+                    builder.Append($@"let changeParameters = function({string.Join(',', pars.Select(p => p.Name))}){{");
                     pars.ForEach(par => builder.AppendLine($"      this.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});"));
                     builder.AppendLine(@$"           }};
             changeParameters.apply(pars,arguments);
@@ -32,9 +34,9 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                 false,
                 changeParameters,
                 pars,
-                {Array.Find(pars,p=>p.GetCustomAttribute<PageStartIndexParameterAttribute>()!=null)?.Name??"undefined"},
-                {Array.Find(pars, p => p.GetCustomAttribute<PageSizeParameterAttribute>()!=null)?.Name??"undefined"},
-                {(!gm.ListMethod!.Paged ? "undefined" : $"{{PageStartIndex:'{Array.Find(pars, p => p.GetCustomAttribute<PageStartIndexParameterAttribute>()!=null)?.Name}',PageSize:'{Array.Find(pars, p => p.GetCustomAttribute<PageSizeParameterAttribute>()!=null)?.Name}'}}")}
+                {startIndexParameter?.Name??"undefined"},
+                {pageSizeParameter?.Name??"undefined"},
+                {(!gm.ListMethod!.Paged ? "undefined" : $"{{PageStartIndex:'{startIndexParameter?.Name}',PageSize:'{pageSizeParameter?.Name}'}}")}
             );
         }}");
                 });

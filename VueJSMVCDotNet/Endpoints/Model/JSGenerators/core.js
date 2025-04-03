@@ -51,12 +51,6 @@ const _fixDates = (data) => {
 	return data;
 };
 
-const _applySecurityHeaders = (options) => {
-	options = { headers: {}, ...options};
-	Object.keys(securityHeaders).forEach(prop => options.headers[prop] = options.headers[prop] ?? securityHeaders[prop]);
-	return options;
-};
-
 const ajax = async (options) => {
 	if (options.isSlow !== undefined && options.isSlow) {
 		delete options.isSlow;
@@ -95,7 +89,7 @@ const ajax = async (options) => {
 		if (options.url === null || options.url === undefined || options.url === '') {
 			throw new Error('Unable to call empty url');
 		}
-		options = Object.assign(_applySecurityHeaders(options), {
+		options = Object.assign({
 			method: 'GET',
 			body: null,
 			credentials: 'include',
@@ -103,6 +97,7 @@ const ajax = async (options) => {
 			url: null,
 			useJSON: true
 		}, options);
+		options.headers = options.headers ?? {};
 		if (options.useJSON) {
 			options.headers['Content-Type'] = 'application/json';
 		}
@@ -137,10 +132,6 @@ const ajax = async (options) => {
 		delete options.url;
 		try {
 			let response = await fetch(url, options);
-			Object.keys(securityHeaders).forEach(prop => {
-				if (response.headers.get(prop) !== undefined && response.headers.get(prop) !== null)
-					securityHeaders[prop] = response.headers.get(prop);
-			});
 			let content = await response.text();
 			if (response.ok) {
 				return {
@@ -659,14 +650,18 @@ class ModelList {
 	};
 
 	async #reload() {
+		console.log(this.#useGet);
 		let tmp = this;
 		let data = {};
 		if (tmp.#isPaged) {
 			data[tmp.#pageVariableNames["PageStartIndex"]] = tmp.#currentIndex.value;
 			data[tmp.#pageVariableNames["PageSize"]] = tmp.#currentPageSize.value;
 		}
-		for (let prop in tmp.#params) {
-			data[prop] = tmp.#params[prop];
+
+		if (tmp.#params !== undefined) {
+			for (let prop in tmp.#params) {
+				data[prop] = tmp.#params[prop];
+			}
 		}
 		let response = await ajax({
 			url: tmp.#url,
@@ -679,36 +674,33 @@ class ModelList {
 			let data = response.json();
 			if (data === null) {
 				tmp.#totalPages.value = 0;
-				Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length]);
+				tmp.#data.splice(0, tmp.#data.length);
 			} else {
-				if (data.TotalPages !== undefined) {
-					tmp.#totalPages.value = data.TotalPages;
-					data = data.response;
+				if (data.totalPages !== undefined) {
+					tmp.#totalPages.value = data.totalPages;
 				}
-				data = data.map(value => {
+				data = (data.totalPages !== undefined ? data.data : data).map(value => {
 					let mtmp = tmp.#constructModel();
 					mtmp._parse(value);
 					mtmp.$on('destroyed', (model) => {
-						let idx = Array.prototype.findIndex.apply(tmp.#data,[(element) => element.id === model.id]);
+						let idx = tmp.#data.findIndex((element) => element.id === modelid);
 						tmp.#events.trigger('model_destroyed', model);
-						Array.prototype.splice.apply(tmp.#data, [idx, 1]);
+						tmp.#data.splice(idx, 1);
 					});
 					mtmp.$on('updated', (model) => {
-						let idx = Array.prototype.findIndex.apply(tmp.#data, [(element) => element.id === model.id]);
+						let idx = tmp.#data.findIndex((element) => element.id === modelid);
 						tmp.#events.trigger('model_updated', model);
-						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
-						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
+						tmp.#data.splice(idx, 1, model);
 					});
 					mtmp.$on('loaded', (model) => {
-						let idx = Array.prototype.findIndex.apply(tmp.#data, [(element) => element.id === model.id]);
+						let idx = tmp.#data.findIndex((element) => element.id === modelid);
 						tmp.#events.trigger('model_loaded', model);
-						Array.prototype.splice.apply(tmp.#data, [idx, 0, model]);
-						Array.prototype.splice.apply(tmp.#data, [idx + 1, 1]);
+						tmp.#data.splice(idx, 1, model);
 					});
 					return mtmp;
 				});
-				Array.prototype.push.apply(tmp.#data, data);
-				if (tmp.#data.length - data.length > 0) Array.prototype.splice.apply(tmp.#data, [0, tmp.#data.length - data.length]);
+				tmp.#data.push(...data);
+				if (tmp.#data.length - data.length > 0) tmp.#data.splice(0, tmp.#data.length - data.length);
 			}
 			let proxy = tmp.#toProxy();
 			tmp.#events.trigger('loaded', proxy);
@@ -939,7 +931,7 @@ const _fetchVueFile = async function (url) {
 			}
 		}
 		if (res === null) {
-			res = await fetch(url, _applySecurityHeaders({}));
+			res = await fetch(url);
 			if (!res.ok)
 				throw Object.assign(new Error(res.statusText + ' ' + url), { res });
 			return {

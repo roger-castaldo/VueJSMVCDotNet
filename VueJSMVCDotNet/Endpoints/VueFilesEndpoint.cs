@@ -104,100 +104,102 @@ namespace VueJSMVCDotNet.Endpoints
 
         public IEndpointRouteBuilder AddEndpoint(IEndpointRouteBuilder builder)
         {
-            builder.MapGet($"{baseURL}/{{*{PathParameter}}}.js", (HttpContext context) => ExecuteRequestAsync(context));
+            builder.MapGet($"{baseURL}/{{**{PathParameter}}}", (HttpContext context) => ExecuteRequestAsync(context));
             return builder;
         }
 
         protected override async Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
         {
-            var spath = (string)context.Request.RouteValues[PathParameter]!;
-            IEnumerable<SVueFile> files = [];
-            var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min") ? 4 : 0)], "/");
-            var fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min") ? 4 : 0)]);
-            if (fpath!=null)
-                files = fileProvider.GetDirectoryContents(fpath)
-                    .Where(f => f.Name.ToLower().EndsWith(".vue"))
-                    .Select(f => new SVueFile(f));
-            else
-            {
-                var name = spath[(spath.LastIndexOf('/')+1)..];
-                absolutePath=spath[..(spath.LastIndexOf('/')+1)];
-                fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^name.Length]);
-                name = (name.EndsWith(".min.js") ? name[..^7] : name[..^3]).ToLower()+".vue";
+            var spath = $"{baseURL}/{context.Request.RouteValues[PathParameter]!}";
+            if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase)) {
+                IEnumerable<SVueFile> files = [];
+                var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js",StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
+                var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
                 if (fpath!=null)
                     files = fileProvider.GetDirectoryContents(fpath)
-                        .Where(f => string.Equals(f.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                        .Where(f => f.Name.ToLower().EndsWith(".vue"))
                         .Select(f => new SVueFile(f));
-            }
-            if (files.Any())
-            {
-                StringBuilder sb = new();
-                sb.AppendLine(@$"import {{ loadModule }} from '{vueLoaderImportPath}';
+                else
+                {
+                    var name = spath[(spath.LastIndexOf('/')+1)..];
+                    absolutePath=spath[..(spath.LastIndexOf('/')+1)];
+                    fpath = Utility.TranslatePath(fileProvider, spath[..^name.Length]);
+                    name = (name.EndsWith(".min.js") ? name[..^7] : name[..^3]).ToLower()+".vue";
+                    if (fpath!=null)
+                        files = fileProvider.GetDirectoryContents(fpath)
+                            .Where(f => string.Equals(f.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                            .Select(f => new SVueFile(f));
+                }
+                if (files.Any())
+                {
+                    StringBuilder sb = new();
+                    sb.AppendLine(@$"import {{ loadModule }} from '{vueLoaderImportPath}';
 import {{defineAsyncComponent}} from '{vueImportPath}';
 import {{cacheVueFile, vueSFCOptions, addLinkedDomain}} from '{coreImport}';
 
 {Constants.HOST_URL_CONSTRUCTOR}
 addLinkedDomain(hosturl.origin);");
 
-                var multipleFiles = files.Count()>1;
+                    var multipleFiles = files.Count()>1;
 
-                var imports = files.SelectMany(file => file.Imports)
-                    .Where(imp => imp!=vueImportPath)
-                    .Select(imp => MergeUrl(absolutePath, imp, multipleFiles))
-                    .Distinct();
+                    var imports = files.SelectMany(file => file.Imports)
+                        .Where(imp => imp!=vueImportPath)
+                        .Select(imp => MergeUrl(absolutePath, imp, multipleFiles))
+                        .Distinct();
 
-                var importCaches = imports.Where(imp => imp.Length<=4
-                        || (imp.Length>4
-                            && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                    var importCaches = imports.Where(imp => imp.Length<=4
+                            || (imp.Length>4
+                                && !string.Equals(imp[^4..], ".vue", StringComparison.InvariantCultureIgnoreCase)
+                                )
                             )
-                        )
-                    .Select(imp =>
-                    {
-                        if (isModelUrl(imp))
-                            return $"{(!imp.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? imp[..^2] : imp[..^3])}{(compressAllJS||spath.EndsWith(".min.js") ? "min." : "")}js";
-                        return imp;
-                    })
-                    .Select(imp => $"`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`");
+                        .Select(imp =>
+                        {
+                            if (isModelUrl(imp))
+                                return $"{(!imp.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? imp[..^2] : imp[..^3])}{(compressAllJS||spath.EndsWith(".min.js") ? "min." : "")}js";
+                            return imp;
+                        })
+                        .Select(imp => $"`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`");
 
-                if (importCaches.Any())
-                    sb.Append($"const imports = ");
-                if (imports.Any())
-                {
-                    sb.AppendLine($@"await Promise.all([
+                    if (importCaches.Any())
+                        sb.Append($"const imports = ");
+                    if (imports.Any())
+                    {
+                        sb.AppendLine($@"await Promise.all([
 {string.Join(",\n", importCaches.Select(c => $"import({c})"))}{(importCaches.Any()&&imports.Any(imp => imp.EndsWith(".vue", StringComparison.InvariantCulture)) ? "," : "")}
 {string.Join(",\n", MergeVueImports((multipleFiles ? absolutePath.Trim('/') : baseURL),
-                    imports.Where(imp => imp.EndsWith(".vue", StringComparison.InvariantCulture)), files)
-            .Select(imp => $"import(`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`)"))}
+                        imports.Where(imp => imp.EndsWith(".vue", StringComparison.InvariantCulture)), files)
+                .Select(imp => $"import(`{(imp.StartsWith('/') ? "${hosturl.origin}" : "")}{imp}`)"))}
 ]);");
-                }
-                importCaches
-                .ForEach((c, index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = {{...{{__esModule:true}}, ...imports[{index}]}};"));
+                    }
+                    importCaches
+                    .ForEach((c, index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = {{...{{__esModule:true}}, ...imports[{index}]}};"));
 
-                //append file content cache
-                files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl)));
+                    //append file content cache
+                    files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl)));
 
-                //append module definitions
-                SortFiles(files, baseURL)
-                    .ForEach(file =>
+                    //append module definitions
+                    SortFiles(files, baseURL)
+                        .ForEach(file =>
+                        {
+                            var fileName = FormatFileName(file.Name);
+                            sb.AppendLine($"const {fileName} = defineAsyncComponent(() => loadModule(`${{hosturl.origin}}{absolutePath}{file.Name}`, vueSFCOptions));");
+                        });
+
+                    if (files.Count()==1)
+                        sb.AppendLine($"export default {FormatFileName(files.First().Name)};");
+                    else
+                        sb.AppendLine($"export {{{string.Join(',', files.Select(file => FormatFileName(file.Name)))}}};");
+
+                    if (sb.Length>0)
                     {
-                        var fileName = FormatFileName(file.Name);
-                        sb.AppendLine($"const {fileName} = defineAsyncComponent(() => loadModule(`${{hosturl.origin}}{absolutePath}{file.Name}`, vueSFCOptions));");
-                    });
-
-                if (files.Count()==1)
-                    sb.AppendLine($"export default {FormatFileName(files.First().Name)};");
-                else
-                    sb.AppendLine($"export {{{string.Join(',', files.Select(file => FormatFileName(file.Name)))}}};");
-
-                if (sb.Length>0)
-                {
-                    sb.Length-=2;
-                    return new CachableResponse(
-                        (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(sb.ToString()) : sb.ToString()),
-                        "text/javascript",
-                        files.OrderByDescending(f => f.LastModified.Ticks).Last().LastModified.DateTime,
-                        files.Where(f => !string.IsNullOrEmpty(f.PhysicalPath)).Select(f => fileProvider.Watch(f.PhysicalPath!))
-                        );
+                        sb.Length-=2;
+                        return new CachableResponse(
+                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(sb.ToString()) : sb.ToString()),
+                            "text/javascript",
+                            files.OrderByDescending(f => f.LastModified.Ticks).Last().LastModified.DateTime,
+                            files.Where(f => !string.IsNullOrEmpty(f.PhysicalPath)).Select(f => fileProvider.Watch(f.PhysicalPath!))
+                            );
+                    }
                 }
             }
             await ReturnNotFound(context, "Unable to locate requested file.");

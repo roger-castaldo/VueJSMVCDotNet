@@ -68,35 +68,38 @@ export {{Translate,ProduceComputedMessage}};";
 
         public IEndpointRouteBuilder AddEndpoint(IEndpointRouteBuilder builder)
         {
-            builder.MapGet($"{baseURL}/{{*{PathParameter}}}.js", (HttpContext context) => ExecuteRequestAsync(context));
+            builder.MapGet($"{baseURL}/{{**{PathParameter}}}", (HttpContext context) => ExecuteRequestAsync(context));
             return builder;
         }
 
         protected override async Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
         {
-            var spath = (string)context.Request.RouteValues[PathParameter]!;
-            var fpath = Utility.TranslatePath(fileProvider, baseURL, spath[..^(spath.EndsWith(".min", StringComparison.InvariantCultureIgnoreCase) ? 4 : 0)]);
-            if (fpath!=null)
+            var spath = $"{baseURL}/{context.Request.RouteValues[PathParameter]!}";
+            if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
             {
-                StringBuilder sb = new();
-                var contents = fileProvider.GetDirectoryContents(fpath)
-                    .Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
+                var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
+                if (fpath!=null)
+                {
+                    StringBuilder sb = new();
+                    var contents = fileProvider.GetDirectoryContents(fpath)
+                        .Where(f => f.Name.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase));
 
-                contents.ForEach(f =>
-                {
-                    StreamReader sr = new(f.CreateReadStream());
-                    sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
-                    sr.Close();
-                });
-                if (sb.Length>0)
-                {
-                    sb.Length-=2;
-                    return new CachableResponse(
-                        (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
-                        "text/javascript",
-                        contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
-                        contents.Where(f => f.PhysicalPath!=null).Select(f => fileProvider.Watch(f.PhysicalPath!))
-                    );
+                    contents.ForEach(f =>
+                    {
+                        StreamReader sr = new(f.CreateReadStream());
+                        sb.AppendLine($"   {f.Name[..^5]}:{sr.ReadToEnd()},");
+                        sr.Close();
+                    });
+                    if (sb.Length>0)
+                    {
+                        sb.Length-=2;
+                        return new CachableResponse(
+                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
+                            "text/javascript",
+                            contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
+                            contents.Where(f => f.PhysicalPath!=null).Select(f => fileProvider.Watch(f.PhysicalPath!))
+                        );
+                    }
                 }
             }
             await ReturnNotFound(context, "Unable to locate requested file.");

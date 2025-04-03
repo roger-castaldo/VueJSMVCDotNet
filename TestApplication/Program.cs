@@ -1,17 +1,30 @@
-﻿using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using TestApplication;
+using VueJSMVCDotNet.Extensions;
+using VueJSMVCDotNet.Interfaces;
 
-namespace TestApplication
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateWebHostBuilder(args).Build().Run();
-        }
+var builder = WebApplication.CreateBuilder(args);
+builder.Services
+    .AddDistributedMemoryCache()
+    .AddSession()
+    .AddCors()
+    .UseVueJSMVCModels(
+        compressJS: false,
+        vueImportPath:"vue"
+    )
+    .AddSingleton<ISecureSessionFactory>(new SessionManager());
+var app = builder.Build();
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
-    }
-}
+// Register the dynamic endpoint data source
+app.UseDefaultFiles()
+    .UseStaticFiles()
+    .UseCookiePolicy()
+    .UseSession()
+    .UseRouting()
+    .UseEndpoints(endpoints => endpoints.MapVueJSMVSModels()
+        .UseVueJSMVCMessages(builder.Environment.WebRootFileProvider,"/resources/messages", compressJS:false, vueImportPath:"vue")
+        .UseVueJSMVCVueFiles(builder.Environment.WebRootFileProvider,"/resources/vueFiles",compressJS:false, vueImportPath:"vue")
+    );
+
+await app.RunAsync();

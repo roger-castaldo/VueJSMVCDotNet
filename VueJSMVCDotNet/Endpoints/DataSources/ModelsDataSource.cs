@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.IO;
 using System.Threading;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Endpoints.Model;
@@ -34,6 +37,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         private bool disposedValue;
         private readonly ReaderWriterLockSlim locker = new();
         private readonly Dictionary<Type, IEnumerable<IEndpointHandler>> endpoints = [];
+        private string? compressedCore = null;
 
         internal string? GetModelImportURL(Type modelType)
         {
@@ -61,7 +65,29 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             get
             {
                 locker.EnterReadLock();
-                var results = endpoints.Values.SelectMany(g => g.SelectMany(m=>m.AsEndpoints)).ToArray();
+                if (compressedCore==null)
+                {
+                    using StreamReader sr = new(typeof(ModelsDataSource).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Endpoints.Model.JSGenerators.core.js"));
+                    compressedCore = JSMinifier.Minify($@"import * as vue from ""{vueImportPath}"";
+{sr.ReadToEnd()}");
+                    sr.Close();
+                }
+                var results = endpoints.Values.SelectMany(g => g.SelectMany(m=>m.AsEndpoints))
+                    .Append(new(
+                        requestDelegate: async (context) =>
+                        {
+                            context.Response.ContentType = "text/javascript";
+                            context.Response.StatusCode = 200;
+                            await context.Response.WriteAsync(compressedCore);
+                        },
+                        routePattern: RoutePatternFactory.Parse(coreJSImport),
+                        order:0,
+                        metadata: new(
+                            new HttpMethodMetadata([HttpMethods.Get])
+                        ),
+                        displayName: "Core JS path"
+                    ))
+                    .ToArray();
                 locker.ExitReadLock();
                 return results;
             }
@@ -105,19 +131,17 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc,bool triggerChange=true)
         {
             logger?.LogDebug("Loading Assembly Load Context {Name}", alc.Name);
-            /*IEnumerable<Exception> errors = DefinitionValidator.Validate(alc, logger, out var invalidModels, out var models);
-            invalidModelTypes.AddRange(invalidModels.Where(t => !invalidModelTypes.Contains(t)));
+            IEnumerable<Exception> errors = DefinitionValidator.Validate(alc, logger, out var invalidModels, out var models);
             if (errors.Any())
             {
                 logger?.LogError("Validation errors:");
                 errors.ForEach(e => logger?.LogError(e, "Validation Error: {Message}", e.Message));
-                logger?.LogError("Invalid IModels:");
-                invalidModels.ForEach(t => logger?.LogError("Invalid Model: {FullName}", t.FullName));
+                logger?.LogError("Invalid IModelHandlers:");
+                invalidModels.ForEach(t => logger?.LogError("Invalid IModelHandler: {FullName}", t.HandlerType.FullName));
             }
-            if (errors.Any() && !(options.VueModelsOptions?.IgnoreInvalidModels??false))
+            if (errors.Any() && !ignoreInvalidModels)
                 throw new ModelValidationException(errors);
-            models = models.Where(m => !invalidModelTypes.Contains(m));*/
-            var models = Utility.LocateModelHandlers(alc, logger);
+            models = models.Where(m => !invalidModels.Contains(m));
             locker.EnterWriteLock();
             try
             {

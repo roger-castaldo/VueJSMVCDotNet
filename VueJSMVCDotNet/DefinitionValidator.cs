@@ -56,9 +56,18 @@ namespace VueJSMVCDotNet
                     CheckExposedMethods(methods, handler, exceptions, log);
                     CheckLoadAllMethod(methods,handler, exceptions, log);
                     CheckListMethods(methods, handler, exceptions, log);
-                    CheckModelMethod<ModelSaveMethodAttribute,DuplicateModelSaveMethodException,InvalidModelSaveMethodException>(methods, handler, exceptions, log, "save", typeof(string), true);
-                    CheckModelMethod<ModelUpdateMethodAttribute, DuplicateModelUpdateMethodException, InvalidModelUpdateMethodException>(methods, handler, exceptions, log, "update", typeof(bool), true);
-                    CheckModelMethod<ModelDeleteMethodAttribute, DuplicateModelDeleteMethodException, InvalidModelDeleteMethodException>(methods, handler, exceptions, log, "delete", typeof(bool), false);
+                    CheckModelMethod<ModelSaveMethodAttribute>(methods, handler, exceptions, log, "save", typeof(string), true,
+                        (type,method)=>new DuplicateModelSaveMethodException(type,method),
+                        (type,method)=>new InvalidModelSaveMethodException(type,method)
+                    );
+                    CheckModelMethod<ModelUpdateMethodAttribute>(methods, handler, exceptions, log, "update", typeof(bool), true,
+                        (type, method) => new DuplicateModelUpdateMethodException(type, method),
+                        (type, method) => new InvalidModelUpdateMethodException(type, method)
+                    );
+                    CheckModelMethod<ModelDeleteMethodAttribute>(methods, handler, exceptions, log, "delete", typeof(bool), false,
+                        (type, method) => new DuplicateModelDeleteMethodException(type, method),
+                        (type, method) => new InvalidModelDeleteMethodException(type, method)
+                    );
 
                     return exceptions;
                 });
@@ -69,17 +78,19 @@ namespace VueJSMVCDotNet
             return errors;
         }
 
-        private static IEnumerable<MethodInfo> CheckModelMethod<MA, DE, IE>(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log, string methodType, Type returnType, bool requiresInstance)
+        private static IEnumerable<MethodInfo> CheckModelMethod<MA>(MethodInfo[] methods, 
+            (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log, 
+            string methodType, Type returnType, bool requiresInstance,
+            Func<Type,MethodInfo,ModelTypeMethodException> constructDuplicateException,
+            Func<Type,MethodInfo,ModelTypeMethodException> constructInvalidException)
             where MA : Attribute
-            where DE : ModelTypeMethodException
-            where IE : ModelTypeMethodException
         {
             var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<MA>(false)!=null);
             if (filteredMethods.Count()>1)
-                filteredMethods.ForEach(mi => AppendError(exceptions, log, (DE)Activator.CreateInstance(typeof(DE), handler.HandlerType, mi),
+                filteredMethods.ForEach(mi => AppendError(exceptions, log, constructDuplicateException(handler.HandlerType,mi),
                     $"Handler {{FullName}} has more than 1 {methodType} method", handler.HandlerType.FullName));
             else if (filteredMethods.Count()==1 && !IsValidDataActionMethod(filteredMethods.First(), returnType, requiresInstance))
-                AppendError(exceptions, log, (IE)Activator.CreateInstance(typeof(IE), handler.HandlerType, filteredMethods.First()),
+                AppendError(exceptions, log, constructInvalidException(handler.HandlerType, filteredMethods.First()),
                     $"Handler {{FullName}} has and invalid {methodType} method", handler.HandlerType.FullName);
             return filteredMethods;
         }
@@ -128,9 +139,6 @@ namespace VueJSMVCDotNet
             {
                 var paged = method.GetCustomAttribute<ModelListMethodAttribute>(false)!.Paged;
                 var rtype = Utility.ExtractUnderlyingType(method.ReturnType, out var isArray, out _, out _);
-                if (Equals(rtype, handler.ModelType) || !isArray)
-                    AppendError(exceptions, log, new InvalidModelListMethodReturnException(handler.HandlerType, method),
-                        "Handler {FullName} has an invalid return type for the model list method {Name}", handler.HandlerType.FullName, method.Name);
                 if (paged)
                 {
                     if (!method.GetParameters().Any(par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null))
@@ -139,10 +147,13 @@ namespace VueJSMVCDotNet
                     if (!method.GetParameters().Any(par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null))
                         AppendError(exceptions, log, new Exception("Missing Page Size Parameter"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageSize parameter", handler.HandlerType.FullName, method.Name);
-                    if (!Equals(rtype,typeof(PagedResult<>).MakeGenericType(handler.ModelType)))
+                    if (!Equals(rtype, typeof(PagedResult<>).MakeGenericType(handler.ModelType)))
                         AppendError(exceptions, log, new Exception("Invalid Page return type"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, Return Type expected to be PagedResult<M>", handler.HandlerType.FullName, method.Name);
                 }
+                else if(!Equals(rtype, handler.ModelType) || !isArray)
+                    AppendError(exceptions, log, new InvalidModelListMethodReturnException(handler.HandlerType, method),
+                        "Handler {FullName} has an invalid return type for the model list method {Name}", handler.HandlerType.FullName, method.Name);
             });
     }
 }
