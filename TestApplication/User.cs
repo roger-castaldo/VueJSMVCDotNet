@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using TestApplication.Security;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication
 {
-    [ModelRouteAttribute("/models/User")]
-    [ModelJSFilePath("/resources/scripts/models/User.js")]
-    [IsLoggedIn()]
     public class User : IModel
     {        
         public string FirstName { get; set; }

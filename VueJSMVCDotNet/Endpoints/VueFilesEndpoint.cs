@@ -56,7 +56,7 @@ namespace VueJSMVCDotNet.Endpoints
                 })
                 .Where(s => !string.IsNullOrEmpty(s));
 
-            internal string FormatCache(string absolutePath, bool isFolder, Func<string, bool> isModelUrl)
+            internal string FormatCache(string absolutePath, bool isFolder, Func<string, bool> isModelUrl, bool useMin)
             {
                 var fixedContent = regImport.Replace(content, (m) =>
                 {
@@ -67,7 +67,7 @@ namespace VueJSMVCDotNet.Endpoints
                         mergedURL=MergeUrl(absolutePath, import, isFolder);
                         return $"import{m.Groups[1].Value}'{(mergedURL.StartsWith('/') ? "${hosturl.origin}" : "")}{mergedURL}';";
                     }
-                    else if (import.EndsWith("/"))
+                    else if (import.EndsWith('/'))
                     {
                         var subMatch = regImportParts.Match(m.Groups[1].Value);
                         if (subMatch.Success)
@@ -83,8 +83,9 @@ namespace VueJSMVCDotNet.Endpoints
                         else
                             return (import.StartsWith('/') ? $"import {m.Groups[1].Value} '${{hosturl.origin}}{import}';" : m.Value);
                     }
-                    else
-                        return (import.StartsWith('/') ? $"import {m.Groups[1].Value} '${{hosturl.origin}}{import}';" : m.Value);
+                    else if(isModelUrl(import))
+                        return $"{(!import.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase) ? import[..^2] : import[..^3])}{(useMin ? "min." : "")}js";
+                    return (import.StartsWith('/') ? $"import {m.Groups[1].Value} '${{hosturl.origin}}{import}';" : m.Value);
                 });
                 fixedContent = regInlineImport.Replace(fixedContent, (m) =>
                 {
@@ -176,7 +177,7 @@ addLinkedDomain(hosturl.origin);");
                     .ForEach((c, index) => sb.AppendLine($"vueSFCOptions.moduleCache[{c}] = {{...{{__esModule:true}}, ...imports[{index}]}};"));
 
                     //append file content cache
-                    files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl)));
+                    files.ForEach(file => sb.AppendLine(file.FormatCache(absolutePath, multipleFiles, isModelUrl, compressAllJS||spath.EndsWith(".min.js"))));
 
                     //append module definitions
                     SortFiles(files, baseURL)

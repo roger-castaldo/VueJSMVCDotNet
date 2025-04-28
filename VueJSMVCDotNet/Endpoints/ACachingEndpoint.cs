@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Net.Http.Headers;
 using System.Globalization;
 using System.Security.Cryptography;
 using VueJSMVCDotNet.Caching;
@@ -14,8 +15,8 @@ namespace VueJSMVCDotNet.Endpoints
         internal static async Task OutputCachedResponse(HttpContext context, string contentType, DateTime timestamp, string content)
         {
             context.Response.ContentType=contentType;
-            context.Response.Headers.Append("Cache-Control", "public, must-revalidate, max-age=3600");
-            context.Response.Headers.Append("Last-Modified", timestamp.ToUniversalTime().ToString("R"));
+            context.Response.Headers.Append(HeaderNames.CacheControl, "public, must-revalidate, max-age=3600");
+            context.Response.Headers.Append(HeaderNames.LastModified, timestamp.ToUniversalTime().ToString("R"));
             context.Response.StatusCode = 200;
             await context.Response.WriteAsync(content);
         }
@@ -26,17 +27,17 @@ namespace VueJSMVCDotNet.Endpoints
             var cacheURL = Convert.ToBase64String(SHA512.HashData(UTF8Encoding.UTF8.GetBytes(context.Request.Path.ToString())));
             if (cache?.TryGetValue<CachedResponse>(cacheURL, out var cachedResponse)??false)
             {
-                if (context.Request.Headers.TryGetValue("If-Modified-Since", out var modifiedSince)
+                if (context.Request.Headers.TryGetValue(HeaderNames.IfModifiedSince, out var modifiedSince)
                             && (
                                 string.Equals(modifiedSince.ToString().Trim(), cachedResponse!.Timestamp.ToUniversalTime().ToString("R"))
-                                || cachedResponse.Timestamp.ToUniversalTime()>=DateTime.Parse(modifiedSince!, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal)
+                                || cachedResponse.Timestamp.ToUniversalTime().Ticks>=DateTime.Parse(modifiedSince!, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal).Ticks
                             )
                         )
                 {
                     context.Response.ContentType=cachedResponse.ContentType;
-                    context.Response.Headers.Append("accept-ranges", "bytes");
-                    context.Response.Headers.Append("date", cachedResponse.Timestamp.ToUniversalTime().ToString("R"));
-                    context.Response.Headers.Append("etag", $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cachedResponse.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
+                    context.Response.Headers.Append(HeaderNames.AcceptRanges, "bytes");
+                    context.Response.Headers.Append(HeaderNames.Date, cachedResponse.Timestamp.ToUniversalTime().ToString("R"));
+                    context.Response.Headers.Append(HeaderNames.ETag, $"\"{BitConverter.ToString(MD5.HashData(System.Text.ASCIIEncoding.ASCII.GetBytes(cachedResponse.Timestamp.ToUniversalTime().ToString("R")))).Replace("-", "").ToLower()}\"");
                     context.Response.StatusCode = 304;
                     await context.Response.WriteAsync("");
                 }

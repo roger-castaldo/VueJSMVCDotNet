@@ -9,7 +9,7 @@ namespace AutomatedTesting.Security
 {
     internal class SecureSession : ISecureSession, ISecureSessionFactory
     {
-        private string[] _rights = null;
+        private readonly string[] _rights = null;
 
         public SecureSession()
         {
@@ -39,15 +39,7 @@ namespace AutomatedTesting.Security
             return _rights.Contains(right);
         }
 
-        public void LinkToRequest(HttpContext context)
-            => context.Request.Headers.Append("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
-
         public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
-        {
-            if (context.Request.Headers.ContainsKey("RIGHTS"))
-                return Task.FromResult<ISecureSession>(new SecureSession((string[])System.Text.Json.JsonSerializer.Deserialize(context.Request.Headers["RIGHTS"].ToString(), typeof(string[]))));
-            else
-                return Task.FromResult<ISecureSession>(new SecureSession());
-        }
+            => Task.FromResult<ISecureSession>(this);
     }
 }

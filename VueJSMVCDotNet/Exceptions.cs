@@ -2,12 +2,6 @@
 
 namespace VueJSMVCDotNet
 {
-    internal class CallNotFoundException : Exception
-    {
-        public CallNotFoundException(string message) :
-            base(message)
-        { }
-    }
 
     /// <summary>
     /// Base for Thrown Validation Exceptions with a specific type
@@ -40,19 +34,6 @@ namespace VueJSMVCDotNet
         {
             MethodName=method.Name;
         }
-    }
-
-    /// <summary>
-    /// Thrown when a call made fails the security check
-    /// </summary>
-    public class InsecureAccessException : Exception
-    {
-        internal InsecureAccessException()
-            : this("Not Authorized") { }
-
-        internal InsecureAccessException(string message)
-            : base(message) { }
-
     }
 
     /// <summary>
@@ -96,15 +77,6 @@ namespace VueJSMVCDotNet
         }
     }
 
-    ///<summary>
-    ///thrown when more than one Load method exists in a given model
-    ///</summary>
-    public class DuplicateLoadMethodException : ModelTypeMethodException
-    {
-        internal DuplicateLoadMethodException(Type t, MethodInfo method)
-            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} is tagged as a load method when a valid load method already exists.") { }
-    }
-
     /// <summary>
     /// thrown when more than one Load all method exists in a given model
     /// </summary>
@@ -113,27 +85,6 @@ namespace VueJSMVCDotNet
         internal DuplicateLoadAllMethodException(Type t, MethodInfo method)
             : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} is tagged as a load all method when a valid load all method already exists.") { }
     }
-
-    /// <summary>
-    /// thrown when the return type of a load method is not of the model or of the models inheritance
-    /// </summary>
-    public class InvalidLoadMethodReturnType : ModelTypeMethodException
-    {
-        internal InvalidLoadMethodReturnType(Type t, MethodInfo method)
-            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for loading.")
-        { }
-    }
-
-    /// <summary>
-    /// thrown when the paremeters of a load method are not valid (ie either string, or ISecureSession and a string
-    /// </summary>
-    public class InvalidLoadMethodArguements : ModelTypeMethodException
-    {
-        internal InvalidLoadMethodArguements(Type t, MethodInfo method)
-            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for load all.")
-        { }
-    }
-
 
     /// <summary>
     /// thrown when the return type of a load all method is not an array or List&lt;&gt; of the model type
@@ -153,15 +104,6 @@ namespace VueJSMVCDotNet
         internal InvalidLoadAllArguements(Type t, MethodInfo method)
             : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not have a valid signature for a LoadAll call.")
         { }
-    }
-
-    /// <summary>
-    /// thrown when no Load method is specified
-    /// </summary>
-    public class NoLoadMethodException : ModelTypeException
-    {
-        internal NoLoadMethodException(Type t)
-            : base(t, $"The IModel type {t.FullName} is not valid because there is no valid load method found.  A Load method must have the attribute ModelLoadMethod() as well as be similar to public static IModel Load(string id).") { }
     }
 
     /// <summary>
@@ -191,84 +133,13 @@ namespace VueJSMVCDotNet
     }
 
     /// <summary>
-    /// thrown when no empty constructor is specifed but adding the model has not been blocked
-    /// </summary>
-    public class NoEmptyConstructorException : ModelTypeException
-    {
-        internal NoEmptyConstructorException(Type t)
-            : base(t, $"The IModel type {t.FullName} is not valid because it does not block adding and has no empty constructor.")
-        {
-        }
-    }
-
-    /// <summary>
     /// thrown when the return type for the ModelListMethod function is not valid
     /// </summary>
     public class InvalidModelListMethodReturnException : ModelTypeMethodException
     {
         internal InvalidModelListMethodReturnException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
         { }
-    }
-
-    /// <summary>
-    /// thrown when the path specified does not contain the proper number of method parameters
-    /// </summary>
-    public class InvalidModelListParameterCountException : ModelTypeMethodException
-    {
-
-        internal InvalidModelListParameterCountException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the number of parameters for the method {mi.Name} does not match the number of variables")
-        {
-        }
-    }
-
-    /// <summary>
-    /// thrown when a parameter used for paging a model list is not a valid type of parameter
-    /// </summary>
-    public class InvalidModelListPageParameterTypeException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListPageParameterTypeException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not a usable as a paging parameter for a ModelListMethod.")
-        {
-            Parameter=pi;
-        }
-    }
-
-    /// <summary>
-    /// thrown when the parameter to indicate the total pages in a paged model list is not an out parameter
-    /// </summary>
-    public class InvalidModelListPageTotalPagesNotOutException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListPageTotalPagesNotOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not an out parameter which is needed to indicate the total number of pages.")
-        {
-            Parameter=pi;
-        }
-    }
-
-    /// <summary>
-    /// thrown when the parameter of a ModelListMethod is an out parameter and it is not a paged call
-    /// </summary>
-    public class InvalidModelListParameterOutException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListParameterOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is an out parameter.")
-        {
-            Parameter=pi;
-        }
     }
 
     /// <summary>
@@ -277,7 +148,7 @@ namespace VueJSMVCDotNet
     public class DuplicateModelSaveMethodException : ModelTypeMethodException
     {
         internal DuplicateModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -287,7 +158,7 @@ namespace VueJSMVCDotNet
     public class DuplicateModelDeleteMethodException : ModelTypeMethodException
     {
         internal DuplicateModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -297,7 +168,7 @@ namespace VueJSMVCDotNet
     public class DuplicateModelUpdateMethodException : ModelTypeMethodException
     {
         internal DuplicateModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
@@ -307,7 +178,7 @@ namespace VueJSMVCDotNet
     public class InvalidModelSaveMethodException : ModelTypeMethodException
     {
         internal InvalidModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Save() for ModelSaveMethod.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public string Save() for ModelSaveMethod.")
         { }
     }
 
@@ -317,7 +188,7 @@ namespace VueJSMVCDotNet
     public class InvalidModelDeleteMethodException : ModelTypeMethodException
     {
         internal InvalidModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
         { }
     }
 
@@ -327,17 +198,7 @@ namespace VueJSMVCDotNet
     public class InvalidModelUpdateMethodException : ModelTypeMethodException
     {
         internal InvalidModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
-        { }
-    }
-
-    /// <summary>
-    /// thrown when an ExposedMethod will have the same javascript signature as another for a model
-    /// </summary>
-    public class DuplicateMethodSignatureException : ModelTypeMethodException
-    {
-        internal DuplicateMethodSignatureException(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same same.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
         { }
     }
 
@@ -347,7 +208,7 @@ namespace VueJSMVCDotNet
     public class MethodNotMarkedAsSlow : ModelTypeMethodException
     {
         internal MethodNotMarkedAsSlow(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
         { }
     }
 
@@ -357,25 +218,17 @@ namespace VueJSMVCDotNet
     public class MethodWithAddItemNotVoid : ModelTypeMethodException
     {
         internal MethodWithAddItemNotVoid(Type t, MethodInfo mi)
-            : base(t, mi, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
         { }
     }
 
     /// <summary>
-    /// thrown when an a slow method fails to register properly
+    /// thrown when an ExposedMethod will have the same javascript signature as another for a model
     /// </summary>
-    public class SlowMethodRegistrationFailed : Exception
+    public class DuplicateMethodSignatureException : ModelTypeMethodException
     {
-        internal SlowMethodRegistrationFailed()
-            : base("An error occured attempting to register the slow method invocation") { }
-    }
-
-    /// <summary>
-    /// thrown when a save model call fails
-    /// </summary>
-    public class SaveFailedException : ModelTypeMethodException
-    {
-        internal SaveFailedException(Type t, InjectableMethod mi)
-            : base(t, mi.Method, $"The save call for the model type {t.FullName} failed.") { }
+        internal DuplicateMethodSignatureException(Type t, MethodInfo mi)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same same.")
+        { }
     }
 }

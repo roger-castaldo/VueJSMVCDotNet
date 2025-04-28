@@ -19,7 +19,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             string coreJSImport,
             bool ignoreInvalidModels,
             bool compressJS,
-            IMemoryCache? cache) : EndpointDataSource, IDisposable
+            IMemoryCache? cache) : EndpointDataSource, IModelDataSource, IDisposable
     {
         private static readonly Type[] ModelEndpoints = [.. typeof(AModelEndpoint<,>)
             .Assembly
@@ -79,7 +79,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                             context.Response.StatusCode = 200;
                             await context.Response.WriteAsync(compressedCore);
                         },
-                        routePattern: RoutePatternFactory.Parse(coreJSImport),
+                        routePattern: RoutePatternFactory.Parse($"{(coreJSImport.StartsWith('/') ? "" : "/")}{coreJSImport}{{extension:regex(^(\\.min)?\\.js$)}}"),
                         order: 0,
                         metadata: new(
                             new HttpMethodMetadata([HttpMethods.Get])
@@ -100,7 +100,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             tokenSource = new();  // Reset token for future changes
         }
 
-        internal void UnloadAssemblyContext(string? contextName)
+        void IModelDataSource.UnloadAssemblyContext(string? contextName)
         {
             var types = Utility.UnloadAssemblyContext(contextName)?? [];
             locker.EnterWriteLock();
@@ -110,24 +110,27 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             TriggerChange();
         }
 
-        internal void AssemblyAdded()
+        void IModelDataSource.UnloadAssemblyContext(AssemblyLoadContext alc)
+            => ((IModelDataSource)this).UnloadAssemblyContext(alc.Name);
+
+        void IModelDataSource.AssemblyAdded()
         {
             locker.EnterWriteLock();
             endpoints.Clear();
             locker.ExitWriteLock();
             AssemblyLoadContext.All
-                .ForEach(alc => AsssemblyLoadContextAdded(alc, false));
+                .ForEach(alc => ((IModelDataSource)this).AsssemblyLoadContextAdded(alc, false));
             TriggerChange();
         }
 
-        internal void AsssemblyLoadContextAdded(string? contextName)
+        void IModelDataSource.AsssemblyLoadContextAdded(string? contextName)
         {
             var alc = AssemblyLoadContext.All.FirstOrDefault(alc => string.Equals(alc.Name, contextName, StringComparison.InvariantCultureIgnoreCase));
             if (alc!=null)
-                AsssemblyLoadContextAdded(alc);
+                ((IModelDataSource)this).AsssemblyLoadContextAdded(alc);
         }
 
-        internal void AsssemblyLoadContextAdded(AssemblyLoadContext alc, bool triggerChange = true)
+        void IModelDataSource.AsssemblyLoadContextAdded(AssemblyLoadContext alc, bool triggerChange)
         {
             logger?.LogDebug("Loading Assembly Load Context {Name}", alc.Name);
             IEnumerable<Exception> errors = DefinitionValidator.Validate(alc, logger, out var invalidModels, out var models);

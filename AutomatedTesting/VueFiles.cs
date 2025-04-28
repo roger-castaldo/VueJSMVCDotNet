@@ -1,44 +1,44 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using VueJSMVCDotNet;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class VueFiles
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void FolderWithFiles()
+        public async Task FolderWithFiles()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/buttons.js", _middleware, out status)).ReadToEnd();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/buttons.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import Icon from '${hosturl.origin}/resources/vuefiles/icon.vue';"));
-            Assert.IsTrue(content.Contains("import Button from '${hosturl.origin}/resources/vuefiles/buttons/button.vue';"));
-            Assert.IsTrue(content.Contains("${hosturl.origin}/resources/vuefiles/icon.js"));
-            Assert.IsFalse(content.Contains("/resources/vuefiles/buttons/button.js"));
+            Assert.IsTrue(content.Contains("import Icon from '${hosturl.origin}/resources/vueFiles/icon.vue';"));
+            Assert.IsTrue(content.Contains("import Button from '${hosturl.origin}/resources/vueFiles/buttons/button.vue';"));
+            Assert.IsTrue(content.Contains("${hosturl.origin}/resources/vueFiles/icon.js"));
+            Assert.IsFalse(content.Contains("/resources/vueFiles/buttons/button.js"));
         }
 
         [TestMethod()]
-        public void TestMessageCallFileNotFound()
+        public async Task TestMessageCallFileNotFound()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/not_found.js", _middleware, out status)).ReadToEnd();
-            Assert.AreEqual(404, status);
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/not_found.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(404, responseStatus);
             Assert.AreEqual("Unable to locate requested file.", content);
         }
     }

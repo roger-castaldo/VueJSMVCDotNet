@@ -7,11 +7,9 @@
     /// Define the base route for the model that all rest paths will be built off of.
     /// </remarks>
     /// <param name="path">The base path for the model's rest calls</param>
-    /// <param name="host">(Optional) specify a host that is used, in the case of using more than one host.</param>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class ModelRouteAttribute(string path, string host = "*") : Attribute
+    public class ModelRouteAttribute(string path) : Attribute
     {
-        internal string Host => host;
         internal string Path => path;
     }
 }

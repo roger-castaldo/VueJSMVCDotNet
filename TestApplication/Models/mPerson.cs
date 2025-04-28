@@ -1,15 +1,9 @@
-using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using VueJSMVCDotNet;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication.Models
 {
-    [ModelRoute("/models/mPerson")]
-    [ModelJSFilePath("/resources/scripts/mPerson.js")]
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.Now.Ticks);

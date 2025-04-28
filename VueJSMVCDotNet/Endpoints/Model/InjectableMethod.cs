@@ -26,26 +26,23 @@ namespace VueJSMVCDotNet.Endpoints.Model
         private readonly MethodInfo method;
         public MethodInfo Method => method;
         public string Name => method.Name;
-        public bool IsModelUpdateOrSave => method.GetCustomAttributes().Any(att => att is ModelUpdateMethodAttribute || att is ModelSaveMethodAttribute);
         public bool IsSlow => method.GetCustomAttributes().OfType<ExposedMethodAttribute>().Any(em => em.IsSlow);
         public bool RequiresModel => Array.Exists(parameters, p => p.GetCustomAttribute<ModelIDParameterAttribute>()!=null
                     || p.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null);
         public bool UsesModel => Array.Exists(parameters, p => p.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null);
         public Type ReturnType { get; private init; }
         public bool IsArrayReturn { get; private init; }
-
-        public IEnumerable<Attribute> GetCustomAttributes() => method.GetCustomAttributes();
+        public ASecurityCheckAttribute[] SecurityChecks { get; private init; }
 
         private readonly int addItemIndex;
         private readonly bool isTask;
         public bool HasAddItem => addItemIndex!=-1;
         private readonly ParameterInfo[] parameters;
-        private readonly IEnumerable<ASecurityCheckAttribute> securityChecks;
         private readonly (ParameterInfo ParameterInfo, bool IsStrippable)[] strippedParameters;
         public NotNullArguementAttribute? NotNullArguement { get; private init; }
         public ParameterInfo[] StrippedParameters { get; private init; }
 
-        public InjectableMethod(MethodInfo method)
+        public InjectableMethod(MethodInfo method, ASecurityCheckAttribute[] securityChecks)
         {
             this.method = method;
             ReturnType = Utility.ExtractUnderlyingType(method.ReturnType, out var isArray, out _, out isTask);
@@ -56,24 +53,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
             strippedParameters = StripMethodParameters(parameters).ToArray();
             StrippedParameters = strippedParameters.Where(p => !p.IsStrippable).Select(p => p.ParameterInfo).ToArray();
             addItemIndex = addIndex;
-            securityChecks = method.DeclaringType!.GetCustomAttributes().OfType<ASecurityCheckAttribute>()
-                .Concat(method.GetCustomAttributes().OfType<ASecurityCheckAttribute>());
+            SecurityChecks=securityChecks;
         }
 
-        public async Task<bool> HasValidAccess(IRequestData data, IModel? model, string url, string? id)
-        {
-            foreach (var sc in securityChecks)
-            {
-                if (!await sc.HasValidAccessAsync(data, model, url, id))
-                    return false;
-            }
-            return true;
-        }
-
-        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
+        public async Task<T?> InvokeAsync<T, M>(IModelHandler<M> handler, IInternalRequestData? requestData, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
             where M : IModel
         {
-            var requestData = await Helper.ExtractPartsAsync(httpContext, logger);
             ArgumentNullException.ThrowIfNull(requestData);
             object?[] mpars = new object[parameters.Length];
             if (addItemIndex!=-1)
@@ -125,7 +110,14 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     }
                 }
             }
-            return ((ReturnType==typeof(void) ? default(T?) : (T?)result), requestData);
+            return (ReturnType==typeof(void) ? default(T?) : (T?)result);
+        }
+
+        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
+            where M : IModel
+        {
+            var requestData = await Helper.ExtractPartsAsync(httpContext, logger);
+            return (await InvokeAsync<T, M>(handler, requestData, logger, pars: pars, addItem: addItem, modelInstance: modelInstance), requestData);
         }
     }
 }

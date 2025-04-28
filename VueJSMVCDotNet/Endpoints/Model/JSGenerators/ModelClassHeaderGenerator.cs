@@ -14,21 +14,12 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         #isNew(){{ return this.{Constants.INITIAL_DATA_KEY}===undefined || this.{Constants.INITIAL_DATA_KEY}===null || this.{Constants.INITIAL_DATA_KEY}.id===undefined || this.{Constants.INITIAL_DATA_KEY}.id===null; }};
         #events=undefined;
         static get #baseURL(){{return `{(baseURL.StartsWith('/') ? "${hosturl.origin}" : "")}{baseURL}`;}};
-        static get #constructorBaseData(){{return ");
-            try
-            {
-                builder.Append(Utility.JsonEncode(Activator.CreateInstance(modelType.Type), null));
-            }
-            catch
-            {
-                builder.Append("{}");
-            }
-            builder.AppendLine("};");
+        static get #constructorBaseData(){{return {{}};}};");
 
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
             ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder);
-            ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods, modelType);
+            ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods.DistinctBy(m => m.Name), modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};

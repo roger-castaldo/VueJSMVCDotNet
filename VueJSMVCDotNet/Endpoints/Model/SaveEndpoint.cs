@@ -16,13 +16,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
             var saveMethod = Array.Find(typeof(H).GetMethods(Constants.METHOD_FLAGS), m => m.GetCustomAttribute<ModelSaveMethodAttribute>(false)!=null);
             if (saveMethod!=null)
             {
-                var securityChecks = ExtractSecurityChecks(saveMethod).ToArray();
-                var injectableSaveMethod = new InjectableMethod(saveMethod);
+                var injectableSaveMethod = new InjectableMethod(saveMethod, ExtractSecurityChecks(saveMethod));
 
                 return routes.Select(mra => new RouteEndpoint(
                     requestDelegate: async (context) =>
                     {
-                        if (!await ValidateAccessAsync(context, Logger, null, securityChecks, false))
+                        if (!await ValidateAccessAsync(context, Logger, null, injectableSaveMethod.SecurityChecks, false))
                             await ReturnInsecure(context);
                         else
                         {
@@ -30,9 +29,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             var data = await Helper.ExtractPartsAsync(context, Logger);
                             context.Response.ContentType = "application/json";
                             context.Response.StatusCode= 200;
-                            await Utility.JsonEncode<bool>(
+                            await Utility.JsonEncode<string>(
                                 context,
-                                injectableSaveMethod.InvokeAsync<bool, M>(handler, context, Logger, modelInstance: Utility.JsonDecode<M>(((ModelRequestData)data).RawBody!, data))
+                                injectableSaveMethod.InvokeAsync<string, M>(handler, context, Logger, modelInstance: Utility.JsonDecode<M>(((ModelRequestData)data).RawBody!, data))
                             );
                         }
                     },

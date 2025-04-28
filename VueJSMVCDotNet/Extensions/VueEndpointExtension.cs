@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using VueJSMVCDotNet.Endpoints;
 using VueJSMVCDotNet.Endpoints.DataSources;
+using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Extensions
 {
@@ -28,13 +29,14 @@ namespace VueJSMVCDotNet.Extensions
                 ignoreInvalidModels,
                 compressJS,
                 cache
-            ));
+            ))
+            .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>());
 
         public static IEndpointRouteBuilder MapVueJSMVSModels(this IEndpointRouteBuilder builder)
         {
-            var source = builder.ServiceProvider.GetRequiredService<ModelsDataSource>();
+            var source = builder.ServiceProvider.GetRequiredService<IModelDataSource>();
             source.AssemblyAdded();
-            builder.DataSources.Add(source);
+            builder.DataSources.Add((ModelsDataSource)source);
             return builder;
         }
 

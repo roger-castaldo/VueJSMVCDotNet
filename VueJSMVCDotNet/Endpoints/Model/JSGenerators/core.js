@@ -62,7 +62,7 @@ const ajax = async (options) => {
 			let pullCall = function () {
 				ajax({
 					url: url,
-					method: 'PULL',
+					method: 'GET',
 					useJSON: true
 				}).then(
 					res => {
@@ -461,7 +461,7 @@ const checkProperty = (name, type, value, enumlist) => {
 	try {
 		return _checkDataType(type, value, enumlist);
 	} catch (err) {
-		throw new Error('Cannot set ' + name + ': ' + err);
+		throw new Error(`Cannot set ${name}: ${err.message??err}`);
 	}
 };
 
@@ -826,7 +826,10 @@ const ModelMethods = {
 				data: data
 			});
 			if (response.ok) {
-				return response.json();
+				var result = response.json();
+				if (result === null)
+					return Promise.reject('save failed');
+				return result;
 			} else {
 				return Promise.reject(response.text());
 			}

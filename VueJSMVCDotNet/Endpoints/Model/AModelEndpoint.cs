@@ -7,16 +7,31 @@ using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
-    internal abstract class AModelEndpoint<H, M>(ILogger? logger) : AEndpoint(logger), IEndpointHandler
+    internal abstract class AModelEndpoint<H, M>: AEndpoint, IEndpointHandler
         where H : IModelHandler<M>
         where M : IModel
     {
+        protected readonly ASecurityCheckAttribute[] LoadSecurityChecks;
+
+        protected AModelEndpoint(ILogger? logger)
+            : base(logger)
+        {
+            var map = typeof(H).GetInterfaceMap(typeof(IModelHandler<M>));
+            LoadSecurityChecks = ExtractSecurityChecks(
+                        map.TargetMethods[Array.FindIndex(map.InterfaceMethods, m => Equals(m.Name, nameof(IModelHandler<M>.LoadAsync)))]
+                    );
+        }
+
         protected abstract IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes);
 
         IEnumerable<RouteEndpoint> IEndpointHandler.AsEndpoints
             => ProduceEndpoints(typeof(H)
                 .GetCustomAttributes<ModelRouteAttribute>()
             );
+        
+        protected ASecurityCheckAttribute[] ExtractSecurityChecks(MethodInfo method)
+            => [.. typeof(H).GetCustomAttributes<ASecurityCheckAttribute>()
+                .Concat(method.GetCustomAttributes<ASecurityCheckAttribute>())];
 
         protected static string GetModelID(HttpContext context)
             => context.Request.RouteValues[Helper.ID_PARAMETER_NAME]?.ToString()??throw new ArgumentNullException("id");
@@ -30,10 +45,6 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 result.Append(additional);
             return RoutePatternFactory.Parse(result.ToString());
         }
-
-        protected static IEnumerable<ASecurityCheckAttribute> ExtractSecurityChecks(MethodInfo method)
-            => method.DeclaringType!.GetCustomAttributes().OfType<ASecurityCheckAttribute>()
-                .Concat(method.GetCustomAttributes().OfType<ASecurityCheckAttribute>());
 
         protected async static ValueTask<bool> ValidateAccessAsync(HttpContext context, ILogger? logger, IModel? model, ASecurityCheckAttribute[] securityChecks, bool loadID = true)
         {

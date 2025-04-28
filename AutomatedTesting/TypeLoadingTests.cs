@@ -1,6 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Runtime.Loader;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting
 {
@@ -10,11 +12,12 @@ namespace AutomatedTesting
         [TestMethod]
         public void AssemblyAdded()
         {
-            var middleware = Utility.CreateMiddleware(true);
+            var (webApplicationFactory, _, _)= Utility.CreateApplication(true);
+            var dataSource = webApplicationFactory.Services.GetRequiredService<IModelDataSource>();
             Exception error = null;
             try
             {
-                middleware.Options.AssemblyAdded();
+                dataSource.AssemblyAdded();
             }
             catch (Exception ex)
             {
@@ -26,11 +29,12 @@ namespace AutomatedTesting
         [TestMethod]
         public void ReloadingAssemblyContext()
         {
-            var middleware = Utility.CreateMiddleware(true);
+            var (webApplicationFactory, _, _)= Utility.CreateApplication(true);
             Exception error = null;
+            var dataSource = webApplicationFactory.Services.GetRequiredService<IModelDataSource>();
             try
             {
-                middleware.Options.UnloadAssemblyContext(AssemblyLoadContext.Default);
+                dataSource.UnloadAssemblyContext(AssemblyLoadContext.Default);
             }
             catch (Exception ex)
             {
@@ -39,7 +43,7 @@ namespace AutomatedTesting
             Assert.IsNull(error);
             try
             {
-                middleware.Options.AsssemblyLoadContextAdded(AssemblyLoadContext.Default);
+                dataSource.AsssemblyLoadContextAdded(AssemblyLoadContext.Default);
             }
             catch (Exception ex)
             {

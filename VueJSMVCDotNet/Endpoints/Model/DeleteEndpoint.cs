@@ -16,13 +16,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
             var delMethod = Array.Find(typeof(H).GetMethods(Constants.METHOD_FLAGS), m => m.GetCustomAttribute<ModelDeleteMethodAttribute>(false)!=null);
             if (delMethod!=null)
             {
-                var securityChecks = ExtractSecurityChecks(delMethod).ToArray();
-                var injectableDelMethod = new InjectableMethod(delMethod);
+                var injectableDelMethod = new InjectableMethod(delMethod, ExtractSecurityChecks(delMethod));
 
                 return routes.Select(mra => new RouteEndpoint(
                     requestDelegate: async (context) =>
                     {
-                        if (!await ValidateAccessAsync(context, Logger, null, securityChecks))
+                        if (!await ValidateAccessAsync(context, Logger, null, injectableDelMethod.SecurityChecks))
                             await ReturnInsecure(context);
                         else
                         {

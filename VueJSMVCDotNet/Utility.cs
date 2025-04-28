@@ -19,27 +19,8 @@ namespace VueJSMVCDotNet
      */
     internal static class Utility
     {
-        //houses a cache of Types found through locate type, this is used to increase performance
-        private static readonly Dictionary<string, Type> _TYPE_CACHE = [];
-        //houses a cache of Type instances through locate type instances, this is used to increate preformance
-        private static readonly Dictionary<string, IEnumerable<Type>> _INSTANCES_CACHE = [];
         //houses the assembly load contexts for types
         private static readonly Dictionary<string, IEnumerable<Type>> _LOAD_CONTEXT_TYPE_SOURCES = [];
-
-        internal static IModel SetModelValues(IInternalRequestData data, IModel model, bool isNew, ILogger? log)
-        {
-            data.Keys.Where(key => !string.Equals(key, "id", StringComparison.InvariantCulture))
-            .Select(key => model.GetType().GetProperty(key))
-            .Where(pi => pi != null && pi.CanWrite
-                        && (pi.GetCustomAttribute<ReadOnlyModelPropertyAttribute>(true)==null||isNew)
-            )
-            .ForEach(pi =>
-            {
-                log?.LogTrace("Attempting to convert the value supplied for property {FullName}.{Name} to {PropertyType}", model.GetType().FullName, pi!.Name, pi.PropertyType);
-                pi!.SetValue(model, data.GetValue(pi.PropertyType, pi.Name));
-            });
-            return model;
-        }
 
         public static IEnumerable<(Type HandlerType, Type ModelType)> LocateModelHandlers(AssemblyLoadContext alc, ILogger? log)
         {
@@ -130,46 +111,6 @@ namespace VueJSMVCDotNet
                 }
             }
             return ret;
-        }
-        internal static void ClearCaches(ILogger log)
-        {
-            log?.LogTrace("Clearing cached types from loaded contexts");
-            lock (_INSTANCES_CACHE)
-            {
-                _INSTANCES_CACHE.Clear();
-            }
-            lock (_TYPE_CACHE)
-            {
-                _TYPE_CACHE.Clear();
-            }
-            lock (_LOAD_CONTEXT_TYPE_SOURCES)
-            {
-                _LOAD_CONTEXT_TYPE_SOURCES.Clear();
-            }
-        }
-
-        internal static string GetModelUrlRoot(Type modelType)
-            => GetModelUrlRoot(modelType, null);
-
-        internal static string GetModelUrlRoot(Type modelType, string? urlBase)
-            => $"{(urlBase??"")}{modelType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path}".Replace("//", "/");
-
-        private static readonly Regex _regNoCache = new("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript, TimeSpan.FromMilliseconds(500));
-
-        public static string CleanURL(Uri url)
-            => _regNoCache.Replace(url.PathAndQuery, "");
-
-        public static Uri BuildURL(HttpContext context, string? urlBase)
-        {
-            UriBuilder builder = new(
-                context.Request.Scheme,
-                context.Request.Host.Host,
-                (context.Request.Host.Port??(context.Request.IsHttps ? 443 : 80)),
-                (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase, "/"))
-            );
-            if (context.Request.QueryString.HasValue)
-                builder.Query = context.Request.QueryString.Value[1..];
-            return builder.Uri;
         }
 
         public static bool IsArrayType(Type type)
@@ -311,7 +252,6 @@ namespace VueJSMVCDotNet
                 WriteIndented=false
             };
             result.Converters.Add(new JsonStringEnumConverter());
-            result.Converters.Add(new DateTimeConverter());
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
             result.Converters.Add(new DecimalConverter());
@@ -343,7 +283,5 @@ namespace VueJSMVCDotNet
         public static T? JsonDecode<T>(JsonElement element, IInternalRequestData requestData)
             => JsonSerializer.Deserialize<T>(element, options: ProduceJsonOptions(requestData));
         #endregion
-
-        public static string? SantizeLogValue(string? value) => value?.Replace('\r', '_').Replace('\n', '_');
     }
 }

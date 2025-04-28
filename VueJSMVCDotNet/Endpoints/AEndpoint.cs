@@ -16,8 +16,12 @@ namespace VueJSMVCDotNet.Endpoints
         protected async ValueTask ReturnNotFound(HttpContext context, string message = "Not Found")
         {
             logger?.LogError("Request Error, not found: {URL}", context.Request.Path);
+            context.Response.ContentType = "text/text";
             context.Response.StatusCode = 404;
             await context.Response.WriteAsync(message);
         }
+
+        protected async ValueTask ReturnModelNotFound(HttpContext context)
+            => ReturnNotFound(context, "Model Not Found");
     }
 }

@@ -1,50 +1,53 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
-using VueJSMVCDotNet;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class UpdateCall
     {
-        private VueMiddleware _middleware;
-        private IDataStore _store;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-            _store=new DataStore();
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestUpdateMethod()
+        public async Task TestUpdateMethod()
         {
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, parameters: new Hashtable() { { "FirstName", "Testing123" } }, store: _store));
-            Assert.IsNotNull(result);
-            Assert.IsInstanceOfType(result, typeof(bool));
-            Assert.IsTrue((bool)result);
-            Assert.AreEqual(firstName, ((mPerson[])_store[mPerson.KEY])[0].FirstName);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Patch, $"/models/mPerson/{mPersonHandler.Persons[0].id}", webApplicationFactory,
+                parameters: new Hashtable() { { "FirstName", "Testing123" } });
+            var response = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsNotNull(response);
+            Assert.IsInstanceOfType(response, typeof(bool));
+            Assert.IsTrue((bool)response);
+            Assert.AreEqual(firstName, ((mPerson[])store[mPersonHandler.KEY])[0].FirstName);
+
         }
 
         [TestMethod]
-        public void TestUpdateMethodWithMissingModel()
+        public async Task TestUpdateMethodWithMissingModel()
         {
-            int status;
-            object result = Utility.ReadResponse(Utility.ExecuteRequest("PATCH", "/models/mPerson/0", _middleware, out status, parameters: new Hashtable() { { "FirstName", "Testing123" } }, store: _store));
-            Assert.IsNotNull(result);
-            Assert.AreEqual(404, status);
-            Assert.IsInstanceOfType(result, typeof(string));
-            Assert.AreEqual("Model Not Found", result);
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Patch, "/models/mPerson/0", webApplicationFactory,
+                parameters: new Hashtable() { { "FirstName", "Testing123" } });
+            var response = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(404, responseStatus);
+            Assert.AreEqual("Model Not Found", response);
+            Assert.IsNull(store[mPersonHandler.KEY]);
         }
     }
 }

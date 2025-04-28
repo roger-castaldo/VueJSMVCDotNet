@@ -15,7 +15,7 @@ namespace VueJSMVCDotNet
 
         private static bool IsValidDataActionMethod(MethodInfo method, Type returnType, bool requiresInstance)
         {
-            var iMethod = new InjectableMethod(method);
+            var iMethod = new InjectableMethod(method, []);
             return Equals(returnType, iMethod.ReturnType)
                 && iMethod.StrippedParameters.Length==0
                 && iMethod.RequiresModel
@@ -33,8 +33,9 @@ namespace VueJSMVCDotNet
          * 1.  Check to make sure that there is at least 1 route specified for the handler.
          * 2.  Check to make sure that the id property is not blocked.
          * 3.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void or Task)
-         * 4.  Check to make sure that the select model method has the right return type
-         * 5.  Check to make sure the save, update and delete methods are valid, if defined
+         * 4.  Check to make sure all exposed methods have a unique signature
+         * 5.  Check to make sure that the select model method has the right return type
+         * 6.  Check to make sure the save, update and delete methods are valid, if defined
          */
         internal static IEnumerable<Exception> Validate(AssemblyLoadContext alc, ILogger? log, out IEnumerable<(Type HandlerType, Type ModelType)> invalidModels, out IEnumerable<(Type HandlerType, Type ModelType)> models)
         {
@@ -48,8 +49,23 @@ namespace VueJSMVCDotNet
                     var exceptions = new List<Exception>();
                     if (handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)==null)
                         AppendError(exceptions, log, new NoRouteException(handler.HandlerType), "Model {FullName} has no route", handler.HandlerType.FullName);
+                    else
+                    {
+                        foreach (var altHandler in handlers.Where(h =>
+                            !Equals(handler.HandlerType, h.HandlerType)
+                            && string.Equals(handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path, h.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path??string.Empty, StringComparison.OrdinalIgnoreCase))
+                            .Select(h=>h.HandlerType)
+                        )
+                            AppendError(exceptions, log, new DuplicateRouteException(
+                                handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)!.Path,
+                                handler.HandlerType,
+                                altHandler.GetCustomAttribute<ModelRouteAttribute>(false)!.Path,
+                                altHandler
+                                ), "Model {FullName} has a model route that is a duplicate of another model", handler.HandlerType.FullName);
+                    }
                     if (handler.ModelType.GetProperty(nameof(IModel.id))!.GetCustomAttribute<ModelIgnorePropertyAttribute>()!=null)
                         AppendError(exceptions, log, new ModelIDBlockedException(handler.ModelType), "Model {TypeName} is not valid because the id property is blocked by ModelIgnoreProperty", handler.ModelType.FullName);
+
                     var methods = handler.HandlerType.GetMethods(Constants.METHOD_FLAGS);
 
                     CheckExposedMethods(methods, handler, exceptions, log);
@@ -97,18 +113,30 @@ namespace VueJSMVCDotNet
         private static void CheckExposedMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
             => methods.Select(mi => new { Method = mi, ExposedAttribute = mi.GetCustomAttribute<ExposedMethodAttribute>(false) })
                         .Where(ms => ms.ExposedAttribute!=null)
-                        .ForEach(ms =>
+                        .Select(ms => new {Method = new InjectableMethod(ms.Method, []), ExposedAttribute=ms.ExposedAttribute})
+                        .GroupBy(ms => $"{(ms.Method.RequiresModel ? "instance" : "static")}:{ms.Method.Name}({string.Join(',',ms.Method.StrippedParameters.Select(p=>p.Name))})")
+                        .ForEach(grp =>
                         {
-                            var im = new InjectableMethod(ms.Method);
-                            if (im.HasAddItem)
+                            if (grp.Count()>1)
                             {
-                                if (!ms.ExposedAttribute!.IsSlow)
-                                    AppendError(exceptions, log, new MethodNotMarkedAsSlow(handler.HandlerType, ms.Method),
-                                        "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate but is not marked slow", handler.HandlerType.FullName, ms.Method.Name);
-                                else if (ms.Method.ReturnType!=typeof(void) && ms.Method.ReturnType!=typeof(Task) && ms.Method.ReturnType!=typeof(ValueTask))
-                                    AppendError(exceptions, log, new MethodWithAddItemNotVoid(handler.HandlerType, ms.Method),
-                                        "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate requires a void response", handler.HandlerType.FullName, ms.Method.Name);
+                                grp.ForEach(ms =>
+                                {
+                                    AppendError(exceptions, log, new DuplicateMethodSignatureException(handler.HandlerType, ms.Method.Method),
+                                        "Handler {FullName} has a duplicate method signature for the method {MethodName}", handler.HandlerType.FullName, ms.Method.Name);
+                                });
                             }
+                            grp.ForEach(ms =>
+                            {
+                                if (ms.Method.HasAddItem)
+                                {
+                                    if (!ms.ExposedAttribute!.IsSlow)
+                                        AppendError(exceptions, log, new MethodNotMarkedAsSlow(handler.HandlerType, ms.Method.Method),
+                                            "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate but is not marked slow", handler.HandlerType.FullName, ms.Method.Name);
+                                    else if (ms.Method.ReturnType!=typeof(void))
+                                        AppendError(exceptions, log, new MethodWithAddItemNotVoid(handler.HandlerType, ms.Method.Method),
+                                            "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate requires a void response", handler.HandlerType.FullName, ms.Method.Name);
+                                }
+                            });
                         });
 
         private static void CheckLoadAllMethod(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
@@ -117,9 +145,8 @@ namespace VueJSMVCDotNet
             if (filteredMethods.Count()>1)
                 filteredMethods.ForEach(mi => AppendError(exceptions, log, new DuplicateLoadAllMethodException(handler.HandlerType, mi),
                     "Handler {FullName} has more than 1 ModelLoadAllMethod", handler.HandlerType.FullName));
-            else if (filteredMethods.Count()==1)
+            filteredMethods.ForEach(loadAllMethod =>
             {
-                var loadAllMethod = filteredMethods.First();
                 var rtype = Utility.ExtractUnderlyingType(loadAllMethod.ReturnType, out var isArray, out _, out _);
                 if (!isArray)
                     AppendError(exceptions, log, new InvalidLoadAllMethodReturnType(handler.HandlerType, loadAllMethod),
@@ -129,7 +156,7 @@ namespace VueJSMVCDotNet
                         "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
                 else if (InjectableMethod.StripMethodParameters(loadAllMethod.GetParameters()).Any(pair => !pair.IsStrippable))
                     exceptions.Add(new InvalidLoadAllArguements(handler.HandlerType, loadAllMethod));
-            }
+            });
         }
 
         private static void CheckListMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)

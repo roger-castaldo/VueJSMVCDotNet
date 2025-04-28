@@ -16,13 +16,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
             var loadAllMethod = Array.Find(typeof(H).GetMethods(Constants.METHOD_FLAGS), m => m.GetCustomAttribute<ModelLoadAllMethodAttribute>(false)!=null);
             if (loadAllMethod!=null)
             {
-                var securityChecks = ExtractSecurityChecks(loadAllMethod).ToArray();
-                var injectableLoadAllMethod = new InjectableMethod(loadAllMethod);
+                var injectableLoadAllMethod = new InjectableMethod(loadAllMethod, ExtractSecurityChecks(loadAllMethod));
 
                 return routes.Select(mra => new RouteEndpoint(
                     requestDelegate: async (context) =>
                     {
-                        if (!await ValidateAccessAsync(context, Logger, null, securityChecks, false))
+                        if (!await ValidateAccessAsync(context, Logger, null, injectableLoadAllMethod.SecurityChecks, false))
                             await ReturnInsecure(context);
                         else
                         {

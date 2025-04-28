@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using TestApplication.Models;
 using VueJSMVCDotNet;

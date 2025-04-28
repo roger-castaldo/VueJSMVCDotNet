@@ -20,7 +20,7 @@ namespace VueJSMVCDotNet.JSON
 
         public override M? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var result = default(M);
+            var result = default(M?);
             if (reader.TokenType==JsonTokenType.String)
                 result = Load(reader.GetString()!);
             else if (reader.TokenType==JsonTokenType.StartObject)

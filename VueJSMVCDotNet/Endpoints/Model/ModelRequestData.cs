@@ -48,8 +48,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
             else
                 return (T?)files?[key];
         }
+
         object? IRequestData.this[Type feature]
-        {
+        { 
             get
             {
                 if (feature==typeof(ISecureSession)

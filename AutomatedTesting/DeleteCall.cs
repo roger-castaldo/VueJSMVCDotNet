@@ -1,51 +1,50 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class DeleteCall
     {
-        private VueMiddleware _middleware;
-        private IDataStore _store;
-
-        [TestInitialize]
-        public void Init()
+        [TestMethod]
+        public async Task TestDeleteMethod()
         {
-            _middleware = Utility.CreateMiddleware(true);
-            _store = new DataStore();
-        }
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
+            int personCount = mPersonHandler.Persons.Length;
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Delete, $"/models/mPerson/{mPersonHandler.Persons[0].id}", webApplicationFactory);
+            var response = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsNotNull(response);
+            Assert.IsInstanceOfType(response, typeof(bool));
+            Assert.IsTrue((bool)response);
+            Assert.AreNotEqual(personCount, ((mPerson[])store[mPersonHandler.KEY]).Length);
         }
 
         [TestMethod]
-        public void TestDeleteMethod()
+        public async Task TestDeleteMethodWithMissingModel()
         {
-            int personCount = mPerson.Persons.Length;
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("DELETE", $"/models/mPerson/{mPerson.Persons[0].id}", _middleware, out status, store: _store));
-            Assert.IsNotNull(result);
-            Assert.IsInstanceOfType(result, typeof(bool));
-            Assert.IsTrue((bool)result);
-            Assert.AreNotEqual(personCount, ((mPerson[])_store[mPerson.KEY]).Length);
-        }
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
+            int personCount = mPersonHandler.Persons.Length;
 
-        [TestMethod]
-        public void TestDeleteMethodWithMissingModel()
-        {
-            int personCount = mPerson.Persons.Length;
-            int status;
-            object result = Utility.ReadResponse(Utility.ExecuteRequest("DELETE", "/models/mPerson/0", _middleware, out status, store: _store));
-            Assert.IsNotNull(result);
-            Assert.AreEqual(404, status);
-            Assert.IsInstanceOfType(result, typeof(string));
-            Assert.AreEqual("Model Not Found", result);
-            Assert.IsNull(_store[mPerson.KEY]);
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Delete, "/models/mPerson/0", webApplicationFactory);
+            var response = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsInstanceOfType(response, typeof(bool));
+            Assert.IsFalse((bool)response);
+            Assert.AreEqual(personCount, ((mPerson[])store[mPersonHandler.KEY]).Length);
         }
     }
 }

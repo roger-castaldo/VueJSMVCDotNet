@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using VueJSMVCDotNet.Attributes;
 using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    [ModelRouteAttribute("/models/mDataTypes")]
-    [ModelJSFilePath("/resources/scripts/mDataTypes.js")]
     public class mDataTypes : IModel
     {
         public string id
@@ -111,95 +108,7 @@ namespace AutomatedTesting.Models
         private Exception _nullExceptionField = null;
         public Exception NullExceptionField { get { return _nullExceptionField; } set { _nullExceptionField = value; } }
 
-        [ModelLoadMethodAttribute()]
-        public static mDataTypes Load(string id)
-        {
-            return null;
-        }
-
-        [ExposedMethodAttribute()]
-        [NotNullArguementAttribute("stringArg")]
-        public static void TestSingleNotNullInput(string stringArg, string nullStringArg) { }
-
-        [ExposedMethodAttribute()]
-        [NotNullArguementAttribute(["stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg"])]
-        public void TestInputs(
-            string stringArg, string nullStringArg,
-            char charArg, char? nullCharArg,
-            short shortArg, short? nullShortArg,
-            ushort ushortArg, ushort? nullUShortArg,
-            int intArg, int? nullIntArg,
-            uint uintArg, uint? nullUIntArg,
-            long longArg, long? nullLongArg,
-            ulong ulongArg, ulong? nullULongArg,
-            float floatArg, float? nullFloatArg,
-            decimal decimalArg, decimal? nullDecimalArg,
-            double doubleArg, double? nullDoubleArg,
-            byte byteArg, byte? nullByteArg,
-            bool boolArg, bool? nullBooleanArg,
-            TestEnums enumArg, TestEnums? nullEnumArg,
-            DateTime DateTimeArg, DateTime? nullDateTimeArg,
-            byte[] byteArrayArg, byte[] nullByteArrayArg,
-            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
-            Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
-        )
-        {
-
-        }
-
-        [ExposedMethodAttribute()]
-        [NotNullArguementAttribute(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
-        public static void StaticTestInputs(
-            string stringArg, string nullStringArg,
-            char charArg, char? nullCharArg,
-            short shortArg, short? nullShortArg,
-            ushort ushortArg, ushort? nullUShortArg,
-            int intArg, int? nullIntArg,
-            uint uintArg, uint? nullUIntArg,
-            long longArg, long? nullLongArg,
-            ulong ulongArg, ulong? nullULongArg,
-            float floatArg, float? nullFloatArg,
-            decimal decimalArg, decimal? nullDecimalArg,
-            double doubleArg, double? nullDoubleArg,
-            byte byteArg, byte? nullByteArg,
-            bool boolArg, bool? nullBooleanArg,
-            TestEnums enumArg, TestEnums? nullEnumArg,
-            DateTime DateTimeArg, DateTime? nullDateTimeArg,
-            byte[] byteArrayArg, byte[] nullByteArrayArg,
-            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
-            Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
-        )
-        {
-
-        }
-
-        [ModelListMethodAttribute()]
-        [NotNullArguementAttribute(new string[] { "stringArg", "byteArrayArg", "IPAddressArg", "VersionArg", "ExceptionArg" })]
-        public static List<mDataTypes> TestListInputs(
-            string stringArg, string nullStringArg,
-            char charArg, char? nullCharArg,
-            short shortArg, short? nullShortArg,
-            ushort ushortArg, ushort? nullUShortArg,
-            int intArg, int? nullIntArg,
-            uint uintArg, uint? nullUIntArg,
-            long longArg, long? nullLongArg,
-            ulong ulongArg, ulong? nullULongArg,
-            float floatArg, float? nullFloatArg,
-            decimal decimalArg, decimal? nullDecimalArg,
-            double doubleArg, double? nullDoubleArg,
-            byte byteArg, byte? nullByteArg,
-            bool boolArg, bool? nullBooleanArg,
-            TestEnums enumArg, TestEnums? nullEnumArg,
-            DateTime DateTimeArg, DateTime? nullDateTimeArg,
-            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
-            Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
-        )
-        {
-            return null;
-        }
+        
     }
 
 }

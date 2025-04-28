@@ -1,182 +1,238 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using VueJSMVCDotNet;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class StaticMethodCall
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestStaticMethod()
+        public async Task TestStaticMethod()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
             string lastName = "Testing1234";
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() {
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/FormatName", webApplicationFactory,
+            parameters: new Hashtable() {
                 { "firstName", firstName },
                 { "lastName", lastName }
-            })).ReadToEnd();
+            });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(mPerson.FormatName(null, lastName, firstName), content);
+            Assert.AreEqual(200, responseStatus);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName, firstName), content);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithFormData()
+        public async Task TestStaticMethodWithFormData()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
             string lastName = "Testing1234";
-            int status;
-            string content = Utility.ReadResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, new Dictionary<string, StringValues>()
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/FormatName", webApplicationFactory,
+            formData: new Dictionary<string, StringValues>()
             {
                 {"firstName",firstName },
                 {"lastName",lastName }
-            }));
+            });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
             Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(mPerson.FormatName(null, lastName, firstName), content);
+            Assert.AreEqual(200, responseStatus);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName, firstName), content);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithFormDataArrayValues()
+        public async Task TestStaticMethodWithFormDataArrayValues()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string[] firstName = new string[] { "Testing123", "Testing456" };
             string[] lastName = new string[] { "Testing1234", "Testing4567" };
-            int status;
-            var content = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatNames", _middleware, out status, new Dictionary<string, StringValues>()
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/FormatNames", webApplicationFactory,
+            formData: new Dictionary<string, StringValues>()
             {
-                {"firstName",firstName },
-                {"lastName",lastName }
-            }));
+                {"firstName",new(firstName) },
+                {"lastName",new(lastName) }
+            });
+            var content = Utility.ReadJSONResponse(responseStream);
 
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsInstanceOfType(content, typeof(ArrayList));
-
             var al = (ArrayList)content;
-
             Assert.AreEqual(2, al.Count);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[0], firstName[0]), al[0]);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[1], firstName[1]), al[1]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[0], firstName[0]), al[0]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[1], firstName[1]), al[1]);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithFormDataJsonEncoded()
+        public async Task TestStaticMethodWithFormDataJsonEncoded()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string[] firstName = new string[] { "Testing123", "Testing456" };
             string[] lastName = new string[] { "Testing1234", "Testing4567" };
-            int status;
-            var content = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatNames", _middleware, out status, new Dictionary<string, StringValues>()
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/FormatNames", webApplicationFactory,
+            formData: new Dictionary<string, StringValues>()
             {
                 {"firstName:json",JSON.JsonEncode(firstName) },
                 {"lastName:json",JSON.JsonEncode(lastName) }
-            }));
+            });
+            var content = Utility.ReadJSONResponse(responseStream);
 
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsInstanceOfType(content, typeof(ArrayList));
-
             var al = (ArrayList)content;
-
             Assert.AreEqual(2, al.Count);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[0], firstName[0]), al[0]);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[1], firstName[1]), al[1]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[0], firstName[0]), al[0]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[1], firstName[1]), al[1]);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithFormDataJsonEncodedMultipleValues()
+        public async Task TestStaticMethodWithFormDataJsonEncodedMultipleValues()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string[] firstName = new string[] { "Testing123", "Testing456" };
             string[] lastName = new string[] { "Testing1234", "Testing4567" };
-            int status;
-            var content = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatNames", _middleware, out status, new Dictionary<string, StringValues>()
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/FormatNames", webApplicationFactory,
+            formData: new Dictionary<string, StringValues>()
             {
                 {"firstName:json",new string[]{ JSON.JsonEncode(firstName[0]), JSON.JsonEncode(firstName[1]) } },
                 {"lastName:json",new string[]{ JSON.JsonEncode(lastName[0]), JSON.JsonEncode(lastName[1]) } }
-            }));
+            });
+            var content = Utility.ReadJSONResponse(responseStream);
 
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsInstanceOfType(content, typeof(ArrayList));
-
             var al = (ArrayList)content;
-
             Assert.AreEqual(2, al.Count);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[0], firstName[0]), al[0]);
-            Assert.AreEqual(mPerson.FormatName(null, lastName[1], firstName[1]), al[1]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[0], firstName[0]), al[0]);
+            Assert.AreEqual(mPersonHandler.FormatName(lastName[1], firstName[1]), al[1]);
         }
 
         [TestMethod]
-        public void TestStaticMethodNotFound()
+        public async Task TestStaticMethodNotFound()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
             string lastName = "Testing1234";
-            int status;
-            string content = Utility.ReadResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() {
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/FormatName", webApplicationFactory,
+            parameters: new Hashtable() {
                 { "firstName", firstName },
                 { "lastName", lastName },
                 {"userName","testing" }
-            }));
-            Assert.AreEqual(404, status);
+            });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.IsTrue(content.Length>0);
+            Assert.AreEqual(404, responseStatus);
             Assert.AreEqual("Unable to locate method with matching parameters", content);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithNullNotNullArguement()
+        public async Task TestStaticMethodWithNullNotNullArguement()
         {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
             string firstName = null;
             string lastName = "Testing1234";
-            int status;
-            string content = Utility.ReadResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, parameters: new Hashtable() {
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/FormatName", webApplicationFactory,
+            parameters: new Hashtable() {
                 { "firstName", firstName },
                 { "lastName", lastName }
-            }));
-            Assert.AreEqual(404, status);
+            });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.IsTrue(content.Length>0);
+            Assert.AreEqual(404, responseStatus);
             Assert.AreEqual("Unable to locate method with matching parameters", content);
         }
 
         [TestMethod]
-        public void TestStaticMethodWithObjectResult()
+        public async Task TestStaticMethodWithObjectResult()
         {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/ProduceObject", _middleware, out status, parameters: new Hashtable() {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/ProduceObject", webApplicationFactory,
+            parameters: new Hashtable() {
                 {"isnull",false }
-            }));
-            Assert.AreEqual(200, status);
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
         }
 
         [TestMethod]
-        public void TestStaticMethodWithNullResult()
+        public async Task TestStaticMethodWithNullResult()
         {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/ProduceObject", _middleware, out status, parameters: new Hashtable() {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/ProduceObject", webApplicationFactory,
+            parameters: new Hashtable() {
                 {"isnull",true }
-            }));
-            Assert.AreEqual(200, status);
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNull(result);
         }
 
         [TestMethod]
-        public void TestStaticVoidMethod()
+        public async Task TestStaticVoidMethod()
         {
-            int status;
-            var result = Utility.ExecuteRequest("SMETHOD", "/models/mPerson/VoidMethodCall", _middleware, out status, parameters: new Hashtable() {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/VoidMethodCall", webApplicationFactory,
+            parameters: new Hashtable() {
                 {"parameter","" }
             });
-            Assert.AreEqual(200, status);
-            Assert.AreEqual(0, result.Length);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsTrue(content.Length==0);
         }
     }
 }

@@ -1,497 +1,587 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
 using System.Collections;
-using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Numerics;
-using VueJSMVCDotNet;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class ListCall
     {
-        private VueMiddleware _middleware;
-        private Mock<ILogger> _writer;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _writer = new Mock<ILogger>();
-            _middleware =Utility.CreateMiddleware(true, logWriter: _writer.Object);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestList()
+        public async Task TestList()
         {
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out _, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/Search", webApplicationFactory,
+                parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }));
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
-            Assert.AreEqual((int)1, int.Parse(((Hashtable)result)["TotalPages"].ToString()));
-            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)((Hashtable)result)["response"]).Count);
+            Assert.IsTrue(((Hashtable)result).ContainsKey("totalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("data"));
+            Assert.AreEqual(1, int.Parse(((Hashtable)result)["totalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["data"], typeof(ArrayList));
+            Assert.AreEqual(mPersonHandler.Persons.Length, ((ArrayList)((Hashtable)result)["data"]).Count);
         }
 
         [TestMethod]
-        public void TestListParameter()
+        public async Task TestListParameter()
         {
-            int cnt = 0;
-            foreach (mPerson p in mPerson.Persons)
-            {
-                if (p.FirstName.ToLower().Contains("b") || p.LastName.ToLower().Contains("b"))
-                    cnt++;
-            }
+            //Arrange
+            var query = 'b';
+            var count = mPersonHandler.Persons.Count(p=>p.FirstName.Contains(query,StringComparison.InvariantCultureIgnoreCase) || p.LastName.Contains(query,StringComparison.InvariantCultureIgnoreCase));
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out _, parameters: new Hashtable()
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/Search", webApplicationFactory,
+                parameters: new Hashtable()
             {
-                {"q","b" },
+                {"q",query },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }));
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
-            Assert.AreEqual((int)1, int.Parse(((Hashtable)result)["TotalPages"].ToString()));
-            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.AreEqual(cnt, ((ArrayList)((Hashtable)result)["response"]).Count);
+            Assert.IsTrue(((Hashtable)result).ContainsKey("totalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("data"));
+            Assert.AreEqual(1, int.Parse(((Hashtable)result)["totalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["data"], typeof(ArrayList));
+            Assert.AreEqual(count, ((ArrayList)((Hashtable)result)["data"]).Count);
         }
 
         [TestMethod]
-        public void TestListPageSize()
+        public async Task TestListPageSize()
         {
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out _, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/Search", webApplicationFactory,
+                parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",2}
-            }));
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
-            Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Length/(decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
-            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.AreEqual(2, ((ArrayList)((Hashtable)result)["response"]).Count);
+            Assert.IsTrue(((Hashtable)result).ContainsKey("totalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("data"));
+            Assert.AreEqual((int)Math.Ceiling((decimal)mPersonHandler.Persons.Length/(decimal)2), int.Parse(((Hashtable)result)["totalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["data"], typeof(ArrayList));
+            Assert.AreEqual(2, ((ArrayList)((Hashtable)result)["data"]).Count);
         }
 
         [TestMethod]
-        public void TestListPageStartIndex()
+        public async Task TestListPageStartIndex()
         {
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out _, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/Search", webApplicationFactory,
+                parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",1 },
                 {"PageSize",2}
-            }));
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
-            Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Length / (decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
-            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.AreEqual((int)Math.Min(mPerson.Persons.Length-2, 2), ((ArrayList)((Hashtable)result)["response"]).Count);
+            Assert.IsTrue(((Hashtable)result).ContainsKey("totalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("data"));
+            Assert.AreEqual((int)Math.Ceiling((decimal)mPersonHandler.Persons.Length / (decimal)2), int.Parse(((Hashtable)result)["totalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["data"], typeof(ArrayList));
+            Assert.AreEqual((int)Math.Min(mPersonHandler.Persons.Length-2, 2), ((ArrayList)((Hashtable)result)["data"]).Count);
         }
 
         [TestMethod]
-        public void TestParameterlessList()
+        public async Task TestParameterlessList()
         {
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/ListBobs", _middleware, out int status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/ListBobs", webApplicationFactory);
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
-            Assert.AreEqual(mPerson.Persons.Count(p => p.FirstName.ToLower()=="bob"), ((ArrayList)result).Count);
+            Assert.AreEqual(mPersonHandler.Persons.Count(p => p.FirstName.ToLower()=="bob"), ((ArrayList)result).Count);
         }
 
         [TestMethod]
-        public void TestPagedParameterlessList()
+        public async Task TestPagedParameterlessList()
         {
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("LIST", "/models/mPerson/ListBobsPaged", _middleware, out int status, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/ListBobsPaged", webApplicationFactory,
+                parameters: new Hashtable()
             {
-                {"PageStartIndex",0 },
-                {"PageSize",2}
-            }));
+                {"pageStartIndex",0 },
+                {"pageSize",2}
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("TotalPages"));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("response"));
-            Assert.AreEqual((int)Math.Ceiling((decimal)mPerson.Persons.Count(p => p.FirstName.ToLower()=="bob")/(decimal)2), int.Parse(((Hashtable)result)["TotalPages"].ToString()));
-            Assert.IsInstanceOfType(((Hashtable)result)["response"], typeof(ArrayList));
-            Assert.IsTrue(((ArrayList)((Hashtable)result)["response"]).Count<=2);
+            Assert.IsTrue(((Hashtable)result).ContainsKey("totalPages"));
+            Assert.IsTrue(((Hashtable)result).ContainsKey("data"));
+            Assert.AreEqual((int)Math.Ceiling((decimal)mPersonHandler.Persons.Count(p => p.FirstName.ToLower()=="bob")/(decimal)2), int.Parse(((Hashtable)result)["totalPages"].ToString()));
+            Assert.IsInstanceOfType(((Hashtable)result)["data"], typeof(ArrayList));
+            Assert.IsTrue(((ArrayList)((Hashtable)result)["data"]).Count<=2);
         }
 
-        private void TestParameterListCall(string url, Hashtable pars, int? expectedStatus = null)
+        private async Task TestParameterListCallAsync(WebApplicationFactory<Program> webApplicationFactory, string url, Hashtable pars, int? expectedStatus = null)
         {
-            MemoryStream ms = Utility.ExecuteRequest("LIST", url, _middleware, out int status, parameters: pars);
+            var (responseStream, responseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, url, webApplicationFactory, parameters:pars);
             if (expectedStatus!=null)
-                Assert.AreEqual(expectedStatus.Value, status);
+                Assert.AreEqual(expectedStatus.Value, responseStatus);
             else
             {
-                object result = Utility.ReadJSONResponse(ms);
+                object result = Utility.ReadJSONResponse(responseStream);
                 Assert.IsNotNull(result);
                 Assert.IsInstanceOfType(result, typeof(ArrayList));
-                Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)result).Count);
+                Assert.AreEqual(mPersonHandler.Persons.Length, ((ArrayList)result).Count);
             }
         }
 
         [TestMethod()]
-        public void TestListDateTimeParameter()
+        public async Task TestListDateTimeParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByDate", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDate", new Hashtable()
             {
                 {"date",DateTime.Now }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Date"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByDate", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Date"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDate", new Hashtable()
             {
                 {"date","invalid" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Date"), Times.Once);
+            writer.VerifyLog(w => w.LogTrace("Called List By Date"), Times.Once);
         }
 
         [TestMethod()]
-        public void TestListIntegerParameter()
+        public async Task TestListIntegerParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByInt", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByInt", new Hashtable()
             {
                 {"val",long.MinValue }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByInt", new Hashtable()
             {
                 {"val",int.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByInt", new Hashtable()
             {
                 {"val",int.MaxValue}
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByInt", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Integer"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListLongParameter()
+        public async Task  TestListLongParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByLong", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByLong", new Hashtable()
             {
                 {"val",BigInteger.Add(new BigInteger(long.MaxValue),new BigInteger(1))}
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByLong", new Hashtable()
             {
                 {"val",long.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByLong", new Hashtable()
             {
                 {"val",long.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByLong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByLong", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Long"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListShortParameter()
+        public async Task  TestListShortParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+            
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val",int.MaxValue }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val",short.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val",short.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Short"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListByteParameter()
+        public async Task  TestListByteParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByByte", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByByte", new Hashtable()
             {
                 {"val",short.MaxValue }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByByte", new Hashtable()
             {
                 {"val",byte.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByByte", new Hashtable()
             {
                 {"val",byte.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByByte", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByByte", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Byte"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListUIntegerParameter()
+        public async Task  TestListUIntegerParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUInt", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUInt", new Hashtable()
             {
                 {"val",ulong.MaxValue}
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUInt", new Hashtable()
             {
                 {"val",uint.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUInt", new Hashtable()
             {
                 {"val",uint.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByUInt", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUInt", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By UInteger"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListULongParameter()
+        public async Task  TestListULongParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByULong", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByULong", new Hashtable()
             {
                 {"val",BigInteger.Add(new BigInteger(ulong.MaxValue), new BigInteger(1)) }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByULong", new Hashtable()
             {
                 {"val",ulong.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByULong", new Hashtable()
             {
                 {"val",ulong.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByULong", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByULong", new Hashtable()
             {
                 {"val",0}
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By ULong"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListUShortParameter()
+        public async Task  TestListUShortParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUShort", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUShort", new Hashtable()
             {
                 {"val",uint.MaxValue }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUShort", new Hashtable()
             {
                 {"val",ushort.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUShort", new Hashtable()
             {
                 {"val",ushort.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByUShort", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByUShort", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By UShort"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListDoubleParameter()
+        public async Task  TestListDoubleParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDouble", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDouble", new Hashtable()
             {
                 {"val",double.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDouble", new Hashtable()
             {
                 {"val",double.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByDouble", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDouble", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Double"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListFloatParameter()
+        public async Task  TestListFloatParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByFloat", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByFloat", new Hashtable()
             {
                 {"val",float.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByFloat", new Hashtable()
             {
                 {"val",float.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByFloat", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByFloat", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Float"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListDecimalParameter()
+        public async Task  TestListDecimalParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDecimal", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDecimal", new Hashtable()
             {
                 {"val",decimal.MinValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Once);
-            TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Once);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDecimal", new Hashtable()
             {
                 {"val",decimal.MaxValue }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Exactly(2));
-            TestParameterListCall("/models/mPerson/ListByDecimal", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Exactly(2));
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDecimal", new Hashtable()
             {
                 {"val",0 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Exactly(3));
+            writer.VerifyLog(w => w.LogTrace("Called List By Decimal"), Times.Exactly(3));
         }
 
         [TestMethod()]
-        public void TestListGuidParameter()
+        public async Task  TestListGuidParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByGuid", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByGuid", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Guid"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByGuid", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Guid"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByGuid", new Hashtable()
             {
                 {"val",Guid.Empty }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Guid"), Times.Once);
+            writer.VerifyLog(w => w.LogTrace("Called List By Guid"), Times.Once);
         }
 
         [TestMethod()]
-        public void TestListEnumParameter()
+        public async Task  TestListEnumParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByEnum", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByEnum", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Enum"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByEnum", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Enum"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByEnum", new Hashtable()
             {
                 {"val",mDataTypes.TestEnums.Test1 }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Enum"), Times.Once);
+            writer.VerifyLog(w => w.LogTrace("Called List By Enum"), Times.Once);
         }
 
         [TestMethod()]
-        public void TestListBooleanParameter()
+        public async Task  TestListBooleanParameter()
         {
-            TestParameterListCall("/models/mPerson/ListByBoolean", new Hashtable()
+            //Arrange
+            var writer = new Mock<ILogger>();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
+
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByBoolean", new Hashtable()
             {
                 {"val","p" }
             }, expectedStatus: 404);
-            _writer.VerifyLog(w => w.LogTrace("Called List By Boolean"), Times.Never);
-            TestParameterListCall("/models/mPerson/ListByBoolean", new Hashtable()
+            writer.VerifyLog(w => w.LogTrace("Called List By Boolean"), Times.Never);
+            await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByBoolean", new Hashtable()
             {
                 {"val",true }
             });
-            _writer.VerifyLog(w => w.LogTrace("Called List By Boolean"), Times.Once);
+            writer.VerifyLog(w => w.LogTrace("Called List By Boolean"), Times.Once);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     context.Request.Form.ForEach(pair =>
                     {
                         logger?.LogTrace("Loading form data value from key {Key}", pair.Key);
-                        if (pair.Key.EndsWith(":json"))
+                        if (pair.Key.EndsWith(":json",StringComparison.InvariantCultureIgnoreCase))
                         {
                             if (pair.Value.Count > 1)
                                 formData.Add(pair.Key[..^5], JsonDocument.Parse($"[{string.Join(',', pair.Value!)}]"));

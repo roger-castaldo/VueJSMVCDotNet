@@ -17,7 +17,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 .GroupBy(m => m.Name)
                 .SelectMany(grp =>
                 {
-                    var methods = grp.Select(m => new InjectableMethod(m)).ToArray();
+                    var methods = grp.Select(m => new InjectableMethod(m, ExtractSecurityChecks(m))).ToArray();
                     return routes.Select(mra =>
                         new RouteEndpoint(
                             requestDelegate: async (context) =>
@@ -26,7 +26,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                 var callback = await LocateMethodAsync(context, methods, Logger);
                                 if (callback!=null)
                                 {
-                                    if (callback.Value.method.Method.GetCustomAttribute<ModelListMethodAttribute>()!.Paged)
+                                    if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks, false))
+                                        await ReturnInsecure(context);
+                                    else if (callback.Value.method.Method.GetCustomAttribute<ModelListMethodAttribute>()!.Paged)
                                         await Utility.JsonEncode<PagedResult<M>>(context, callback.Value.method.InvokeAsync<PagedResult<M>, M>(handler, context, Logger, pars: callback.Value.pars));
                                     else
                                         await Utility.JsonEncode<IEnumerable<M>>(context, callback.Value.method.InvokeAsync<IEnumerable<M>, M>(handler, context, Logger, pars: callback.Value.pars));

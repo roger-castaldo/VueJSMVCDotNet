@@ -1,31 +1,17 @@
 ﻿using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.IO;
+using System.Net.Http;
 using System.Text;
-using VueJSMVCDotNet;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class MethodStrongTyping
     {
-        private string _content;
-
-        [TestInitialize]
-        public void Init()
-        {
-            VueMiddleware middleware = Utility.CreateMiddleware(true);
-            int status;
-            _content =  Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mDataTypes.js", middleware, out status));
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _content = null;
-        }
-
-        private static string _GenerateCalls(string call, bool ignoreBytes)
+        private static string GenerateCalls(string call, bool ignoreBytes)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(@"
@@ -94,20 +80,24 @@ export const name = 'John';");
             return sb.ToString();
         }
 
-        private void _ExecuteTest(string call, bool ignoreBytes)
+        [TestMethod]
+        [DataRow("mdl.TestInputs",false)]
+        [DataRow("mDataType.StaticTestInputs", false)]
+        [DataRow("mDataType.TestListInputs", true)]
+        public async Task ExecuteTestAsync(string call, bool ignoreBytes)
         {
-            Engine eng = Utility.CreateEngine();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.Modules.Add("mDataTypes", _content);
-                eng.Modules.Add("custom", _GenerateCalls(call, ignoreBytes));
+                eng.Modules.Add("mDataTypes", content);
+                eng.Modules.Add("custom", GenerateCalls(call, ignoreBytes));
                 var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -116,31 +106,17 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        public void TestInstanceMethod()
+        public async Task TestSingleNotNullArgument()
         {
-            _ExecuteTest("mdl.TestInputs", false);
-        }
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
 
-        [TestMethod]
-        public void TestStaticMethod()
-        {
-            _ExecuteTest("mDataType.StaticTestInputs", false);
-        }
-
-        [TestMethod]
-        public void TestListMethod()
-        {
-            _ExecuteTest("mDataType.TestListInputs", true);
-        }
-
-        [TestMethod]
-        public void TestSingleNotNullArgument()
-        {
-            Engine eng = Utility.CreateEngine();
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.Modules.Add("mDataTypes", _content);
+                eng.Modules.Add("mDataTypes", content);
                 eng.Modules.Add("custom", @"
         import { mDataTypes } from 'mDataTypes';
         try{
@@ -161,10 +137,6 @@ export const name = 'John';");
 export const name = 'John';");
                 var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {

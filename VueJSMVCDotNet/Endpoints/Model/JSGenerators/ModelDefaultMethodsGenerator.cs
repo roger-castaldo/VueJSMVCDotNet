@@ -51,7 +51,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         private static void AppendUpdate(ModelType modelType, WrappedStringBuilder builder, bool useJSON)
         {
             builder.AppendLine(@$"         async #update(){{
-                let response = ModelMethods.update({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
+                let response = await ModelMethods.update({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
                 let data = this.{Constants.TO_JSON_VARIABLE}();
                 for(let prop in data){{
                     if (prop!=='id'){{
@@ -67,7 +67,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         private static void AppendSave(ModelType modelType, WrappedStringBuilder builder, bool useJSON)
         {
             builder.AppendLine(@$"             async #save(){{
-                let response = ModelMethods.save({modelType.Type.Name}.#baseURL,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
+                let response = await ModelMethods.save({modelType.Type.Name}.#baseURL,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
                 this.{Constants.INITIAL_DATA_KEY} = Object.assign({{}},this.{Constants.TO_JSON_VARIABLE}(),response);
                 let proxy = this.#toProxy();
                 this.#events.trigger('{Constants.Events.MODEL_SAVED}',proxy);

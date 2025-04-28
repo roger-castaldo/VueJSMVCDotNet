@@ -33,6 +33,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             modelType.InstanceMethods
                 .Select(mi => new { Method = mi, ExposedAttribute = mi.GetCustomAttribute<ExposedMethodAttribute>() })
                 .Where(gm => gm.ExposedAttribute!=null)
+                .DistinctBy(gm => gm.Method.Name)
                 .ForEach(gm =>
                 {
                     Type returnType = (gm.ExposedAttribute?.ArrayElementType!=null ? Array.CreateInstance(gm.ExposedAttribute.ArrayElementType, 0).GetType() : gm.Method.ReturnType);
@@ -55,7 +56,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         let me = this.#toProxy();
         return {");
             modelType.Properties.ForEach(p => builder.AppendLine($"          {p.Name}:{(p.CanWrite ? "readonly" : "ref")}(me.{p.Name}),"));
-            modelType.InstanceMethods.ForEach(m => builder.AppendLine($"          {m.Name}:function(){{ return me.{m.Name}.apply(me,arguments); }},"));
+            modelType.InstanceMethods.DistinctBy(m=> m.Name).ForEach(m => builder.AppendLine($"          {m.Name}:function(){{ return me.{m.Name}.apply(me,arguments); }},"));
             if (modelType.SaveMethod!=null)
                 builder.AppendLine("            save:function(){ return me.save.apply(me,arguments); },");
             if (modelType.DeleteMethod != null)

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
@@ -17,29 +19,32 @@ namespace VueJSMVCDotNet.Endpoints.Model
         private bool finished;
         private bool completed;
         private Exception? error;
-        private DateTime lastCall;
+        private long lastCall;
         private bool disposedValue;
         private readonly Task execution;
         private readonly CancellationTokenSource token;
         private readonly ILogger? log;
 
-        public SlowMethodInstance(InjectableMethod method, object[] pars, HttpContext context, H instance, ILogger? log)
+        public SlowMethodInstance(InjectableMethod method, object[] pars, IInternalRequestData? requestData, H instance, ILogger? log, M? modelInstance=default)
         {
             this.log=log;
             data=new ConcurrentQueue<object>();
             finished=false;
             completed=false;
             error=null;
-            lastCall=DateTime.Now;
+            lastCall = Stopwatch.GetTimestamp();
             token = new();
             execution = new Task(async () =>
             {
                 try
                 {
                     if (method.ReturnType==typeof(void))
-                        await method.InvokeAsync<object, M>(instance, context, log, pars: pars, addItem: new AddItem(AddItem));
+                        await method.InvokeAsync<object, M>(instance, requestData, log, pars: pars, addItem: new AddItem(AddItem), modelInstance: modelInstance);
                     else
-                        AddItem(await method.InvokeAsync<object, M>(instance, context, log, pars: pars, addItem: new AddItem(AddItem)), true);
+                    {
+                        var result = await method.InvokeAsync<object, M>(instance, requestData, log, pars: pars, addItem: new AddItem(AddItem), modelInstance: modelInstance);
+                        AddItem(result, true);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -62,9 +67,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => completed;
 
         public bool IsExpired
-#pragma warning disable S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
-            => DateTime.Now.Subtract(lastCall).TotalMilliseconds > TIMEOUT_MILLISECONDS;
-#pragma warning restore S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
+            => Stopwatch.GetElapsedTime(lastCall).TotalMilliseconds > TIMEOUT_MILLISECONDS;
 
         public async Task HandleRequest(HttpContext context)
         {
@@ -79,7 +82,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             }
             else
             {
-                lastCall = DateTime.Now;
+                lastCall = Stopwatch.GetTimestamp();
                 List<object> ret = [];
                 while (ret.Count<5&&!data.IsEmpty)
                 {
