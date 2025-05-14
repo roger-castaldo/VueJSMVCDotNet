@@ -1,4 +1,4 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators

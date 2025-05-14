@@ -1,6 +1,6 @@
 ﻿using VueJSMVCDotNet.Interfaces;
 
-namespace VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// An abstract class used to implement Security Check attributes.  These can be tagged on 

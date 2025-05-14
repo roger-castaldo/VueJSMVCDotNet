@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using System.Text.Json;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.DataSources;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;

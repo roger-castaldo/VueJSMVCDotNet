@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.Models
 {
     /// <summary>
     /// Used to Ignore a property for model generation. 

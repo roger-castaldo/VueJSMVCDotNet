@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Interfaces;
 

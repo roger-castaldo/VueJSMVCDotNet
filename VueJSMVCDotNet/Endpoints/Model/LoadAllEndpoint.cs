@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model
@@ -31,9 +31,10 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     },
                     routePattern: ProduceRoute(mra.Path, false),
                     order: 0,
-                    metadata: new(
-                        new HttpMethodMetadata([HttpMethods.Get]
-                    )),
+                    metadata: ProduceMetaData<H, M>(
+                        [HttpMethods.Get],
+                        loadAllMethod
+                    ),
                     displayName: $"Load All call for {typeof(M).Name}"
                 ));
             }

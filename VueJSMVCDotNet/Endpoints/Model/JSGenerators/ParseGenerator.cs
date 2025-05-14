@@ -1,4 +1,4 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;

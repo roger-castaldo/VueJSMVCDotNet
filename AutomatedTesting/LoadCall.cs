@@ -1,5 +1,4 @@
 ﻿using AutomatedTesting.Handlers;
-using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
 using System.Net.Http;

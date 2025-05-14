@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;

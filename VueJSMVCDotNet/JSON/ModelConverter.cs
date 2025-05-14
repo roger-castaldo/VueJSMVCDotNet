@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;

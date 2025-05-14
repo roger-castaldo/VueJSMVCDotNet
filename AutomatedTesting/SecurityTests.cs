@@ -1,10 +1,8 @@
 ﻿using AutomatedTesting.Handlers;
-using AutomatedTesting.Models;
 using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
-using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 

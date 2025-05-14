@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.Models
 {
     /// <summary>
     /// Used to specify an uneditable readonly property for a given model 

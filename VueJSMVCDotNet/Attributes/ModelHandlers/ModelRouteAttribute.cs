@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// Used to specify the route(path) to use for accessing the model 

@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// Used to create custom collection list of a method.  Created through calling the function

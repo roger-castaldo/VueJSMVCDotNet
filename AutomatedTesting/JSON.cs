@@ -6,7 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 
 namespace AutomatedTesting
 {

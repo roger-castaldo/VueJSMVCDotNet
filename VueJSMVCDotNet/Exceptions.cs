@@ -1,6 +1,4 @@
-﻿using VueJSMVCDotNet.Endpoints.Model;
-
-namespace VueJSMVCDotNet
+﻿namespace VueJSMVCDotNet
 {
 
     /// <summary>

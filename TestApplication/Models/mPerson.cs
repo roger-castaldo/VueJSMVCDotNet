@@ -1,5 +1,5 @@
 using System;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication.Models

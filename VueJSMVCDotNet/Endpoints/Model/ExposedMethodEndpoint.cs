@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model
@@ -54,8 +54,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     },
                                     routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}"),
                                     order: 0,
-                                    metadata: new(
-                                        new HttpMethodMetadata([HttpMethods.Post])
+                                    metadata: ProduceMetaData<H, M>(
+                                        [HttpMethods.Post],
+                                        staticMethods.Select(method=>method.Method)
                                     ),
                                     displayName: $"Static Method call for {typeof(H).Name}.{grp.Key}"
                                 )
@@ -90,8 +91,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     },
                                     routePattern: ProduceRoute(mra.Path, true, $"/{grp.Key}"),
                                     order: 0,
-                                    metadata: new(
-                                        new HttpMethodMetadata([HttpMethods.Post])
+                                    metadata: ProduceMetaData<H, M>(
+                                        [HttpMethods.Post],
+                                        instanceMethods.Select(method => method.Method)
                                     ),
                                     displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}"
                                 )

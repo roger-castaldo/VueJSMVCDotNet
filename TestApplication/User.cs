@@ -1,6 +1,5 @@
 ﻿using System;
-using TestApplication.Security;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication

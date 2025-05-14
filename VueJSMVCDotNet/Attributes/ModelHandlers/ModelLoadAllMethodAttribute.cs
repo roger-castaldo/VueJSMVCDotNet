@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// Used to tag the Load All Models method

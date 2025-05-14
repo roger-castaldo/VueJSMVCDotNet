@@ -1,7 +1,7 @@
 ﻿using AutomatedTesting.Models.InvalidModels;
 using System.Threading.Tasks;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Handlers.InvalidModels

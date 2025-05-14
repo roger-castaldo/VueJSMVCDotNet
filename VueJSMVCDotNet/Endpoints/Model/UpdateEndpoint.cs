@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 
@@ -52,9 +53,10 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     },
                     routePattern: ProduceRoute(mra.Path, true),
                     order: 0,
-                    metadata: new(
-                        new HttpMethodMetadata([HttpMethods.Patch]
-                    )),
+                    metadata: ProduceMetaData<H, M>(
+                        [HttpMethods.Patch],
+                        updateMethod
+                    ),
                     displayName: $"Update call for {typeof(M).Name}"
                 ));
             }

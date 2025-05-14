@@ -1,4 +1,5 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using VueJSMVCDotNet.Attributes.ModelHandlers;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;

@@ -1,7 +1,7 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-    public class PageStartIndexParameterAttribute
+    public class PageSizeParameterAttribute
         : Attribute
     {
     }

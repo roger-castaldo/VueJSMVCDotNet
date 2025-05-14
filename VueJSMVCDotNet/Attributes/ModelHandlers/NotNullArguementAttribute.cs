@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// Used to specify an arguement of a method that cannot be set to null (this is used where the property type cannot be identified as nullable or not properly like a string)

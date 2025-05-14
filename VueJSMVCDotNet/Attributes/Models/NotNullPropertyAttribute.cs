@@ -1,4 +1,4 @@
-﻿namespace VueJSMVCDotNet.Attributes
+﻿namespace VueJSMVCDotNet.Attributes.Models
 {
     /// <summary>
     /// Used to specify a property of a model cannot be set to null (this is used where the property type cannot be identified as nullable or not properly like a string)

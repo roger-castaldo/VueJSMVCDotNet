@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models

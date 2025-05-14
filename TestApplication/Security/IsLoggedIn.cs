@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication.Security

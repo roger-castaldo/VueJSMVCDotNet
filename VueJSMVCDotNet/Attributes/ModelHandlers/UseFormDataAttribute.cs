@@ -1,4 +1,4 @@
-namespace VueJSMVCDotNet.Attributes
+namespace VueJSMVCDotNet.Attributes.ModelHandlers
 {
     /// <summary>
     /// This attribute is used to expose to flag a method call to use formdata for posting the data 

@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using TestApplication.Models;
 using VueJSMVCDotNet;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Interfaces;
 
