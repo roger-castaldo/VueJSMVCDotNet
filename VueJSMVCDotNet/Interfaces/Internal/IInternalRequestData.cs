@@ -10,7 +10,5 @@
 
         ValueTask<M?> LoadModelAsync<M>(string modelID)
             where M : IModel;
-
-        ValueTask<object?> LoadModelAsync(Type modelType, string modelID);
     }
 }

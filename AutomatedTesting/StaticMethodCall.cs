@@ -233,5 +233,24 @@ namespace AutomatedTesting
             Assert.AreEqual(200, responseStatus);
             Assert.IsTrue(content.Length==0);
         }
+
+        [TestMethod]
+        public async Task TestMethodWithSpecialParameterInjections()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/CheckSpecialItems", webApplicationFactory,
+            parameters: new Hashtable() {});
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.IsTrue(content.Length>0);
+            Assert.AreEqual(200, responseStatus);
+            Assert.AreEqual(content, "true");
+        }
     }
 }
+
+

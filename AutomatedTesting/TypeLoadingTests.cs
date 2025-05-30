@@ -50,6 +50,24 @@ namespace AutomatedTesting
                 error = ex;
             }
             Assert.IsNull(error);
+            try
+            {
+                dataSource.UnloadAssemblyContext(AssemblyLoadContext.Default);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            Assert.IsNull(error);
+            try
+            {
+                dataSource.AsssemblyLoadContextAdded(AssemblyLoadContext.Default.Name);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            Assert.IsNull(error);
         }
     }
 }

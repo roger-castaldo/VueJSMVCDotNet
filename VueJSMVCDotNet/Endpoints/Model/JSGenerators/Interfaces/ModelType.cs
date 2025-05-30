@@ -35,11 +35,11 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                 mi => mi.GetCustomAttribute<ModelDeleteMethodAttribute>(false)!=null
             );
             LinkedTypes = Properties.Where(pi => pi.CanRead)
-                            .Select(pi => Utility.ExtractUnderlyingType(pi.PropertyType, out _, out _, out _))
+                            .Select(pi => Utility.ExtractUnderlyingType(pi.PropertyType).type)
                             .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                             .Concat(
                                 InstanceMethods.Concat(StaticMethods)
-                                .Select(mi => Utility.ExtractUnderlyingType(mi.ReturnType, out _, out _, out _))
+                                .Select(mi => Utility.ExtractUnderlyingType(mi.ReturnType).type)
                                 .Where(t => t.GetInterfaces().Contains(typeof(IModel)))
                             )
                             .Concat(
@@ -49,7 +49,8 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                             )
                             .Where(t => !Equals(t, type))
                             .Distinct()
-                            .Select(t => Tuple.Create<Type, string?>(t!, mapImport(t!)));
+                            .Select(t => Tuple.Create<Type, string>(t!, mapImport(t!)??string.Empty))
+                            .Where(t=>!string.IsNullOrWhiteSpace(t.Item2));
         }
         public Type Type { get; private init; }
         public Type HandlerType { get; private init; }
@@ -59,7 +60,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
         public MethodInfo? SaveMethod { get; private init; }
         public MethodInfo? UpdateMethod { get; private init; }
         public MethodInfo? DeleteMethod { get; private init; }
-        public IEnumerable<Tuple<Type, string?>> LinkedTypes { get; private init; }
+        public IEnumerable<Tuple<Type, string>> LinkedTypes { get; private init; }
 
     }
 }

@@ -17,7 +17,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                 .Where(p => p.CanWrite)
                 .ForEach(p =>
                 {
-                    var propType = Utility.ExtractUnderlyingType(p.PropertyType, out var array, out _, out _);
+                    (var propType, var array, _, _, _) = Utility.ExtractUnderlyingType(p.PropertyType);
                     if (p.GetCustomAttribute<ReadOnlyModelPropertyAttribute>(false)!=null)
                         builder.AppendLine($"            prop = (this.{Constants.INITIAL_DATA_KEY}===undefined||this.#{p.Name}===null ? (this.#{p.Name}!==undefined ? this.#{p.Name} : null) : (this.{Constants.INITIAL_DATA_KEY}.{p.Name}!==undefined ? this.{Constants.INITIAL_DATA_KEY}.{p.Name} : null));");
                     else

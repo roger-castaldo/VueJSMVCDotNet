@@ -168,26 +168,26 @@ if (mdl.NullBooleanField!==null){ throw 'unable to set null boolean to null'; }"
         [TestMethod]
         public async Task ExecuteSpecialCases()
         {
-            await ExecuteTest($"mdl.ShortField={short.MaxValue}+1;", "Cannot set ShortField: invalid type: Value is a number, but is too large for a Int16");
-            await ExecuteTest($"mdl.NullShortField={short.MaxValue}+1;", "Cannot set NullShortField: invalid type: Value is a number, but is too large for a Int16");
-            await ExecuteTest($"mdl.UShortField={ushort.MaxValue}+1;", "Cannot set UShortField: invalid type: Value is a number, but is too large for a UInt16");
-            await ExecuteTest($"mdl.NullUShortField={ushort.MaxValue}+1;", "Cannot set NullUShortField: invalid type: Value is a number, but is too large for a UInt16");
-            await ExecuteTest($"mdl.ByteField={byte.MaxValue}+1;", "Cannot set ByteField: invalid type: Value is a number, but is too large for a Byte");
-            await ExecuteTest($"mdl.NullByteField={byte.MaxValue}+1;", "Cannot set NullByteField: invalid type: Value is a number, but is too large for a Byte");
-            await ExecuteTest($"mdl.IntField={int.MaxValue}+1;", "Cannot set IntField: invalid type: Value is a number, but is too large for a Int32");
-            await ExecuteTest($"mdl.NullIntField={int.MaxValue}+1;", "Cannot set NullIntField: invalid type: Value is a number, but is too large for a Int32");
-            await ExecuteTest($"mdl.UIntField={uint.MaxValue}+1;", "Cannot set UIntField: invalid type: Value is a number, but is too large for a UInt32");
-            await ExecuteTest($"mdl.NullUIntField={uint.MaxValue}+1;", "Cannot set NullUIntField: invalid type: Value is a number, but is too large for a UInt32");
-            await ExecuteTest($"mdl.LongField=BigInt('{long.MaxValue}')+BigInt('1');", "Cannot set LongField: invalid type: Value is a number, but is too large for a Int64");
-            await ExecuteTest($"mdl.NullLongField=BigInt('{long.MaxValue}')+BigInt('1');", "Cannot set NullLongField: invalid type: Value is a number, but is too large for a Int64");
-            await ExecuteTest($"mdl.ULongField=BigInt('{ulong.MaxValue}')+BigInt('1');", "Cannot set ULongField: invalid type: Value is a number, but is too large for a UInt64");
-            await ExecuteTest($"mdl.NullULongField=BigInt('{ulong.MaxValue}')+BigInt('1');", "Cannot set NullULongField: invalid type: Value is a number, but is too large for a UInt64");
-            await ExecuteTest($"mdl.FloatField=Number('{float.MaxValue}')+Number('1e38');", "Cannot set FloatField: invalid type: Value is a number, but is too large for a Single");
-            await ExecuteTest($"mdl.NullFloatField=Number('{float.MaxValue}')+Number('1e38');", "Cannot set NullFloatField: invalid type: Value is a number, but is too large for a Single");
-            await ExecuteTest($"mdl.DecimalField=Number('{decimal.MaxValue}')+Number('1e58');", "Cannot set DecimalField: invalid type: Value is a number, but is too large for a Decimal");
-            await ExecuteTest($"mdl.NullDecimalField=Number('{decimal.MaxValue}')+Number('1e58');", "Cannot set NullDecimalField: invalid type: Value is a number, but is too large for a Decimal");
-            await ExecuteTest($"mdl.DoubleField=Number('{double.MaxValue}')+Number('1e308');", "Cannot set DoubleField: invalid type: Value is a number, but is too large for a Double");
-            await ExecuteTest($"mdl.NullDoubleField=Number('{double.MaxValue}')+Number('1e308');", "Cannot set NullDoubleField: invalid type: Value is a number, but is too large for a Double");
+            await ExecuteTest($"mdl.ShortField={short.MaxValue}+1;", "Cannot set ShortField: invalid type: Value is a number, but exceeds the range for a Int16");
+            await ExecuteTest($"mdl.NullShortField={short.MaxValue}+1;", "Cannot set NullShortField: invalid type: Value is a number, but exceeds the range for a Int16");
+            await ExecuteTest($"mdl.UShortField={ushort.MaxValue}+1;", "Cannot set UShortField: invalid type: Value is a number, but exceeds the range for a UInt16");
+            await ExecuteTest($"mdl.NullUShortField={ushort.MaxValue}+1;", "Cannot set NullUShortField: invalid type: Value is a number, but exceeds the range for a UInt16");
+            await ExecuteTest($"mdl.ByteField={byte.MaxValue}+1;", "Cannot set ByteField: invalid type: Value is a number, but exceeds the range for a Byte");
+            await ExecuteTest($"mdl.NullByteField={byte.MaxValue}+1;", "Cannot set NullByteField: invalid type: Value is a number, but exceeds the range for a Byte");
+            await ExecuteTest($"mdl.IntField={int.MaxValue}+1;", "Cannot set IntField: invalid type: Value is a number, but exceeds the range for a Int32");
+            await ExecuteTest($"mdl.NullIntField={int.MaxValue}+1;", "Cannot set NullIntField: invalid type: Value is a number, but exceeds the range for a Int32");
+            await ExecuteTest($"mdl.UIntField={uint.MaxValue}+1;", "Cannot set UIntField: invalid type: Value is a number, but exceeds the range for a UInt32");
+            await ExecuteTest($"mdl.NullUIntField={uint.MaxValue}+1;", "Cannot set NullUIntField: invalid type: Value is a number, but exceeds the range for a UInt32");
+            await ExecuteTest($"mdl.LongField=BigInt('{long.MaxValue}')+BigInt('1');", "Cannot set LongField: invalid type: Value is a number, but exceeds the range for a Int64");
+            await ExecuteTest($"mdl.NullLongField=BigInt('{long.MaxValue}')+BigInt('1');", "Cannot set NullLongField: invalid type: Value is a number, but exceeds the range for a Int64");
+            await ExecuteTest($"mdl.ULongField=BigInt('{ulong.MaxValue}')+BigInt('1');", "Cannot set ULongField: invalid type: Value is a number, but exceeds the range for a UInt64");
+            await ExecuteTest($"mdl.NullULongField=BigInt('{ulong.MaxValue}')+BigInt('1');", "Cannot set NullULongField: invalid type: Value is a number, but exceeds the range for a UInt64");
+            await ExecuteTest($"mdl.FloatField=Number('{float.MaxValue}')+Number('1e38');", "Cannot set FloatField: invalid type: Value is a number, but exceeds the range for a Single");
+            await ExecuteTest($"mdl.NullFloatField=Number('{float.MaxValue}')+Number('1e38');", "Cannot set NullFloatField: invalid type: Value is a number, but exceeds the range for a Single");
+            await ExecuteTest($"mdl.DecimalField=Number('{decimal.MaxValue}')+Number('1e58');", "Cannot set DecimalField: invalid type: Value is a number, but exceeds the range for a Decimal");
+            await ExecuteTest($"mdl.NullDecimalField=Number('{decimal.MaxValue}')+Number('1e58');", "Cannot set NullDecimalField: invalid type: Value is a number, but exceeds the range for a Decimal");
+            await ExecuteTest($"mdl.DoubleField=Number('{double.MaxValue}')+Number('1e308');", "Cannot set DoubleField: invalid type: Value is a number, but exceeds the range for a Double");
+            await ExecuteTest($"mdl.NullDoubleField=Number('{double.MaxValue}')+Number('1e308');", "Cannot set NullDoubleField: invalid type: Value is a number, but exceeds the range for a Double");
             await ExecuteTest($"mdl.ByteArrayField='{Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123"))}'", null);
             await ExecuteTest($"mdl.NullByteArrayField='{Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("Testing123"))}'", null);
             await ExecuteTest($"mdl.IPAddressField='{IPAddress.Loopback}';", null);

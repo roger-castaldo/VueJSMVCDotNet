@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
@@ -22,7 +21,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         new RouteEndpoint(
                             requestDelegate: async (context) =>
                             {
-                                var handler = ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+                                var handler = await CreateLoaderAsync(context);
                                 var callback = await LocateMethodAsync(context, methods, Logger);
                                 if (callback!=null)
                                 {

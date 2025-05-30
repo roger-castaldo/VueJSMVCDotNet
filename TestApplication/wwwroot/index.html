@@ -26,7 +26,7 @@
     <section id="dvedit" />
 
     <script type="module">
-        import { mPerson } from "/models/mPerson.js";
+        import { mPerson } from "/models/mPerson.min.js";
         import { User } from "/models/User.js";
         import { createApp, watch, ref, defineComponent, toRef, h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
@@ -133,6 +133,11 @@
                 console.log(paged[0].FirstName);
             });
         });
+
+        const stream = mPerson.EventCounter(7);
+        stream.onMessageReceived((msg) => console.log(msg));
+        stream.onOpen(() => console.log('stream opened'));
+        stream.onClose(() => console.log('stream closed'));
     </script>
 </body>
 </html>

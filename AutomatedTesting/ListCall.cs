@@ -192,7 +192,7 @@ namespace AutomatedTesting
 
             await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDate", new Hashtable()
             {
-                {"date",DateTime.Now }
+                {"date",DateTime.UtcNow }
             });
             writer.VerifyLog(w => w.LogTrace("Called List By Date"), Times.Once);
             await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByDate", new Hashtable()

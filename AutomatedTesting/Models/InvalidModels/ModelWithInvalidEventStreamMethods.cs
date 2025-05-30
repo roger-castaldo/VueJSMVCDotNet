@@ -2,7 +2,7 @@
 
 namespace AutomatedTesting.Models.InvalidModels
 {
-    internal class ModelWithInvalidEventStreamMethods : IModel
+    internal class ModelWithInvalidExposedMethods : IModel
     {
         public string id => null;
     }

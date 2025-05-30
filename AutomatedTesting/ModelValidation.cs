@@ -53,7 +53,7 @@ namespace AutomatedTesting
         public void TestModelWithNoRoute()
         {
             ModelValidationException ex = _LoadExceptions();
-            Assert.AreEqual(1, ex.InnerExceptions.Count(e => e is NoRouteException && ((NoRouteException)e).ModelType==typeof(ModelWithNoRouteHandler)));
+            Assert.AreEqual(1, ex.InnerExceptions.Count(e => e is NoRouteException && ((NoRouteException)e).HandlerType==typeof(ModelWithNoRouteHandler)));
         }
 
         [TestMethod]
@@ -63,19 +63,19 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateLoadAllMethodException)
                 .Select(e => (DuplicateLoadAllMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateLoadAllMethod"));
+                .Count(e => e.HandlerType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateLoadAllMethod"));
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateModelSaveMethodException)
                 .Select(e => (DuplicateModelSaveMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateSaveMethod"));
+                .Count(e => e.HandlerType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateSaveMethod"));
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateModelDeleteMethodException)
                 .Select(e => (DuplicateModelDeleteMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateDeleteMethod"));
+                .Count(e => e.HandlerType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateDeleteMethod"));
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is DuplicateModelUpdateMethodException)
                 .Select(e => (DuplicateModelUpdateMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateUpdateMethod"));
+                .Count(e => e.HandlerType==typeof(ModelWithDuplicateMethodsHandler) && e.MethodName=="DuplicateUpdateMethod"));
         }
 
         [TestMethod]
@@ -85,31 +85,31 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelSaveMethodException)
                 .Select(e => (InvalidModelSaveMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidSave"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidSave"));
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelDeleteMethodException)
                 .Select(e => (InvalidModelDeleteMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidDelete"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidDelete"));
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelUpdateMethodException)
                 .Select(e => (InvalidModelUpdateMethodException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidUpdate"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="InvalidUpdate"));
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is InvalidLoadAllMethodReturnType)
-                .Select(e => (InvalidLoadAllMethodReturnType)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="NotArrayReturnAll"));
+                .Where(e => e is InvalidLoadAllMethodReturnTypeException)
+                .Select(e => (InvalidLoadAllMethodReturnTypeException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="NotArrayReturnAll"));
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is InvalidLoadAllMethodReturnType)
-                .Select(e => (InvalidLoadAllMethodReturnType)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="WrongArrayTypeLoadAll"));
+                .Where(e => e is InvalidLoadAllMethodReturnTypeException)
+                .Select(e => (InvalidLoadAllMethodReturnTypeException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="WrongArrayTypeLoadAll"));
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is InvalidLoadAllMethodReturnType)
-                .Select(e => (InvalidLoadAllMethodReturnType)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="WrongListTypeLoadAll"));
+                .Where(e => e is InvalidLoadAllMethodReturnTypeException)
+                .Select(e => (InvalidLoadAllMethodReturnTypeException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="WrongListTypeLoadAll"));
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is InvalidLoadAllArguements)
-                .Select(e => (InvalidLoadAllArguements)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="LoadAllWithInvalidArguements"));
+                .Where(e => e is InvalidLoadAllArguementsException)
+                .Select(e => (InvalidLoadAllArguementsException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidDataActionMethodsHandler) && e.MethodName=="LoadAllWithInvalidArguements"));
         }
 
         [TestMethod]
@@ -131,13 +131,13 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListMethodReturnException)
                 .Select(e => (InvalidModelListMethodReturnException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethodsHandler) && e.MethodName=="SearchNullable"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidListMethodsHandler) && e.MethodName=="SearchNullable"));
 
             //array invalid return
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is InvalidModelListMethodReturnException)
                 .Select(e => (InvalidModelListMethodReturnException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidListMethodsHandler) && e.MethodName=="SearchArray"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidListMethodsHandler) && e.MethodName=="SearchArray"));
         }
 
         [TestMethod]
@@ -147,7 +147,7 @@ namespace AutomatedTesting
             Assert.AreEqual(1, ex.InnerExceptions
                 .Where(e => e is ModelIDBlockedException)
                 .Select(e => (ModelIDBlockedException)e)
-                .Count(e => e.ModelType==typeof(ModelWithBlockedID)));
+                .Count(e => e.HandlerType==typeof(ModelWithBlockedID)));
         }
 
         [TestMethod]
@@ -157,17 +157,43 @@ namespace AutomatedTesting
             Assert.AreEqual(2, ex.InnerExceptions
                 .Where(e => e is DuplicateMethodSignatureException)
                 .Select(e => (DuplicateMethodSignatureException)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="DuplicateExposedStaticMethod"));
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="DuplicateExposedStaticMethod"));
 
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is MethodNotMarkedAsSlow)
-                .Select(e => (MethodNotMarkedAsSlow)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="NotSlowWithAddItem"));
+                .Where(e => e is MethodNotMarkedAsSlowException)
+                .Select(e => (MethodNotMarkedAsSlowException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="NotSlowWithAddItem"));
 
             Assert.AreEqual(1, ex.InnerExceptions
-                .Where(e => e is MethodWithAddItemNotVoid)
-                .Select(e => (MethodWithAddItemNotVoid)e)
-                .Count(e => e.ModelType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="SlowWithAddItemAndReturn"));
+                .Where(e => e is MethodWithAddItemNotVoidException)
+                .Select(e => (MethodWithAddItemNotVoidException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName=="SlowWithAddItemAndReturn"));
+
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidParameterTypeForExposedMethodException)
+                .Select(e => (InvalidParameterTypeForExposedMethodException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidExposedMethodsHandler) && e.MethodName==nameof(ModelWithInvalidExposedMethodsHandler.MethodWithOutParameter)
+                && e.Parameter.Name=="par1"));
+        }
+
+        [TestMethod]
+        public void TestModelWithInvalidStreamMethods()
+        {
+            ModelValidationException ex = _LoadExceptions();
+            Assert.AreEqual(2, ex.InnerExceptions
+                .Where(e => e is DuplicateEventStreamException)
+                .Select(e => (DuplicateEventStreamException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidEventStreamMethodsHandler) && e.MethodName=="DuplicateStaticStreamMethod"));
+
+            Assert.AreEqual(2, ex.InnerExceptions
+                .Where(e => e is DuplicateEventStreamException)
+                .Select(e => (DuplicateEventStreamException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidEventStreamMethodsHandler) && e.MethodName=="DuplicateInstanceStreamMethod"));
+
+            Assert.AreEqual(1, ex.InnerExceptions
+                .Where(e => e is InvalidParameterTypeForEventStreamException)
+                .Select(e => (InvalidParameterTypeForEventStreamException)e)
+                .Count(e => e.HandlerType==typeof(ModelWithInvalidEventStreamMethodsHandler) && e.MethodName=="StreamMethodWithInvalidParameter" && e.Parameter.Name=="parameter1"));
         }
     }
 }

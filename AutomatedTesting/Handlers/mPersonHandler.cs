@@ -1,11 +1,14 @@
 ﻿using AutomatedTesting.Models;
 using AutomatedTesting.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using VueJSMVCDotNet;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
@@ -303,9 +306,9 @@ namespace AutomatedTesting.Handlers
         [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public string GetInstanceSlowTimespan([ModelInstanceParameter]mPerson person)
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             Task.Delay(3456).Wait();
-            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+            return string.Format("This call took {0} ms to complete", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
 
         [ExposedMethodAttribute(isSlow: true, arrayElementType: typeof(int))]
@@ -380,26 +383,70 @@ namespace AutomatedTesting.Handlers
         [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public string GetSlowTimespan()
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             System.Threading.Thread.Sleep(3456);
-            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+            return string.Format("This call took {0} ms to complete", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
 
         [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public string GetSlowTimeout()
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(120));
-            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+            return string.Format("This call took {0} ms to complete", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
 
         [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
         public string GetSlowException()
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             System.Threading.Thread.Sleep(3456);
             throw new Exception("something error happened");
         }
         #endregion
+
+        [ExposedMethod]
+        public bool CheckSpecialItems(HttpContext context, IHeaderDictionary headers, IRequestCookieCollection requestCookies, IResponseCookies responseCookies, IDataStore dataStore)
+        {
+            return context!=null && headers!=null && requestCookies!=null && requestCookies!=null && responseCookies!=null && dataStore!=null;
+        }
+
+        [EventStreamMethod]
+        public async Task StreamUsers(ChannelWriter<object> writer,CancellationToken cancellationToken)
+        {
+            var idx = 0;
+            while (!cancellationToken.IsCancellationRequested && idx<Persons.Length)
+            {
+                await writer.WriteAsync(Persons[idx], cancellationToken);
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+                idx++;
+            }
+            writer.Complete();
+        }
+
+        [EventStreamMethod]
+        public async Task StreamUserProperties([ModelInstanceParameter]mPerson person, ChannelWriter<object> writer, CancellationToken cancellationToken)
+        {
+            await writer.WriteAsync(person.FirstName, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync(person.LastName, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync(person.Age, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            writer.Complete();
+        }
+
+        [EventStreamMethod]
+        public async Task StreamUserPropertiesById(int id, ChannelWriter<object> writer, CancellationToken cancellationToken)
+        {
+            var person = await ((IModelHandler<mPerson>)this).LoadAsync(id.ToString())!;
+            await writer.WriteAsync(person.FirstName, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync(person.LastName, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync(person.Age, cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            writer.Complete();
+        }
     }
 }

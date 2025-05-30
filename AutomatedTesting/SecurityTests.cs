@@ -79,7 +79,7 @@ namespace AutomatedTesting
             await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { "" });
             await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS });
             await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
-            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SAVE }, shouldSucceeed: true, parameters: new Hashtable() { { "FirstName", "Testing123" }, { "LastName", "Testing1234" }, { "BirthDay", DateTime.Now } });
+            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SAVE }, shouldSucceeed: true, parameters: new Hashtable() { { "FirstName", "Testing123" }, { "LastName", "Testing1234" }, { "BirthDay", DateTime.UtcNow } });
         }
 
         [TestMethod]

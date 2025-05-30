@@ -23,12 +23,14 @@ namespace VueJSMVCDotNet.Extensions
             bool compressJS = true,
             IMemoryCache? cache = null
         )
-            => services.AddSingleton<ModelsDataSource>((provider) => new(logger,
+            => services.AddSingleton<ModelsDataSource>((provider) => new(
+                logger??provider.GetService<ILogger>(),
                 vueImportPath,
+                coreJSURL,
                 coreJSImport??coreJSURL,
                 ignoreInvalidModels,
                 compressJS,
-                cache
+                cache??provider.GetService<IMemoryCache>()
             ))
             .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>());
 

@@ -40,6 +40,10 @@
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
-		<PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
+		<PackageReference Include="System.Text.Encodings.Web" Version="9.0.5" />
 	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NUglify\src\NUglify\NUglify.csproj" />
+	  <!--<PackageReference Include="Nuglify" Version="1.21.15" />-->
+  </ItemGroup>
 </Project>

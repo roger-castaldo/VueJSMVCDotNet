@@ -91,19 +91,6 @@ namespace VueJSMVCDotNet.Endpoints.Model
         ValueTask<M?> IInternalRequestData.LoadModelAsync<M>(string modelID) where M : default
             => ((IInternalRequestData)this).GetModelHandlerType<M>()?.LoadAsync(modelID) ?? throw new ArgumentNullException("Unable to locate loader");
 
-        async ValueTask<object?> IInternalRequestData.LoadModelAsync(Type modelType, string modelID)
-        {
-            var loader = typeof(IInternalRequestData).GetMethod(nameof(IInternalRequestData.GetModelHandlerType))?
-                .MakeGenericMethod(modelType)
-                .Invoke(this, null) ?? throw new ArgumentNullException("Unable to locate loader");
-            var valueTask = typeof(IModelHandler<>).GetMethod("LoadAsync")?
-                .Invoke(loader, [modelID]);
-            var task = (Task)typeof(ValueTask<>).GetMethod(nameof(ValueTask.AsTask))?
-                .Invoke(valueTask, null)!;
-            await task;
-            return task.GetType().GetProperty("Result")!.GetValue(task);
-        }
-
         private object? ConvertObjectToType(object? obj, Type expectedType)
         {
             log?.LogTrace("Attempting to convert object of type {SourceTyp} to {DestinationType}", (obj == null ? "NULL" : obj.GetType().FullName), expectedType.FullName);
@@ -176,9 +163,15 @@ namespace VueJSMVCDotNet.Endpoints.Model
             }
             else if (new List<Type>(expectedType.GetInterfaces()).Contains(typeof(IModel)))
             {
-                var task = ((IInternalRequestData)this).LoadModelAsync(expectedType, ((Hashtable)obj)["id"]!.ToString()!).AsTask();
+                var loader = typeof(IInternalRequestData).GetMethod(nameof(IInternalRequestData.GetModelHandlerType))?
+                    .MakeGenericMethod(expectedType)
+                    .Invoke(this, null) ?? throw new ArgumentNullException("Unable to locate loader");
+                var valueTask = typeof(IModelHandler<>).GetMethod("LoadAsync")?
+                    .Invoke(loader, [((Hashtable)obj)["id"]!.ToString()!]);
+                var task = (Task)typeof(ValueTask<>).GetMethod(nameof(ValueTask.AsTask))?
+                    .Invoke(valueTask, null)!;
                 task.Wait();
-                return task.Result;
+                return task.GetType().GetProperty("Result")!.GetValue(task);
             }
             MethodInfo? conMethod = null;
             foreach (MethodInfo mi in expectedType.GetMethods(BindingFlags.Static | BindingFlags.Public))

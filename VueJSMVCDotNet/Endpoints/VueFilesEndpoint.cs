@@ -44,7 +44,7 @@ namespace VueJSMVCDotNet.Endpoints
                 .Select(m =>
                 {
                     var import = (string.IsNullOrEmpty(m.Groups[3].Value) ? m.Groups[4].Value : m.Groups[3].Value);
-                    if (import.EndsWith("/"))
+                    if (import.EndsWith('/'))
                     {
                         var subMatch = regImportParts.Match(m.Groups[1].Value);
                         return subMatch.Success ? string.Concat(import.AsSpan(0, import.Length-1), ".js") : import;

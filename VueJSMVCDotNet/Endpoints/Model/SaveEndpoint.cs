@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
@@ -25,7 +24,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             await ReturnInsecure(context);
                         else
                         {
-                            var handler = ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+                            var handler = await CreateLoaderAsync(context);
                             var data = await Helper.ExtractPartsAsync(context, Logger);
                             context.Response.ContentType = "application/json";
                             context.Response.StatusCode= 200;

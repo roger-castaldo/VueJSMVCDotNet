@@ -270,14 +270,14 @@ const isEqual = (a, b)
 const _numberRanges = {
 	'Int16': { low: -32768, high: 32767, hasDecimal: false },
 	'Int32': { low: -2147483648, high: 2147483647, hasDecimal: false },
-	'Int64': { low: BigInt('-9223372036854775808'), high: BigInt('9223372036854775807'), hasDecimal: false },
+	'Int64': { low: Number('-9223372036854775808'), high: Number('9223372036854775807'), hasDecimal: false },
 	'SByte': { low: -128, high: 127, hasDecimal: false },
 	'Single': { low: Number('-3.402823e38'), high: Number('3.402823e38'), hasDecimal: true },
 	'Decimal': { low: Number('-79228162514264337593543950335'), high: Number('79228162514264337593543950335'), hasDecimal: true },
 	'Double': { low: Number('-1.7976931348623157E+308'), high: Number('1.7976931348623157E+308'), hasDecimal: true },
 	'UInt16': { low: 0, high: 65535, hasDecimal: false },
 	'UInt32': { low: 0, high: 4294967295, hasDecimal: false },
-	'UInt64': { low: 0, high: BigInt('18446744073709551615'), hasDecimal: false },
+	'UInt64': { low: Number(0), high: Number('18446744073709551615'), hasDecimal: false },
 	'Byte': { low: 0, high: 255, hasDecimal: false },
 };
 
@@ -288,6 +288,17 @@ const _ipv4Regex = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
 const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/gi;
 const _versionRegex = /^([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$/;
 const _guidRegex = /^(?:\{{0,1}(?:[0-9a-fA-F]){8}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){12}\}{0,1})$/;
+
+const _numberValueInRange = (value, low, high) => {
+	if (typeof value === 'bigint' && typeof low !== 'bigint') {
+		low = BigInt(low);
+		high = BigInt(high);
+	}
+	if (typeof value !== 'bigint' && typeof low === 'bigint') {
+		value = BigInt(value);
+	}
+	return value >= low && value <= high;
+};
 
 const _checkDataType = (type, value, enumlist) => {
 	if (type.indexOf('System.') === 0)
@@ -339,10 +350,6 @@ const _checkDataType = (type, value, enumlist) => {
 				break;
 			case 'UInt64':
 			case 'Int64':
-				if (typeof value !== 'bigint' && isNaN(value))
-					throw new Error('invalid type: Value not a number and cannot be converted');
-				else if (typeof value !== 'bigint')
-					value = BigInt(value);
 			case 'Int16':
 			case 'Int32':
 			case 'SByte':
@@ -364,10 +371,10 @@ const _checkDataType = (type, value, enumlist) => {
 				}
 				if (typeof value !== 'bigint' && isNaN(value))
 					throw new Error('invalid type: Value not a number and cannot be converted');
-				if (value < (typeof value === 'bigint' ? (typeof _numberRanges[type].low !== 'bigint' ? BigInt(_numberRanges[type].low) : _numberRanges[type].low) : _numberRanges[type].low) || value > (typeof value === 'bigint' ? (typeof _numberRanges[type].high !== 'bigint' ? BigInt(_numberRanges[type].high) : _numberRanges[type].high) : _numberRanges[type].high))
-					throw new Error('invalid type: Value is a number, but is too large for a ' + type);
+				if (!_numberValueInRange(value, _numberRanges[type].low, _numberRanges[type].high))
+					throw new Error(`invalid type: Value is a number, but exceeds the range for a ${type}`);
 				if (!_numberRanges[type].hasDecimal && value.toString().indexOf('.') >= 0)
-					throw new Error('invalid type: Value is a number, but cannot has a decimal for ' + type);
+					throw new Error(`invalid type: Value is a number, but cannot has a decimal for ${type}`);
 				break;
 			case 'Boolean':
 				if (value == null || value == undefined)
@@ -650,7 +657,6 @@ class ModelList {
 	};
 
 	async #reload() {
-		console.log(this.#useGet);
 		let tmp = this;
 		let data = {};
 		if (tmp.#isPaged) {

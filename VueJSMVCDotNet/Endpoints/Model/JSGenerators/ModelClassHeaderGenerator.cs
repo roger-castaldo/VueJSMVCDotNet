@@ -1,4 +1,5 @@
-﻿using VueJSMVCDotNet.Attributes.Models;
+﻿using VueJSMVCDotNet.Attributes.ModelHandlers;
+using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
 using VueJSMVCDotNet.Extensions;
 
@@ -6,6 +7,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ModelClassHeaderGenerator : IJSGenerator
     {
+        private static readonly IEnumerable<string> ModelKeys = ["id", "isNew", "isValid", "invalidFields", "reload", "$on", "$off"];
         void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             log?.LogTrace("Generating Model Definition javascript for {TypeName}", modelType.Type.FullName);
@@ -19,7 +21,12 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             modelType.Properties.ForEach(p => builder.AppendLine($"      #{p.Name}=undefined;"));
 
             ModelClassHeaderGenerator.AppendValidations(modelType.Properties, builder);
-            ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods.DistinctBy(m => m.Name), modelType);
+            ModelClassHeaderGenerator.AppendToProxy(builder, modelType.Properties, modelType.InstanceMethods
+                .Concat(
+                    modelType.HandlerType.GetMethods(Constants.METHOD_FLAGS)
+                    .Where(m => m.GetCustomAttribute<EventStreamMethodAttribute>(false)!=null && Helper.IsExposedMethodInstance(m))
+                ).DistinctBy(m => m.Name)
+                , modelType);
 
             builder.AppendLine(@$"    constructor(){{
             this.{Constants.INITIAL_DATA_KEY} = {{}};
@@ -79,21 +86,22 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                     return Reflect.set(...arguments);
                 },
                 ownKeys:function(target){
-                    return ['id','isNew','isValid','invalidFields','reload','$on','$off',");
+                    return ");
+            
+            var keys = ModelKeys.Concat(props.Select(p => p.Name))
+                .Concat(methods.Select(m => m.Name));
 
-            builder.Append(string.Join(',', props.Select(p => $"'{p.Name}'").Concat(methods.Select(m => $"'{m.Name}'"))));
-            if (!props.Any()&&!methods.Any())
-                builder.Length--;
             if (modelType.SaveMethod != null)
-                builder.Append(",'save'");
+                keys = keys.Append("save");
             if (modelType.UpdateMethod!=null)
-                builder.Append(",'update'");
+                keys = keys.Append("update");
             if (modelType.DeleteMethod!=null)
-                builder.Append(",'destroy'");
-            builder.AppendLine(@"];
-                }
-            });
-        };");
+                keys = keys.Append("destroy");
+
+            builder.AppendLine(@$"['{string.Join("','", keys.Distinct())}'];
+                }}
+            }});
+        }};");
         }
 
         private static void AppendValidations(IEnumerable<PropertyInfo> props, WrappedStringBuilder builder)

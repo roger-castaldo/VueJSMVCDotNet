@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
@@ -98,6 +100,65 @@ namespace AutomatedTesting.Handlers
         )
         {
             return null;
+        }
+
+        [ExposedMethodAttribute()]
+        [NotNullArguementAttribute(["people", "person"])]
+        public void TestModelInputs(mPerson[] people,mPerson person) { }
+
+        [EventStreamMethod]
+        [NotNullArguementAttribute(["stringArg", "IPAddressArg", "VersionArg"])]
+        public async Task TestStaticEventStreamInputs(
+            string stringArg, string nullStringArg,
+            char charArg, char? nullCharArg,
+            short shortArg, short? nullShortArg,
+            ushort ushortArg, ushort? nullUShortArg,
+            int intArg, int? nullIntArg,
+            uint uintArg, uint? nullUIntArg,
+            long longArg, long? nullLongArg,
+            ulong ulongArg, ulong? nullULongArg,
+            float floatArg, float? nullFloatArg,
+            decimal decimalArg, decimal? nullDecimalArg,
+            double doubleArg, double? nullDoubleArg,
+            byte byteArg, byte? nullByteArg,
+            bool boolArg, bool? nullBooleanArg,
+            TestEnums enumArg, TestEnums? nullEnumArg,
+            DateTime DateTimeArg, DateTime? nullDateTimeArg,
+            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
+            Version VersionArg, Version nullVersionArg,
+            ChannelWriter<object> writer, CancellationToken cancellationToken)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync("complete");
+            writer.Complete();
+        }
+
+        [EventStreamMethod]
+        [NotNullArguementAttribute(["stringArg", "IPAddressArg", "VersionArg"])]
+        public async Task TestEventStreamInputs(
+            [ModelIDParameter]string id,
+            string stringArg, string nullStringArg,
+            char charArg, char? nullCharArg,
+            short shortArg, short? nullShortArg,
+            ushort ushortArg, ushort? nullUShortArg,
+            int intArg, int? nullIntArg,
+            uint uintArg, uint? nullUIntArg,
+            long longArg, long? nullLongArg,
+            ulong ulongArg, ulong? nullULongArg,
+            float floatArg, float? nullFloatArg,
+            decimal decimalArg, decimal? nullDecimalArg,
+            double doubleArg, double? nullDoubleArg,
+            byte byteArg, byte? nullByteArg,
+            bool boolArg, bool? nullBooleanArg,
+            TestEnums enumArg, TestEnums? nullEnumArg,
+            DateTime DateTimeArg, DateTime? nullDateTimeArg,
+            IPAddress IPAddressArg, IPAddress nullIPAddressArg,
+            Version VersionArg, Version nullVersionArg,
+            ChannelWriter<object> writer, CancellationToken cancellationToken)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await writer.WriteAsync("complete");
+            writer.Complete();
         }
     }
 }

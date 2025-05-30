@@ -78,7 +78,7 @@ export {{Translate,ProduceComputedMessage}};";
             if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
             {
                 var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
-                if (fpath!=null)
+                if (!string.IsNullOrWhiteSpace(fpath))
                 {
                     StringBuilder sb = new();
                     var contents = fileProvider.GetDirectoryContents(fpath)

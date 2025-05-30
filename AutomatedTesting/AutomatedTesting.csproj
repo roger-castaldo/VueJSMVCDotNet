@@ -36,6 +36,7 @@
 	  <EmbeddedResource Include="resources\vueFiles\buttons\button-cancel.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\buttons\button.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\icon.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\person.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
@@ -50,12 +51,12 @@
 		</PackageReference>
 		<PackageReference Include="ILogger.Moq" Version="2.0.0" />
 		<PackageReference Include="Jint" Version="4.2.2" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.15" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.16" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
 		<PackageReference Include="Moq" Version="4.20.72" />
-		<PackageReference Include="MSTest.TestAdapter" Version="3.8.3" />
-		<PackageReference Include="MSTest.TestFramework" Version="3.8.3" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.9.0" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.9.0" />
 		<PackageReference Include="coverlet.collector" Version="6.0.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

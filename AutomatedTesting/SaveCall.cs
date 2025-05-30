@@ -18,7 +18,7 @@ namespace AutomatedTesting
             (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
             string lastName = "Testing321";
-            DateTime birthDay = DateTime.Now;
+            DateTime birthDay = DateTime.UtcNow;
             int currentCount = mPersonHandler.Persons.Length;
 
             //Act
@@ -57,7 +57,7 @@ namespace AutomatedTesting
             (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
             string firstName = "DoNotSave";
             string lastName = "Testing321";
-            DateTime birthDay = DateTime.Now;
+            DateTime birthDay = DateTime.UtcNow;
             int currentCount = mPersonHandler.Persons.Length;
 
             //Act

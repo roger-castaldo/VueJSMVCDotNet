@@ -1,4 +1,6 @@
-﻿using VueJSMVCDotNet.Attributes.ModelHandlers;
+﻿using System.Threading;
+using System.Threading.Channels;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
@@ -8,12 +10,6 @@ namespace VueJSMVCDotNet
 {
     internal static class DefinitionValidator
     {
-        private readonly struct SPathTypePair
-        {
-            public string Path { get; init; }
-            public Type ModelType { get; init; }
-        }
-
         private static bool IsValidDataActionMethod(MethodInfo method, Type returnType, bool requiresInstance)
         {
             var iMethod = new InjectableMethod(method, []);
@@ -35,8 +31,10 @@ namespace VueJSMVCDotNet
          * 2.  Check to make sure that the id property is not blocked.
          * 3.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void or Task)
          * 4.  Check to make sure all exposed methods have a unique signature
-         * 5.  Check to make sure that the select model method has the right return type
-         * 6.  Check to make sure the save, update and delete methods are valid, if defined
+         * 5.  Check to make sure all exposed methods do not have an out (unsupported) parameter
+         * 6.  Check to make sure all event stream methods have the required input parameters as well as any additional inputs are of the allowed types
+         * 7.  Check to make sure that the select model method has the right return type
+         * 8.  Check to make sure the save, update and delete methods are valid, if defined
          */
         internal static IEnumerable<Exception> Validate(AssemblyLoadContext alc, ILogger? log, out IEnumerable<(Type HandlerType, Type ModelType)> invalidModels, out IEnumerable<(Type HandlerType, Type ModelType)> models)
         {
@@ -70,6 +68,7 @@ namespace VueJSMVCDotNet
                     var methods = handler.HandlerType.GetMethods(Constants.METHOD_FLAGS);
 
                     CheckExposedMethods(methods, handler, exceptions, log);
+                    CheckEventStreamMethods(methods, handler, exceptions, log);
                     CheckLoadAllMethod(methods, handler, exceptions, log);
                     CheckListMethods(methods, handler, exceptions, log);
                     CheckModelMethod<ModelSaveMethodAttribute>(methods, handler, exceptions, log, "save", typeof(string), true,
@@ -87,8 +86,8 @@ namespace VueJSMVCDotNet
 
                     return exceptions;
                 });
-            invalidModels = errors.OfType<ModelTypeException>()
-                .Select(e => handlers.First(h => Equals(h.HandlerType, e.ModelType) || Equals(h.ModelType, e.ModelType)))
+            invalidModels = errors.OfType<HandlerTypeException>()
+                .Select(e => handlers.First(h => Equals(h.HandlerType, e.HandlerType) || Equals(h.ModelType, e.HandlerType)))
                 .Distinct();
             models = handlers;
             return errors;
@@ -97,8 +96,8 @@ namespace VueJSMVCDotNet
         private static IEnumerable<MethodInfo> CheckModelMethod<MA>(MethodInfo[] methods,
             (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log,
             string methodType, Type returnType, bool requiresInstance,
-            Func<Type, MethodInfo, ModelTypeMethodException> constructDuplicateException,
-            Func<Type, MethodInfo, ModelTypeMethodException> constructInvalidException)
+            Func<Type, MethodInfo, HandlerTypeMethodException> constructDuplicateException,
+            Func<Type, MethodInfo, HandlerTypeMethodException> constructInvalidException)
             where MA : Attribute
         {
             var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<MA>(false)!=null);
@@ -131,13 +130,48 @@ namespace VueJSMVCDotNet
                                 if (ms.Method.HasAddItem)
                                 {
                                     if (!ms.ExposedAttribute!.IsSlow)
-                                        AppendError(exceptions, log, new MethodNotMarkedAsSlow(handler.HandlerType, ms.Method.Method),
+                                        AppendError(exceptions, log, new MethodNotMarkedAsSlowException(handler.HandlerType, ms.Method.Method),
                                             "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate but is not marked slow", handler.HandlerType.FullName, ms.Method.Name);
                                     else if (ms.Method.ReturnType!=typeof(void))
-                                        AppendError(exceptions, log, new MethodWithAddItemNotVoid(handler.HandlerType, ms.Method.Method),
+                                        AppendError(exceptions, log, new MethodWithAddItemNotVoidException(handler.HandlerType, ms.Method.Method),
                                             "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate requires a void response", handler.HandlerType.FullName, ms.Method.Name);
                                 }
+                                ms.Method.StrippedParameters
+                                    .Where(par=>par.IsOut)
+                                    .ForEach(par =>
+                                        AppendError(exceptions, log, new InvalidParameterTypeForExposedMethodException(handler.HandlerType, ms.Method.Method, par),
+                                            "Model {TypeName} is not valid because the parameter {ParameterName} in method {MethodName} is an out parameter which is not supported", handler.HandlerType.FullName, par.Name, ms.Method.Name)
+                                    );
                             });
+                        });
+
+        private static void CheckEventStreamMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
+            => methods.Where(m=>m.GetCustomAttribute<EventStreamMethodAttribute>()!=null)
+                        .Select(m=>new InjectableMethod(m, []))
+                        .GroupBy(m => $"{(m.UsesModel ? "instance" : "static")}:{m.Name}")
+                        .ForEach(grp =>
+                        {
+                            if (grp.Count()>1)
+                            {
+                                grp.ForEach(m =>
+                                {
+                                    AppendError(exceptions, log, new DuplicateEventStreamException(handler.HandlerType, m.Method),
+                                        "Handler {FullName} has a duplicate Event Stream method {MethodName}", handler.HandlerType.FullName, m.Name);
+                                });
+                            }
+                            else
+                            {
+                                var method = grp.First();
+                                method
+                                    .StrippedParameters
+                                    .Where(par => !Equals(par.ParameterType, typeof(ChannelWriter<object>)) && !Equals(par.ParameterType, typeof(CancellationToken))
+                                    && !EventStreamHelper.IsUsableType(par.ParameterType))
+                                    .ForEach(par =>
+                                    {
+                                        AppendError(exceptions, log, new InvalidParameterTypeForEventStreamException(handler.HandlerType, method.Method, par),
+                                        "Handler {FullName} has an Event Stream method {MethodName} with the invalid parameter type for {}", handler.HandlerType.FullName, method.Name, par.Name);
+                                    });
+                            }
                         });
 
         private static void CheckLoadAllMethod(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
@@ -148,15 +182,15 @@ namespace VueJSMVCDotNet
                     "Handler {FullName} has more than 1 ModelLoadAllMethod", handler.HandlerType.FullName));
             filteredMethods.ForEach(loadAllMethod =>
             {
-                var rtype = Utility.ExtractUnderlyingType(loadAllMethod.ReturnType, out var isArray, out _, out _);
+                (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(loadAllMethod.ReturnType);
                 if (!isArray)
-                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnType(handler.HandlerType, loadAllMethod),
+                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnTypeException(handler.HandlerType, loadAllMethod),
                         "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
                 else if (!Equals(rtype, handler.ModelType))
-                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnType(handler.HandlerType, loadAllMethod),
+                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnTypeException(handler.HandlerType, loadAllMethod),
                         "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
                 else if (InjectableMethod.StripMethodParameters(loadAllMethod.GetParameters()).Any(pair => !pair.IsStrippable))
-                    exceptions.Add(new InvalidLoadAllArguements(handler.HandlerType, loadAllMethod));
+                    exceptions.Add(new InvalidLoadAllArguementsException(handler.HandlerType, loadAllMethod));
             });
         }
 
@@ -165,7 +199,7 @@ namespace VueJSMVCDotNet
             .ForEach(method =>
             {
                 var paged = method.GetCustomAttribute<ModelListMethodAttribute>(false)!.Paged;
-                var rtype = Utility.ExtractUnderlyingType(method.ReturnType, out var isArray, out _, out _);
+                (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(method.ReturnType);
                 if (paged)
                 {
                     if (!method.GetParameters().Any(par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null))

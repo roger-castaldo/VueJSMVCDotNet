@@ -114,22 +114,30 @@ namespace VueJSMVCDotNet
 
         public static bool IsArrayType(Type type)
         {
-            ExtractUnderlyingType(type, out var isArray, out _, out _);
+            (_, var isArray, _, _, _) = ExtractUnderlyingType(type);
             return isArray;
         }
 
-        public static Type ExtractUnderlyingType(Type type, out bool isArray, out bool isNullable, out bool isTask)
+        public static (Type type,bool isArray,bool isNullable,bool isTask,bool isValueTask) ExtractUnderlyingType(Type type)
         {
-            isArray = false;
-            isNullable = false;
-            isTask= false;
+            var isArray = false;
+            var isNullable = false;
+            var isTask= false;
+            var isValueTask = false;
             if (type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>)))
             {
                 isTask=true;
                 if (type.IsGenericType)
                     type=type.GetGenericArguments()[0];
                 else
-                    return typeof(void);
+                    return (typeof(void), isArray, isNullable, isTask, isValueTask);
+            }else if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>)))
+            {
+                isValueTask=true;
+                if (type.IsGenericType)
+                    type=type.GetGenericArguments()[0];
+                else
+                    return (typeof(void), isArray, isNullable, isTask, isValueTask);
             }
             if (type.IsArray)
             {
@@ -154,12 +162,12 @@ namespace VueJSMVCDotNet
                 else
                     type=type.GetElementType()!;
             }
-            return type;
+            return (type, isArray, isNullable, isTask, isValueTask);
         }
 
         internal static string GetTypeString(Type propertyType, bool notNullTagged)
         {
-            var ptype = ExtractUnderlyingType(propertyType, out var isArray, out var isNullable, out _);
+            (var ptype, var isArray, var isNullable, _, _) = ExtractUnderlyingType(propertyType);
             if (isArray)
                 return $"{GetTypeString(ptype, false)}[]{(ptype==typeof(byte) && !notNullTagged ? "?" : "")}";
             else if (isNullable)
@@ -202,7 +210,7 @@ namespace VueJSMVCDotNet
 
         internal static string GetEnumList(Type propertyType)
         {
-            var type = ExtractUnderlyingType(propertyType, out _, out _, out _);
+            (var type, _, _, _, _) = ExtractUnderlyingType(propertyType);
             if (type.IsEnum)
                 return $"[{string.Join(',', Enum.GetNames(type).Select(s => $"'{s}'"))}]";
             else
@@ -253,7 +261,6 @@ namespace VueJSMVCDotNet
             result.Converters.Add(new JsonStringEnumConverter());
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
-            result.Converters.Add(new DecimalConverter());
             result.Converters.Add(new ModelConverterFactory(requestData));
             return result;
         }

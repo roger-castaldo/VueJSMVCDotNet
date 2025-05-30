@@ -22,7 +22,6 @@ namespace VueJSMVCDotNet.Endpoints.Model
         private const string BaseURLKey = "_JSBaseURL";
 
         private static readonly IEnumerable<IGenerator> Generators = [
-            new HeaderGenerator(),
             new ParsersGenerator(),
             new ModelClassHeaderGenerator(),
             new JSONGenerator(),
@@ -32,12 +31,17 @@ namespace VueJSMVCDotNet.Endpoints.Model
             new ModelLoadAllGenerator(),
             new ModelLoadGenerator(),
             new MethodsGenerator(),
+            new EventStreamsGenerator(),
             new ModelListCallGenerator(),
             new ModelClassFooterGenerator(),
             new FooterGenerator()
         ];
 
         private readonly ModelType modelType = new ModelType(typeof(T), typeof(H), (type) => modelsDataSource.GetModelImportURL(type));
+        private readonly string importHeader = @$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
+import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
+if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.x'; }}
+{Constants.HOST_URL_CONSTRUCTOR}";
 
         IEnumerable<RouteEndpoint> IEndpointHandler.AsEndpoints
             => typeof(H)
@@ -62,9 +66,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             var useModuleExtension = ((string?)context.Request.RouteValues[ExtensionKey])?.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase)??false;
             var isMin = ((string?)context.Request.RouteValues[ExtensionKey])?.StartsWith("min", StringComparison.InvariantCultureIgnoreCase)??false;
             var builder = new WrappedStringBuilder(compressAllJS||isMin);
-            builder.AppendLine(@$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
-import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
-if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.x'; }}");
+            builder.AppendLine(importHeader);
             Generators.ForEach(gen =>
             {
                 builder.AppendLine($"//START:{gen.GetType().Name}");
@@ -78,7 +80,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
             return Task.FromResult<CachableResponse?>(new(
                 builder.ToString(),
                 "text/javascript",
-                DateTime.Now,
+                DateTime.UtcNow,
                 []
             ));
         }

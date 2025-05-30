@@ -34,7 +34,7 @@ namespace AutomatedTesting.Models
     
     public class mPerson : IModel
     {
-        private static Random _rnd = new Random((int)DateTime.Now.Ticks);
+        private static Random _rnd = new Random((int)DateTime.UtcNow.Ticks);
 
         private string _firstName;
         [ModelRequiredFieldAttribute()]
@@ -43,7 +43,7 @@ namespace AutomatedTesting.Models
         private string _lastName;
         [ModelRequiredFieldAttribute()]
         public string LastName { get { return _lastName; } set { _lastName = value; } }
-        private DateTime _birthday = DateTime.Now.AddYears(-20);
+        private DateTime _birthday = DateTime.UtcNow.AddYears(-20);
         public DateTime BirthDay
         {
             get { return _birthday; }
@@ -54,7 +54,7 @@ namespace AutomatedTesting.Models
         {
             get
             {
-                return (int)Math.Floor(DateTime.Now.Subtract(_birthday).TotalDays/365);
+                return (int)Math.Floor(DateTime.UtcNow.Subtract(_birthday).TotalDays/365);
             }
         }
 

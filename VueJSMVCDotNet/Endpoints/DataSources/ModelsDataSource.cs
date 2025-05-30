@@ -16,6 +16,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
 {
     internal class ModelsDataSource(ILogger? logger,
             string vueImportPath,
+            string coreJSURL,
             string coreJSImport,
             bool ignoreInvalidModels,
             bool compressJS,
@@ -79,7 +80,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                             context.Response.StatusCode = 200;
                             await context.Response.WriteAsync(compressedCore);
                         },
-                        routePattern: RoutePatternFactory.Parse($"{(coreJSImport.StartsWith('/') ? "" : "/")}{coreJSImport}{{extension:regex(^(\\.min)?\\.js$)}}"),
+                        routePattern: RoutePatternFactory.Parse($"{(coreJSURL.StartsWith('/') ? "" : "/")}{coreJSURL}"),
                         order: 0,
                         metadata: new(
                             new HttpMethodMetadata([HttpMethods.Get])
@@ -158,7 +159,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                logger?.LogError(ex, "An error occured attempting to append a given endpoint");
             }
             locker.ExitWriteLock();
             if (triggerChange)

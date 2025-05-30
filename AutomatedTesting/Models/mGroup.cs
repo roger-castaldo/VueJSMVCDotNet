@@ -10,7 +10,7 @@ namespace AutomatedTesting.Models
     public class mGroup : IModel
 #pragma warning restore IDE1006 // Naming Styles
     {
-        private static readonly Random _rnd = new((int)DateTime.Now.Ticks);
+        private static readonly Random _rnd = new((int)DateTime.UtcNow.Ticks);
 
         [ModelRequiredFieldAttribute()]
         [ReadOnlyModelPropertyAttribute()]

@@ -4,13 +4,15 @@ using TestApplication;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 
+var compressJS = false;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddDistributedMemoryCache()
     .AddSession()
     .AddCors()
     .UseVueJSMVCModels(
-        compressJS: false,
+        compressJS: compressJS,
         vueImportPath:"vue"
     )
     .AddSingleton<ISecureSessionFactory>(new SessionManager());
@@ -23,8 +25,8 @@ app.UseDefaultFiles()
     .UseSession()
     .UseRouting()
     .UseEndpoints(endpoints => endpoints.MapVueJSMVSModels()
-        .UseVueJSMVCMessages(builder.Environment.WebRootFileProvider,"/resources/messages", compressJS:false, vueImportPath:"vue")
-        .UseVueJSMVCVueFiles(builder.Environment.WebRootFileProvider,"/resources/vueFiles",compressJS:false, vueImportPath:"vue")
+        .UseVueJSMVCMessages(builder.Environment.WebRootFileProvider,"/resources/messages", compressJS: compressJS, vueImportPath:"vue")
+        .UseVueJSMVCVueFiles(builder.Environment.WebRootFileProvider,"/resources/vueFiles",compressJS: compressJS, vueImportPath:"vue")
     );
 
 await app.RunAsync();

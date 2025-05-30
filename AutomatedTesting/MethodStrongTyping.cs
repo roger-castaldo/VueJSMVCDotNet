@@ -143,5 +143,60 @@ export const name = 'John';");
                 Assert.Fail(e.Message);
             }
         }
+
+        [TestMethod]
+        public async Task TesModelInputs()
+        {
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
+            try
+            {
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.Modules.Add("mDataTypes", content);
+                eng.Modules.Add("custom", @"
+        import { mDataTypes } from 'mDataTypes';
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],{id:'test2'});
+        }catch(err){
+            if (err.message.toString()!='fetch is not defined'){
+                throw err.message;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],{id:null});
+        }catch(err){
+            if (err.indexOf('Cannot set person')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on person: '+err;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],null);
+        }catch(err){
+            if (err.indexOf('Cannot set person')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on person: '+err;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs(null,{id:'test2'});
+        }catch(err){
+            if (err.indexOf('people is not allowed to be null')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on people: '+err;
+            }
+        }
+export const name = 'John';");
+                var ns = eng.Modules.Import("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
     }
 }

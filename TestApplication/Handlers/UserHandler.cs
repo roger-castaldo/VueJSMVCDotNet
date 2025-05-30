@@ -28,7 +28,7 @@ namespace TestApplication.Handlers
         public string Save([ModelInstanceParameter()] User user)
         {
             byte[] buff = new byte[16];
-            new Random((int)DateTime.Now.Ticks).NextBytes(buff);
+            new Random((int)DateTime.UtcNow.Ticks).NextBytes(buff);
             user.SetID(new Guid(buff).ToString());
             lock (_USERS)
             {

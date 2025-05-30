@@ -23,5 +23,8 @@ namespace AutomatedTesting.Handlers.InvalidModels
 
         [ExposedMethodAttribute(isSlow: true)]
         public bool SlowWithAddItemAndReturn(AddItem addItem) { return true; }
+
+        [ExposedMethodAttribute()]
+        public void MethodWithOutParameter(out int par1) { par1 = 10; }
     }
 }

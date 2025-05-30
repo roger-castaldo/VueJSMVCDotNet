@@ -22,7 +22,7 @@ namespace TestApplication
             {
                 if (_current.Session.GetString("Start")==null)
                 {
-                    _current.Session.SetString("Start", DateTime.Now.ToString());
+                    _current.Session.SetString("Start", DateTime.UtcNow.ToString());
                 }
                 return DateTime.Parse(_current.Session.GetString("Start"));
             }

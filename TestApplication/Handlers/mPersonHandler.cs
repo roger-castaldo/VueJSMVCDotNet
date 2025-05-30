@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using TestApplication.Models;
 using VueJSMVCDotNet;
@@ -161,9 +163,9 @@ namespace TestApplication.Handlers
         [ExposedMethod(allowNullResponse: false, isSlow: true)]
         public string GetSlowTimespan()
         {
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.UtcNow;
             System.Threading.Thread.Sleep(3456);
-            return string.Format("This call took {0} ms to complete", DateTime.Now.Subtract(now).TotalMilliseconds);
+            return string.Format("This call took {0} ms to complete", DateTime.UtcNow.Subtract(now).TotalMilliseconds);
         }
 
         [ExposedMethod(allowNullResponse: false, arrayElementType: typeof(string))]
@@ -194,6 +196,30 @@ namespace TestApplication.Handlers
             var reader = new StreamReader(contentFile.OpenReadStream());
             var result = $"{contentFile.Name} = {reader.ReadToEnd()}";
             return result;
+        }
+
+        [EventStreamMethod()]
+        public async Task EventCounter(int count, ChannelWriter<object> writer,CancellationToken cancellationToken)
+        {
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await writer.WriteAsync(_persons[i % _persons.Count], cancellationToken);
+                    await Task.Delay(1000, cancellationToken);
+                }
+
+                Console.WriteLine("Writer completed normally.");
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Writer was canceled (likely due to client disconnect).");
+            }
+            finally
+            {
+                writer.TryComplete();
+            }
         }
     }
 }

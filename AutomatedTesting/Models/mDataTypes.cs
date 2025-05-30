@@ -79,7 +79,7 @@ namespace AutomatedTesting.Models
         private TestEnums? _nullEnumField = null;
         public TestEnums? NullEnumField { get { return _nullEnumField; } set { _nullEnumField = value; } }
 
-        private DateTime _DateTimeField = DateTime.Now;
+        private DateTime _DateTimeField = DateTime.UtcNow;
         public DateTime DateTimeField { get { return _DateTimeField; } set { _DateTimeField = value; } }
         private DateTime? _nullDateTimeField = null;
         public DateTime? NullDateTimeField { get { return _nullDateTimeField; } set { _nullDateTimeField = value; } }

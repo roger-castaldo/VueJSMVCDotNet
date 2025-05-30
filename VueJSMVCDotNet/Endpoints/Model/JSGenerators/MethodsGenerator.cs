@@ -8,14 +8,13 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class MethodsGenerator : IJSGenerator
     {
-        private static void ExtractReturnType(MethodInfo method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse)
+        private static (Type returnType, bool array, bool isSlow, bool allowNullResponse) ExtractReturnType(MethodInfo method)
         {
-            returnType = Utility.ExtractUnderlyingType(method.ReturnType, out array, out _, out _);
+            (var returnType, var array, _, _, _) = Utility.ExtractUnderlyingType(method.ReturnType);
             ExposedMethodAttribute em = (ExposedMethodAttribute)method.GetCustomAttributes(typeof(ExposedMethodAttribute), false)[0];
-            isSlow=em.IsSlow;
-            allowNullResponse=em.AllowNullResponse;
             returnType = (em.ArrayElementType != null ? Array.CreateInstance(em.ArrayElementType, 0).GetType() : returnType);
             array|=em.ArrayElementType!=null;
+            return (returnType, array, em.IsSlow, em.AllowNullResponse);
         }
 
         private static void AppendMethodCallDeclaration(IGrouping<string, MethodInfo> methodGroup, bool isStatic, WrappedStringBuilder builder)
@@ -32,19 +31,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                     data:{{}}
                 }};");
                 var nna = method.GetCustomAttribute<NotNullArguementAttribute>(false);
-                pars.ForEach(par =>
-                {
-                    var propType = Utility.ExtractUnderlyingType(par.ParameterType, out var array, out _, out _);
-                    if (new List<Type>(propType.GetInterfaces()).Contains(typeof(IModel)))
-                    {
-                        if (array)
-                            builder.AppendLine($"opts.data.{par.Name} = {par.Name}.map((val)=>{{id:val.id}});");
-                        else
-                            builder.AppendLine($"opts.data.{par.Name} = {{id:checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)}).id}};");
-                    }
-                    else
-                        builder.AppendLine($"opts.data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna != null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
-                });
+                AppendMethodParameters(pars, nna, builder);
                 AppendMethodReturnCallback(method, builder);
             }
             else
@@ -64,20 +51,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                         .Where(pair => !pair.IsStrippable)
                         .Select(pair => pair.ParameterInfo);
                     var nna = method.GetCustomAttribute<NotNullArguementAttribute>(false);
-                    pars.ForEach((par,index) =>
-                    {
-                        builder.AppendLine($"let {par.Name} = {(pars.Count()==1 ? $"arguments[0].{par.Name}??arguments[0]" : $"(arguments.length===1 ? arguments[0].{par.Name} : arguments[{index}])")};");
-                        var propType = Utility.ExtractUnderlyingType(par.ParameterType, out var array, out _, out _);
-                        if (Array.Exists(propType.GetInterfaces(),t=>Equals(t,typeof(IModel))))
-                        {
-                            if (array)
-                                builder.AppendLine($"opts.data.{par.Name} = {par.Name}.map((val)=>{{id:val.id}});");
-                            else
-                                builder.AppendLine($"opts.data.{par.Name} = {{id:checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)}).id}};");
-                        }
-                        else
-                            builder.AppendLine($"opts.data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna != null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
-                    });
+                    AppendMethodParameters(pars, nna, builder, true);
                     AppendMethodReturnCallback(method, builder);
                     builder.AppendLine(@"               } catch(err) { 
                     opts = null;
@@ -88,9 +62,32 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             }
         }
 
+        private static void AppendMethodParameters(IEnumerable<ParameterInfo> pars, NotNullArguementAttribute? nna, WrappedStringBuilder builder, bool useArguements = false)
+        {
+            pars.ForEach((par, index) =>
+            {
+                if (useArguements)
+                    builder.AppendLine($"let {par.Name} = {(pars.Count()==1 ? $"arguments[0].{par.Name}??arguments[0]" : $"(arguments.length===1 ? arguments[0].{par.Name} : arguments[{index}])")};");
+                (var propType, var array, var isNullable, _, _) = Utility.ExtractUnderlyingType(par.ParameterType);
+                if (Array.Exists(propType.GetInterfaces(), t => Equals(t, typeof(IModel))))
+                {
+                    if (array)
+                    {
+                        if (!((nna!=null &&!nna.IsParameterNullable(par))||isNullable))
+                            builder.AppendLine($"if ({par.Name}===null) throw 'invalid type: {par.Name} is not allowed to be null';");
+                        builder.AppendLine($"opts.data.{par.Name} = ({par.Name}===null ? null : {par.Name}.map((val)=>{{id:val.id}}));");
+                    }
+                    else
+                        builder.AppendLine($"opts.data.{par.Name} = {{id:checkProperty('{par.Name}','{Utility.GetTypeString(typeof(string), (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name}?.id,{Utility.GetEnumList(par.ParameterType)})}};");
+                }
+                else
+                    builder.AppendLine($"opts.data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna != null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
+            });
+        }
+
         private static void AppendMethodReturnCallback(MethodInfo method, WrappedStringBuilder builder)
         {
-            MethodsGenerator.ExtractReturnType(method, out bool array, out Type returnType, out bool isSlow, out bool allowNullResponse);
+            (var returnType, var array, var isSlow, var allowNullResponse) = MethodsGenerator.ExtractReturnType(method);
             builder.AppendLine(@$"               opts.useJSON = {(method.GetCustomAttributes(typeof(UseFormDataAttribute), false).Length==0
                 && !method.GetParameters().Any(p => p.ParameterType==typeof(IFormFile) || p.ParameterType==typeof(IReadOnlyList<IFormFile>))).ToString().ToLower()};
                 opts.isSlow = {isSlow.ToString().ToLower()};

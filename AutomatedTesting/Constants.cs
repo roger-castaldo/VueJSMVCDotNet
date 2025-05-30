@@ -6,6 +6,7 @@
         public const string LocationModelRoute = "/models/mLocation";
         public const string GroupModelRoute = "/models/mGroup";
         public const string DataTypesModelRoute = "/models/mDataTypes";
+        public const string JsonDataTypesModelRoute = "/models/mJsonDataTypes";
         public const string VUE_IMPORT_PATH = "vue";
         public const string VUE_LOADER_PATH = "vue-loader";
         public const string CORE_IMPORT_PATH = "VueJSMVCDotNet_core";

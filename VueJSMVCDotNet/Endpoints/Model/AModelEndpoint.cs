@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
@@ -20,6 +21,23 @@ namespace VueJSMVCDotNet.Endpoints.Model
             LoadSecurityChecks = ExtractSecurityChecks(
                         map.TargetMethods[Array.FindIndex(map.InterfaceMethods, m => Equals(m.Name, nameof(IModelHandler<M>.LoadAsync)))]
                     );
+        }
+
+        protected async Task<H> CreateLoaderAsync(HttpContext context)
+        {
+            var data = await Helper.ExtractPartsAsync(context, Logger);
+            if (data.Session!=null)
+            {
+                try
+                {
+                    return ActivatorUtilities.CreateInstance<H>(context.RequestServices, data.Session!);
+                }
+                catch (InvalidOperationException)
+                {
+                    return ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+                }
+            }
+            return ActivatorUtilities.CreateInstance<H>(context.RequestServices);
         }
 
         protected abstract IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes);

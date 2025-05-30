@@ -26,7 +26,7 @@ namespace TestApplication
             FirstName = firstName;
             LastName = lastName;
             byte[] buff = new byte[16];
-            new Random((int)DateTime.Now.Ticks).NextBytes(buff);
+            new Random((int)DateTime.UtcNow.Ticks).NextBytes(buff);
             _id = new Guid(buff).ToString();
         }
 

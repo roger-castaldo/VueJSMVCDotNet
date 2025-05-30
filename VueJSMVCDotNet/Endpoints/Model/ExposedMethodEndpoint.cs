@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
@@ -40,7 +39,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                 new(
                                     requestDelegate: async (context) =>
                                     {
-                                        var handler = ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+                                        var handler = await CreateLoaderAsync(context);
                                         var callback = await LocateMethodAsync(context, staticMethods, Logger);
                                         if (callback!=null)
                                         {
@@ -70,7 +69,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                             await ReturnInsecure(context);
                                         else
                                         {
-                                            var handler = ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+                                            var handler = await CreateLoaderAsync(context);
                                             var callback = await LocateMethodAsync(context, instanceMethods, Logger);
                                             if (callback!=null)
                                             {
@@ -78,7 +77,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                                     await ReturnInsecure(context);
                                                 else
                                                 {
-                                                    var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, logger)).ModelID!);
+                                                    var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, Logger)).ModelID!);
                                                     if (object.Equals(modelInstance, default(M?)))
                                                         await ReturnModelNotFound(context);
                                                     else
@@ -119,7 +118,10 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                         }
                                         await slowMethodInstance.HandleRequest(context);
                                         if (slowMethodInstance.IsFinished)
-                                            slowMethods.TryRemove(idKey, out _);
+                                        {
+                                            slowMethods.TryRemove(idKey, out var instance);
+                                            instance.Dispose();
+                                        }
                                     },
                                     routePattern: RoutePatternFactory.Parse($"{slowPath}{{{SlowMethodIdKey}}}"),
                                     order: 0,

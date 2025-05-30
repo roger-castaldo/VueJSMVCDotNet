@@ -174,6 +174,50 @@ export const name = 'John';");
         }
 
         [TestMethod]
+        public async Task JavascriptGenerationWithLinkedTypesValidationAsModule()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.LocationModelRoute}.mjs", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            content=content.Replace("'/models/mperson.mjs'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace("'/models/mgroup.mjs'", "'mgroup'", StringComparison.InvariantCultureIgnoreCase);
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.mjs", webApplicationFactory);
+            var personContent = await new StreamReader(responseStream).ReadToEndAsync();
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.GroupModelRoute}.mjs", webApplicationFactory);
+            var groupContent = await new StreamReader(responseStream).ReadToEndAsync();
+            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.mjs'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
+            try
+            {
+                eng.Modules.Add("mperson", personContent);
+                eng.Modules.Add("mgroup", groupContent);
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
+export const name = 'John';");
+                var ns = eng.Modules.Import("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
         public async Task JavascriptCompressedGenerationWithLinkedTypesValidation()
         {
             //Arrange
@@ -189,15 +233,15 @@ export const name = 'John';");
             Assert.AreEqual(200, responseStatus);
             Assert.IsFalse(string.IsNullOrWhiteSpace(content));
 
-            content=content.Replace($"'{Constants.PersonModelRoute}.min.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
-            content=content.Replace($"'{Constants.GroupModelRoute}.min.js'", "'mgroup'", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace($"\"{Constants.PersonModelRoute}.min.js\"", "\"mperson\"", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace($"\"{Constants.GroupModelRoute}.min.js\"", "\"mgroup\"", StringComparison.InvariantCultureIgnoreCase);
 
             (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
             var personContent = await new StreamReader(responseStream).ReadToEndAsync();
 
             (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.GroupModelRoute}.js", webApplicationFactory);
             var groupContent = await new StreamReader(responseStream).ReadToEndAsync();
-            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.js'", "\"mperson\"", StringComparison.InvariantCultureIgnoreCase);
 
             Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try

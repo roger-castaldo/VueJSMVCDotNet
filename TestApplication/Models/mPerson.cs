@@ -6,7 +6,7 @@ namespace TestApplication.Models
 {
     public class mPerson : IModel
     {
-        private static Random _rnd = new Random((int)DateTime.Now.Ticks);
+        private static Random _rnd = new Random((int)DateTime.UtcNow.Ticks);
 
         private string _firstName;
         [ModelRequiredField()]

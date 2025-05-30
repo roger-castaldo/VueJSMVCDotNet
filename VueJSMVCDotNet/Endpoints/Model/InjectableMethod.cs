@@ -36,6 +36,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
 
         private readonly int addItemIndex;
         private readonly bool isTask;
+        private readonly bool isValueTask;
         public bool HasAddItem => addItemIndex!=-1;
         private readonly ParameterInfo[] parameters;
         private readonly (ParameterInfo ParameterInfo, bool IsStrippable)[] strippedParameters;
@@ -45,8 +46,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         public InjectableMethod(MethodInfo method, ASecurityCheckAttribute[] securityChecks)
         {
             this.method = method;
-            ReturnType = Utility.ExtractUnderlyingType(method.ReturnType, out var isArray, out _, out isTask);
-            IsArrayReturn=isArray;
+            (ReturnType, IsArrayReturn, _, isTask, isValueTask) = Utility.ExtractUnderlyingType(method.ReturnType);
             NotNullArguement = method.GetCustomAttribute<NotNullArguementAttribute>();
             parameters = this.method.GetParameters();
             var addIndex = parameters.IndexOf(p => p.ParameterType==typeof(AddItem));
@@ -86,30 +86,25 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     }
                 }
             }
-            object? result;
-            if (isTask)
+            object? result = null;
+            if (isTask||isValueTask)
             {
-                var task = (Task)method.Invoke(handler, mpars)!;
+                Task task;
+                if (isTask)
+                    task = (Task)method.Invoke(handler, mpars)!;
+                else
+                {
+                    var vtask = method.Invoke(handler, mpars)!;
+                    task = (Task)vtask.GetType().GetMethod(nameof(ValueTask.AsTask))!.Invoke(vtask, null)!;
+                }
                 await task;
                 if (task.Exception!=null)
                     throw task.Exception;
-                result=task.GetType().GetProperty("Result")!.GetValue(task);
+                if (ReturnType!=typeof(void))
+                    result=task.GetType().GetProperty("Result")!.GetValue(task);
             }
             else
                 result = method.Invoke(handler, mpars);
-            if (Array.Exists(parameters, p => p.IsOut))
-            {
-                index = 0;
-                for (int x = 0; x<parameters.Length; x++)
-                {
-                    if (!ignoredIndexes.Contains(x))
-                    {
-                        if (parameters[x].IsOut)
-                            pars![index]=mpars[x];
-                        index++;
-                    }
-                }
-            }
             return (ReturnType==typeof(void) ? default(T?) : (T?)result);
         }
 
