@@ -2,7 +2,6 @@
 using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -142,6 +141,8 @@ namespace AutomatedTesting
                 new("nullIPAddressArg",null),
                 new("VersionArg",new Version("1.0.0")),
                 new("nullVersionArg",null),
+                new("guidArg",Guid.NewGuid()),
+                new("nullGuidArg",null),
             ];
 
             //Act

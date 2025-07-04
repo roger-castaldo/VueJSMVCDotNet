@@ -43,7 +43,8 @@ namespace AutomatedTesting.Handlers
             byte[] byteArrayArg, byte[] nullByteArrayArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
+            Exception ExceptionArg, Exception nullExceptionArg,
+            Guid guidArg, Guid? nullGuidArg
         )
         {
 
@@ -70,7 +71,8 @@ namespace AutomatedTesting.Handlers
             byte[] byteArrayArg, byte[] nullByteArrayArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
+            Exception ExceptionArg, Exception nullExceptionArg,
+            Guid guidArg, Guid? nullGuidArg
         )
         {
 
@@ -96,7 +98,8 @@ namespace AutomatedTesting.Handlers
             DateTime DateTimeArg, DateTime? nullDateTimeArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
-            Exception ExceptionArg, Exception nullExceptionArg
+            Exception ExceptionArg, Exception nullExceptionArg,
+            Guid guidArg, Guid? nullGuidArg
         )
         {
             return null;
@@ -126,6 +129,7 @@ namespace AutomatedTesting.Handlers
             DateTime DateTimeArg, DateTime? nullDateTimeArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
+            Guid guidArg, Guid? nullGuidArg,
             ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(50));
@@ -154,6 +158,7 @@ namespace AutomatedTesting.Handlers
             DateTime DateTimeArg, DateTime? nullDateTimeArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
+            Guid guidArg,Guid? nullGuidArg,
             ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(50));

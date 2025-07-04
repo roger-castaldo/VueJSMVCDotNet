@@ -121,5 +121,13 @@ namespace AutomatedTesting
             await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } });
             await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } }, shouldSucceeed:true);
         }
+
+        [TestMethod]
+        public async Task TestStreamMethodSecurity()
+        {
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { "" });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STREAM_METHOD }, shouldSucceeed: true);
+        }
     }
 }

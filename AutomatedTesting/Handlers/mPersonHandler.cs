@@ -412,6 +412,7 @@ namespace AutomatedTesting.Handlers
         }
 
         [EventStreamMethod]
+        [SecurityRoleCheck(Constants.Rights.STREAM_METHOD)]
         public async Task StreamUsers(ChannelWriter<object> writer,CancellationToken cancellationToken)
         {
             var idx = 0;

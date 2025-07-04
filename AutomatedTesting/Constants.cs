@@ -7,9 +7,18 @@
         public const string GroupModelRoute = "/models/mGroup";
         public const string DataTypesModelRoute = "/models/mDataTypes";
         public const string JsonDataTypesModelRoute = "/models/mJsonDataTypes";
+        public const string FeaturesModelRoute = "/models/mFeatures";
         public const string VUE_IMPORT_PATH = "vue";
         public const string VUE_LOADER_PATH = "vue-loader";
         public const string CORE_IMPORT_PATH = "VueJSMVCDotNet_core";
+
+        public static class Features
+        {
+            public const string Feature1 = "feature1";
+            public const string Feature2 = "feature2";
+            public const string Feature3 = "feature3";
+            public const string Feature4 = "feature4";
+        }
 
         public static class Rights
         {
@@ -22,6 +31,7 @@
             public const string SEARCH = "Search";
             public const string METHOD = "Method";
             public const string STATIC_METHOD = "StaticMethod";
+            public const string STREAM_METHOD = "StreamMethod";
         }
 
         public const string JAVASCRIPT_BASE = @"

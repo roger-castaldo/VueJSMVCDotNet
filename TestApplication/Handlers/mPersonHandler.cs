@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.FeatureManagement.Mvc;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -86,6 +87,7 @@ namespace TestApplication.Handlers
         }
 
         [ModelListMethod(true)]
+        [FeatureGate("PersonSearchAllowed")]
         public PagedResult<mPerson> Search(string? q, [PageStartIndexParameter()] int pageStartIndex, [PageSizeParameter()] int pageSize, ISecureSession session)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);

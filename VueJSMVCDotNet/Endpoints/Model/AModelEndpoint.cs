@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
@@ -26,23 +25,19 @@ namespace VueJSMVCDotNet.Endpoints.Model
         protected async Task<H> CreateLoaderAsync(HttpContext context)
         {
             var data = await Helper.ExtractPartsAsync(context, Logger);
-            if (data.Session!=null)
+            try
             {
-                try
-                {
-                    return ActivatorUtilities.CreateInstance<H>(context.RequestServices, data.Session!);
-                }
-                catch (InvalidOperationException)
-                {
-                    return ActivatorUtilities.CreateInstance<H>(context.RequestServices);
-                }
+                return ActivatorUtilities.CreateInstance<H>(context.RequestServices, data.Session!);
             }
-            return ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+            catch
+            {
+                return ActivatorUtilities.CreateInstance<H>(context.RequestServices);
+            }
         }
 
-        protected abstract IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes);
+        protected abstract IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes);
 
-        IEnumerable<RouteEndpoint> IEndpointHandler.AsEndpoints
+        IEnumerable<Endpoint> IEndpointHandler.AsEndpoints
             => ProduceEndpoints(typeof(H)
                 .GetCustomAttributes<ModelRouteAttribute>()
             );
@@ -77,11 +72,11 @@ namespace VueJSMVCDotNet.Endpoints.Model
             return true;
         }
 
-        protected static async Task<(InjectableMethod method, object[] pars)?> LocateMethodAsync(HttpContext context, IEnumerable<InjectableMethod> methods, ILogger? logger)
+        protected static async Task<(InjectableMethod method, object?[] pars)?> LocateMethodAsync(HttpContext context, IEnumerable<InjectableMethod> methods, ILogger? logger)
         {
             var request = await Helper.ExtractPartsAsync(context, logger);
             InjectableMethod? method = null;
-            object[] pars = [];
+            object?[] pars = [];
             if (!request.Keys.Any())
                 method = methods.FirstOrDefault(imi => imi.StrippedParameters.Length==0 && (
                     (string.IsNullOrWhiteSpace(request.ModelID) && !imi.RequiresModel)
@@ -91,7 +86,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 foreach (InjectableMethod m in methods.Where(imi => imi.StrippedParameters.Count(p => !p.IsOut)==request.Keys.Count()))
                 {
-                    pars = new object[m.StrippedParameters.Length];
+                    pars = new object?[m.StrippedParameters.Length];
                     bool isMethod = true;
                     int index = 0;
                     foreach (ParameterInfo pi in m.StrippedParameters)

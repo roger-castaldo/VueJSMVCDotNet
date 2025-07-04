@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using VueJSMVCDotNet.Endpoints;
 using VueJSMVCDotNet.Endpoints.DataSources;
+using VueJSMVCDotNet.Endpoints.Filtering;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Extensions
@@ -32,7 +33,8 @@ namespace VueJSMVCDotNet.Extensions
                 compressJS,
                 cache??provider.GetService<IMemoryCache>()
             ))
-            .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>());
+            .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>())
+            .AddSingleton<FeatureGateFilter>();
 
         public static IEndpointRouteBuilder MapVueJSMVSModels(this IEndpointRouteBuilder builder)
         {
@@ -66,11 +68,9 @@ namespace VueJSMVCDotNet.Extensions
             .AddEndpoint(builder);
 
         private static bool CheckModelPath(IEndpointRouteBuilder builder, string path)
-        {
-            var modelsDataSource = (ModelsDataSource?)builder.DataSources.AsQueryable().FirstOrDefault(eds => eds is ModelsDataSource);
-            if (modelsDataSource != null)
-                return modelsDataSource.Endpoints.OfType<RouteEndpoint>().Any(re => path.Equals(re.RoutePattern.ToString(), StringComparison.InvariantCultureIgnoreCase));
-            return false;
-        }
+            => builder.DataSources.AsQueryable()
+                .OfType<ModelsDataSource>()
+                .FirstOrDefault()?.Endpoints.OfType<RouteEndpoint>().Any(re => path.Equals(re.RoutePattern.ToString(), StringComparison.InvariantCultureIgnoreCase))
+            ?? false;
     }
 }

@@ -67,15 +67,6 @@ namespace VueJSMVCDotNet
                 log?.LogError(rtle, "Reflection Load Exception from getting loadable types: {Message}", rtle.Message);
                 ret = rtle.Types!;
             }
-            catch (Exception e)
-            {
-                log?.LogError(e, "General Error attempting to load types from assembly: {Message}", e.Message);
-                if (e.Message != "The invoked member is not supported in a dynamic assembly."
-                            && !e.Message.StartsWith("Unable to load one or more of the requested types."))
-                    throw;
-                else
-                    ret = [];
-            }
             return ret.Where(t => t!=null);
         }
 

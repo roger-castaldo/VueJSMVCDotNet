@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
@@ -10,7 +9,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         where H : IModelHandler<M>
         where M : IModel
     {
-        protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
+        protected override IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
             => typeof(H).GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<ModelListMethodAttribute>(false)!=null)
                 .GroupBy(m => m.Name)
@@ -18,7 +17,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 {
                     var methods = grp.Select(m => new InjectableMethod(m, ExtractSecurityChecks(m))).ToArray();
                     return routes.Select(mra =>
-                        new RouteEndpoint(
+                        BuildEndpoint<H,M>(
                             requestDelegate: async (context) =>
                             {
                                 var handler = await CreateLoaderAsync(context);
@@ -37,11 +36,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             },
                             routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}"),
                             order: 0,
-                            metadata: ProduceMetaData<H, M>(
-                                [HttpMethods.Post],
-                                methods.Select(method=>method.Method)
-                            ),
-                            displayName: $"List call for {typeof(H).Name}.{grp.Key}"
+                            displayName: $"List call for {typeof(H).Name}.{grp.Key}",
+                            httpMethods: [HttpMethods.Post],
+                            methods:methods.Select(method=>method.Method)
                         )
                     );
                 });

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Attributes.Models;
 using VueJSMVCDotNet.Extensions;
@@ -12,14 +11,14 @@ namespace VueJSMVCDotNet.Endpoints.Model
         where H : IModelHandler<M>
         where M : IModel
     {
-        protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
+        protected override IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
         {
             var updateMethod = Array.Find(typeof(H).GetMethods(Constants.METHOD_FLAGS), m => m.GetCustomAttribute<ModelUpdateMethodAttribute>(false)!=null);
             if (updateMethod!=null)
             {
                 var injectableUpdateMethod = new InjectableMethod(updateMethod, ExtractSecurityChecks(updateMethod));
 
-                return routes.Select(mra => new RouteEndpoint(
+                return routes.Select(mra => BuildEndpoint<H,M>(
                     requestDelegate: async (context) =>
                     {
                         if (!await ValidateAccessAsync(context,Logger,null, LoadSecurityChecks) ||
@@ -52,11 +51,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     },
                     routePattern: ProduceRoute(mra.Path, true),
                     order: 0,
-                    metadata: ProduceMetaData<H, M>(
-                        [HttpMethods.Patch],
-                        updateMethod
-                    ),
-                    displayName: $"Update call for {typeof(M).Name}"
+                    displayName: $"Update call for {typeof(M).Name}",
+                    httpMethods:[HttpMethods.Patch],
+                    method:updateMethod
                 ));
             }
             return [];

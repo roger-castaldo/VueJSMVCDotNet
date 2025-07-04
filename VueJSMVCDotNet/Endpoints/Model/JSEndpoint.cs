@@ -13,10 +13,10 @@ using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
-    internal class JSEndpoint<H, T>(string vueImportPath, string coreImportPath, bool compressAllJS, ModelsDataSource modelsDataSource, ILogger? logger, IMemoryCache? cache) :
+    internal class JSEndpoint<H, M>(string vueImportPath, string coreImportPath, bool compressAllJS, ModelsDataSource modelsDataSource, ILogger? logger, IMemoryCache? cache) :
         ACachingEndpoint(logger, cache), IEndpointHandler
-        where H : IModelHandler<T>
-        where T : IModel
+        where H : IModelHandler<M>
+        where M : IModel
     {
         private const string ExtensionKey = "ext";
         private const string BaseURLKey = "_JSBaseURL";
@@ -37,16 +37,16 @@ namespace VueJSMVCDotNet.Endpoints.Model
             new FooterGenerator()
         ];
 
-        private readonly ModelType modelType = new ModelType(typeof(T), typeof(H), (type) => modelsDataSource.GetModelImportURL(type));
+        private readonly ModelType modelType = new ModelType(typeof(M), typeof(H), (type) => modelsDataSource.GetModelImportURL(type));
         private readonly string importHeader = @$"import {{isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods}} from '{coreImportPath}';
 import {{ version, createApp, isProxy, toRaw, reactive, readonly, ref }} from '{vueImportPath}';
 if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate without Vue version 3.x'; }}
 {Constants.HOST_URL_CONSTRUCTOR}";
 
-        IEnumerable<RouteEndpoint> IEndpointHandler.AsEndpoints
+        IEnumerable<Endpoint> IEndpointHandler.AsEndpoints
             => typeof(H)
                 .GetCustomAttributes<ModelRouteAttribute>()
-            .Select(mra => new RouteEndpoint(
+            .Select(mra => BuildEndpoint<H, M>(
                 requestDelegate: (context) =>
                 {
                     context.Items[BaseURLKey] = mra.Path;
@@ -54,10 +54,9 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                 },
                 routePattern: RoutePatternFactory.Parse($"{mra.Path}.{{{ExtensionKey}:regex(^mjs|min\\.mjs|min\\.js|js$)}}"),
                 order: 0,
-                metadata: new(
-                    new HttpMethodMetadata([HttpMethods.Get]
-                )),
-                displayName: $"JS call for {typeof(T).Name}"
+                displayName: $"JS call for {typeof(M).Name}",
+                httpMethods:[HttpMethods.Get],
+                methods: []
             ));
 
         protected override Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)

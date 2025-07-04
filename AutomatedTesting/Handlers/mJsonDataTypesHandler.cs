@@ -32,5 +32,9 @@ namespace AutomatedTesting.Handlers
         [ExposedMethod]
         public async ValueTask<mPerson?> CheckNullModelAsync(string id)
             => await ((IModelHandler<mPerson>)new mPersonHandler(new DataStore())).LoadAsync(id);
+
+        [ExposedMethod()]
+        public async ValueTask<bool> CheckExceptionAsync(bool input)
+            => (input ? throw new ArgumentException(nameof(input)) : false);
     }
 }

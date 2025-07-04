@@ -98,8 +98,6 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     task = (Task)vtask.GetType().GetMethod(nameof(ValueTask.AsTask))!.Invoke(vtask, null)!;
                 }
                 await task;
-                if (task.Exception!=null)
-                    throw task.Exception;
                 if (ReturnType!=typeof(void))
                     result=task.GetType().GetProperty("Result")!.GetValue(task);
             }

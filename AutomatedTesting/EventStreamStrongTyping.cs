@@ -55,6 +55,8 @@ testArgs.push({name:'IPAddressArg',values:['AB',null,'::1','127.0.0.1']});
 testArgs.push({name:'nullIPAddressArg',values:['AB',null]});
 testArgs.push({name:'VersionArg',values:['AB',null,'1.0.0']});
 testArgs.push({name:'nullVersionArg',values:['AB',null]});
+testArgs.push({name:'guidArg',values:['AB',null,'4a091b48-b77d-41fe-9e41-55e9ffdc4695']});
+testArgs.push({name:'nullGuidArg',values:['AB',null]});
 
 for(var x=0;x<testArgs.length;x++){
     for(var y=0;y<testArgs[x].values;y++){

@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         private const string SlowMethodIdKey = "instance";
         private readonly ConcurrentDictionary<Guid, SlowMethodInstance<H, M>> slowMethods = [];
 
-        protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
+        protected override IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
             => typeof(H).GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<ExposedMethodAttribute>(false)!=null)
                 .GroupBy(m => m.Name)
@@ -32,11 +32,11 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         .ToArray();
                     return routes.SelectMany(mra =>
                     {
-                        IEnumerable<RouteEndpoint> result = [];
+                        IEnumerable<Endpoint> result = [];
                         var slowPath = $"{(mra.Path.StartsWith('/') ? "" : "/")}{mra.Path}/{grp.Key}/";
                         if (staticMethods.Length>0)
                             result = result.Append(
-                                new(
+                                BuildEndpoint<H,M>(
                                     requestDelegate: async (context) =>
                                     {
                                         var handler = await CreateLoaderAsync(context);
@@ -53,16 +53,15 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     },
                                     routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}"),
                                     order: 0,
-                                    metadata: ProduceMetaData<H, M>(
-                                        [HttpMethods.Post],
-                                        staticMethods.Select(method=>method.Method)
-                                    ),
-                                    displayName: $"Static Method call for {typeof(H).Name}.{grp.Key}"
+                                    displayName:$"Static Method call for {typeof(H).Name}.{grp.Key}",
+                                    httpMethods:[HttpMethods.Post],
+                                    methods:staticMethods.Select(method=>method.Method)
+                                    
                                 )
                             );
                         if (instanceMethods.Length>0)
                             result = result.Append(
-                                new(
+                                BuildEndpoint<H, M>(
                                     requestDelegate: async (context) =>
                                     {
                                         if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
@@ -90,17 +89,15 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     },
                                     routePattern: ProduceRoute(mra.Path, true, $"/{grp.Key}"),
                                     order: 0,
-                                    metadata: ProduceMetaData<H, M>(
-                                        [HttpMethods.Post],
-                                        instanceMethods.Select(method => method.Method)
-                                    ),
-                                    displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}"
+                                    displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}",
+                                    httpMethods:[HttpMethods.Post],
+                                    methods: instanceMethods.Select(method => method.Method)
                                 )
                             );
                         if (Array.Exists(staticMethods, m => m.IsSlow) || Array.Exists(instanceMethods, m => m.IsSlow))
                         {
                             result = result.Append(
-                                new(
+                                new RouteEndpoint(
                                     requestDelegate: async (context) =>
                                     {
                                         if (context.GetRouteValue(SlowMethodIdKey)==null)
@@ -136,7 +133,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     });
                 });
 
-        private async ValueTask InvokeMethodAsync(InjectableMethod method, object[] pars, HttpContext context, H instance, string slowBasePath, M? modelInstance = default)
+        private async ValueTask InvokeMethodAsync(InjectableMethod method, object?[] pars, HttpContext context, H instance, string slowBasePath, M? modelInstance = default)
         {
             try
             {

@@ -66,17 +66,17 @@ namespace AutomatedTesting
         private const string _VUE_IMPORT_PATH = "vue";
         private const string _VUE_LOADER_PATH = "vue-loader";
 
-        public static (WebApplicationFactory<Program> webApplicationFactory, IDataStore dataStore, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, ILogger logWriter = null, IMemoryCache cache = null)
+        public static (WebApplicationFactory<Program> webApplicationFactory, IDataStore dataStore, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string, string> configuration = default)
         {
             IDataStore dataStore = new DataStore();
-            var (webApplicationFactory, secureSession)= CreateApplication(ignoreInvalidModels, dataStore, logWriter:logWriter, cache:cache);
+            var (webApplicationFactory, secureSession)= CreateApplication(ignoreInvalidModels, dataStore, logWriter:logWriter, cache:cache, configuration:configuration);
             return (webApplicationFactory, dataStore, secureSession);
         }
 
-        public static (WebApplicationFactory<Program> webApplicationFactory, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, IDataStore store, ILogger logWriter = null, IMemoryCache cache = null)
+        public static (WebApplicationFactory<Program> webApplicationFactory, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, IDataStore store, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string, string> configuration = default)
         {
             var secureSession = new SecureSession();
-            return (CreateApplication(ignoreInvalidModels, store, secureSession, logWriter: logWriter, cache: cache), secureSession);
+            return (CreateApplication(ignoreInvalidModels, store, secureSession, logWriter: logWriter, cache: cache, configuration:configuration), secureSession);
         }
 
         public static (WebApplicationFactory<Program> webApplicationFactory, IDataStore dataStore) CreateApplication(bool ignoreInvalidModels, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null)
@@ -85,8 +85,8 @@ namespace AutomatedTesting
             return (CreateApplication(ignoreInvalidModels, dataStore, secureSession, logWriter: logWriter, cache: cache), dataStore);
         }
 
-        public static WebApplicationFactory<Program> CreateApplication(bool ignoreInvalidModels, IDataStore store, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null)
-            => new TestApplicationFactory(ignoreInvalidModels,logWriter,cache,store,secureSession);
+        public static WebApplicationFactory<Program> CreateApplication(bool ignoreInvalidModels, IDataStore store, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string,string> configuration = default)
+            => new TestApplicationFactory(ignoreInvalidModels,logWriter,cache,store,secureSession, configuration);
 
         public static async Task<Engine> CreateEngineAsync(WebApplicationFactory<Program> applicationFactory = null)
         {

@@ -69,11 +69,12 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                 if (useArguements)
                     builder.AppendLine($"let {par.Name} = {(pars.Count()==1 ? $"arguments[0].{par.Name}??arguments[0]" : $"(arguments.length===1 ? arguments[0].{par.Name} : arguments[{index}])")};");
                 (var propType, var array, var isNullable, _, _) = Utility.ExtractUnderlyingType(par.ParameterType);
+                bool notNullTagged = nna!=null && !nna.IsParameterNullable(par);
                 if (Array.Exists(propType.GetInterfaces(), t => Equals(t, typeof(IModel))))
                 {
                     if (array)
                     {
-                        if (!((nna!=null &&!nna.IsParameterNullable(par))||isNullable))
+                        if (notNullTagged || !isNullable)
                             builder.AppendLine($"if ({par.Name}===null) throw 'invalid type: {par.Name} is not allowed to be null';");
                         builder.AppendLine($"opts.data.{par.Name} = ({par.Name}===null ? null : {par.Name}.map((val)=>{{id:val.id}}));");
                     }

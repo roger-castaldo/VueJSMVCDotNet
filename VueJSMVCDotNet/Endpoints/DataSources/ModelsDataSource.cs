@@ -73,7 +73,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                     sr.Close();
                 }
                 var results = endpoints.Values.SelectMany(g => g.SelectMany(m => m.AsEndpoints))
-                    .Append(new(
+                    .Append(new RouteEndpoint(
                         requestDelegate: async (context) =>
                         {
                             context.Response.ContentType = "text/javascript";

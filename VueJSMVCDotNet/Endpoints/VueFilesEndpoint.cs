@@ -15,11 +15,11 @@ namespace VueJSMVCDotNet.Endpoints
     {
         private const string PathParameter = "path";
 
-        private static readonly Regex regImport = new(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-        private static readonly Regex regImportExtensions = new(@"^.+\.(js|vue)$", RegexOptions.Compiled|RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500));
-        private static readonly Regex regImportParts = new(@"\{([^\}]+)\}", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-        private static readonly Regex regInlineImport = new(@"\s*import\((""[^""]+\.js""|'[^']+\.js'|\\`[^`]+\.js\\`)\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
-        private static readonly Regex regLoadModule = new(@"\s*loadModule\((""[^""]+\.vue""|'[^']+\.vue'|\\`[^`]+\.vue\\`)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+        private static readonly Regex regImport = new(@"^\s*import([^""']+)(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled, TimeSpan.FromSeconds(5));
+        private static readonly Regex regImportExtensions = new(@"^.+\.(js|vue)$", RegexOptions.Compiled|RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+        private static readonly Regex regImportParts = new(@"\{([^\}]+)\}", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex regInlineImport = new(@"\s*import\((""[^""]+\.js""|'[^']+\.js'|\\`[^`]+\.js\\`)\)", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex regLoadModule = new(@"\s*loadModule\((""[^""]+\.vue""|'[^']+\.vue'|\\`[^`]+\.vue\\`)", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private readonly struct SVueFile
         {

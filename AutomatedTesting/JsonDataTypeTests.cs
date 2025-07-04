@@ -113,5 +113,28 @@ namespace AutomatedTesting
             Assert.AreEqual(200, responseStatus);
             Assert.IsNull(content);
         }
+
+        [TestMethod]
+        public async Task TestExceptionThrownFromMethod()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.JsonDataTypesModelRoute}/CheckExceptionAsync", webApplicationFactory,
+            parameters: new Hashtable() {
+                { "input", false }
+            });
+            var (errorResponseStream, errorResponseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.JsonDataTypesModelRoute}/CheckExceptionAsync", webApplicationFactory,
+            parameters: new Hashtable() {
+                { "input", true }
+            });
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse((bool)Utility.ReadJSONResponse(responseStream));
+            Assert.AreEqual(500, errorResponseStatus);
+            Assert.AreEqual("Internal Server Error", Utility.ReadResponse(errorResponseStream));
+        }
     }
 }

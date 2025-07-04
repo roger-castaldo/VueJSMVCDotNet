@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 using System.Threading;
 using System.Threading.Channels;
@@ -13,16 +12,15 @@ namespace VueJSMVCDotNet.Endpoints.Model
         where H : IModelHandler<M>
         where M : IModel
     {
-        protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
+        protected override IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
             => typeof(H).GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<EventStreamMethodAttribute>(false)!=null)
                 .SelectMany(m =>
                 {
                     var method = new InjectableMethod(m, ExtractSecurityChecks(m));
                     return routes.Select(mra =>
-                    {
-                        return new RouteEndpoint(
-                            requestDelegate: async (context) =>
+                        BuildEndpoint<H,M>(
+                            async (context) =>
                             {
                                 if (!await ValidateAccessAsync(context, Logger, null, method.SecurityChecks, false))
                                     await ReturnInsecure(context);
@@ -84,15 +82,13 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     await task;
                                 }
                             },
-                            routePattern: ProduceRoute(mra.Path, method.UsesModel, $"/{method.Name}"),
-                            order: 0,
-                            metadata: ProduceMetaData<H, M>(
-                                [HttpMethods.Get],
-                                m
-                            ),
-                            displayName: $"Event Stream call for {typeof(H).Name}.{method.Name}"
-                        );
-                    });
+                            ProduceRoute(mra.Path, method.UsesModel, $"/{method.Name}"),
+                            0,
+                            $"Event Stream call for {typeof(H).Name}.{method.Name}",
+                            [HttpMethods.Get],
+                            m
+                        )
+                    );
                 });
     }
 }

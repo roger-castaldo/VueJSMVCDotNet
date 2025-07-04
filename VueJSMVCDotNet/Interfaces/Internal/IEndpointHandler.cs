@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Routing;
+﻿using Microsoft.AspNetCore.Http;
 
 namespace VueJSMVCDotNet.Interfaces.Internal
 {
     internal interface IEndpointHandler
     {
-        IEnumerable<RouteEndpoint> AsEndpoints { get; }
+        IEnumerable<Endpoint> AsEndpoints { get; }
     }
 }

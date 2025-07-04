@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
 
@@ -10,11 +9,11 @@ namespace VueJSMVCDotNet.Endpoints.Model
         where H : IModelHandler<M>
         where M : IModel
     {
-        protected override IEnumerable<RouteEndpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
+        protected override IEnumerable<Endpoint> ProduceEndpoints(IEnumerable<ModelRouteAttribute> routes)
         {
             var map = typeof(H).GetInterfaceMap(typeof(IModelHandler<M>));
             var loadMethod = map.TargetMethods[Array.FindIndex(map.InterfaceMethods, m => Equals(m.Name, nameof(IModelHandler<M>.LoadAsync)))];
-            return routes.Select(mra => new RouteEndpoint(
+            return routes.Select(mra => BuildEndpoint<H,M>(
                 requestDelegate: async (context) =>
                 {
                     if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
@@ -31,11 +30,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 },
                 routePattern: ProduceRoute(mra.Path, true),
                 order: 0,
-                metadata: ProduceMetaData<H, M>(
-                        [HttpMethods.Get],
-                        loadMethod
-                ),
-                displayName: $"Load call for {typeof(M).Name}"
+                displayName: $"Load call for {typeof(M).Name}",
+                httpMethods:[HttpMethods.Get],
+                method:loadMethod
             ));
         }
     }

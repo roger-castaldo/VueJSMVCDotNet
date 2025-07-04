@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
+using VueJSMVCDotNet.Endpoints.Filtering;
+using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints
@@ -24,18 +28,43 @@ namespace VueJSMVCDotNet.Endpoints
             await context.Response.WriteAsync(message);
         }
 
-        protected EndpointMetadataCollection ProduceMetaData<H, M>(IEnumerable<string> httpMethods, MethodInfo method, params object[] additional)
+        protected static Endpoint BuildEndpoint<H, M>(RequestDelegate requestDelegate, RoutePattern routePattern, int order, string displayName, IEnumerable<string> httpMethods, MethodInfo method, params object[] additional)
             where H : IModelHandler<M>
             where M : IModel
-            => ProduceMetaData<H, M>(httpMethods, [method], additional);
-        protected EndpointMetadataCollection ProduceMetaData<H, M>(IEnumerable<string> httpMethods, IEnumerable<MethodInfo> methods, params object[] additional)
+            => BuildEndpoint<H,M>(requestDelegate, routePattern, order, displayName, httpMethods, [method], additional);
+        protected static Endpoint BuildEndpoint<H, M>(RequestDelegate requestDelegate, RoutePattern routePattern, int order, string displayName, IEnumerable<string> httpMethods, IEnumerable<MethodInfo> methods, params object[] additional)
             where H : IModelHandler<M>
             where M : IModel
-            => new(additional.Concat(typeof(H).GetCustomAttributes().OfType<Attribute>()
-                .Concat(methods.SelectMany(method=>method.GetCustomAttributes().OfType<Attribute>()))
-                .Where(att => !att.GetType().Namespace!.StartsWith(typeof(ASecurityCheckAttribute).Namespace!)))
-                .DistinctBy(att=>att.GetType())
-                .Append(new HttpMethodMetadata(httpMethods)));
+        {
+            var builder = new RouteEndpointBuilder(
+                null,
+                routePattern: routePattern,
+                order: order
+            )
+            {
+                DisplayName = displayName
+            };
+            builder.AddMetadataRange(
+                additional.Concat(methods.SelectMany(method => method.GetCustomAttributes().OfType<Attribute>()))
+                    .Concat(typeof(H).GetCustomAttributes().OfType<Attribute>()
+                    .Where(att => !att.GetType().Namespace!.StartsWith(typeof(ASecurityCheckAttribute).Namespace!)))
+                    .Append(new HttpMethodMetadata(httpMethods))
+            );
+
+            builder.FilterFactories.Add((ctx, del) =>
+                async (context) => await ((IEndpointFilter)context.HttpContext.RequestServices.GetRequiredService<FeatureGateFilter>()).InvokeAsync(context, del)
+            );
+
+
+            var delegateFactoryResult = RequestDelegateFactory.Create(requestDelegate, new()
+            {
+                EndpointBuilder = builder
+            });
+
+            builder.RequestDelegate = delegateFactoryResult.RequestDelegate;
+
+            return builder.Build();
+        }
 
         protected ValueTask ReturnModelNotFound(HttpContext context)
             => ReturnNotFound(context, "Model Not Found");
