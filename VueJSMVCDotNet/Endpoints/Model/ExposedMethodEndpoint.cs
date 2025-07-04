@@ -117,7 +117,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                         if (slowMethodInstance.IsFinished)
                                         {
                                             slowMethods.TryRemove(idKey, out var instance);
-                                            instance.Dispose();
+                                            instance?.Dispose();
                                         }
                                     },
                                     routePattern: RoutePatternFactory.Parse($"{slowPath}{{{SlowMethodIdKey}}}"),

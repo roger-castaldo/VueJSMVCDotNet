@@ -93,9 +93,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
         ValueTask<M?> IInternalRequestData.LoadModelAsync<M>(string modelID) where M : default
             => ((IInternalRequestData)this).GetModelHandlerType<M>()?.LoadAsync(modelID) ?? throw new ArgumentNullException("Unable to locate loader");
 
-        private object? ConvertObjectToType(object? obj, Type expectedType)
+        private static object? ConvertObjectToType(object? obj, Type expectedType)
         {
-            if (Equals(obj.GetType(), expectedType))
+            if (Equals(obj?.GetType(), expectedType))
                 return obj;
             else if (obj is ICollection || expectedType.IsArray)
             {

@@ -64,14 +64,16 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         {
             get
             {
-                locker.EnterReadLock();
+                locker.EnterWriteLock();
                 if (compressedCore==null)
                 {
-                    using StreamReader sr = new(typeof(ModelsDataSource).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Endpoints.Model.JSGenerators.core.js"));
+                    using StreamReader sr = new(typeof(ModelsDataSource).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Endpoints.Model.JSGenerators.core.js")!);
                     compressedCore = JSMinifier.Minify($@"import * as vue from ""{vueImportPath}"";
 {sr.ReadToEnd()}");
                     sr.Close();
                 }
+                locker.ExitWriteLock();
+                locker.EnterReadLock();
                 var results = endpoints.Values.SelectMany(g => g.SelectMany(m => m.AsEndpoints))
                     .Append(new RouteEndpoint(
                         requestDelegate: async (context) =>
@@ -153,7 +155,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                     var producedEndpoints = new List<IEndpointHandler>();
                     foreach (var endpointType in ModelEndpoints)
                         producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(endpointType.MakeGenericType(handler.HandlerType, handler.ModelType), logger)!);
-                    producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(typeof(JSEndpoint<,>).MakeGenericType(handler.HandlerType, handler.ModelType), vueImportPath, coreJSImport, compressJS, this, logger, cache));
+                    producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(typeof(JSEndpoint<,>).MakeGenericType(handler.HandlerType, handler.ModelType), vueImportPath, coreJSImport, compressJS, this, logger, cache)!);
                     endpoints.Add(handler.HandlerType, producedEndpoints);
                 }
             }

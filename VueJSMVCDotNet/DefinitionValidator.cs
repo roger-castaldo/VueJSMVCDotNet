@@ -93,7 +93,7 @@ namespace VueJSMVCDotNet
             return errors;
         }
 
-        private static IEnumerable<MethodInfo> CheckModelMethod<MA>(MethodInfo[] methods,
+        private static void CheckModelMethod<MA>(MethodInfo[] methods,
             (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log,
             string methodType, Type returnType, bool requiresInstance,
             Func<Type, MethodInfo, HandlerTypeMethodException> constructDuplicateException,
@@ -107,7 +107,6 @@ namespace VueJSMVCDotNet
             else if (filteredMethods.Count()==1 && !IsValidDataActionMethod(filteredMethods.First(), returnType, requiresInstance))
                 AppendError(exceptions, log, constructInvalidException(handler.HandlerType, filteredMethods.First()),
                     $"Handler {{FullName}} has and invalid {methodType} method", handler.HandlerType.FullName);
-            return filteredMethods;
         }
 
         private static void CheckExposedMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
@@ -202,10 +201,10 @@ namespace VueJSMVCDotNet
                 (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(method.ReturnType);
                 if (paged)
                 {
-                    if (!method.GetParameters().Any(par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null))
+                    if (!Array.Exists(method.GetParameters(),(par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null)))
                         AppendError(exceptions, log, new Exception("Missing Start Index Parameter"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageStartIndex parameter", handler.HandlerType.FullName, method.Name);
-                    if (!method.GetParameters().Any(par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null))
+                    if (!Array.Exists(method.GetParameters(),(par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null)))
                         AppendError(exceptions, log, new Exception("Missing Page Size Parameter"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageSize parameter", handler.HandlerType.FullName, method.Name);
                     if (!Equals(rtype, typeof(PagedResult<>).MakeGenericType(handler.ModelType)))
