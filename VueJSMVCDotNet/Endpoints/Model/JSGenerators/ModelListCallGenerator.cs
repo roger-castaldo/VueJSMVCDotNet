@@ -6,7 +6,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ModelListCallGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             modelType.HandlerType.GetMethods(Constants.METHOD_FLAGS)
                 .Select(mi => new { Method = mi, ListMethod = mi.GetCustomAttribute<ModelListMethodAttribute>() })

@@ -11,6 +11,7 @@ using VueJSMVCDotNet.Endpoints.Model;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
+using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Endpoints.DataSources
 {
@@ -20,7 +21,8 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             string coreJSImport,
             bool ignoreInvalidModels,
             bool compressJS,
-            IMemoryCache? cache) : EndpointDataSource, IModelDataSource, IDisposable
+            IMemoryCache? cache,
+            JSEngine engine) : EndpointDataSource, IModelDataSource, IDisposable
     {
         private static readonly Type[] ModelEndpoints = [.. typeof(AModelEndpoint<,>)
             .Assembly
@@ -68,9 +70,11 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                 if (compressedCore==null)
                 {
                     using StreamReader sr = new(typeof(ModelsDataSource).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Endpoints.Model.JSGenerators.core.js")!);
-                    compressedCore = JSMinifier.Minify($@"import * as vue from ""{vueImportPath}"";
-{sr.ReadToEnd()}");
+                    var task = engine.CompressCodeAsync($@"import * as vue from ""{vueImportPath}"";
+{sr.ReadToEnd()}").AsTask();
                     sr.Close();
+                    task.Wait();
+                    compressedCore = task.Result;
                 }
                 locker.ExitWriteLock();
                 locker.EnterReadLock();

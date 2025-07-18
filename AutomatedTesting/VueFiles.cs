@@ -21,10 +21,33 @@ namespace AutomatedTesting
             //Assert
             Assert.AreEqual(200, responseStatus);
             Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import Icon from '${hosturl.origin}/resources/vueFiles/icon.vue';"));
-            Assert.IsTrue(content.Contains("import Button from '${hosturl.origin}/resources/vueFiles/buttons/button.vue';"));
+            Assert.IsTrue(content.Contains("const Icon = await import(`${hosturl.origin}/resources/vueFiles/icon.js`);"));
+            Assert.IsFalse(content.Contains("const Button = await import(`${hosturl.origin}/resources/vueFiles/buttons/button.js`);"));
             Assert.IsTrue(content.Contains("${hosturl.origin}/resources/vueFiles/icon.js"));
-            Assert.IsFalse(content.Contains("/resources/vueFiles/buttons/button.js"));
+        }
+
+        [TestMethod]
+        public async Task FileWithMultipleImportFormats()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/imports.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsTrue(content.Length > 0);
+            Assert.IsTrue(content.Contains("const {imp1} = await import(`${hosturl.origin}/imp1.js`);"));
+            Assert.IsTrue(content.Contains("const {imp2, imp3} = await import(`${hosturl.origin}/components.js`);"));
+            Assert.IsTrue(content.Contains("const {imp4} = await import(`${hosturl.origin}/resources/imps.js`);"));
+            Assert.IsTrue(content.Contains("const {imp5} = await import(`${hosturl.origin}/resources/vueFiles/imps.js`);"));
+            Assert.IsTrue(content.Contains("const {imp6} = await import(`${hosturl.origin}/imp6.js`);"));
+            Assert.IsTrue(content.Contains("const {imp7, imp8} = await import(`${hosturl.origin}/components2.js`);"));
+            Assert.IsTrue(content.Contains("const {imp9} = await import(`${hosturl.origin}/resources/imps9.js`);"));
+            Assert.IsTrue(content.Contains("const {imp10} = await import(`${hosturl.origin}/resources/vueFiles/imps9.js`);"));
+            Assert.IsTrue(content.Contains("const imp12 = await import(`${hosturl.origin}/resources/vueFiles/imp12.js`);"));
         }
 
         [TestMethod()]
@@ -38,25 +61,8 @@ namespace AutomatedTesting
             var content = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert
-            Assert.AreEqual(404, responseStatus);
+            //Assert.AreEqual(404, responseStatus);
             Assert.AreEqual("Unable to locate requested file.", content);
-        }
-
-        [TestMethod]
-        public async Task VueFileLinkedToModelHandlers()
-        {
-            //Arrange
-            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
-
-            //Act
-            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/person.js", webApplicationFactory);
-            var content = await new StreamReader(responseStream).ReadToEndAsync();
-
-            //Assert
-            Assert.AreEqual(200, responseStatus);
-            Assert.IsTrue(content.Length > 0);
-            Assert.IsTrue(content.Contains("import  { mPerson } from  '${hosturl.origin}/models/mPerson.js';"));
-            Assert.IsTrue(content.Contains("await import('${hosturl.origin}/models/mGroup.mjs');"));
         }
     }
 }

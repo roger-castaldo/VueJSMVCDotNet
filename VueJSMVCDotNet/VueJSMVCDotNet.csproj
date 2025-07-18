@@ -23,7 +23,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Javascript\compiler-sfc.esm-browser.js" />
+    <None Remove="Javascript\compiler.js" />
+    <None Remove="Javascript\compressor.min.js" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Endpoints\Model\JSGenerators\core.js" />
+    <EmbeddedResource Include="Javascript\compiler-sfc.esm-browser.js" />
+    <EmbeddedResource Include="Javascript\compiler.js" />
+    <EmbeddedResource Include="Javascript\compressor.min.js" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">
@@ -42,9 +50,6 @@
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
 		<PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
+	  <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
 	</ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\NUglify\src\NUglify\NUglify.csproj" />
-	  <!--<PackageReference Include="Nuglify" Version="1.21.15" />-->
-  </ItemGroup>
 </Project>

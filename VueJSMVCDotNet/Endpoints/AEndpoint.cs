@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.Filtering;
-using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints

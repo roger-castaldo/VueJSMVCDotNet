@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
@@ -13,7 +14,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
     {
         public record PullResponse(IEnumerable<object> Data, bool IsFinished, bool HasMore);
 
-        private static readonly int TIMEOUT_MILLISECONDS = 60*1000;
+        private const int TIMEOUT_MILLISECONDS = 60*1000;
 
         private readonly ConcurrentQueue<object> data;
         private bool finished;
@@ -98,6 +99,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             }
         }
 
+        [ExcludeFromCodeCoverage(Justification = "This is simply handling object disposal and there isn't really a way to test this occurence for disposing of the task while executing")]
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

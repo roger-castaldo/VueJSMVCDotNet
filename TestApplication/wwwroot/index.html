@@ -3,8 +3,7 @@
     <script type="importmap">
         {
           "imports": {
-            "vue": "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js",
-            "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js"
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
           }
         }
     </script>
@@ -19,12 +18,17 @@
     
 </head>
 <body>
-    <section id="dvList"/>
-    <section id="dvListFiltered" />
-    <section id="list_items_module" />
-    <section id="notification_container" />
-    <section id="dvedit" />
-
+    <section id="dvList">
+        <Suspense>
+            <List />
+        </Suspense>
+    </section>
+    <section id="dvListFiltered">
+        <Suspense>
+            <FilteredList/>
+        </Suspense>
+    </section>
+    
     <script type="module">
         import { mPerson } from "/models/mPerson.min.js";
         import { User } from "/models/User.js";
@@ -32,95 +36,18 @@
         import hiddenArray from "/resources/scripts/hiddenArray.js";
         import { List, FilteredList } from "/resources/vueFiles/lists.js";
 
+        window.lst = createApp({
+            components: { List }
+        }).mount('#dvList');
 
-
-        window.lst = createApp(List).mount('#dvList');
-
-        window.lstFiltered = createApp(FilteredList).mount('#dvListFiltered');
+        window.lstFiltered = createApp({
+            components: { filteredlist:FilteredList }
+        }).mount('#dvListFiltered');
 
         var person = mPerson.createInstance();
         console.log(person);
-        const asynccomp = {
-            template: '<slot v-if="resolve!=null" name="resolved" v-bind="resolve"></slot><slot v-if="reject!=null" name="rejected" v-bind="reject"></slot>',
-            props: ['promise', 'resultname'],
-            data: function () {
-                return { resolve: null, reject: null };
-            },
-            watch: {
-                promise: function (val) {
-                    if (val != null && val instanceof Promise) {
-                        this.handlePromise();
-                    } else {
-                        this.resolve = null;
-                        this.reject = null;
-                    }
-                }
-            },
-            methods: {
-                handlePromise() {
-                    var view = this;
-                    this.promise.then(
-                        result => {
-                            if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
-                                tmp[view.resultname] = result;
-                                view.resolve = tmp;
-                            } else {
-                                view.resolve = result;
-                            }
-                            view.reject = null;
-                        },
-                        result => {
-                            if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
-                                tmp[view.resultname] = result;
-                                view.reject = tmp;
-                            } else {
-                                view.reject = result;
-                            }
-                            view.resolve = null;
-                        }
-                    );
-                }
-            },
-            mounted: function () {
-                if (this.promise != null && this.promise instanceof Promise) {
-                    this.handlePromise();
-                } else {
-                    this.resolve = null;
-                    this.reject = null;
-                }
-            }
-        };
 
         mPerson.TestNull().then(result => { alert(result == null); });
-        let hiddenApp = createApp({
-            template:`<ul>
-        <li><icon :iconType="'test'" /></li>
-        <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
-        <li v-on:click="append('NewItem')">Add New</li>
-    </ul>`,
-            components: {
-                icon: defineComponent({
-                    setup(props, context) {
-                        const icontype = toRef(context.attrs, 'icontype');
-                        return { icontype };
-                    },
-                    render() {
-                        return h(
-                            'i',
-                            {
-                                'class': 'icon ' + this.icontype
-                            }
-                        );
-                    }
-                })
-            },
-            setup(props, { attrs, slots, emit, expose }) {
-                const { Items, append } = hiddenArray(props, { attrs, slots, emit, expose });
-                return { Items, append };
-            }
-        }).mount('#list_items_module');
 
         mPerson.Search('b', 0, 1).reload().then(paged => {
             console.log(paged.currentPage);

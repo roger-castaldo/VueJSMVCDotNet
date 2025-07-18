@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
     internal class ModelClassHeaderGenerator : IJSGenerator
     {
         private static readonly IEnumerable<string> ModelKeys = ["id", "isNew", "isValid", "invalidFields", "reload", "$on", "$off"];
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             log?.LogTrace("Generating Model Definition javascript for {TypeName}", modelType.Type.FullName);
             builder.Append(@$" class {modelType.Type.Name} {{
@@ -36,7 +36,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         }}");
         }
 
-        private static void AppendToProxy(WrappedStringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, ModelType modelType)
+        private static void AppendToProxy(StringBuilder builder, IEnumerable<PropertyInfo> props, IEnumerable<MethodInfo> methods, ModelType modelType)
         {
             builder.AppendLine(@"#toProxy(){
     let me = this;
@@ -104,7 +104,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         }};");
         }
 
-        private static void AppendValidations(IEnumerable<PropertyInfo> props, WrappedStringBuilder builder)
+        private static void AppendValidations(IEnumerable<PropertyInfo> props, StringBuilder builder)
         {
             var requiredProps = props.Where(pi => pi.GetCustomAttributes(typeof(ModelRequiredFieldAttribute), false).Length > 0);
             if (requiredProps.Any())

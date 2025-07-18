@@ -1,7 +1,4 @@
-﻿using NUglify;
-using System.Diagnostics.CodeAnalysis;
-
-namespace VueJSMVCDotNet
+﻿namespace VueJSMVCDotNet
 {
 
     /// <summary>
@@ -275,22 +272,5 @@ namespace VueJSMVCDotNet
         /// The parameter that caused the issue in the method
         /// </summary>
         public ParameterInfo Parameter { get; private init; }
-    }
-
-    /// <summary>
-    /// thrown when invalid javascript exists in the content being compressed
-    /// </summary>
-    [ExcludeFromCodeCoverage(Justification = "In theory this exception should never occur and there is no way for a test case to be written to do so unless the Minifier gets exposed")]
-    public class JavascriptMinificationException : Exception
-    {
-        internal JavascriptMinificationException(IEnumerable<UglifyError> uglifyErrors)
-            : base("Some errors in the requested javascript were found during the minification process.  Refer to Errors for the details") {
-            Errors = uglifyErrors;
-        }
-
-        /// <summary>
-        /// The Uglify Errors detected during compression
-        /// </summary>
-        public IEnumerable<UglifyError> Errors { get; private init; }
     }
 }

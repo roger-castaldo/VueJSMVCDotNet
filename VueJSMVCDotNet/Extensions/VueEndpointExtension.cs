@@ -6,6 +6,7 @@ using VueJSMVCDotNet.Endpoints;
 using VueJSMVCDotNet.Endpoints.DataSources;
 using VueJSMVCDotNet.Endpoints.Filtering;
 using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Extensions
 {
@@ -16,7 +17,6 @@ namespace VueJSMVCDotNet.Extensions
     {
 #pragma warning disable S1075 // URIs should not be hardcoded
         private const string defaultVueImportPath = "https://unpkg.com/vue@3/dist/vue.runtime.esm-browser.prod.js";
-        private const string deafultVueLoaderImportPath = "https://unpkg.com/vue3-sfc-loader@0.9.5/dist/vue3-sfc-loader.esm.js";
 #pragma warning restore S1075 // URIs should not be hardcoded
         private const string defaultCoreJSURL = "/VueJSMVCDotNet_core.min.js";
 
@@ -41,14 +41,16 @@ namespace VueJSMVCDotNet.Extensions
             bool compressJS = true,
             IMemoryCache? cache = null
         )
-            => services.AddSingleton<ModelsDataSource>((provider) => new(
+            => services.AddSingleton<JSEngine>()
+            .AddSingleton<ModelsDataSource>((provider) => new(
                 logger??provider.GetService<ILogger>(),
                 vueImportPath,
                 coreJSURL,
                 coreJSImport??coreJSURL,
                 ignoreInvalidModels,
                 compressJS,
-                cache??provider.GetService<IMemoryCache>()
+                cache??provider.GetService<IMemoryCache>(),
+                provider.GetRequiredService<JSEngine>()
             ))
             .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>())
             .AddSingleton<FeatureGateFilter>();
@@ -86,7 +88,8 @@ namespace VueJSMVCDotNet.Extensions
             string vueImportPath = defaultVueImportPath,
             ILogger? logger = null,
             IMemoryCache? cache = null)
-        => new MessagesEndpoint(fileProvider, baseURL, compressJS, corePath, vueImportPath, logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
+        => new MessagesEndpoint(fileProvider, baseURL, compressJS, corePath, vueImportPath,
+            logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
             .AddEndpoint(builder);
 
         /// <summary>
@@ -95,9 +98,6 @@ namespace VueJSMVCDotNet.Extensions
         /// <param name="builder">The EndpointRouteBuilder as per extension standards</param>
         /// <param name="fileProvider">The file provider to use for mapping the message files</param>
         /// <param name="baseURL">The base path for all vue files</param>
-        /// <param name="vueImportPath">The import path for vue js</param>
-        /// <param name="vueLoaderImportPath">The import path for the vue loader js</param>
-        /// <param name="coreJSImport">The override for the CoreJS import path if one is desired</param>
         /// <param name="compressJS">Indicates if all Javascript should be compressed</param>
         /// <param name="logger">An ILogger instance if one is desired</param>
         /// <param name="cache">An IMemoryCache implementation if one is desired</param>
@@ -105,19 +105,11 @@ namespace VueJSMVCDotNet.Extensions
         public static IEndpointRouteBuilder UseVueJSMVCVueFiles(this IEndpointRouteBuilder builder,
             IFileProvider fileProvider,
             string baseURL,
-            string vueImportPath = defaultVueImportPath,
-            string vueLoaderImportPath = deafultVueLoaderImportPath,
-            string coreJSImport = defaultCoreJSURL,
             bool compressJS = true,
             ILogger? logger = null,
             IMemoryCache? cache = null)
-        => new VueFilesEndpoint(fileProvider, baseURL, vueImportPath, vueLoaderImportPath, coreJSImport, compressJS, (path) => CheckModelPath(builder, path), logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
+        => new VueFilesEndpoint(fileProvider, baseURL, compressJS, 
+            logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
             .AddEndpoint(builder);
-
-        private static bool CheckModelPath(IEndpointRouteBuilder builder, string path)
-            => builder.DataSources.AsQueryable()
-                .OfType<ModelsDataSource>()
-                .FirstOrDefault()?.Endpoints.OfType<RouteEndpoint>().Any(re => path.Equals(re.RoutePattern.ToString(), StringComparison.InvariantCultureIgnoreCase))
-            ?? false;
     }
 }

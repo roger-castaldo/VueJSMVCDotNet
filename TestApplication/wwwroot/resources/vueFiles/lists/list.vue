@@ -87,6 +87,7 @@
 <script setup>
     import { mPerson } from '../../../models/mPerson.js';
     import { watch, ref } from 'vue';
+    import asynccomp from '../asynccomp.vue';
 
     console.log('loading list vue');
 

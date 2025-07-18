@@ -15,5 +15,4 @@
 
         return mGroup;
     });
-};
 </script>

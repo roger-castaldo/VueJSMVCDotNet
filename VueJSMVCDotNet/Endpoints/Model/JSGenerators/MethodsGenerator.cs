@@ -17,7 +17,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             return (returnType, array, em.IsSlow, em.AllowNullResponse);
         }
 
-        private static void AppendMethodCallDeclaration(IGrouping<string, MethodInfo> methodGroup, bool isStatic, WrappedStringBuilder builder)
+        private static void AppendMethodCallDeclaration(IGrouping<string, MethodInfo> methodGroup, bool isStatic, StringBuilder builder)
         {
             builder.Append($@"          {(isStatic ? "static async " : "async #")}{methodGroup.Key}(");
             if (methodGroup.Count()==1)
@@ -62,7 +62,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             }
         }
 
-        private static void AppendMethodParameters(IEnumerable<ParameterInfo> pars, NotNullArguementAttribute? nna, WrappedStringBuilder builder, bool useArguements = false)
+        private static void AppendMethodParameters(IEnumerable<ParameterInfo> pars, NotNullArguementAttribute? nna, StringBuilder builder, bool useArguements = false)
         {
             pars.ForEach((par, index) =>
             {
@@ -86,7 +86,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             });
         }
 
-        private static void AppendMethodReturnCallback(MethodInfo method, WrappedStringBuilder builder)
+        private static void AppendMethodReturnCallback(MethodInfo method, StringBuilder builder)
         {
             (var returnType, var array, var isSlow, var allowNullResponse) = MethodsGenerator.ExtractReturnType(method);
             builder.AppendLine(@$"               opts.useJSON = {(method.GetCustomAttributes(typeof(UseFormDataAttribute), false).Length==0
@@ -115,7 +115,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             builder.AppendLine("                };");
         }
 
-        private static void AppendMethodContent(ModelType modelType, IGrouping<string,MethodInfo> methodGroup, bool isStatic, WrappedStringBuilder builder)
+        private static void AppendMethodContent(ModelType modelType, IGrouping<string,MethodInfo> methodGroup, bool isStatic, StringBuilder builder)
         {
             MethodsGenerator.AppendMethodCallDeclaration(methodGroup, isStatic, builder);
             builder.AppendLine(@$"let response = await ajax(Object.assign({{
@@ -128,7 +128,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             }};");
         }
 
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             modelType.InstanceMethods.GroupBy(m=>m.Name).ForEach(m => AppendMethodContent(modelType, m, false, builder));
             modelType.StaticMethods.GroupBy(m => m.Name).ForEach(m => AppendMethodContent(modelType, m, true, builder));

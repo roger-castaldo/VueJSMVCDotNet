@@ -7,7 +7,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ParseGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             log?.LogTrace("Appending Parse method for Model Definition[{TypeName}]", modelType.Type.FullName);
             builder.AppendLine(@$"         {Constants.PARSE_FUNCTION_NAME}(jdata){{

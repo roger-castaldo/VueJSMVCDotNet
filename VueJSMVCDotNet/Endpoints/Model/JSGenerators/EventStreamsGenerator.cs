@@ -8,7 +8,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class EventStreamsGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             modelType.HandlerType.GetMethods(Constants.METHOD_FLAGS)
                 .Where(m => m.GetCustomAttribute<EventStreamMethodAttribute>(false)!=null)

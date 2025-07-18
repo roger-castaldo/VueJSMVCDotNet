@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using VueJSMVCDotNet.Caching;
 using VueJSMVCDotNet.Extensions;
+using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Endpoints
 {
@@ -94,7 +96,7 @@ export {{Translate,ProduceComputedMessage}};";
                     {
                         sb.Length-=2;
                         return new CachableResponse(
-                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? JSMinifier.Minify(CompileToCode(sb)) : CompileToCode(sb)),
+                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? await context.RequestServices.GetRequiredService<JSEngine>().CompressCodeAsync(CompileToCode(sb)) : CompileToCode(sb)),
                             "text/javascript",
                             contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
                             contents.Where(f => f.PhysicalPath!=null).Select(f => fileProvider.Watch(f.PhysicalPath!))

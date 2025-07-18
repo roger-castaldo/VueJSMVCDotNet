@@ -6,7 +6,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     class ModelInstanceFooterGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             log?.LogTrace("Appending Model Instance Footer for Model Definition[{TypeName}]", modelType.Type.FullName);
             builder.Append(@$"

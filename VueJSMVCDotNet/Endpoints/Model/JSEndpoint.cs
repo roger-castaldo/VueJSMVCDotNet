@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Caching;
 using VueJSMVCDotNet.Endpoints.DataSources;
@@ -10,6 +10,7 @@ using VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces;
 using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 using VueJSMVCDotNet.Interfaces.Internal;
+using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
@@ -59,12 +60,12 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                 methods: []
             ));
 
-        protected override Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
+        protected override async Task<CachableResponse?> ProduceCachableResponseAsync(HttpContext context)
         {
             var baseURL = (string?)context.Items[BaseURLKey]??string.Empty;
             var useModuleExtension = ((string?)context.Request.RouteValues[ExtensionKey])?.EndsWith("mjs", StringComparison.InvariantCultureIgnoreCase)??false;
             var isMin = ((string?)context.Request.RouteValues[ExtensionKey])?.StartsWith("min", StringComparison.InvariantCultureIgnoreCase)??false;
-            var builder = new WrappedStringBuilder(compressAllJS||isMin);
+            var builder = new StringBuilder();
             builder.AppendLine(importHeader);
             Generators.ForEach(gen =>
             {
@@ -76,12 +77,12 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                 builder.AppendLine($"//END:{gen.GetType().Name}");
             });
 
-            return Task.FromResult<CachableResponse?>(new(
-                builder.ToString(),
+            return new(
+                (compressAllJS||isMin ? await context.RequestServices.GetRequiredService<JSEngine>().CompressCodeAsync(builder.ToString()) : builder.ToString()),
                 "text/javascript",
                 DateTime.UtcNow,
                 []
-            ));
+            );
         }
     }
 }

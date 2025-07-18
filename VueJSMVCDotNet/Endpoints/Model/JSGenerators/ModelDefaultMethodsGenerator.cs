@@ -5,7 +5,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ModelDefaultMethodsGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             log?.LogTrace("Generating Model Default Methods Definition javascript for {TypeName}", modelType.Type.FullName);
             if (modelType.SaveMethod != null)
@@ -26,7 +26,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             ModelDefaultMethodsGenerator.AppendReloadMethod(modelType, builder, log);
         }
 
-        private static void AppendReloadMethod(ModelType modelType, WrappedStringBuilder builder, ILogger? log)
+        private static void AppendReloadMethod(ModelType modelType, StringBuilder builder, ILogger? log)
         {
             log?.LogTrace("Adding reload method for Model Definition[{TypeName}]", modelType.Type.FullName);
             builder.AppendLine(@$"     async #reload(){{
@@ -38,7 +38,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             }}");
         }
 
-        private static void AppendDelete(ModelType modelType, WrappedStringBuilder builder)
+        private static void AppendDelete(ModelType modelType, StringBuilder builder)
         {
             builder.AppendLine(@$"         async #destroy(){{
                 let response = await ModelMethods.destroy({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew());
@@ -48,7 +48,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         }}");
         }
 
-        private static void AppendUpdate(ModelType modelType, WrappedStringBuilder builder, bool useJSON)
+        private static void AppendUpdate(ModelType modelType, StringBuilder builder, bool useJSON)
         {
             builder.AppendLine(@$"         async #update(){{
                 let response = await ModelMethods.update({modelType.Type.Name}.#baseURL,this.{Constants.INITIAL_DATA_KEY}.id,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});
@@ -64,7 +64,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         }}");
         }
 
-        private static void AppendSave(ModelType modelType, WrappedStringBuilder builder, bool useJSON)
+        private static void AppendSave(ModelType modelType, StringBuilder builder, bool useJSON)
         {
             builder.AppendLine(@$"             async #save(){{
                 let response = await ModelMethods.save({modelType.Type.Name}.#baseURL,this.#isNew(),this.#isValid(),this.{Constants.TO_JSON_VARIABLE}(),{useJSON.ToString().ToLower()});

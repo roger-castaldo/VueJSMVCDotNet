@@ -5,7 +5,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ParsersGenerator : IBaseJSGenerator
     {
-        void IBaseJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, bool useModuleExtension, bool isMin, ILogger? log)
+        void IBaseJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, bool useModuleExtension, bool isMin, ILogger? log)
         {
             var ext = (useModuleExtension, isMin) switch
             {

@@ -1,7 +1,6 @@
 ﻿using AutomatedTesting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -16,8 +15,8 @@ app.UseRouting()
         .UseVueJSMVCMessages(app.Services.GetRequiredService<IFileProvider>(), "/resources/messages", corePath: Constants.CORE_IMPORT_PATH, 
             vueImportPath: Constants.VUE_IMPORT_PATH, logger: app.Services.GetService<ILogger>(), cache: app.Services.GetService<IMemoryCache>(),
             compressJS: false)
-        .UseVueJSMVCVueFiles(app.Services.GetRequiredService<IFileProvider>(), "/resources/vueFiles", vueImportPath: Constants.VUE_IMPORT_PATH, 
-            vueLoaderImportPath: Constants.VUE_LOADER_PATH, coreJSImport: Constants.CORE_IMPORT_PATH, logger: app.Services.GetService<ILogger>(), 
+        .UseVueJSMVCVueFiles(app.Services.GetRequiredService<IFileProvider>(), "/resources/vueFiles", 
+            logger: app.Services.GetService<ILogger>(), 
             cache: app.Services.GetService<IMemoryCache>(),
             compressJS: false)
     );

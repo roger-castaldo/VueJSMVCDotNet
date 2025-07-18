@@ -435,7 +435,7 @@ export const name = Translate('Name',null,'en');");
             {
                 eng.Modules.Add("notification", content);
                 eng.Modules.Add("custom", @"import notification from 'notification';
-export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
+export const check = notification!==undefined && notification!==null && notification.__name!==undefined;");
                 var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
             }
@@ -469,7 +469,7 @@ export const check = notification!==undefined && notification!==null && notifica
             {
                 eng.Modules.Add("notification", content);
                 eng.Modules.Add("custom", @"import notification from 'notification';
-export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
+export const check = notification!==undefined && notification!==null && notification.__name!==undefined;");
                 var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
             }

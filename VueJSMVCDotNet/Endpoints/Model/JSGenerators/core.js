@@ -1,9 +1,6 @@
-﻿//START:HeaderGenerator
-const isString = (value) 
-	=> typeof value === 'string' || value instanceof String;
+﻿const isString = (value) => typeof value === 'string' || value instanceof String;
 
-const isFunction = (obj)
-	=> obj !== null && typeof obj === 'function';
+const isFunction = (obj) => obj !== null && typeof obj === 'function';
 
 const _keys =  (obj) => {
 	if (!_isObject(obj)) return [];
@@ -15,11 +12,9 @@ const _keys =  (obj) => {
 	return keys;
 };
 
-const _isDate = (obj) 
-	=> Object.prototype.toString.call(obj) === '[object Date]';
+const _isDate = (obj) => Object.prototype.toString.call(obj) === '[object Date]';
 
-const _isObject = (obj)
-	=> obj !== null && obj !== undefined && !(obj.toString() === '[object FileList]' || obj.toString() === '[object File]')
+const _isObject = (obj) => obj !== null && obj !== undefined && !(obj.toString() === '[object FileList]' || obj.toString() === '[object File]')
 	&& !_isDate(obj) && (['function', 'object'].indexOf(typeof obj) >= 0 && !!obj);
 
 const cloneData = (obj) => {
@@ -51,7 +46,7 @@ const _fixDates = (data) => {
 	return data;
 };
 
-const ajax = async (options) => {
+const ajax = async(options) => {
 	if (options.isSlow !== undefined && options.isSlow) {
 		delete options.isSlow;
 		let isArray = (options.isArray == undefined ? false : options.isArray);
@@ -155,8 +150,7 @@ const ajax = async (options) => {
 };
 
 /*borrowed from undescore source*/
-const _has = (obj, path)
-	=> obj !== null && Object.hasOwn(obj, path);
+const _has = (obj, path) => obj !== null && Object.hasOwn(obj, path);
 
 let _eq, _deepEq;
 
@@ -264,8 +258,7 @@ _deepEq = (a, b, aStack, bStack) => {
 };
 
 // Perform a deep comparison to check if two objects are equal.
-const isEqual = (a, b)
-	=> (Array.isArray(a) || Array.isArray(b) ? _deepEq(a, b) : _eq(a, b));
+const isEqual = (a, b) => (Array.isArray(a) || Array.isArray(b) ? _deepEq(a, b) : _eq(a, b));
 
 const _numberRanges = {
 	'Int16': { low: -32768, high: 32767, hasDecimal: false },
@@ -843,160 +836,6 @@ const ModelMethods = {
 	}
 };
 
-///Vue File Section
-
-const vueFileReg = /^.+\.vue$/;
-const mjsFileReg = /^.+\.mjs$/;
-const jsFileReg = /^.+\.js$/;
-const extReg = /^.+\.[0-9a-zA-Z]{1,5}$/;
-const _vueFileCache = new Map();
-const _linkedDomains = [];
-
-const addLinkedDomain = (domain) => {
-	if (!_linkedDomains.some(l => l.toLowerCase() === domain.toLowerCase())) {
-		_linkedDomains.push(domain.toLowerCase());
-	}
-}
-
-const _formatURL = function(url)
-{
-	let result = '';
-	let upper = true;
-	for (var i = 0; i < url.length; i++) {
-		switch (url[i]) {
-			case '.':
-			case '-':
-			case '_':
-				upper = true;
-				break;
-			default:
-				if (upper) {
-					result += url[i].toUpperCase();
-					upper = false;
-				}
-				else
-					result += url[i];
-				break;
-		}
-	}
-	return result;
-}
-
-const cacheVueFile = function (url, content) {
-	_vueFileCache.set(url.toLowerCase(), content);
-	_vueFileCache.set(_formatURL(url).toLowerCase(), content);
-}
-
-const _fetchVueFile = async function (url) {
-	if (vueFileReg.test(url)) {
-		if (_vueFileCache.has(url.toLowerCase())) {
-			return {
-				getContentData: (asBinary) => _vueFileCache.get(url.toLowerCase())
-			};
-		} else {
-			let nurl = _formatURL(url).toLowerCase();
-			if (_vueFileCache.has(nurl)) {
-				return {
-					getContentData: (asBinary) => _vueFileCache.get(nurl)
-				};
-			} else {
-				if ((url.indexOf("http:") === 0 || url.indexOf("https:") === 0)
-					&& !_linkedDomains.some(l => new URL(url).origin.toLowerCase() === l)) {
-					const res = await ajax({
-						url: url,
-						useJSON: false
-					});
-					if (!res.ok)
-						throw Object.assign(new Error(res.text + ' ' + url), { res });
-					cacheVueFile(url, res.text());
-				} else {
-					await import(url.substring(0, url.length - 4) + ".js");
-				}
-				return {
-					getContentData: (asBinary) => _vueFileCache.get(url.toLowerCase())
-				};
-			}
-		}
-	} else if (mjsFileReg.test(url) || jsFileReg.test(url)) {
-		return { getContentData: (mjsFileReg.test(url) ? `${url.substring(0, url.length - 3)}js` : url) };
-	} else if (_moduleCache[url] !== undefined) {
-		return {
-			getContentData: () => _moduleCache[url]
-		};
-	} else {
-		let res = null;
-		if (!extReg.test(url)) {
-			try {
-				res = await import(url);
-				console.log(res);
-				_moduleCache[url] = res;
-				console.log(_moduleCache);
-				return {
-					getContentData: () => _moduleCache[url]
-				};
-			} catch (err) {
-				console.log(err);
-				res = null;
-			}
-		}
-		if (res === null) {
-			res = await fetch(url);
-			if (!res.ok)
-				throw Object.assign(new Error(res.statusText + ' ' + url), { res });
-			return {
-				getContentData: (asBinary) => asBinary ? res.arrayBuffer() : res.text()
-			};
-		}
-	}
-}
-
-const _cachedCode = [];
-
-const _moduleCache = { vue: vue } ;
-
-const vueSFCOptions = {
-	moduleCache: _moduleCache,
-	compiledCache: {
-		set(key, str) {
-			_cachedCode.push(key);
-			var success = false;
-			while (!success && _cachedCode.length>0) {
-				try {
-					window.sessionStorage.setItem(key, str);
-					success = true;
-				} catch (ex) {
-					window.sessionStorage.removeItem(_cachedCode.shift());
-				}
-			}
-		},
-		get(key) {
-			if (_cachedCode.indexOf(key) >= 0)
-				return window.sessionStorage.getItem(key);
-			return undefined;
-		}
-	},
-	async getFile(url) {
-		return _fetchVueFile(url);
-	},
-	addStyle(textContent) {
-		const style = Object.assign(document.createElement('style'), { textContent });
-		const ref = document.head.getElementsByTagName('style')[0] || null;
-		document.head.insertBefore(style, ref);
-	},
-	async handleModule(type, getContentData, path, options) {
-		switch (type) {
-			case '.json':
-				return JSON.parse(await getContentData(false));
-				break;
-			case '.js':
-			case '.mjs':
-				return await import(getContentData);
-				break;
-		}
-		return undefined;
-	}
-}
-
 //Messages section
 
 const _language = vue.ref(null);
@@ -1016,4 +855,4 @@ const SetLanguage = function (language) {
 	_language.value = language;
 }
 
-export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, cacheVueFile, vueSFCOptions, Language, SetLanguage, ResetLanguage, addLinkedDomain };
+export { isString, isFunction, cloneData, ajax, isEqual, checkProperty, stripBigInt, EventHandler, ModelList, ModelMethods, Language, SetLanguage, ResetLanguage };

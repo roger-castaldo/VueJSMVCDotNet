@@ -5,7 +5,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
     internal class ModelLoadAllGenerator : IJSGenerator
     {
-        void IJSGenerator.GeneratorJS(WrappedStringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
+        void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
             var mi = Array.Find(modelType.HandlerType.GetMethods(Constants.METHOD_FLAGS), mi => mi.GetCustomAttribute<ModelLoadAllMethodAttribute>(false)!=null);
             if (mi!=null)
