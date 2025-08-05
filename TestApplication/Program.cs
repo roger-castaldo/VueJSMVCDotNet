@@ -41,7 +41,7 @@ app.UseDefaultFiles()
         endpoints
             .MapVueJSMVSModels()
             .UseVueJSMVCMessages(builder.Environment.WebRootFileProvider, "/resources/messages", compressJS: compressJS, vueImportPath: "vue")
-            .UseVueJSMVCVueFiles(builder.Environment.WebRootFileProvider, "/resources/vueFiles", compressJS: compressJS);
+            .UseVueJSMVCVueFiles(builder.Environment.WebRootFileProvider, "/resources/vueFiles", compressJS: compressJS, vueImportPath: "vue");
         endpoints.MapGet("/test1", () => "Feature is on!")
             .WithFeatureGate("PersonSearchAllowed");
         endpoints.MapGet("/test2", () => "Feature is on!")

@@ -24,13 +24,11 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Javascript\compiler-sfc.esm-browser.js" />
-    <None Remove="Javascript\compiler.js" />
     <None Remove="Javascript\compressor.min.js" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Endpoints\Model\JSGenerators\core.js" />
     <EmbeddedResource Include="Javascript\compiler-sfc.esm-browser.js" />
-    <EmbeddedResource Include="Javascript\compiler.js" />
     <EmbeddedResource Include="Javascript\compressor.min.js" />
   </ItemGroup>
   <ItemGroup>

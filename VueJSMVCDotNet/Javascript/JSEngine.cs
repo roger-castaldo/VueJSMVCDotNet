@@ -7,7 +7,6 @@ namespace VueJSMVCDotNet.Javascript
     internal class JSEngine : IDisposable
     {
         private const string sfcCompilerModule = "vue-compiler-sfc-esm-browser";
-        private const string compilerModule = "compiler";
         private const string processFilesCall = "processFiles";
         private const string compressCodeCall = "compressCode";
 
@@ -47,9 +46,10 @@ async function {compressCodeCall}(code,setResult,setError){{
     }}
 }};
 
-async function {processFilesCall}(files,compress,preAsyncInject,setResult,setError,loadContent){{
+async function {processFilesCall}(files,setResult,setError,loadContent,produceResult){{
     try{{
-        const compileFiles = (await import('{compilerModule}')).default;
+        const {{ parse, compileScript, compileTemplate, compileStyle }} = await import('{sfcCompilerModule}');
+        
         let loadedFiles = [];
         let tfiles = JSON.parse(files);
 
@@ -61,13 +61,40 @@ async function {processFilesCall}(files,compress,preAsyncInject,setResult,setErr
             }});
         }}
 
-        const content = compileFiles(loadedFiles,preAsyncInject);
+        const result = loadedFiles.map(file=>{{
+            const {{ descriptor }} = parse(file.content,{{ id: file.id,filename:file.name }});
 
-        if (compress){{
-            await {compressCodeCall}(content,setResult,setError);
-        }}else{{
-            setResult(content);
-        }}
+            const script = compileScript(descriptor, {{id: file.id,
+                filename: file.name,
+                isProd: true,
+                sourceMap: false,
+                inlineTemplate: true
+            }}).content;
+
+            let template = '';
+            let style = '';
+
+            if (descriptor.scriptSetup === null) {{
+                template = compileTemplate({{source: descriptor.template.content,
+                    filename: file.name,
+                    id: file.id,
+                    isProd: true
+                }}).code;
+            }}
+
+
+            if (descriptor.styles.length > 0) {{
+                style = compileStyle({{source: descriptor.styles[0].content,
+                    filename: file.name,
+                    id: file.id,
+                    scoped: descriptor.styles[0].scoped,
+                }}).code;
+            }}
+            
+            return produceResult(script,template,style);
+        }});
+
+        setResult(result);
     }}catch(e){{
         setError(e.message??JSON.stringify(e));
     }}
@@ -77,6 +104,8 @@ async function {processFilesCall}(files,compress,preAsyncInject,setResult,setErr
 
         private readonly V8ScriptEngine v8Engine;
         private bool disposedValue;
+
+        public record CompileResult(string Script,string TemplateScript,string StyleScript);
 
         public JSEngine()
         {
@@ -94,8 +123,7 @@ async function {processFilesCall}(files,compress,preAsyncInject,setResult,setErr
 
             v8Engine.DocumentSettings.Loader = new EmbeddedDocumentLoader(new Dictionary<string, string>
             {
-                {sfcCompilerModule,"VueJSMVCDotNet.Javascript.compiler-sfc.esm-browser.js" },
-                {compilerModule,"VueJSMVCDotNet.Javascript.compiler.js" }
+                {sfcCompilerModule,"VueJSMVCDotNet.Javascript.compiler-sfc.esm-browser.js" }
             });
             v8Engine.Execute(compressorCode);
             v8Engine.Execute(invokableCode);
@@ -120,15 +148,16 @@ async function {processFilesCall}(files,compress,preAsyncInject,setResult,setErr
             return await AwaitTaskWithTimeout<string>(result.Task, callTimeout);
         }
 
-        public async ValueTask<string> CompileVueFilesAsync(IEnumerable<VueFile> files,bool minimize,string preAsyncInject)
+        public async ValueTask<IEnumerable<CompileResult>> CompileVueFilesAsync(IEnumerable<VueFile> files)
         {
-            var result = new TaskCompletionSource<string>();
-            v8Engine.Invoke(processFilesCall, JsonSerializer.Serialize(files), minimize, preAsyncInject,
-                new Action<string>((content) => result.TrySetResult(content)),
+            var result = new TaskCompletionSource<IEnumerable<CompileResult>>();
+            v8Engine.Invoke(processFilesCall, JsonSerializer.Serialize(files), 
+                new Action<IEnumerable<object>>((content) => result.TrySetResult(content.Select(o=>(CompileResult)o))),
                 new Action<string>((content) => result.TrySetException(new Exception(content))), 
-                new Func<string, string>((name) => files.FirstOrDefault(f => string.Equals(f.Name, name))?.Content??throw new FileNotFoundException())
+                new Func<string, string>((name) => files.FirstOrDefault(f => string.Equals(f.Name, name))?.Content??throw new FileNotFoundException()),
+                new Func<string,string,string,CompileResult>((script,template,style)=>new(script,template,style))
             );
-            return await AwaitTaskWithTimeout<string>(result.Task, callTimeout);
+            return await AwaitTaskWithTimeout<IEnumerable<CompileResult>>(result.Task, callTimeout);
         }
 
         protected virtual void Dispose(bool disposing)

@@ -11,8 +11,8 @@ using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Endpoints
 {
-    internal class MessagesEndpoint(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath, ILogger? logger, IMemoryCache? cache)
-        : ACachingEndpoint(logger, cache)
+    internal class MessagesEndpoint(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath, JSEngine? engine, ILogger? logger, IMemoryCache? cache)
+        : AJSEngineEndpoint(engine,logger, cache)
     {
         private const string PathParameter = "path";
         private string CompileToCode(StringBuilder messages)
@@ -96,7 +96,7 @@ export {{Translate,ProduceComputedMessage}};";
                     {
                         sb.Length-=2;
                         return new CachableResponse(
-                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? await context.RequestServices.GetRequiredService<JSEngine>().CompressCodeAsync(CompileToCode(sb)) : CompileToCode(sb)),
+                            (compressAllJS || spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? await GetEngine(context).CompressCodeAsync(CompileToCode(sb)) : CompileToCode(sb)),
                             "text/javascript",
                             contents.OrderByDescending(ifi => ifi.LastModified.Ticks).Last().LastModified.DateTime,
                             contents.Where(f => f.PhysicalPath!=null).Select(f => fileProvider.Watch(f.PhysicalPath!))

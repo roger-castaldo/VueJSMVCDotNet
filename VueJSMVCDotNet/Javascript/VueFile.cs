@@ -8,7 +8,9 @@ namespace VueJSMVCDotNet.Javascript
         [property:JsonPropertyName("name")]
         string Name,
         [property:JsonIgnore()]
-        string Content
+        string Content,
+        [property:JsonIgnore()]
+        IEnumerable<string> SpecialImports
     ) 
     {}
 }

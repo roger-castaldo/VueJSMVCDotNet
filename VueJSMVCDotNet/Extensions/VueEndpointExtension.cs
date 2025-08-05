@@ -89,6 +89,7 @@ namespace VueJSMVCDotNet.Extensions
             ILogger? logger = null,
             IMemoryCache? cache = null)
         => new MessagesEndpoint(fileProvider, baseURL, compressJS, corePath, vueImportPath,
+            (builder.ServiceProvider.GetService<JSEngine>()==null ? new() : null),
             logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
             .AddEndpoint(builder);
 
@@ -98,6 +99,7 @@ namespace VueJSMVCDotNet.Extensions
         /// <param name="builder">The EndpointRouteBuilder as per extension standards</param>
         /// <param name="fileProvider">The file provider to use for mapping the message files</param>
         /// <param name="baseURL">The base path for all vue files</param>
+        /// <param name="vueImportPath">The import path for vue js</param>
         /// <param name="compressJS">Indicates if all Javascript should be compressed</param>
         /// <param name="logger">An ILogger instance if one is desired</param>
         /// <param name="cache">An IMemoryCache implementation if one is desired</param>
@@ -105,10 +107,12 @@ namespace VueJSMVCDotNet.Extensions
         public static IEndpointRouteBuilder UseVueJSMVCVueFiles(this IEndpointRouteBuilder builder,
             IFileProvider fileProvider,
             string baseURL,
+            string vueImportPath = defaultVueImportPath,
             bool compressJS = true,
             ILogger? logger = null,
             IMemoryCache? cache = null)
-        => new VueFilesEndpoint(fileProvider, baseURL, compressJS, 
+        => new VueFilesEndpoint(fileProvider, baseURL, vueImportPath, compressJS,
+            (builder.ServiceProvider.GetService<JSEngine>()==null ? new() : null),
             logger??builder.ServiceProvider.GetService<ILogger>(), cache??builder.ServiceProvider.GetService<IMemoryCache>())
             .AddEndpoint(builder);
     }

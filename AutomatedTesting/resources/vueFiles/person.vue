@@ -16,3 +16,9 @@
         return mGroup;
     });
 </script>
+
+<style scoped>
+    .notification{
+        font-size:120px;
+    }
+</style>
