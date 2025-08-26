@@ -21,10 +21,10 @@
                 <td>{{person.LastName}}</td>
                 <asynccomp v-bind:promise="person.GetFullName()">
                     <template #resolved="props">
-                        {{props.result}}
+                        {{props}}
                     </template>
                     <template #rejected="props">
-                        <span style="color:red">{{props.result}}</span>
+                        <span style="color:red">{{props}}</span>
                     </template>
                 </asynccomp>
             </tr>

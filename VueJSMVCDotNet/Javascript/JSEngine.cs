@@ -68,19 +68,20 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
                 filename: file.name,
                 isProd: true,
                 sourceMap: false,
-                inlineTemplate: true
+                inlineTemplate: false,
+                genDefaultAs:file.id
             }}).content;
 
-            let template = '';
-            let style = '';
-
-            if (descriptor.scriptSetup === null) {{
-                template = compileTemplate({{source: descriptor.template.content,
+            let template = compileTemplate({{source: descriptor.template.content,
                     filename: file.name,
                     id: file.id,
-                    isProd: true
+                    isProd: true,
+                    scoped: true
                 }}).code;
+            if (descriptor.scriptSetup !== null) {{
+                template = template.replaceAll('_ctx.','$setup.');
             }}
+            let style = '';
 
 
             if (descriptor.styles.length > 0) {{

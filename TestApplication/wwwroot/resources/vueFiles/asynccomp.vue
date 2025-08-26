@@ -1,6 +1,6 @@
 ﻿<template>
-    <slot v-if="resolve!=null" name="resolved" v-bind="resolve"></slot>
-    <slot v-if="reject!=null" name="rejected" v-bind="reject"></slot>
+    <slot v-if="resolve!==null" name="resolved" v-bind="resolve"></slot>
+    <slot v-if="reject!==null" name="rejected" v-bind="reject"></slot>
 </template>
 
 <script>
@@ -17,15 +17,18 @@
                         this.resolve = null;
                         this.reject = null;
                     }
+                },
+                result: function () {
+                    console.log('result changed');
                 }
             },
             methods: {
                 handlePromise() {
-                    var view = this;
+                    let view = this;
                     this.promise.then(
                         result => {
                             if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
+                                let tmp = {};
                                 tmp[view.resultname] = result;
                                 view.resolve = tmp;
                             } else {
@@ -35,7 +38,7 @@
                         },
                         result => {
                             if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
+                                let tmp = {};
                                 tmp[view.resultname] = result;
                                 view.reject = tmp;
                             } else {
@@ -46,7 +49,7 @@
                     );
                 }
             },
-            mounted: function () {
+        mounted: function () {
                 if (this.promise != null && this.promise instanceof Promise) {
                     this.handlePromise();
                 } else {

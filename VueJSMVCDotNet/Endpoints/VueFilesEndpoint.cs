@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using VueJSMVCDotNet.Caching;
+using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Javascript;
 
 namespace VueJSMVCDotNet.Endpoints
@@ -20,9 +20,8 @@ namespace VueJSMVCDotNet.Endpoints
         private static readonly Regex regImport = new(@"^\s*import\s*([^""']+)\s*from\s*(""([^""]+)""|'([^']+)');?\s*$", RegexOptions.Multiline|RegexOptions.Compiled, regexTimespan);
         private static readonly Regex regInlineImport = new(@"\s*import\((""([^""]+)""|'([^']+)')\)", RegexOptions.Compiled, regexTimespan);
         private static readonly Regex regSpecialImport = new(@"^\s*const\s*(.+)\s*=\s*await\s+import\(`\$\{hosturl.origin\}(.+)`\);?\s*$", RegexOptions.Multiline|RegexOptions.Compiled, regexTimespan);
-        private static readonly Regex regTemplateContextCache = new(@"\b(_ctx|_cache)\.", RegexOptions.Compiled, regexTimespan);
         private static readonly Regex regAsyncImport = new(@"^\s*const\s*(.+)\s*=\s*await\s+import\((.+)\);?\s*$",RegexOptions.Multiline|RegexOptions.Compiled, regexTimespan);
-        private static readonly Regex regHoistedConstant = new(@"^const\s+(_hoisted_\d+).+$",RegexOptions.Compiled,regexTimespan);
+        private static readonly Regex regHoistedConstant = new(@"^const\s+(_hoisted_\d+).+$",RegexOptions.Multiline|RegexOptions.Compiled,regexTimespan);
         private static readonly Regex regResolveComponent = new(@"^\s*const\s+([^\s]+)\s*=\s*_resolveComponent\(""([^""]+)""\);?\s*$", RegexOptions.Compiled|RegexOptions.Multiline, regexTimespan);
         private static readonly Regex regInvalidNameChars = new(@"(\s|-)", RegexOptions.Compiled, regexTimespan);
 
@@ -116,13 +115,13 @@ namespace VueJSMVCDotNet.Endpoints
             }
         }
 
-        private record ScriptImport(IEnumerable<string> Variables,IEnumerable<string> Imports,bool IsAsync);
+        private sealed record ScriptImport(IEnumerable<string> Variables,IEnumerable<string> Imports,bool IsAsync);
 
-        private record CompiledVueFile(string ID,string Name,string StyleCode,string ScriptContent, Dictionary<string,ScriptImport> Imports,IEnumerable<string> Constants);
+        private sealed record CompiledVueFile(string ID,string Name,string StyleCode,string ScriptContent, Dictionary<string,ScriptImport> Imports);
 
         public IEndpointRouteBuilder AddEndpoint(IEndpointRouteBuilder builder)
         {
-            builder.MapGet($"{baseURL}/{{**{PathParameter}}}", (HttpContext context) => ExecuteRequestAsync(context));
+            builder.MapGet($"{baseURL}/{{**{PathParameter}}}", context => ExecuteRequestAsync(context));
             return builder;
         }
 
@@ -194,8 +193,6 @@ namespace VueJSMVCDotNet.Endpoints
                         resultBuilder.AppendLine($"}} = await import({pair.Key});");
                     }
 
-                    resultBuilder.AppendLine(string.Join('\n', compiledVueFiles.SelectMany(cvf => cvf.Constants)));
-
                     foreach(var cvf in compiledVueFiles)
                     {
                         if (!string.IsNullOrWhiteSpace(cvf.StyleCode))
@@ -207,10 +204,7 @@ namespace VueJSMVCDotNet.Endpoints
             document.head.appendChild(styleTag);
         }})();");
                         }
-                        resultBuilder.AppendLine($@" var {cvf.ID} = {defineComponent}({{
-                __name: '{cvf.ID}',
-                {cvf.ScriptContent}
-            );");
+                        resultBuilder.AppendLine(cvf.ScriptContent);
                     }
 
                     if (compiledVueFiles.Count()>1)
@@ -235,38 +229,26 @@ namespace VueJSMVCDotNet.Endpoints
             return null;
         }
 
-        private const string templateExportMark = "return (_openBlock(),";
-        private const string exportedMark = "export default {";
+        private const string templateExportMark = "export function render(_ctx, _cache)";
         private const string defineComponent = "defineComponent";
 
         private static CompiledVueFile ProcessCompiledFile(JSEngine.CompileResult compiledFile,VueFile vueFile,int index)
         {
-            var scriptContent = $@"{string.Join('\n',vueFile.SpecialImports)}
-{compiledFile.Script.Trim()}";
-            if (!string.IsNullOrEmpty(compiledFile.TemplateScript))
-            {
-                var templateImports = compiledFile.TemplateScript[..compiledFile.TemplateScript.IndexOf(templateExportMark)]
-                    .Replace("export function render(_ctx, _cache) {","")
-                    .Trim();
-                var templateRenderCode = regTemplateContextCache.Replace(
-                    $"render:(h) => {{ return {compiledFile.TemplateScript[(compiledFile.TemplateScript.IndexOf(templateExportMark)+templateExportMark.Length)..].Trim()}",
-                    "h."
-                )[..^3];
-                scriptContent = $@"{templateImports}
-{scriptContent.Replace(exportedMark,$"{exportedMark}{templateRenderCode};}},")}".Trim()
-.TrimEnd(';');
-                
-            }
+            var scriptContent = $@"{string.Join('\n', vueFile.SpecialImports)}
+{compiledFile.TemplateScript[..compiledFile.TemplateScript.IndexOf(templateExportMark)]}
+{compiledFile.Script}
+{vueFile.ID}.render = (_ctx, _cache, $props, $setup, $data, $options) => {compiledFile.TemplateScript[(compiledFile.TemplateScript.IndexOf(templateExportMark)+templateExportMark.Length)..]};
+{vueFile.ID}.__name = '{vueFile.ID}';
+{vueFile.ID}.__file = '{vueFile.Name}';";
+            
+            var (source, imports) = ProcessImports(index, scriptContent);
 
-            var (source, imports, constants) = ProcessImports(index, scriptContent);
-
-            return new CompiledVueFile(vueFile.ID,vueFile.Name,compiledFile.StyleScript,source,imports, constants);
+            return new CompiledVueFile(vueFile.ID,vueFile.Name,compiledFile.StyleScript,source, imports);
         }
 
-        private static (string scriptSource,Dictionary<string,ScriptImport> imports,IEnumerable<string> constants) ProcessImports(int index, string scriptContent)
+        private static (string scriptSource,Dictionary<string,ScriptImport> imports) ProcessImports(int index, string scriptContent)
         {
             var scriptImports = new Dictionary<string,ScriptImport>();
-            var constants = new List<string>();
             var scriptSource = regImport.Replace(scriptContent, (match) => 
             {
                 scriptImports = ProcessImportRegex(scriptImports, (string.IsNullOrWhiteSpace(match.Groups[3].Value) ? match.Groups[4].Value : match.Groups[3].Value), match.Groups[1].Value.Trim(), false);
@@ -277,41 +259,24 @@ namespace VueJSMVCDotNet.Endpoints
                 scriptImports = ProcessImportRegex(scriptImports, match.Groups[2].Value.Trim(), match.Groups[1].Value.Trim(), true);
                 return "";
             });
-            var curConstant = "";
-            foreach (var line in scriptSource[..scriptSource.IndexOf(exportedMark)].Trim().Split('\n'))
+            regHoistedConstant.Matches(scriptSource).ForEach((match) =>
             {
-                var l = line.Trim();
-                if (string.IsNullOrWhiteSpace(l)&&!string.IsNullOrWhiteSpace(curConstant))
-                {
-                    constants.Add($"{curConstant};");
-                    curConstant="";
-                }
-                else if (regHoistedConstant.IsMatch(l))
-                {
-                    if (!string.IsNullOrWhiteSpace(curConstant))
-                        constants.Add($"{curConstant};");
-                    var match = regHoistedConstant.Match(l);
-                    var regex = new Regex($"\\b{match.Groups[1].Value}\\b");
-                    scriptSource = regex.Replace(scriptSource, $"_{index}{match.Groups[1].Value}");
-                    curConstant = l.Replace(match.Groups[1].Value, $"_{index}{match.Groups[1].Value}");
-                }
-                else if (!string.IsNullOrWhiteSpace(curConstant))
-                    curConstant+=$" ${l}";
-            }
-            if (!string.IsNullOrWhiteSpace(curConstant))
-                constants.Add(curConstant);
-            scriptSource = scriptSource[(scriptSource.IndexOf(exportedMark)+exportedMark.Length)..];
+                var regex = new Regex($"\\b{match.Groups[1].Value}\\b");
+                scriptSource = regex.Replace(scriptSource, $"_{index}{match.Groups[1].Value}");
+            });
             scriptSource = regResolveComponent.Replace(scriptSource, (match) =>
             {
+                if (scriptImports.Any(pair => pair.Value.Imports.Any(i => Equals(match.Groups[2].Value, i)||i.EndsWith($" as {match.Groups[2].Value}"))||pair.Value.Variables.Any(i => Equals(match.Groups[2].Value, i)||i.EndsWith($" as {match.Groups[2].Value}"))))
+                    return $"const {match.Groups[1].Value} = {match.Groups[2].Value};";
                 var result = new StringBuilder();
-                result.Append($"const {match.Groups[1].Value} = ({match.Groups[2].Value}!==undefined ? {match.Groups[2].Value}.default : null)??{match.Groups[2].Value}??");
+                result.Append($"const {match.Groups[1].Value} = ($setup!==undefined ? $setup.{match.Groups[2].Value} : null)??(_ctx!==undefined ? _ctx.{match.Groups[2].Value} : null)??");
                 if (!string.Equals(match.Groups[2].Value.ToLower(), match.Groups[2].Value))
-                    result.Append($"({match.Groups[2].Value.ToLower()}!==undefined ? {match.Groups[2].Value.ToLower()}.default : null)??{match.Groups[2].Value.ToLower()}??");
-                result.Append($"_resolveComponent(\"{match.Groups[2].Value}\");");
+                    result.Append($"($setup!==undefined ? $setup.{match.Groups[2].Value.ToLower()} : null)??(_ctx!==undefined ? _ctx.{match.Groups[2].Value.ToLower()} : null)??");
+                result.Append($"($setup!==undefined ? $setup.{match.Groups[2].Value} : null)??(_ctx!==undefined ? _ctx.{match.Groups[2].Value} : null)??_resolveComponent(\"{match.Groups[2].Value}\");");
                 return result.ToString();
             });
 
-            return (scriptSource, scriptImports, constants);
+            return (scriptSource, scriptImports);
         }
 
         private static (IEnumerable<CompiledVueFile> compiledFiles, Dictionary<string, ScriptImport> mergedImports) MergeImports(IEnumerable<CompiledVueFile> compiledFiles)
@@ -343,7 +308,7 @@ namespace VueJSMVCDotNet.Endpoints
                         mergedImports.Add(prop, new(variables, mappedImports, imports[prop].IsAsync||import.IsAsync));
                     }
                 }
-                resultFiles.Add(new(cf.ID, cf.Name, cf.StyleCode, scriptContent, [], cf.Constants));
+                resultFiles.Add(new(cf.ID, cf.Name, cf.StyleCode, scriptContent, []));
             }
             return (resultFiles, mergedImports);
         }
@@ -394,7 +359,7 @@ namespace VueJSMVCDotNet.Endpoints
             }
 
             if (carry > 0)
-                chars = chars.AsEnumerable().Prepend('a').ToArray();
+                chars = [.. chars.AsEnumerable().Prepend('a')];
 
             return new string(chars);
         }
