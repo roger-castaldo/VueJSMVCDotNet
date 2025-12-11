@@ -2,6 +2,6 @@
 {
     public interface IDataStore
     {
-        object this[string key] { get; set; }
+        object? this[string key] { get; set; }
     }
 }
