@@ -50,7 +50,8 @@ namespace VueJSMVCDotNet.Extensions
                 ignoreInvalidModels,
                 compressJS,
                 cache??provider.GetService<IMemoryCache>(),
-                provider.GetRequiredService<JSEngine>()
+                provider.GetRequiredService<JSEngine>(),
+                services
             ))
             .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>())
             .AddSingleton<FeatureGateFilter>();

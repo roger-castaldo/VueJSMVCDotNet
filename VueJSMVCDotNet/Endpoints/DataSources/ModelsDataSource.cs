@@ -22,7 +22,8 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             bool ignoreInvalidModels,
             bool compressJS,
             IMemoryCache? cache,
-            JSEngine engine) : EndpointDataSource, IModelDataSource, IDisposable
+            JSEngine engine,
+            IServiceCollection serviceDescriptors) : EndpointDataSource, IModelDataSource, IDisposable
     {
         private static readonly Type[] ModelEndpoints = [.. typeof(AModelEndpoint<,>)
             .Assembly
@@ -39,7 +40,11 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         private bool disposedValue;
         private readonly ReaderWriterLockSlim locker = new();
         private readonly Dictionary<Type, IEnumerable<IEndpointHandler>> endpoints = [];
+        private Type[] endpointFilterTypes = [];
         private string? compressedCore = null;
+
+        public Type[] EndpointFilterTypes
+            => endpointFilterTypes;
 
         internal string? GetModelImportURL(Type modelType)
         {
@@ -123,6 +128,16 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         void IModelDataSource.AssemblyAdded()
         {
             locker.EnterWriteLock();
+            endpointFilterTypes = serviceDescriptors
+                    .Where(sd => sd.ServiceType == typeof(IEndpointFilter) ||
+                        (sd.ImplementationType != null && typeof(IEndpointFilter).IsAssignableFrom(sd.ImplementationType)) ||
+                        (sd.ImplementationInstance is IEndpointFilter))
+                    .Select(sd =>
+                        sd.ImplementationType
+                        ?? sd.ImplementationInstance?.GetType()
+                        ?? sd.ServiceType)
+                    .Distinct()
+                    .ToArray();
             endpoints.Clear();
             locker.ExitWriteLock();
             AssemblyLoadContext.All

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFramework>net8.0</TargetFramework>
+	<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <RootNamespace>VueJSMVCDotNet</RootNamespace>
     <Description>A DotNet to VueJS interface library.  This is used to generate model(mvc) style Vues designed to allow an integrated interface between the javascript and backend for data manipulation and obtainment.  It does require that you include vuejs in your project as the code uses it.</Description>
     <PackageProjectUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</PackageProjectUrl>
@@ -9,11 +9,11 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-	  <AssemblyVersion>3.3.1</AssemblyVersion>
+	  <AssemblyVersion>4.0.0</AssemblyVersion>
     <PackageReleaseNotes>adjusted importing behaviour to use mjs for module loading</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <FileVersion>$(AssemblyVersion)</FileVersion>
-	  <Version>$(AssemblyVersion)</Version>
+	  <Version>$(AssemblyVersion)-beta</Version>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -41,13 +41,8 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.1.0" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
-		<PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="[4.1.0,5.0.0)" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="[8.0.0,11.0.0)" PrivateAssets="All" />
 	  <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
 	</ItemGroup>
 </Project>

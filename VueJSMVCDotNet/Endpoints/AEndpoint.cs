@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
+using System.Threading;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
-using VueJSMVCDotNet.Endpoints.Filtering;
+using VueJSMVCDotNet.Endpoints.DataSources;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints
@@ -51,9 +53,19 @@ namespace VueJSMVCDotNet.Endpoints
             );
 
             builder.FilterFactories.Add((ctx, del) =>
-                async (context) => await ((IEndpointFilter)context.HttpContext.RequestServices.GetRequiredService<FeatureGateFilter>()).InvokeAsync(context, del)
+                async (context) =>
+                {
+                    var filterTypes = context.HttpContext.RequestServices.GetRequiredService<ModelsDataSource>()
+                        .EndpointFilterTypes;
+                    var serviceFilters = context.HttpContext.RequestServices.GetServices<IEndpointFilter>();
+                    var additionalFilters = filterTypes
+                        .Where(t => !serviceFilters.Any(s => Equals(s.GetType(), t)))
+                        .Select(t => context.HttpContext.RequestServices.GetService(t))
+                        .Where(o => o!=null)
+                        .OfType<IEndpointFilter>();
+                    return await ProcessFiltersAsync(context, del, [.. serviceFilters, .. additionalFilters], 0);
+                }
             );
-
 
             var delegateFactoryResult = RequestDelegateFactory.Create(requestDelegate, new()
             {
@@ -63,6 +75,14 @@ namespace VueJSMVCDotNet.Endpoints
             builder.RequestDelegate = delegateFactoryResult.RequestDelegate;
 
             return builder.Build();
+        }
+
+        private static async ValueTask<object?> ProcessFiltersAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate del, IEndpointFilter[] filters, int index)
+        {
+            if (index>=filters.Length)
+                return await del(context);
+            var filter = filters[index];
+            return await filter.InvokeAsync(context, (ctx) => ProcessFiltersAsync(ctx, del, filters, index+1));
         }
 
         protected ValueTask ReturnModelNotFound(HttpContext context)

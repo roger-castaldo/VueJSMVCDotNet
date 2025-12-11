@@ -29,7 +29,7 @@ namespace VueJSMVCDotNet
                 .Select(handlerType => (handlerType, handlerType.GetInterfaces().First(t => t.IsGenericType && Equals(t.GetGenericTypeDefinition(), typeof(IModelHandler<>))).GetGenericArguments()[0]));
         }
 
-        private static IEnumerable<Type> LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies, ILogger? log)
+        public static IEnumerable<Type> LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies, ILogger? log)
             => assemblies
             .Where(ass => !Equals(ass.GetName().Name, "mscorlib")
                 && !ass.GetName().Name!.StartsWith("System.")
