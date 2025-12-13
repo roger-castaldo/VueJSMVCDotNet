@@ -54,7 +54,7 @@ namespace AutomatedTesting.Handlers
 
         [ModelDeleteMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.DELETE)]
-        public bool Delete([ModelIDParameter]string id)
+        public bool Delete([ModelIDParameter] string id)
         {
             bool ret = false;
             var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
@@ -93,7 +93,7 @@ namespace AutomatedTesting.Handlers
 
         [ModelSaveMethodAttribute()]
         [SecurityRoleCheck(Constants.Rights.SAVE)]
-        public string Save([ModelInstanceParameter]mPerson person)
+        public string Save([ModelInstanceParameter] mPerson person)
         {
             if (person.FirstName=="DoNotSave")
                 return null;
@@ -111,11 +111,11 @@ namespace AutomatedTesting.Handlers
         }
 
         [ModelListMethodAttribute(paged: true)]
-        public PagedResult<mPerson> ListBobsPaged([PageStartIndexParameter] int pageStartIndex, [PageSizeParameter]int pageSize)
+        public PagedResult<mPerson> ListBobsPaged([PageStartIndexParameter] int pageStartIndex, [PageSizeParameter] int pageSize)
         {
             mPerson[] bobs = new List<mPerson>((mPerson[])store[KEY]??Persons).Where(p => p.FirstName.ToLower()=="bob").ToArray();
-            var totalPages=(int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
-            return new(bobs.Skip(pageStartIndex).Take(pageSize).ToList(),totalPages);
+            var totalPages = (int)Math.Ceiling((decimal)bobs.Length/(decimal)pageSize);
+            return new(bobs.Skip(pageStartIndex).Take(pageSize).ToList(), totalPages);
         }
 
         #region List Pars
@@ -198,7 +198,7 @@ namespace AutomatedTesting.Handlers
         }
 
         [ModelListMethodAttribute()]
-        public  mPerson[] ListByGuid(Guid val, [FromServices] ILogger log)
+        public mPerson[] ListByGuid(Guid val, [FromServices] ILogger log)
         {
             log.LogTrace("Called List By Guid");
             return Persons;
@@ -222,7 +222,7 @@ namespace AutomatedTesting.Handlers
 
         [ModelListMethodAttribute(true)]
         [SecurityRoleCheck(Constants.Rights.SEARCH)]
-        public PagedResult<mPerson> Search(string q, [PageStartIndexParameter] int pageStartIndex,[PageSizeParameter] int pageSize, ISecureSession session)
+        public PagedResult<mPerson> Search(string q, [PageStartIndexParameter] int pageStartIndex, [PageSizeParameter] int pageSize, ISecureSession session)
         {
             List<mPerson> ret = new List<mPerson>();
             var totalPages = 0;
@@ -252,7 +252,7 @@ namespace AutomatedTesting.Handlers
                 }
                 ret.Add(matches[(pageStartIndex * pageSize) + x]);
             }
-            return new(ret,totalPages);
+            return new(ret, totalPages);
         }
 
         [ExposedMethodAttribute(false)]
@@ -262,18 +262,18 @@ namespace AutomatedTesting.Handlers
 
         [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.METHOD)]
-        public string GetFullName([ModelInstanceParameter]mPerson person, string middleName)
+        public string GetFullName([ModelInstanceParameter] mPerson person, string middleName)
         => person.GetFullName(middleName);
 
         [ExposedMethodAttribute]
-        public bool IsNameMatch([ModelInstanceParameter]mPerson person,sName name)
+        public bool IsNameMatch([ModelInstanceParameter] mPerson person, sName name)
         {
             return string.Equals(person.FirstName, name.FirstName, StringComparison.InvariantCultureIgnoreCase)
                 &&string.Equals(person.LastName, name.LastName, StringComparison.InvariantCultureIgnoreCase);
         }
 
         [ExposedMethodAttribute]
-        public void SetFullName([ModelIDParameter] string id,string fullName)
+        public void SetFullName([ModelIDParameter] string id, string fullName)
         {
             string[] tmp = fullName.Split(',');
             var persons = new List<mPerson>((mPerson[])store[KEY]??Persons);
@@ -298,13 +298,13 @@ namespace AutomatedTesting.Handlers
         }
 
         [ExposedMethodAttribute]
-        public void ThrowInstanceException([ModelIDParameter]string id)
+        public void ThrowInstanceException([ModelIDParameter] string id)
         {
             throw new Exception("Error in Instance Method");
         }
 
         [ExposedMethodAttribute(allowNullResponse: false, isSlow: true)]
-        public string GetInstanceSlowTimespan([ModelInstanceParameter]mPerson person)
+        public string GetInstanceSlowTimespan([ModelInstanceParameter] mPerson person)
         {
             DateTime now = DateTime.UtcNow;
             Task.Delay(3456).Wait();
@@ -331,7 +331,7 @@ namespace AutomatedTesting.Handlers
             => FormatName(lastName, firstName);
 
         internal static string FormatName(string lastName, string firstName)
-            => string.Format("{0}, {1}", new object[] { firstName, lastName});
+            => string.Format("{0}, {1}", new object[] { firstName, lastName });
 
         [ExposedMethodAttribute(false)]
         [SecurityRoleCheck(Constants.Rights.STATIC_METHOD)]
@@ -413,7 +413,7 @@ namespace AutomatedTesting.Handlers
 
         [EventStreamMethod]
         [SecurityRoleCheck(Constants.Rights.STREAM_METHOD)]
-        public async Task StreamUsers(ChannelWriter<object> writer,CancellationToken cancellationToken)
+        public async Task StreamUsers(ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             var idx = 0;
             while (!cancellationToken.IsCancellationRequested && idx<Persons.Length)
@@ -426,7 +426,7 @@ namespace AutomatedTesting.Handlers
         }
 
         [EventStreamMethod]
-        public async Task StreamUserProperties([ModelInstanceParameter]mPerson person, ChannelWriter<object> writer, CancellationToken cancellationToken)
+        public async Task StreamUserProperties([ModelInstanceParameter] mPerson person, ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             await writer.WriteAsync(person.FirstName, cancellationToken);
             await Task.Delay(TimeSpan.FromMilliseconds(50));

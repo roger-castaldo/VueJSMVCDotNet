@@ -109,11 +109,11 @@ namespace VueJSMVCDotNet
             return isArray;
         }
 
-        public static (Type type,bool isArray,bool isNullable,bool isTask,bool isValueTask) ExtractUnderlyingType(Type type)
+        public static (Type type, bool isArray, bool isNullable, bool isTask, bool isValueTask) ExtractUnderlyingType(Type type)
         {
             var isArray = false;
             var isNullable = false;
-            var isTask= false;
+            var isTask = false;
             var isValueTask = false;
             if (type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>)))
             {
@@ -122,7 +122,8 @@ namespace VueJSMVCDotNet
                     type=type.GetGenericArguments()[0];
                 else
                     return (typeof(void), isArray, isNullable, isTask, isValueTask);
-            }else if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>)))
+            }
+            else if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>)))
             {
                 isValueTask=true;
                 if (type.IsGenericType)

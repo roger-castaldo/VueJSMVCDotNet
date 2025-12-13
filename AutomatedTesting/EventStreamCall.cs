@@ -22,7 +22,7 @@ namespace AutomatedTesting
         {
             //Arrange
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
-            
+
             //Act
             var (responseStream, responseStatus, responseHeaders)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}/StreamUsers", webApplicationFactory);
             var content = await new StreamReader(responseStream).ReadToEndAsync();
@@ -40,7 +40,7 @@ namespace AutomatedTesting
             var providedPerson = JsonSerializer.Deserialize<mPerson>(dataItems[mPersonHandler.Persons.Length-1].Substring(6));
             var actualPerson = mPersonHandler.Persons[mPersonHandler.Persons.Length-1];
             Assert.IsTrue(
-                Equals(providedPerson.id,actualPerson.id) &&
+                Equals(providedPerson.id, actualPerson.id) &&
                 Equals(providedPerson.Age, actualPerson.Age) &&
                 Equals(providedPerson.LastName, actualPerson.LastName) &&
                 Equals(providedPerson.FirstName, actualPerson.FirstName)
@@ -62,7 +62,7 @@ namespace AutomatedTesting
             Assert.IsTrue(content.Length>0);
             Assert.AreEqual(200, responseStatus);
             Assert.AreEqual("text/event-stream", responseHeaders.GetValues("Content-Type").First());
-            var split = content.Split('\n').Where(s=>!string.IsNullOrWhiteSpace(s)).ToArray();
+            var split = content.Split('\n').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
             Assert.AreEqual(8, split.Length);
             Assert.AreEqual("event: message", split[0]);
             Assert.AreEqual($"data: \"{person.FirstName}\"", split[1]);
@@ -146,9 +146,7 @@ namespace AutomatedTesting
             ];
 
             //Act
-            var (responseStream, responseStatus, responseHeaders)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}/TestStaticEventStreamInputs?{
-                string.Join('&',values.Select(pair=>$"{pair.Key}={(pair.Value==null ? "null" : HttpUtility.UrlEncode(pair.Value.ToString()))}"))
-            }", webApplicationFactory);
+            var (responseStream, responseStatus, responseHeaders)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}/TestStaticEventStreamInputs?{string.Join('&', values.Select(pair => $"{pair.Key}={(pair.Value==null ? "null" : HttpUtility.UrlEncode(pair.Value.ToString()))}"))}", webApplicationFactory);
             var content = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert

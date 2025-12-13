@@ -87,7 +87,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                 },
                 ownKeys:function(target){
                     return ");
-            
+
             var keys = ModelKeys.Concat(props.Select(p => p.Name))
                 .Concat(methods.Select(m => m.Name));
 

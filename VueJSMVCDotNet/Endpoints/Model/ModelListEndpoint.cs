@@ -17,7 +17,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 {
                     var methods = grp.Select(m => new InjectableMethod(m, ExtractSecurityChecks(m))).ToArray();
                     return routes.Select(mra =>
-                        BuildEndpoint<H,M>(
+                        BuildEndpoint<H, M>(
                             requestDelegate: async (context) =>
                             {
                                 var handler = await CreateLoaderAsync(context);
@@ -38,7 +38,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                             order: 0,
                             displayName: $"List call for {typeof(H).Name}.{grp.Key}",
                             httpMethods: [HttpMethods.Post],
-                            methods:methods.Select(method=>method.Method)
+                            methods: methods.Select(method => method.Method)
                         )
                     );
                 });

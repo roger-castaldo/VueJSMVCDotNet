@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 var injectableDelMethod = new InjectableMethod(delMethod, ExtractSecurityChecks(delMethod));
 
-                return routes.Select(mra => BuildEndpoint<H,M>(
+                return routes.Select(mra => BuildEndpoint<H, M>(
                     async (context) =>
                     {
                         if (!await ValidateAccessAsync(context, Logger, null, injectableDelMethod.SecurityChecks))

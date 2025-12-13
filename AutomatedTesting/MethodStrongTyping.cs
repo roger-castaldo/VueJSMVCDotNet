@@ -83,7 +83,7 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        [DataRow("mdl.TestInputs",false)]
+        [DataRow("mdl.TestInputs", false)]
         [DataRow("mDataType.StaticTestInputs", false)]
         [DataRow("mDataType.TestListInputs", true)]
         public async Task ExecuteTestAsync(string call, bool ignoreBytes)

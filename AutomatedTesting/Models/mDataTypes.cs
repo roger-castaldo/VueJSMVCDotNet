@@ -108,7 +108,7 @@ namespace AutomatedTesting.Models
         private Exception _nullExceptionField = null;
         public Exception NullExceptionField { get { return _nullExceptionField; } set { _nullExceptionField = value; } }
 
-        
+
     }
 
 }

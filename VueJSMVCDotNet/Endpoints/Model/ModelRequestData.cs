@@ -52,7 +52,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         }
 
         object? IRequestData.this[Type feature]
-        { 
+        {
             get
             {
                 if (feature==typeof(ISecureSession)

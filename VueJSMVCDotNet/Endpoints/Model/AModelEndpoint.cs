@@ -7,7 +7,7 @@ using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
-    internal abstract class AModelEndpoint<H, M>: AEndpoint, IEndpointHandler
+    internal abstract class AModelEndpoint<H, M> : AEndpoint, IEndpointHandler
         where H : IModelHandler<M>
         where M : IModel
     {
@@ -41,7 +41,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => ProduceEndpoints(typeof(H)
                 .GetCustomAttributes<ModelRouteAttribute>()
             );
-        
+
         protected ASecurityCheckAttribute[] ExtractSecurityChecks(MethodInfo method)
             => [.. typeof(H).GetCustomAttributes<ASecurityCheckAttribute>()
                 .Concat(method.GetCustomAttributes<ASecurityCheckAttribute>())];

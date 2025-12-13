@@ -18,7 +18,7 @@ namespace AutomatedTesting
 
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/GetSlowTimespan", webApplicationFactory);
-            var url= await new StreamReader(responseStream).ReadToEndAsync();
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert
             Assert.AreEqual(200, responseStatus);
@@ -30,7 +30,7 @@ namespace AutomatedTesting
             {
                 (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, (string)url, webApplicationFactory);
                 var content = Utility.ReadJSONResponse(responseStream);
-                
+
                 Assert.AreEqual(200, responseStatus);
                 Assert.IsInstanceOfType(content, typeof(Hashtable));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));

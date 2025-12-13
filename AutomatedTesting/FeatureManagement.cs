@@ -12,13 +12,13 @@ namespace AutomatedTesting
         [DataRow(Constants.Features.Feature1, true)]
         [DataRow(Constants.Features.Feature2, true)]
         [DataRow(null, false)]
-        public async Task TestAnyRequirementType(string? enabledFeature,bool success)
+        public async Task TestAnyRequirementType(string? enabledFeature, bool success)
         {
             //Arrange
             Dictionary<string, string?> configuration = [];
             if (!string.IsNullOrWhiteSpace(enabledFeature))
                 configuration.Add($"FeatureManagement:{enabledFeature}", "true");
-            (var webApplicationFactory, _, _) = Utility.CreateApplication(true,configuration:configuration);
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, configuration: configuration);
 
             //Act
             var (_, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.FeaturesModelRoute}.js", webApplicationFactory);
@@ -47,7 +47,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        [DataRow(false, Constants.Features.Feature1,Constants.Features.Feature3)]
+        [DataRow(false, Constants.Features.Feature1, Constants.Features.Feature3)]
         [DataRow(false, Constants.Features.Feature2, Constants.Features.Feature4)]
         [DataRow(true, Constants.Features.Feature1)]
         [DataRow(true, Constants.Features.Feature2)]

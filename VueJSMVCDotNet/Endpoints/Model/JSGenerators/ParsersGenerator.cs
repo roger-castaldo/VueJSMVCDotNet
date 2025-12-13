@@ -29,7 +29,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             modelType.LinkedTypes.ForEach(pair =>
             {
                 log?.LogTrace("Appending Parser Call for Linked Type[{TypeName}]", pair.Item1.FullName);
-                    builder.AppendLine(@$"     const _{pair.Item1.Name} = function(data){{
+                builder.AppendLine(@$"     const _{pair.Item1.Name} = function(data){{
             let ret=null;
             if (data!=null){{
                 ret = new {pair.Item1.Name}();

@@ -61,7 +61,7 @@ namespace TestApplication.Handlers
         }
 
         [ModelUpdateMethod()]
-        public bool Update(ISecureSession session, [ModelInstanceParameter()]mPerson person)
+        public bool Update(ISecureSession session, [ModelInstanceParameter()] mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             bool ret = false;
@@ -79,7 +79,7 @@ namespace TestApplication.Handlers
         }
 
         [ModelSaveMethod()]
-        public string Save(ISecureSession session, [ModelInstanceParameter()]mPerson person)
+        public string Save(ISecureSession session, [ModelInstanceParameter()] mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             _persons.Add(person);
@@ -92,7 +92,7 @@ namespace TestApplication.Handlers
         {
             System.Diagnostics.Debug.WriteLine(((SessionManager)session).Start);
             List<mPerson> ret = new List<mPerson>();
-            var totalPages=0;
+            var totalPages = 0;
             if (q != null)
             {
                 q = q.ToLower();
@@ -115,11 +115,11 @@ namespace TestApplication.Handlers
                     ret.Add(matches[pageStartIndex + x]);
                 }
             }
-            return new(ret,totalPages);
+            return new(ret, totalPages);
         }
 
         [ExposedMethod(false)]
-        public string GetFullName(ISessionManager session, [ModelInstanceParameter()]mPerson person)
+        public string GetFullName(ISessionManager session, [ModelInstanceParameter()] mPerson person)
         {
             System.Diagnostics.Debug.WriteLine(session.Start);
             return $"{person.LastName}, {person.FirstName}";
@@ -201,7 +201,7 @@ namespace TestApplication.Handlers
         }
 
         [EventStreamMethod()]
-        public async Task EventCounter(int count, ChannelWriter<object> writer,CancellationToken cancellationToken)
+        public async Task EventCounter(int count, ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             try
             {

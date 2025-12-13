@@ -5,7 +5,7 @@ using VueJSMVCDotNet.Interfaces;
 namespace TestApplication
 {
     public class User : IModel
-    {        
+    {
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
@@ -19,7 +19,7 @@ namespace TestApplication
 
         public DateTime? LastLoginDate { get; set; }
 
-        public int Seed =>new Random().Next(0, 100); 
+        public int Seed => new Random().Next(0, 100);
 
         internal User(string firstName, string lastName)
         {

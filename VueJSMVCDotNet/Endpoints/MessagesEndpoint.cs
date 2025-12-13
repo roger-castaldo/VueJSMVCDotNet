@@ -11,7 +11,7 @@ using VueJSMVCDotNet.Javascript;
 namespace VueJSMVCDotNet.Endpoints
 {
     internal class MessagesEndpoint(IFileProvider fileProvider, string baseURL, bool compressAllJS, string corePath, string vuePath, JSEngine? engine, ILogger? logger, IMemoryCache? cache)
-        : AJSEngineEndpoint(engine,logger, cache)
+        : AJSEngineEndpoint(engine, logger, cache)
     {
         private const string PathParameter = "path";
         private string CompileToCode(StringBuilder messages)

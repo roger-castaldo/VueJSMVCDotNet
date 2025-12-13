@@ -56,7 +56,7 @@ if (version===undefined || version.indexOf('3')!==0){{ throw 'Unable to operate 
                 routePattern: RoutePatternFactory.Parse($"{mra.Path}.{{{ExtensionKey}:regex(^mjs|min\\.mjs|min\\.js|js$)}}"),
                 order: 0,
                 displayName: $"JS call for {typeof(M).Name}",
-                httpMethods:[HttpMethods.Get],
+                httpMethods: [HttpMethods.Get],
                 methods: []
             ));
 

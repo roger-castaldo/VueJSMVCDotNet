@@ -24,7 +24,7 @@ builder.Services
     .AddCors()
     .UseVueJSMVCModels(
         compressJS: compressJS,
-        vueImportPath:"vue"
+        vueImportPath: "vue"
     )
     .AddSingleton<ISecureSessionFactory>(new SessionManager());
 
@@ -37,7 +37,8 @@ app.UseDefaultFiles()
     .UseCookiePolicy()
     .UseSession()
     .UseRouting()
-    .UseEndpoints(endpoints => {
+    .UseEndpoints(endpoints =>
+    {
         endpoints
             .MapVueJSMVSModels()
             .UseVueJSMVCMessages(builder.Environment.WebRootFileProvider, "/resources/messages", compressJS: compressJS, vueImportPath: "vue")

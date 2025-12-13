@@ -53,7 +53,7 @@ namespace VueJSMVCDotNet
                         foreach (var altHandler in handlers.Where(h =>
                             !Equals(handler.HandlerType, h.HandlerType)
                             && string.Equals(handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path, h.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path??string.Empty, StringComparison.OrdinalIgnoreCase))
-                            .Select(h=>h.HandlerType)
+                            .Select(h => h.HandlerType)
                         )
                             AppendError(exceptions, log, new DuplicateRouteException(
                                 handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)!.Path,
@@ -112,8 +112,8 @@ namespace VueJSMVCDotNet
         private static void CheckExposedMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
             => methods.Select(mi => new { Method = mi, ExposedAttribute = mi.GetCustomAttribute<ExposedMethodAttribute>(false) })
                         .Where(ms => ms.ExposedAttribute!=null)
-                        .Select(ms => new {Method = new InjectableMethod(ms.Method, []), ExposedAttribute=ms.ExposedAttribute})
-                        .GroupBy(ms => $"{(ms.Method.RequiresModel ? "instance" : "static")}:{ms.Method.Name}({string.Join(',',ms.Method.StrippedParameters.Select(p=>p.Name))})")
+                        .Select(ms => new { Method = new InjectableMethod(ms.Method, []), ExposedAttribute = ms.ExposedAttribute })
+                        .GroupBy(ms => $"{(ms.Method.RequiresModel ? "instance" : "static")}:{ms.Method.Name}({string.Join(',', ms.Method.StrippedParameters.Select(p => p.Name))})")
                         .ForEach(grp =>
                         {
                             if (grp.Count()>1)
@@ -136,7 +136,7 @@ namespace VueJSMVCDotNet
                                             "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate requires a void response", handler.HandlerType.FullName, ms.Method.Name);
                                 }
                                 ms.Method.StrippedParameters
-                                    .Where(par=>par.IsOut)
+                                    .Where(par => par.IsOut)
                                     .ForEach(par =>
                                         AppendError(exceptions, log, new InvalidParameterTypeForExposedMethodException(handler.HandlerType, ms.Method.Method, par),
                                             "Model {TypeName} is not valid because the parameter {ParameterName} in method {MethodName} is an out parameter which is not supported", handler.HandlerType.FullName, par.Name, ms.Method.Name)
@@ -145,8 +145,8 @@ namespace VueJSMVCDotNet
                         });
 
         private static void CheckEventStreamMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
-            => methods.Where(m=>m.GetCustomAttribute<EventStreamMethodAttribute>()!=null)
-                        .Select(m=>new InjectableMethod(m, []))
+            => methods.Where(m => m.GetCustomAttribute<EventStreamMethodAttribute>()!=null)
+                        .Select(m => new InjectableMethod(m, []))
                         .GroupBy(m => $"{(m.UsesModel ? "instance" : "static")}:{m.Name}")
                         .ForEach(grp =>
                         {
@@ -201,10 +201,10 @@ namespace VueJSMVCDotNet
                 (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(method.ReturnType);
                 if (paged)
                 {
-                    if (!Array.Exists(method.GetParameters(),(par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null)))
+                    if (!Array.Exists(method.GetParameters(), (par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null)))
                         AppendError(exceptions, log, new Exception("Missing Start Index Parameter"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageStartIndex parameter", handler.HandlerType.FullName, method.Name);
-                    if (!Array.Exists(method.GetParameters(),(par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null)))
+                    if (!Array.Exists(method.GetParameters(), (par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null)))
                         AppendError(exceptions, log, new Exception("Missing Page Size Parameter"),
                             "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageSize parameter", handler.HandlerType.FullName, method.Name);
                     if (!Equals(rtype, typeof(PagedResult<>).MakeGenericType(handler.ModelType)))

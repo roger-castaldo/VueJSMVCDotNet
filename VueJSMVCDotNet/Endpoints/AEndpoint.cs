@@ -2,8 +2,6 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
-using System.Threading;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Endpoints.DataSources;
 using VueJSMVCDotNet.Interfaces;
@@ -32,7 +30,7 @@ namespace VueJSMVCDotNet.Endpoints
         protected static Endpoint BuildEndpoint<H, M>(RequestDelegate requestDelegate, RoutePattern routePattern, int order, string displayName, IEnumerable<string> httpMethods, MethodInfo method, params object[] additional)
             where H : IModelHandler<M>
             where M : IModel
-            => BuildEndpoint<H,M>(requestDelegate, routePattern, order, displayName, httpMethods, [method], additional);
+            => BuildEndpoint<H, M>(requestDelegate, routePattern, order, displayName, httpMethods, [method], additional);
         protected static Endpoint BuildEndpoint<H, M>(RequestDelegate requestDelegate, RoutePattern routePattern, int order, string displayName, IEnumerable<string> httpMethods, IEnumerable<MethodInfo> methods, params object[] additional)
             where H : IModelHandler<M>
             where M : IModel

@@ -269,8 +269,8 @@ export const name = 'John';");
             {
                 TrackStatistics = true
             });
-            (var webApplicationFactory, _, _) = Utility.CreateApplication(true,cache:cache);
-            
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
+
             //Act
             var (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
             var content = await new StreamReader(responseStream).ReadToEndAsync();

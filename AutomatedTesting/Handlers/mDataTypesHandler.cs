@@ -107,7 +107,7 @@ namespace AutomatedTesting.Handlers
 
         [ExposedMethodAttribute()]
         [NotNullArguementAttribute(["people", "person"])]
-        public void TestModelInputs(mPerson[] people,mPerson person) { }
+        public void TestModelInputs(mPerson[] people, mPerson person) { }
 
         [EventStreamMethod]
         [NotNullArguementAttribute(["stringArg", "IPAddressArg", "VersionArg"])]
@@ -140,7 +140,7 @@ namespace AutomatedTesting.Handlers
         [EventStreamMethod]
         [NotNullArguementAttribute(["stringArg", "IPAddressArg", "VersionArg"])]
         public async Task TestEventStreamInputs(
-            [ModelIDParameter]string id,
+            [ModelIDParameter] string id,
             string stringArg, string nullStringArg,
             char charArg, char? nullCharArg,
             short shortArg, short? nullShortArg,
@@ -158,7 +158,7 @@ namespace AutomatedTesting.Handlers
             DateTime DateTimeArg, DateTime? nullDateTimeArg,
             IPAddress IPAddressArg, IPAddress nullIPAddressArg,
             Version VersionArg, Version nullVersionArg,
-            Guid guidArg,Guid? nullGuidArg,
+            Guid guidArg, Guid? nullGuidArg,
             ChannelWriter<object> writer, CancellationToken cancellationToken)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(50));

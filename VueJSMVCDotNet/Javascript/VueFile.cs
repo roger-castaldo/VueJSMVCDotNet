@@ -11,6 +11,6 @@ namespace VueJSMVCDotNet.Javascript
         string Content,
         [property:JsonIgnore()]
         IEnumerable<string> SpecialImports
-    ) 
-    {}
+    )
+    { }
 }

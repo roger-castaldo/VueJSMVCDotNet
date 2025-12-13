@@ -48,7 +48,7 @@ namespace AutomatedTesting
         {
             //Arrange
             var query = 'b';
-            var count = mPersonHandler.Persons.Count(p=>p.FirstName.Contains(query,StringComparison.InvariantCultureIgnoreCase) || p.LastName.Contains(query,StringComparison.InvariantCultureIgnoreCase));
+            var count = mPersonHandler.Persons.Count(p => p.FirstName.Contains(query, StringComparison.InvariantCultureIgnoreCase) || p.LastName.Contains(query, StringComparison.InvariantCultureIgnoreCase));
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
             //Act
@@ -171,7 +171,7 @@ namespace AutomatedTesting
 
         private async Task TestParameterListCallAsync(WebApplicationFactory<Program> webApplicationFactory, string url, Hashtable pars, int? expectedStatus = null)
         {
-            var (responseStream, responseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, url, webApplicationFactory, parameters:pars);
+            var (responseStream, responseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, url, webApplicationFactory, parameters: pars);
             if (expectedStatus!=null)
                 Assert.AreEqual(expectedStatus.Value, responseStatus);
             else
@@ -237,7 +237,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListLongParameter()
+        public async Task TestListLongParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -271,12 +271,12 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListShortParameter()
+        public async Task TestListShortParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true, logWriter: writer.Object);
-            
+
             await TestParameterListCallAsync(webApplicationFactory, "/models/mPerson/ListByShort", new Hashtable()
             {
                 {"val","p" }
@@ -305,7 +305,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListByteParameter()
+        public async Task TestListByteParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -339,7 +339,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListUIntegerParameter()
+        public async Task TestListUIntegerParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -373,7 +373,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListULongParameter()
+        public async Task TestListULongParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -407,7 +407,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListUShortParameter()
+        public async Task TestListUShortParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -441,7 +441,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListDoubleParameter()
+        public async Task TestListDoubleParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -470,7 +470,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListFloatParameter()
+        public async Task TestListFloatParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -499,7 +499,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListDecimalParameter()
+        public async Task TestListDecimalParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -528,7 +528,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListGuidParameter()
+        public async Task TestListGuidParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -547,7 +547,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListEnumParameter()
+        public async Task TestListEnumParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();
@@ -566,7 +566,7 @@ namespace AutomatedTesting
         }
 
         [TestMethod()]
-        public async Task  TestListBooleanParameter()
+        public async Task TestListBooleanParameter()
         {
             //Arrange
             var writer = new Mock<ILogger>();

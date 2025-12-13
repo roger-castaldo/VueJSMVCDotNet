@@ -24,7 +24,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 {
                     var staticMethods = grp
                         .Where(m => !Helper.IsExposedMethodInstance(m))
-                        .Select(method => new InjectableMethod(method,ExtractSecurityChecks(method)))
+                        .Select(method => new InjectableMethod(method, ExtractSecurityChecks(method)))
                         .ToArray();
                     var instanceMethods = grp
                         .Where(m => Helper.IsExposedMethodInstance(m))
@@ -36,14 +36,14 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         var slowPath = $"{(mra.Path.StartsWith('/') ? "" : "/")}{mra.Path}/{grp.Key}/";
                         if (staticMethods.Length>0)
                             result = result.Append(
-                                BuildEndpoint<H,M>(
+                                BuildEndpoint<H, M>(
                                     requestDelegate: async (context) =>
                                     {
                                         var handler = await CreateLoaderAsync(context);
                                         var callback = await LocateMethodAsync(context, staticMethods, Logger);
                                         if (callback!=null)
                                         {
-                                            if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks,false))
+                                            if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks, false))
                                                 await ReturnInsecure(context);
                                             else
                                                 await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath);
@@ -53,10 +53,10 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     },
                                     routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}"),
                                     order: 0,
-                                    displayName:$"Static Method call for {typeof(H).Name}.{grp.Key}",
-                                    httpMethods:[HttpMethods.Post],
-                                    methods:staticMethods.Select(method=>method.Method)
-                                    
+                                    displayName: $"Static Method call for {typeof(H).Name}.{grp.Key}",
+                                    httpMethods: [HttpMethods.Post],
+                                    methods: staticMethods.Select(method => method.Method)
+
                                 )
                             );
                         if (instanceMethods.Length>0)
@@ -90,7 +90,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                     routePattern: ProduceRoute(mra.Path, true, $"/{grp.Key}"),
                                     order: 0,
                                     displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}",
-                                    httpMethods:[HttpMethods.Post],
+                                    httpMethods: [HttpMethods.Post],
                                     methods: instanceMethods.Select(method => method.Method)
                                 )
                             );
@@ -170,7 +170,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 else
                     await Utility.JsonEncode<object>(context, method.InvokeAsync<object, M>(instance, context, Logger, pars: pars, modelInstance: modelInstance));
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 Logger?.LogError(ex, "Error invoking exposed method {MethodName}", method.Name);
                 context.Response.StatusCode = 500;
                 context.Response.ContentType = "text/text";

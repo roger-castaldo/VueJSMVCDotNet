@@ -19,7 +19,7 @@ namespace AutomatedTesting
     internal static class Utility
     {
 
-        public static Task<(Stream responseStream,int responseStatus, HeaderCollection responseHeaders)> ExecuteRequestAsync(HttpMethod method, string path, WebApplicationFactory<Program> applicationFactory, object parameters = null, Dictionary<string, string> headers = null)
+        public static Task<(Stream responseStream, int responseStatus, HeaderCollection responseHeaders)> ExecuteRequestAsync(HttpMethod method, string path, WebApplicationFactory<Program> applicationFactory, object parameters = null, Dictionary<string, string> headers = null)
             => ExecuteRequestExportingHeaders(method, path, applicationFactory, parameters: parameters, headers: headers);
 
         public static Task<(Stream responseStream, int responseStatus, HeaderCollection responseHeaders)> ExecuteRequestAsync(HttpMethod method, string path, WebApplicationFactory<Program> applicationFactory, Dictionary<string, StringValues> formData, Dictionary<string, string> headers = null)
@@ -27,18 +27,18 @@ namespace AutomatedTesting
         public static async Task<(Stream responseStream, int responseStatus, HeaderCollection responseHeaders)> ExecuteRequestExportingHeaders(HttpMethod method, string path, WebApplicationFactory<Program> applicationFactory, object parameters = null, Dictionary<string, string> headers = null, Dictionary<string, StringValues> formData = null)
         {
             var client = applicationFactory.CreateClient();
-            var request = new HttpRequestMessage(method,path);
+            var request = new HttpRequestMessage(method, path);
 
             if (parameters != null)
                 request.Content = JsonContent.Create(parameters);
             else if (formData!=null)
             {
                 var content = new MultipartFormDataContent();
-                foreach(var pair in formData)
+                foreach (var pair in formData)
                 {
-                    foreach(var val in pair.Value)
+                    foreach (var val in pair.Value)
                         content.Add(new StringContent(val, Encoding.UTF8, MediaTypeNames.Text.Plain), pair.Key);
-                }   
+                }
                 request.Content = content;
             }
 
@@ -50,7 +50,7 @@ namespace AutomatedTesting
 
             var response = await client.SendAsync(request);
 
-            return (await response.Content.ReadAsStreamAsync(), (int)response.StatusCode, new(response.Headers,response.Content.Headers));
+            return (await response.Content.ReadAsStreamAsync(), (int)response.StatusCode, new(response.Headers, response.Content.Headers));
         }
 
         internal static string ReadResponse(Stream ms)
@@ -69,14 +69,14 @@ namespace AutomatedTesting
         public static (WebApplicationFactory<Program> webApplicationFactory, IDataStore dataStore, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string, string> configuration = default)
         {
             IDataStore dataStore = new DataStore();
-            var (webApplicationFactory, secureSession)= CreateApplication(ignoreInvalidModels, dataStore, logWriter:logWriter, cache:cache, configuration:configuration);
+            var (webApplicationFactory, secureSession)= CreateApplication(ignoreInvalidModels, dataStore, logWriter: logWriter, cache: cache, configuration: configuration);
             return (webApplicationFactory, dataStore, secureSession);
         }
 
         public static (WebApplicationFactory<Program> webApplicationFactory, SecureSession secureSession) CreateApplication(bool ignoreInvalidModels, IDataStore store, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string, string> configuration = default)
         {
             var secureSession = new SecureSession();
-            return (CreateApplication(ignoreInvalidModels, store, secureSession, logWriter: logWriter, cache: cache, configuration:configuration), secureSession);
+            return (CreateApplication(ignoreInvalidModels, store, secureSession, logWriter: logWriter, cache: cache, configuration: configuration), secureSession);
         }
 
         public static (WebApplicationFactory<Program> webApplicationFactory, IDataStore dataStore) CreateApplication(bool ignoreInvalidModels, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null)
@@ -85,8 +85,8 @@ namespace AutomatedTesting
             return (CreateApplication(ignoreInvalidModels, dataStore, secureSession, logWriter: logWriter, cache: cache), dataStore);
         }
 
-        public static WebApplicationFactory<Program> CreateApplication(bool ignoreInvalidModels, IDataStore store, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string,string> configuration = default)
-            => new TestApplicationFactory(ignoreInvalidModels,logWriter,cache,store,secureSession, configuration);
+        public static WebApplicationFactory<Program> CreateApplication(bool ignoreInvalidModels, IDataStore store, SecureSession secureSession, ILogger logWriter = null, IMemoryCache cache = null, Dictionary<string, string> configuration = default)
+            => new TestApplicationFactory(ignoreInvalidModels, logWriter, cache, store, secureSession, configuration);
 
         public static async Task<Engine> CreateEngineAsync(WebApplicationFactory<Program> applicationFactory = null)
         {

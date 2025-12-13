@@ -185,7 +185,7 @@ namespace AutomatedTesting
         {
             //Arrange
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
-            
+
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/ProduceObject", webApplicationFactory,
             parameters: new Hashtable() {
@@ -242,7 +242,7 @@ namespace AutomatedTesting
 
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/CheckSpecialItems", webApplicationFactory,
-            parameters: new Hashtable() {});
+            parameters: new Hashtable() { });
             var content = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert

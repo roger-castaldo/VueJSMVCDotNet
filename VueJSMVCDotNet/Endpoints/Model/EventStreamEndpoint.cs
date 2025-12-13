@@ -19,7 +19,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 {
                     var method = new InjectableMethod(m, ExtractSecurityChecks(m));
                     return routes.Select(mra =>
-                        BuildEndpoint<H,M>(
+                        BuildEndpoint<H, M>(
                             async (context) =>
                             {
                                 if (!await ValidateAccessAsync(context, Logger, null, method.SecurityChecks, false))
@@ -37,10 +37,11 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                             pars[x] = channel.Writer;
                                         else if (Equals(method.StrippedParameters[x].ParameterType, typeof(CancellationToken)))
                                             pars[x] = linkedCts.Token;
-                                        else if (context.Request.Query.TryGetValue(method.StrippedParameters[x].Name!, out var value)) {
+                                        else if (context.Request.Query.TryGetValue(method.StrippedParameters[x].Name!, out var value))
+                                        {
                                             try
                                             {
-                                                pars[x] = EventStreamHelper.ConvertValue(method.StrippedParameters[x].ParameterType,value);
+                                                pars[x] = EventStreamHelper.ConvertValue(method.StrippedParameters[x].ParameterType, value);
                                             }
                                             catch (Exception)
                                             {
@@ -58,16 +59,16 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                             return;
                                         }
                                     }
-                                    
+
                                     context.Response.Headers.Append("Content-Type", "text/event-stream");
 
                                     var task = method.InvokeAsync<object, M>(await CreateLoaderAsync(context), context, Logger, pars: pars);
 
                                     try
                                     {
-                                        await foreach(var message in channel.Reader.ReadAllAsync(context.RequestAborted))
+                                        await foreach (var message in channel.Reader.ReadAllAsync(context.RequestAborted))
                                         {
-                                            await context.Response.WriteAsync($"event: {EventStreamHelper.MessageEvent}\ndata: {Utility.JsonEncode(message,requestData)}\n\n");
+                                            await context.Response.WriteAsync($"event: {EventStreamHelper.MessageEvent}\ndata: {Utility.JsonEncode(message, requestData)}\n\n");
                                             await context.Response.Body.FlushAsync();
                                         }
 

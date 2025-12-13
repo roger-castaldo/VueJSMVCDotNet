@@ -18,7 +18,7 @@ namespace TestApplication.Handlers
             new User("David","McQueen")
         };
         ValueTask<User> IModelHandler<User>.LoadAsync(string id)
-            => ValueTask.FromResult(Array.Find(_USERS,u => Equals(u.id, id)));
+            => ValueTask.FromResult(Array.Find(_USERS, u => Equals(u.id, id)));
 
         [ModelLoadAllMethodAttribute()]
         public IEnumerable<User> LoadAll()
@@ -46,7 +46,7 @@ namespace TestApplication.Handlers
             bool ret = false;
             for (int x = 0; x < _USERS.Length; x++)
             {
-                if (Equals(_USERS[x].id,user.id))
+                if (Equals(_USERS[x].id, user.id))
                 {
                     _USERS[x] = user;
                     ret = true;
@@ -91,13 +91,13 @@ namespace TestApplication.Handlers
         }
 
         [ExposedMethodAttribute()]
-        public void Logout([ModelInstanceParameter()]User user)
+        public void Logout([ModelInstanceParameter()] User user)
         {
             System.Diagnostics.Debug.WriteLine($"Logging out User {user.LastName}, {user.FirstName}...");
         }
 
         [ExposedMethodAttribute()]
-        public bool CanAccess([ModelInstanceParameter()]User user, string path)
+        public bool CanAccess([ModelInstanceParameter()] User user, string path)
         {
             return new Random().Next(0, 10)>=5;
         }
@@ -124,7 +124,7 @@ namespace TestApplication.Handlers
         }
 
         [ModelListMethodAttribute(true)]
-        public PagedResult<User> Search(string filter, [PageStartIndexParameter()] int pageStartIndex,[PageSizeParameter()] int pageSize)
+        public PagedResult<User> Search(string filter, [PageStartIndexParameter()] int pageStartIndex, [PageSizeParameter()] int pageSize)
         {
             var totalPages = 0;
             List<User> tmp = new List<User>();
@@ -154,7 +154,7 @@ namespace TestApplication.Handlers
                         break;
                 }
             }
-            return new(ret,totalPages);
+            return new(ret, totalPages);
         }
 
         [ModelListMethodAttribute(false)]

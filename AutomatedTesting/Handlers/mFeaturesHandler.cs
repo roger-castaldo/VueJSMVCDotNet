@@ -8,7 +8,7 @@ using VueJSMVCDotNet.Interfaces;
 namespace AutomatedTesting.Handlers
 {
     [ModelRouteAttribute(Constants.FeaturesModelRoute)]
-    [FeatureGate(RequirementType.Any,Constants.Features.Feature1, Constants.Features.Feature2)]
+    [FeatureGate(RequirementType.Any, Constants.Features.Feature1, Constants.Features.Feature2)]
     internal class mFeaturesHandler : IModelHandler<mFeatures>
     {
         ValueTask<mFeatures> IModelHandler<mFeatures>.LoadAsync(string id)
@@ -17,12 +17,12 @@ namespace AutomatedTesting.Handlers
         }
 
         [ExposedMethod()]
-        [FeatureGate(RequirementType.All,Constants.Features.Feature1,Constants.Features.Feature2)]
+        [FeatureGate(RequirementType.All, Constants.Features.Feature1, Constants.Features.Feature2)]
         public bool RequiresAll()
             => true;
 
         [ExposedMethod()]
-        [FeatureGate(RequirementType.Any,true, Constants.Features.Feature3, Constants.Features.Feature4)]
+        [FeatureGate(RequirementType.Any, true, Constants.Features.Feature3, Constants.Features.Feature4)]
         public bool RequiresAnyNegated()
             => true;
 

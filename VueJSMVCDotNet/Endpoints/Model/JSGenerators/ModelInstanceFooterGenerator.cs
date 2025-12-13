@@ -56,7 +56,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
         let me = this.#toProxy();
         return {");
             modelType.Properties.ForEach(p => builder.AppendLine($"          {p.Name}:{(p.CanWrite ? "readonly" : "ref")}(me.{p.Name}),"));
-            modelType.InstanceMethods.DistinctBy(m=> m.Name).ForEach(m => builder.AppendLine($"          {m.Name}:function(){{ return me.{m.Name}.apply(me,arguments); }},"));
+            modelType.InstanceMethods.DistinctBy(m => m.Name).ForEach(m => builder.AppendLine($"          {m.Name}:function(){{ return me.{m.Name}.apply(me,arguments); }},"));
             if (modelType.SaveMethod!=null)
                 builder.AppendLine("            save:function(){ return me.save.apply(me,arguments); },");
             if (modelType.DeleteMethod != null)

@@ -6,7 +6,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    #pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
     public class mGroup : IModel
 #pragma warning restore IDE1006 // Naming Styles
     {

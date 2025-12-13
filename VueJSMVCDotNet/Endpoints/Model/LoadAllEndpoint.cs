@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 var injectableLoadAllMethod = new InjectableMethod(loadAllMethod, ExtractSecurityChecks(loadAllMethod));
 
-                return routes.Select(mra => BuildEndpoint<H,M>(
+                return routes.Select(mra => BuildEndpoint<H, M>(
                     requestDelegate: async (context) =>
                     {
                         if (!await ValidateAccessAsync(context, Logger, null, injectableLoadAllMethod.SecurityChecks, false))
@@ -30,8 +30,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     routePattern: ProduceRoute(mra.Path, false),
                     order: 0,
                     displayName: $"Load All call for {typeof(M).Name}",
-                    httpMethods:[HttpMethods.Get],
-                    method:loadAllMethod
+                    httpMethods: [HttpMethods.Get],
+                    method: loadAllMethod
                 ));
             }
             return [];

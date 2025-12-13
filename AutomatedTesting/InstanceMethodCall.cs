@@ -127,7 +127,7 @@ namespace AutomatedTesting
         public async Task TestLoadSecurityBlocked()
         {
             //Arrange
-            (var webApplicationFactory, _) = Utility.CreateApplication(true,new SecureSession(new string[] { "" }));
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, new SecureSession(new string[] { "" }));
 
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", webApplicationFactory);
@@ -160,11 +160,11 @@ namespace AutomatedTesting
             //Arrange
             var store = new DataStore();
             store[mPersonHandler.KEY] = mPersonHandler.Persons.ToArray();
-            (var webApplicationFactory, _) = Utility.CreateApplication(true,store);
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, store);
 
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{((mPerson[])store[mPersonHandler.KEY])[0].id}/GetFullName", webApplicationFactory,
-                parameters:new Hashtable()
+                parameters: new Hashtable()
                 {
                     {"middleName","John" }
                 });
@@ -229,7 +229,7 @@ namespace AutomatedTesting
 
             //Assert
             Assert.AreEqual(200, responseStatus);
-            Assert.AreEqual(0,content.Length);
+            Assert.AreEqual(0, content.Length);
             Assert.AreEqual(((mPerson[])store[mPersonHandler.KEY])[0].GetFullName(), "Bob, Loblaw");
         }
 
@@ -305,7 +305,7 @@ namespace AutomatedTesting
 
             //Act
             var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetInstanceSlowTimespan", webApplicationFactory);
-            var url = await new StreamReader(responseStream).ReadToEndAsync();   
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert
             Assert.IsInstanceOfType(url, typeof(string));
@@ -317,9 +317,9 @@ namespace AutomatedTesting
             while (!done && cnt < 5)
             {
                 (responseStream, var responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, url, webApplicationFactory);
-                if(responseStatus == 500)
+                if (responseStatus == 500)
                 {
-                    System.Diagnostics.Trace.WriteLine(await new StreamReader(responseStream).ReadToEndAsync());    
+                    System.Diagnostics.Trace.WriteLine(await new StreamReader(responseStream).ReadToEndAsync());
                 }
                 var content = Utility.ReadJSONResponse(responseStream);
 
@@ -356,7 +356,7 @@ namespace AutomatedTesting
             //Act
             var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/InstanceSlowAddCall", webApplicationFactory);
             var url = Utility.ReadJavascriptResponse(responseStream);
-            
+
             //Assert
             Assert.IsInstanceOfType(url, typeof(string));
 

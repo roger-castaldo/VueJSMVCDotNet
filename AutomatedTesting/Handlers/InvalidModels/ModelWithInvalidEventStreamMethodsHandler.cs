@@ -22,12 +22,12 @@ namespace AutomatedTesting.Handlers.InvalidModels
         public void DuplicateStaticStreamMethod(ChannelWriter<object> writer, CancellationToken cancellationToken) { }
 
         [EventStreamMethodAttribute()]
-        public void DuplicateInstanceStreamMethod([ModelIDParameter]string id, ChannelWriter<object> writer) { }
+        public void DuplicateInstanceStreamMethod([ModelIDParameter] string id, ChannelWriter<object> writer) { }
 
         [EventStreamMethodAttribute()]
         public void DuplicateInstanceStreamMethod([ModelIDParameter] string id, ChannelWriter<object> writer, CancellationToken cancellationToken) { }
 
         [EventStreamMethodAttribute()]
-        public void StreamMethodWithInvalidParameter([FromServices]ILogger logger,object parameter1, ChannelWriter<object> writer, CancellationToken cancellationToken) { }
+        public void StreamMethodWithInvalidParameter([FromServices] ILogger logger, object parameter1, ChannelWriter<object> writer, CancellationToken cancellationToken) { }
     }
 }

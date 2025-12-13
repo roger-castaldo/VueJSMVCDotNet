@@ -31,7 +31,7 @@ namespace AutomatedTesting.Models
         }
     }
 
-    
+
     public class mPerson : IModel
     {
         private static Random _rnd = new Random((int)DateTime.UtcNow.Ticks);
@@ -74,6 +74,6 @@ namespace AutomatedTesting.Models
         public string GetFullName()
             => string.Format("{0}, {1}", new object[] { LastName, FirstName });
         public string GetFullName(string middleName)
-        => string.Format("{0}, {1} {2}", new object[] { LastName, FirstName, middleName});
+        => string.Format("{0}, {1} {2}", new object[] { LastName, FirstName, middleName });
     }
 }

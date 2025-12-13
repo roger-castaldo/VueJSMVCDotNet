@@ -106,18 +106,18 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
         private readonly V8ScriptEngine v8Engine;
         private bool disposedValue;
 
-        public record CompileResult(string Script,string TemplateScript,string StyleScript);
+        public record CompileResult(string Script, string TemplateScript, string StyleScript);
 
         public JSEngine()
         {
             v8Engine = new V8ScriptEngine(
                 //"V8Test",
                 V8ScriptEngineFlags.EnableTaskPromiseConversion|V8ScriptEngineFlags.EnableDynamicModuleImports
-                //|V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart,
-                //9222
+            //|V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart,
+            //9222
             );
 
-            
+
             using var srCompressor = new StreamReader(typeof(JSEngine).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Javascript.compressor.min.js")!);
             var compressorCode = srCompressor.ReadToEnd();
             srCompressor.Close();
@@ -130,21 +130,21 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
             v8Engine.Execute(invokableCode);
         }
 
-        private async Task<T> AwaitTaskWithTimeout<T>(Task<T> task,TimeSpan timeout)
+        private async Task<T> AwaitTaskWithTimeout<T>(Task<T> task, TimeSpan timeout)
         {
             var timeoutTask = Task.Delay(timeout);
             var completedTask = await Task.WhenAny(task, timeoutTask);
             if (completedTask==timeoutTask)
                 throw new TimeoutException();
-            return (task.IsCompletedSuccessfully ?  task.Result : throw task.Exception!);
+            return (task.IsCompletedSuccessfully ? task.Result : throw task.Exception!);
         }
 
         public async ValueTask<string> CompressCodeAsync(string code)
         {
             var result = new TaskCompletionSource<string>();
-            v8Engine.Invoke(compressCodeCall, code, 
+            v8Engine.Invoke(compressCodeCall, code,
                 new Action<string>((content) => result.TrySetResult(content)),
-                new Action<string>((content)=>result.TrySetException(new Exception(content)))
+                new Action<string>((content) => result.TrySetException(new Exception(content)))
             );
             return await AwaitTaskWithTimeout<string>(result.Task, callTimeout);
         }
@@ -152,11 +152,11 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
         public async ValueTask<IEnumerable<CompileResult>> CompileVueFilesAsync(IEnumerable<VueFile> files)
         {
             var result = new TaskCompletionSource<IEnumerable<CompileResult>>();
-            v8Engine.Invoke(processFilesCall, JsonSerializer.Serialize(files), 
-                new Action<IEnumerable<object>>((content) => result.TrySetResult(content.Select(o=>(CompileResult)o))),
-                new Action<string>((content) => result.TrySetException(new Exception(content))), 
+            v8Engine.Invoke(processFilesCall, JsonSerializer.Serialize(files),
+                new Action<IEnumerable<object>>((content) => result.TrySetResult(content.Select(o => (CompileResult)o))),
+                new Action<string>((content) => result.TrySetException(new Exception(content))),
                 new Func<string, string>((name) => files.FirstOrDefault(f => string.Equals(f.Name, name))?.Content??throw new FileNotFoundException()),
-                new Func<string,string,string,CompileResult>((script,template,style)=>new(script,template,style))
+                new Func<string, string, string, CompileResult>((script, template, style) => new(script, template, style))
             );
             return await AwaitTaskWithTimeout<IEnumerable<CompileResult>>(result.Task, callTimeout);
         }
@@ -169,7 +169,7 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
                 {
                     v8Engine.Dispose();
                 }
-disposedValue=true;
+                disposedValue=true;
             }
         }
 

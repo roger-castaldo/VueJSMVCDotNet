@@ -13,7 +13,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         {
             var map = typeof(H).GetInterfaceMap(typeof(IModelHandler<M>));
             var loadMethod = map.TargetMethods[Array.FindIndex(map.InterfaceMethods, m => Equals(m.Name, nameof(IModelHandler<M>.LoadAsync)))];
-            return routes.Select(mra => BuildEndpoint<H,M>(
+            return routes.Select(mra => BuildEndpoint<H, M>(
                 requestDelegate: async (context) =>
                 {
                     if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
@@ -31,8 +31,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 routePattern: ProduceRoute(mra.Path, true),
                 order: 0,
                 displayName: $"Load call for {typeof(M).Name}",
-                httpMethods:[HttpMethods.Get],
-                method:loadMethod
+                httpMethods: [HttpMethods.Get],
+                method: loadMethod
             ));
         }
     }

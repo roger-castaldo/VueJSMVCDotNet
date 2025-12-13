@@ -53,7 +53,7 @@ namespace VueJSMVCDotNet.Extensions
                 provider.GetRequiredService<JSEngine>(),
                 services
             ))
-            .AddSingleton<IModelDataSource>(x=>x.GetRequiredService<ModelsDataSource>())
+            .AddSingleton<IModelDataSource>(x => x.GetRequiredService<ModelsDataSource>())
             .AddSingleton<FeatureGateFilter>();
 
         /// <summary>

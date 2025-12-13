@@ -9,5 +9,5 @@
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class EventStreamMethodAttribute : Attribute
-    {}
+    { }
 }

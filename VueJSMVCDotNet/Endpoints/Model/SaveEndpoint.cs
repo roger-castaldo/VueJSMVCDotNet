@@ -16,7 +16,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 var injectableSaveMethod = new InjectableMethod(saveMethod, ExtractSecurityChecks(saveMethod));
 
-                return routes.Select(mra => BuildEndpoint<H,M>(
+                return routes.Select(mra => BuildEndpoint<H, M>(
                     requestDelegate: async (context) =>
                     {
                         if (!await ValidateAccessAsync(context, Logger, null, injectableSaveMethod.SecurityChecks, false))
@@ -36,8 +36,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     routePattern: ProduceRoute(mra.Path, false),
                     order: 0,
                     displayName: $"Save call for {typeof(M).Name}",
-                    httpMethods:[HttpMethods.Put], 
-                    method:saveMethod
+                    httpMethods: [HttpMethods.Put],
+                    method: saveMethod
                 ));
             }
             return [];

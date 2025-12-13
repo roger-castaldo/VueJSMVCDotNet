@@ -50,7 +50,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators.Interfaces
                             .Where(t => !Equals(t, type))
                             .Distinct()
                             .Select(t => Tuple.Create<Type, string>(t!, mapImport(t!)??string.Empty))
-                            .Where(t=>!string.IsNullOrWhiteSpace(t.Item2));
+                            .Where(t => !string.IsNullOrWhiteSpace(t.Item2));
         }
         public Type Type { get; private init; }
         public Type HandlerType { get; private init; }

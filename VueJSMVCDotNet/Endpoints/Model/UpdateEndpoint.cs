@@ -18,10 +18,10 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 var injectableUpdateMethod = new InjectableMethod(updateMethod, ExtractSecurityChecks(updateMethod));
 
-                return routes.Select(mra => BuildEndpoint<H,M>(
+                return routes.Select(mra => BuildEndpoint<H, M>(
                     requestDelegate: async (context) =>
                     {
-                        if (!await ValidateAccessAsync(context,Logger,null, LoadSecurityChecks) ||
+                        if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks) ||
                             !await ValidateAccessAsync(context, Logger, null, injectableUpdateMethod.SecurityChecks))
                             await ReturnInsecure(context);
                         else
@@ -52,8 +52,8 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     routePattern: ProduceRoute(mra.Path, true),
                     order: 0,
                     displayName: $"Update call for {typeof(M).Name}",
-                    httpMethods:[HttpMethods.Patch],
-                    method:updateMethod
+                    httpMethods: [HttpMethods.Patch],
+                    method: updateMethod
                 ));
             }
             return [];

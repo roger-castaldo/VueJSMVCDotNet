@@ -26,7 +26,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
         private readonly CancellationTokenSource token;
         private readonly ILogger? log;
 
-        public SlowMethodInstance(InjectableMethod method, object?[] pars, IInternalRequestData? requestData, H instance, ILogger? log, M? modelInstance=default)
+        public SlowMethodInstance(InjectableMethod method, object?[] pars, IInternalRequestData? requestData, H instance, ILogger? log, M? modelInstance = default)
         {
             this.log=log;
             data=new ConcurrentQueue<object>();

@@ -26,7 +26,7 @@ namespace AutomatedTesting
             {
                 TrackStatistics = true
             });
-            (var webApplicationFactory, _, _) = Utility.CreateApplication(true,cache:cache);
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
             var content = await new StreamReader(responseStream).ReadToEndAsync();
             await Task.Delay(TimeSpan.FromSeconds(10));
@@ -35,7 +35,7 @@ namespace AutomatedTesting
             Assert.IsTrue(content.Length > 0);
             (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
             var cachedContent = await new StreamReader(responseStream).ReadToEndAsync();
-            
+
             //Assert
             Assert.IsTrue(cachedContent.Length>0);
             Assert.AreEqual(content, cachedContent);
@@ -53,16 +53,16 @@ namespace AutomatedTesting
 
             //Act
             var (_, _, responseHeaders) = await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
-            Assert.IsTrue(responseHeaders.TryGetValues(HeaderNames.CacheControl,out _));
+            Assert.IsTrue(responseHeaders.TryGetValues(HeaderNames.CacheControl, out _));
             await Task.Delay(TimeSpan.FromSeconds(10));
 
-            var (responseStream, responseStatus, secondResponseHeaders)= await Utility.ExecuteRequestAsync(HttpMethod.Get,"/resources/messages/test.js", webApplicationFactory,
+            var (responseStream, responseStatus, secondResponseHeaders)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory,
                 headers: new Dictionary<string, string>()
             {
                 {HeaderNames.IfModifiedSince,DateTime.Today.AddDays(-2).ToUniversalTime().ToString("R") }
             });
             var content = await new StreamReader(responseStream).ReadToEndAsync();
-                
+
             //Assert
             Assert.AreEqual(0, content.Length);
             Assert.AreEqual(304, responseStatus);
@@ -105,7 +105,7 @@ namespace AutomatedTesting
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
             //Act
-            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get,"/resources/messages/not_found.js", webApplicationFactory);
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/not_found.js", webApplicationFactory);
             var content = await new StreamReader(responseStream).ReadToEndAsync();
 
             //Assert
@@ -166,13 +166,13 @@ export const name = translator('Name');", "Nome");
             (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
             var fileProvider = (EmbeddedResourceFileProvider)webApplicationFactory.Services.GetRequiredService<IFileProvider>();
             fileProvider.HidePath("AutomatedTesting.resources.messages.test.sp.json");
-            
+
             await ExecuteTestAsync(@"SetLanguage('sp');
-export const name = translator('Name');", "Name", webApplicationFactory:webApplicationFactory);
+export const name = translator('Name');", "Name", webApplicationFactory: webApplicationFactory);
             fileProvider.ShowPath("AutomatedTesting.resources.messages.test.sp.json");
-            
+
             await Task.Delay(TimeSpan.FromSeconds(5));
-            
+
             await ExecuteTestAsync(@"SetLanguage('sp');
 export const name = translator('Name');", "Nombre", cache, webApplicationFactory: webApplicationFactory);
         }

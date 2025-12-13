@@ -12,11 +12,11 @@ var app = builder.Build();
 app.UseRouting()
     .UseEndpoints(endpoints =>
         endpoints.MapVueJSMVSModels()
-        .UseVueJSMVCMessages(app.Services.GetRequiredService<IFileProvider>(), "/resources/messages", corePath: Constants.CORE_IMPORT_PATH, 
+        .UseVueJSMVCMessages(app.Services.GetRequiredService<IFileProvider>(), "/resources/messages", corePath: Constants.CORE_IMPORT_PATH,
             vueImportPath: Constants.VUE_IMPORT_PATH, logger: app.Services.GetService<ILogger>(), cache: app.Services.GetService<IMemoryCache>(),
             compressJS: false)
-        .UseVueJSMVCVueFiles(app.Services.GetRequiredService<IFileProvider>(), "/resources/vueFiles", vueImportPath: Constants.VUE_IMPORT_PATH, 
-            logger: app.Services.GetService<ILogger>(), 
+        .UseVueJSMVCVueFiles(app.Services.GetRequiredService<IFileProvider>(), "/resources/vueFiles", vueImportPath: Constants.VUE_IMPORT_PATH,
+            logger: app.Services.GetService<ILogger>(),
             cache: app.Services.GetService<IMemoryCache>(),
             compressJS: false)
     );

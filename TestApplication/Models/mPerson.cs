@@ -30,7 +30,8 @@ namespace TestApplication.Models
             set { _testNullable=value; }
         }
 
-        public mPerson() {
+        public mPerson()
+        {
             _id = Math.Abs(_rnd.Next());
         }
 

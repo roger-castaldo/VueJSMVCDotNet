@@ -38,7 +38,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             {
                 builder.AppendLine(@"){
                 let opts = null;");
-                methodGroup.OrderBy(method=> InjectableMethod.StripMethodParameters(method.GetParameters())
+                methodGroup.OrderBy(method => InjectableMethod.StripMethodParameters(method.GetParameters())
                         .Where(pair => !pair.IsStrippable)
                         .Select(pair => pair.ParameterInfo).Count()).Reverse().ForEach(method =>
                 {
@@ -115,7 +115,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
             builder.AppendLine("                };");
         }
 
-        private static void AppendMethodContent(ModelType modelType, IGrouping<string,MethodInfo> methodGroup, bool isStatic, StringBuilder builder)
+        private static void AppendMethodContent(ModelType modelType, IGrouping<string, MethodInfo> methodGroup, bool isStatic, StringBuilder builder)
         {
             MethodsGenerator.AppendMethodCallDeclaration(methodGroup, isStatic, builder);
             builder.AppendLine(@$"let response = await ajax(Object.assign({{
@@ -130,7 +130,7 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 
         void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {
-            modelType.InstanceMethods.GroupBy(m=>m.Name).ForEach(m => AppendMethodContent(modelType, m, false, builder));
+            modelType.InstanceMethods.GroupBy(m => m.Name).ForEach(m => AppendMethodContent(modelType, m, false, builder));
             modelType.StaticMethods.GroupBy(m => m.Name).ForEach(m => AppendMethodContent(modelType, m, true, builder));
         }
     }

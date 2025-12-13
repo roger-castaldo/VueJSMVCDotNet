@@ -13,11 +13,11 @@ namespace AutomatedTesting
     {
         public const string _NOT_ALLOWED_MESSAGE = "Not Authorized";
         public const int _NOT_ALLOWED_STATUS = 403;
-        
-        private async Task ExecuteTest(HttpMethod method,string url, string[] security, bool shouldSucceeed = false, Hashtable parameters = null)
+
+        private async Task ExecuteTest(HttpMethod method, string url, string[] security, bool shouldSucceeed = false, Hashtable parameters = null)
         {
             //Act
-            (var webApplicationFactory, _) = Utility.CreateApplication(true,new SecureSession(security));
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, new SecureSession(security));
 
             //Act
             var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(method, url, webApplicationFactory,
@@ -102,7 +102,7 @@ namespace AutomatedTesting
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }, shouldSucceeed:true);
+            }, shouldSucceeed: true);
         }
 
         [TestMethod]
@@ -111,7 +111,7 @@ namespace AutomatedTesting
             await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { "" });
             await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS });
             await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
-            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.METHOD }, shouldSucceeed:true);
+            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.METHOD }, shouldSucceeed: true);
         }
 
         [TestMethod]
@@ -119,7 +119,7 @@ namespace AutomatedTesting
         {
             await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { "" }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } });
             await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } });
-            await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } }, shouldSucceeed:true);
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } }, shouldSucceeed: true);
         }
 
         [TestMethod]

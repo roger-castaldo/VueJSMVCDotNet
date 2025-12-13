@@ -6,7 +6,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Models
 {
-    
+
     public class mLocation : IModel
     {
         private static Random _rnd = new Random((int)DateTime.UtcNow.Ticks);

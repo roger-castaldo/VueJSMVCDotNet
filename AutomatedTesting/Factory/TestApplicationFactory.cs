@@ -14,7 +14,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Factory
 {
-    internal class TestApplicationFactory(bool ignoreInvalidModels, ILogger logWriter, IMemoryCache cache, IDataStore store, SecureSession session,Dictionary<string,string> settings) : WebApplicationFactory<Program>
+    internal class TestApplicationFactory(bool ignoreInvalidModels, ILogger logWriter, IMemoryCache cache, IDataStore store, SecureSession session, Dictionary<string, string> settings) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -32,9 +32,9 @@ namespace AutomatedTesting.Factory
                     services.AddSingleton<IMemoryCache>(cache);
                 services.AddSingleton<IFileProvider, EmbeddedResourceFileProvider>()
                 .UseVueJSMVCModels(
-                    logger:logWriter, 
-                    vueImportPath: Constants.VUE_IMPORT_PATH, 
-                    coreJSImport: Constants.CORE_IMPORT_PATH, 
+                    logger: logWriter,
+                    vueImportPath: Constants.VUE_IMPORT_PATH,
+                    coreJSImport: Constants.CORE_IMPORT_PATH,
                     ignoreInvalidModels: ignoreInvalidModels,
                     cache: cache,
                     compressJS: false)
