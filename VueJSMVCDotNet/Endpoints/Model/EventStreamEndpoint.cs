@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Channels;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
 
 namespace VueJSMVCDotNet.Endpoints.Model
 {
@@ -36,25 +37,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
 
                                     context.Response.Headers.Append("Content-Type", "text/event-stream");
 
-                                    var task = method.InvokeAsync<object, M>(await CreateLoaderAsync(context), context, Logger, pars: pars);
-
-                                    try
-                                    {
-                                        await foreach (var message in channel.Reader.ReadAllAsync(context.RequestAborted))
-                                        {
-                                            await context.Response.WriteAsync($"event: {EventStreamHelper.MessageEvent}\ndata: {Utility.JsonEncode(message, requestData)}\n\n");
-                                            await context.Response.Body.FlushAsync();
-                                        }
-
-                                        await context.Response.WriteAsync($"event: {EventStreamHelper.CloseEvent}\ndata: complete\n\n");
-                                        await context.Response.Body.FlushAsync();
-                                    }
-                                    catch (OperationCanceledException)
-                                    {
-                                        writerCts.Cancel();
-                                    }
-
-                                    await task;
+                                    await ProcessStream(method, context, pars, channel, requestData, writerCts);
                                 }
                             },
                             ProduceRoute(mra.Path, method.UsesModel, $"/{method.Name}"),
@@ -65,6 +48,29 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         )
                     );
                 });
+
+        private async Task ProcessStream(InjectableMethod method, HttpContext context, object?[] pars, Channel<object> channel, IInternalRequestData requestData, CancellationTokenSource writerCts)
+        {
+            var task = method.InvokeAsync<object, M>(await CreateLoaderAsync(context), context, Logger, pars: pars);
+
+            try
+            {
+                await foreach (var message in channel.Reader.ReadAllAsync(context.RequestAborted))
+                {
+                    await context.Response.WriteAsync($"event: {EventStreamHelper.MessageEvent}\ndata: {Utility.JsonEncode(message, requestData)}\n\n");
+                    await context.Response.Body.FlushAsync();
+                }
+
+                await context.Response.WriteAsync($"event: {EventStreamHelper.CloseEvent}\ndata: complete\n\n");
+                await context.Response.Body.FlushAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                writerCts.Cancel();
+            }
+
+            await task;
+        }
 
         private async Task<bool> ExtractParameters(object?[] pars, InjectableMethod method, Channel<object> channel, CancellationTokenSource linkedCts, CancellationTokenSource writerCts, HttpContext context)
         {

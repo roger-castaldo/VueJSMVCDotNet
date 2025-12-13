@@ -5,7 +5,7 @@ using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
 {
-    internal class JSONGenerator : IJSGenerator
+    internal class JsonGenerator : IJSGenerator
     {
         void IJSGenerator.GeneratorJS(StringBuilder builder, ModelType modelType, string baseURL, ILogger? log)
         {

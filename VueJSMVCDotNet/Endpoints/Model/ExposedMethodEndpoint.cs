@@ -32,106 +32,122 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         .ToArray();
                     return routes.SelectMany(mra =>
                     {
-                        IEnumerable<Endpoint> result = [];
                         var slowPath = $"{(mra.Path.StartsWith('/') ? "" : "/")}{mra.Path}/{grp.Key}/";
-                        if (staticMethods.Length>0)
-                            result = result.Append(
-                                BuildEndpoint<H, M>(
-                                    requestDelegate: async (context) =>
-                                    {
-                                        var handler = await CreateLoaderAsync(context);
-                                        var callback = await LocateMethodAsync(context, staticMethods, Logger);
-                                        if (callback!=null)
-                                        {
-                                            if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks, false))
-                                                await ReturnInsecure(context);
-                                            else
-                                                await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath);
-                                        }
-                                        else
-                                            await ReturnNotFound(context, NotFoundError);
-                                    },
-                                    routePattern: ProduceRoute(mra.Path, false, $"/{grp.Key}"),
-                                    order: 0,
-                                    displayName: $"Static Method call for {typeof(H).Name}.{grp.Key}",
-                                    httpMethods: [HttpMethods.Post],
-                                    methods: staticMethods.Select(method => method.Method)
-
-                                )
-                            );
-                        if (instanceMethods.Length>0)
-                            result = result.Append(
-                                BuildEndpoint<H, M>(
-                                    requestDelegate: async (context) =>
-                                    {
-                                        if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
-                                            await ReturnInsecure(context);
-                                        else
-                                        {
-                                            var handler = await CreateLoaderAsync(context);
-                                            var callback = await LocateMethodAsync(context, instanceMethods, Logger);
-                                            if (callback!=null)
-                                            {
-                                                if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks))
-                                                    await ReturnInsecure(context);
-                                                else
-                                                {
-                                                    var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, Logger)).ModelID!);
-                                                    if (object.Equals(modelInstance, default(M?)))
-                                                        await ReturnModelNotFound(context);
-                                                    else
-                                                        await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath, modelInstance: modelInstance);
-                                                }
-                                            }
-                                            else
-                                                await ReturnNotFound(context, NotFoundError);
-                                        }
-                                    },
-                                    routePattern: ProduceRoute(mra.Path, true, $"/{grp.Key}"),
-                                    order: 0,
-                                    displayName: $"Instance Method call for {typeof(H).Name}.{grp.Key}",
-                                    httpMethods: [HttpMethods.Post],
-                                    methods: instanceMethods.Select(method => method.Method)
-                                )
-                            );
-                        if (Array.Exists(staticMethods, m => m.IsSlow) || Array.Exists(instanceMethods, m => m.IsSlow))
-                        {
-                            result = result.Append(
-                                new RouteEndpoint(
-                                    requestDelegate: async (context) =>
-                                    {
-                                        if (context.GetRouteValue(SlowMethodIdKey)==null)
-                                        {
-                                            await ReturnNotFound(context);
-                                            return;
-                                        }
-                                        var idKey = Guid.Parse(context.GetRouteValue(SlowMethodIdKey)!.ToString()!);
-                                        if (!slowMethods.TryGetValue(idKey, out var slowMethodInstance)
-                                        || slowMethodInstance.IsExpired)
-                                        {
-                                            slowMethods.TryRemove(idKey, out _);
-                                            await ReturnNotFound(context);
-                                            return;
-                                        }
-                                        await slowMethodInstance.HandleRequest(context);
-                                        if (slowMethodInstance.IsFinished)
-                                        {
-                                            slowMethods.TryRemove(idKey, out var instance);
-                                            instance?.Dispose();
-                                        }
-                                    },
-                                    routePattern: RoutePatternFactory.Parse($"{slowPath}{{{SlowMethodIdKey}}}"),
-                                    order: 0,
-                                    metadata: new(
-                                        new HttpMethodMetadata([HttpMethods.Get])
-                                    ),
-                                    displayName: $"Slow Method callback for {typeof(H).Name}.{grp.Key}"
-                                )
-                            );
-                        }
-                        return result;
+                        return (IEnumerable<Endpoint>)[
+                            .. ProduceStaticEndpoints(staticMethods, mra, grp.Key, slowPath),
+                            .. ProduceInstanceEndpoints(instanceMethods, mra, grp.Key, slowPath),
+                            .. ProduceSlowMethodEndpoints(staticMethods, instanceMethods, slowPath, grp.Key)
+                        ];
                     });
                 });
+
+        private IEnumerable<Endpoint> ProduceSlowMethodEndpoints(InjectableMethod[] staticMethods, InjectableMethod[] instanceMethods, string slowPath,string key)
+        {
+            if (Array.Exists(staticMethods, m => m.IsSlow) || Array.Exists(instanceMethods, m => m.IsSlow))
+                return [
+                    new RouteEndpoint(
+                        requestDelegate: async (context) =>
+                        {
+                            if (context.GetRouteValue(SlowMethodIdKey)==null)
+                            {
+                                await ReturnNotFound(context);
+                                return;
+                            }
+                            var idKey = Guid.Parse(context.GetRouteValue(SlowMethodIdKey)!.ToString()!);
+                            if (!slowMethods.TryGetValue(idKey, out var slowMethodInstance)
+                            || slowMethodInstance.IsExpired)
+                            {
+                                slowMethods.TryRemove(idKey, out _);
+                                await ReturnNotFound(context);
+                                return;
+                            }
+                            await slowMethodInstance.HandleRequest(context);
+                            if (slowMethodInstance.IsFinished)
+                            {
+                                slowMethods.TryRemove(idKey, out var instance);
+                                instance?.Dispose();
+                            }
+                        },
+                        routePattern: RoutePatternFactory.Parse($"{slowPath}{{{SlowMethodIdKey}}}"),
+                        order: 0,
+                        metadata: new(
+                            new HttpMethodMetadata([HttpMethods.Get])
+                        ),
+                        displayName: $"Slow Method callback for {typeof(H).Name}.{key}"
+                    )
+                ];
+            return [];
+        }
+
+        private IEnumerable<Endpoint> ProduceInstanceEndpoints(InjectableMethod[] instanceMethods, ModelRouteAttribute mra, string key, string slowPath)
+        {
+            if (instanceMethods.Length>0)
+                return [
+                    BuildEndpoint<H, M>(
+                        requestDelegate: async (context) =>
+                        {
+                            if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
+                                await ReturnInsecure(context);
+                            else
+                            {
+                                var handler = await CreateLoaderAsync(context);
+                                var callback = await LocateMethodAsync(context, instanceMethods, Logger);
+                                if (callback!=null)
+                                {
+                                    if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks))
+                                        await ReturnInsecure(context);
+                                    else
+                                    {
+                                        var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, Logger)).ModelID!);
+                                        if (object.Equals(modelInstance, default(M?)))
+                                            await ReturnModelNotFound(context);
+                                        else
+                                            await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath, modelInstance: modelInstance);
+                                    }
+                                }
+                                else
+                                    await ReturnNotFound(context, NotFoundError);
+                            }
+                        },
+                        routePattern: ProduceRoute(mra.Path, true, $"/{key}"),
+                        order: 0,
+                        displayName: $"Instance Method call for {typeof(H).Name}.{key}",
+                        httpMethods: [HttpMethods.Post],
+                        methods: instanceMethods.Select(method => method.Method)
+                    )
+                ];
+            return [];
+        }
+
+        private IEnumerable<Endpoint> ProduceStaticEndpoints(InjectableMethod[] staticMethods, ModelRouteAttribute mra, string key, string slowPath)
+        {
+            if (staticMethods.Length>0)
+                return [
+                    BuildEndpoint<H, M>(
+                        requestDelegate: async (context) =>
+                        {
+                            var handler = await CreateLoaderAsync(context);
+                            var callback = await LocateMethodAsync(context, staticMethods, Logger);
+                            if (callback!=null)
+                            {
+                                if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks, false))
+                                    await ReturnInsecure(context);
+                                else
+                                    await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath);
+                            }
+                            else
+                                await ReturnNotFound(context, NotFoundError);
+                        },
+                        routePattern: ProduceRoute(mra.Path, false, $"/{key}"),
+                        order: 0,
+                        displayName: $"Static Method call for {typeof(H).Name}.{key}",
+                        httpMethods: [HttpMethods.Post],
+                        methods: staticMethods.Select(method => method.Method)
+
+                    )
+                ];
+            return [];
+        }
 
         private const string TextContentType = "text/text";
         private const string JsonContentType = "application/json";

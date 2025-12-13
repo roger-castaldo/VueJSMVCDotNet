@@ -77,29 +77,22 @@ namespace VueJSMVCDotNet.Endpoints.Model
             var request = await Helper.ExtractPartsAsync(context, logger);
             InjectableMethod? method = null;
             object?[] pars = [];
-            if (!request.Keys.Any())
-                method = methods.FirstOrDefault(imi => imi.StrippedParameters.Length==0 && (
-                    (string.IsNullOrWhiteSpace(request.ModelID) && !imi.RequiresModel)
-                    || (!string.IsNullOrWhiteSpace(request.ModelID) && imi.RequiresModel)
-                ));
-            else
+            foreach (InjectableMethod m in methods.Where(imi => imi.StrippedParameters.Count(p => !p.IsOut)==request.Keys.Count()))
             {
-                foreach (InjectableMethod m in methods.Where(imi => imi.StrippedParameters.Count(p => !p.IsOut)==request.Keys.Count()))
+                pars = new object?[m.StrippedParameters.Length];
+                bool isMethod = true;
+                int index = 0;
+                foreach (ParameterInfo pi in m.StrippedParameters)
                 {
-                    pars = new object?[m.StrippedParameters.Length];
-                    bool isMethod = true;
-                    int index = 0;
-                    foreach (ParameterInfo pi in m.StrippedParameters)
-                    {
-                        (isMethod, pars) = ExtractRequestParameter(m, pi, request, pars, index);
-                        if (!isMethod)
-                            break;
-                        index++;
-                    }
-                    if (isMethod)
-                    {
-                        method = m;
-                    }
+                    (isMethod, pars) = ExtractRequestParameter(m, pi, request, pars, index);
+                    if (!isMethod)
+                        break;
+                    index++;
+                }
+                if (isMethod)
+                {
+                    method = m;
+                    break;
                 }
             }
             return (method!=null ? (method!, pars) : null);

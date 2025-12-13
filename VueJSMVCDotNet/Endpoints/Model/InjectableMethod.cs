@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using VueJSMVCDotNet.Attributes.ModelHandlers;
 using VueJSMVCDotNet.Extensions;
@@ -64,6 +65,34 @@ namespace VueJSMVCDotNet.Endpoints.Model
             if (addItemIndex!=-1)
                 mpars[addItemIndex] = addItem;
             List<int> ignoredIndexes = [addItemIndex];
+            (mpars,ignoredIndexes) = await LoadMethodParametersAsync<M>(mpars, addItemIndex, ignoredIndexes, pars, requestData, handler, modelInstance);
+            object? result = null;
+            if (isTask||isValueTask)
+                result = await InvokeMethodAsync(handler, mpars);
+            else
+                result = method.Invoke(handler, mpars);
+            return (ReturnType==typeof(void) ? default(T?) : (T?)result);
+        }
+
+        private async Task<object?> InvokeMethodAsync<M>(IModelHandler<M> handler, object?[] mpars) where M : IModel
+        {
+            Task task;
+            if (isTask)
+                task = (Task)method.Invoke(handler, mpars)!;
+            else
+            {
+                var vtask = method.Invoke(handler, mpars)!;
+                task = (Task)vtask.GetType().GetMethod(nameof(ValueTask.AsTask))!.Invoke(vtask, null)!;
+            }
+            await task;
+            if (ReturnType!=typeof(void))
+                return task.GetType().GetProperty("Result")!.GetValue(task);
+            return null;
+        }
+
+        private async Task<(object?[],List<int>)> LoadMethodParametersAsync<M>(object?[] mpars, int addItemIndex, List<int> ignoredIndexes, object?[] pars, IInternalRequestData requestData, IModelHandler<M> handler, M? modelInstance)
+            where M : IModel
+        {
             int index = 0;
             for (int x = 0; x<mpars.Length; x++)
             {
@@ -86,24 +115,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     }
                 }
             }
-            object? result = null;
-            if (isTask||isValueTask)
-            {
-                Task task;
-                if (isTask)
-                    task = (Task)method.Invoke(handler, mpars)!;
-                else
-                {
-                    var vtask = method.Invoke(handler, mpars)!;
-                    task = (Task)vtask.GetType().GetMethod(nameof(ValueTask.AsTask))!.Invoke(vtask, null)!;
-                }
-                await task;
-                if (ReturnType!=typeof(void))
-                    result=task.GetType().GetProperty("Result")!.GetValue(task);
-            }
-            else
-                result = method.Invoke(handler, mpars);
-            return (ReturnType==typeof(void) ? default(T?) : (T?)result);
+            return (mpars, ignoredIndexes);
         }
 
         public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)

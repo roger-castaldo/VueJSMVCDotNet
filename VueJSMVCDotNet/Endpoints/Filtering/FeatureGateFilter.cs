@@ -14,14 +14,14 @@ namespace VueJSMVCDotNet.Endpoints.Filtering
                 var featureGates = context.HttpContext.GetEndpoint()?.Metadata.GetOrderedMetadata<FeatureGateAttribute>()?? [];
                 foreach (var metadata in featureGates)
                 {
-                    if (! await CheckFeaturesAsync(metadata, featureManager))
+                    if (! await FeatureGateFilter.CheckFeaturesAsync(metadata, featureManager))
                         return Results.NotFound();
                 }
             }
             return await next(context);
         }
 
-        private async Task<bool> CheckFeaturesAsync(FeatureGateAttribute metadata, IFeatureManager featureManager)
+        private static async Task<bool> CheckFeaturesAsync(FeatureGateAttribute metadata, IFeatureManager featureManager)
         {
             var anyValid = false;
             foreach (var feature in metadata.Features)

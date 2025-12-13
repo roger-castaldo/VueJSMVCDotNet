@@ -71,19 +71,22 @@ namespace VueJSMVCDotNet.Endpoints.Model.JSGenerators
                 (var propType, var array, var isNullable, _, _) = Utility.ExtractUnderlyingType(par.ParameterType);
                 bool notNullTagged = nna!=null && !nna.IsParameterNullable(par);
                 if (Array.Exists(propType.GetInterfaces(), t => Equals(t, typeof(IModel))))
-                {
-                    if (array)
-                    {
-                        if (notNullTagged || !isNullable)
-                            builder.AppendLine($"if ({par.Name}===null) throw 'invalid type: {par.Name} is not allowed to be null';");
-                        builder.AppendLine($"opts.data.{par.Name} = ({par.Name}===null ? null : {par.Name}.map((val)=>{{id:val.id}}));");
-                    }
-                    else
-                        builder.AppendLine($"opts.data.{par.Name} = {{id:checkProperty('{par.Name}','{Utility.GetTypeString(typeof(string), (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name}?.id,{Utility.GetEnumList(par.ParameterType)})}};");
-                }
+                    AppendModelParameter(array, par, builder, nna, notNullTagged, isNullable);
                 else
                     builder.AppendLine($"opts.data.{par.Name} = checkProperty('{par.Name}','{Utility.GetTypeString(par.ParameterType, (nna != null &&!nna.IsParameterNullable(par)))}',{par.Name},{Utility.GetEnumList(par.ParameterType)});");
             });
+        }
+
+        private static void AppendModelParameter(bool array, ParameterInfo par, StringBuilder builder, NotNullArguementAttribute? nna, bool notNullTagged, bool isNullable)
+        {
+            if (array)
+            {
+                if (notNullTagged || !isNullable)
+                    builder.AppendLine($"if ({par.Name}===null) throw 'invalid type: {par.Name} is not allowed to be null';");
+                builder.AppendLine($"opts.data.{par.Name} = ({par.Name}===null ? null : {par.Name}.map((val)=>{{id:val.id}}));");
+            }
+            else
+                builder.AppendLine($"opts.data.{par.Name} = {{id:checkProperty('{par.Name}','{Utility.GetTypeString(typeof(string), (nna!=null &&!nna.IsParameterNullable(par)))}',{par.Name}?.id,{Utility.GetEnumList(par.ParameterType)})}};");
         }
 
         private static void AppendMethodReturnCallback(MethodInfo method, StringBuilder builder)
