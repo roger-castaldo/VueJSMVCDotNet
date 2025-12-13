@@ -19,8 +19,8 @@ jobs:
         dotnet-version: |
           8.0.x
     - name: Restore dependencies
-      run: dotnet restore  -p:TargetFramework=net8.0 UnitTest
+      run: dotnet restore  -p:TargetFramework=net8.0 AutomatedTesting
     - name: Build-8.0
-      run: dotnet build --framework net8.0 --no-restore UnitTest
+      run: dotnet build --framework net8.0 --no-restore AutomatedTesting
     - name: Test-8.0
-      run: dotnet test --framework net8.0 --no-build --verbosity normal UnitTest
+      run: dotnet test --framework net8.0 --no-build --verbosity normal AutomatedTesting
