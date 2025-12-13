@@ -273,4 +273,13 @@
         /// </summary>
         public ParameterInfo Parameter { get; private init; }
     }
+
+    /// <summary>
+    /// Thrown when a call is made that requires a model id and there is not one supplied in the path
+    /// </summary>
+    public class NullModelIdException : ArgumentException
+    {
+        internal NullModelIdException()
+            : base("Model ID null","id") { }
+    }
 }

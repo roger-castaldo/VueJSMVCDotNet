@@ -44,11 +44,7 @@ namespace VueJSMVCDotNet.Extensions
             => services.AddSingleton<JSEngine>()
             .AddSingleton<ModelsDataSource>((provider) => new(
                 logger??provider.GetService<ILogger>(),
-                vueImportPath,
-                coreJSURL,
-                coreJSImport??coreJSURL,
-                ignoreInvalidModels,
-                compressJS,
+                new(vueImportPath, coreJSURL, coreJSImport, ignoreInvalidModels, compressJS), 
                 cache??provider.GetService<IMemoryCache>(),
                 provider.GetRequiredService<JSEngine>(),
                 services

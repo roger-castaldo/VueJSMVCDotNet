@@ -47,7 +47,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 .Concat(method.GetCustomAttributes<ASecurityCheckAttribute>())];
 
         protected static string GetModelID(HttpContext context)
-            => context.Request.RouteValues[Helper.ID_PARAMETER_NAME]?.ToString()??throw new ArgumentNullException("id");
+            => context.Request.RouteValues[Helper.ID_PARAMETER_NAME]?.ToString()??throw new NullModelIdException();
 
         protected static RoutePattern ProduceRoute(string baseURL, bool includeID, string additional = "")
         {
@@ -91,33 +91,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     int index = 0;
                     foreach (ParameterInfo pi in m.StrippedParameters)
                     {
-                        if (!pi.IsOut)
-                        {
-                            if (request.Keys.Contains(pi.Name, StringComparer.InvariantCultureIgnoreCase))
-                            {
-                                object? val = null;
-                                try
-                                {
-                                    val = request.GetValue(pi.ParameterType, pi.Name!);
-                                }
-                                catch (InvalidCastException)
-                                {
-                                    isMethod=false;
-                                    break;
-                                }
-                                if (val==null&&m.NotNullArguement!=null&&!m.NotNullArguement.IsParameterNullable(pi))
-                                {
-                                    isMethod=false;
-                                    break;
-                                }
-                                pars[index] = val;
-                            }
-                            else
-                            {
-                                isMethod = false;
-                                break;
-                            }
-                        }
+                        (isMethod, pars) = ExtractRequestParameter(m, pi, request, pars, index);
+                        if (!isMethod)
+                            break;
                         index++;
                     }
                     if (isMethod)
@@ -127,6 +103,31 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 }
             }
             return (method!=null ? (method!, pars) : null);
+        }
+
+        private static (bool isMethod, object?[] pars) ExtractRequestParameter(InjectableMethod method, ParameterInfo pi, IInternalRequestData request, object?[] pars, int index)
+        {
+            if (!pi.IsOut)
+            {
+                if (request.Keys.Contains(pi.Name, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    object? val;
+                    try
+                    {
+                        val = request.GetValue(pi.ParameterType, pi.Name!);
+                    }
+                    catch (InvalidCastException)
+                    {
+                        return (false, pars);
+                    }
+                    if (val==null&&method.NotNullArguement!=null&&!method.NotNullArguement.IsParameterNullable(pi))
+                        return (false, pars);
+                    pars[index] = val;
+                }
+                else
+                    return (false, pars);
+            }
+            return (true, pars);
         }
     }
 }

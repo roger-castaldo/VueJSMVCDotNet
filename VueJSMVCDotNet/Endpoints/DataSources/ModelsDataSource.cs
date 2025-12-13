@@ -16,11 +16,7 @@ using VueJSMVCDotNet.Javascript;
 namespace VueJSMVCDotNet.Endpoints.DataSources
 {
     internal class ModelsDataSource(ILogger? logger,
-            string vueImportPath,
-            string coreJSURL,
-            string coreJSImport,
-            bool ignoreInvalidModels,
-            bool compressJS,
+            DataSourceOptions options,
             IMemoryCache? cache,
             JSEngine engine,
             IServiceCollection serviceDescriptors) : EndpointDataSource, IModelDataSource, IDisposable
@@ -75,7 +71,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                 if (compressedCore==null)
                 {
                     using StreamReader sr = new(typeof(ModelsDataSource).Assembly.GetManifestResourceStream("VueJSMVCDotNet.Endpoints.Model.JSGenerators.core.js")!);
-                    var task = engine.CompressCodeAsync($@"import * as vue from ""{vueImportPath}"";
+                    var task = engine.CompressCodeAsync($@"import * as vue from ""{options.VueImportPath}"";
 {sr.ReadToEnd()}").AsTask();
                     sr.Close();
                     task.Wait();
@@ -91,7 +87,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                             context.Response.StatusCode = 200;
                             await context.Response.WriteAsync(compressedCore);
                         },
-                        routePattern: RoutePatternFactory.Parse($"{(coreJSURL.StartsWith('/') ? "" : "/")}{coreJSURL}"),
+                        routePattern: RoutePatternFactory.Parse($"{(options.CoreJSURL.StartsWith('/') ? "" : "/")}{options.CoreJSURL}"),
                         order: 0,
                         metadata: new(
                             new HttpMethodMetadata([HttpMethods.Get])
@@ -116,8 +112,7 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
         {
             var types = Utility.UnloadAssemblyContext(contextName)?? [];
             locker.EnterWriteLock();
-            foreach (var type in types)
-                endpoints.Remove(type);
+            types.ForEach(type=>endpoints.Remove(type));
             locker.ExitWriteLock();
             TriggerChange();
         }
@@ -160,10 +155,12 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
             {
                 logger?.LogError("Validation errors:");
                 errors.ForEach(e => logger?.LogError(e, "Validation Error: {Message}", e.Message));
+            }
+            if (invalidModels.Any()) { 
                 logger?.LogError("Invalid IModelHandlers:");
                 invalidModels.ForEach(t => logger?.LogError("Invalid IModelHandler: {FullName}", t.HandlerType.FullName));
             }
-            if (errors.Any() && !ignoreInvalidModels)
+            if (errors.Any() && !options.IgnoreInvalidModels)
                 throw new ModelValidationException(errors);
             models = models.Where(m => !invalidModels.Contains(m));
             locker.EnterWriteLock();
@@ -174,7 +171,8 @@ namespace VueJSMVCDotNet.Endpoints.DataSources
                     var producedEndpoints = new List<IEndpointHandler>();
                     foreach (var endpointType in ModelEndpoints)
                         producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(endpointType.MakeGenericType(handler.HandlerType, handler.ModelType), logger)!);
-                    producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(typeof(JSEndpoint<,>).MakeGenericType(handler.HandlerType, handler.ModelType), vueImportPath, coreJSImport, compressJS, this, logger, cache)!);
+                    producedEndpoints.Add((IEndpointHandler)Activator.CreateInstance(typeof(JSEndpoint<,>).MakeGenericType(handler.HandlerType, handler.ModelType), options.VueImportPath, 
+                        options.CoreJSImport, options.CompressJS, this, logger, cache)!);
                     endpoints.Add(handler.HandlerType, producedEndpoints);
                 }
             }

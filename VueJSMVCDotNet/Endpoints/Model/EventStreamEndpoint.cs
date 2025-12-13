@@ -27,38 +27,12 @@ namespace VueJSMVCDotNet.Endpoints.Model
                                 else
                                 {
                                     var requestData = await Helper.ExtractPartsAsync(context, Logger);
-                                    object?[] pars = new object?[method.StrippedParameters.Length];
                                     var writerCts = new CancellationTokenSource();
                                     var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, writerCts.Token);
                                     var channel = Channel.CreateUnbounded<object>();
-                                    for (var x = 0; x<pars.Length; x++)
-                                    {
-                                        if (Equals(method.StrippedParameters[x].ParameterType, typeof(ChannelWriter<object>)))
-                                            pars[x] = channel.Writer;
-                                        else if (Equals(method.StrippedParameters[x].ParameterType, typeof(CancellationToken)))
-                                            pars[x] = linkedCts.Token;
-                                        else if (context.Request.Query.TryGetValue(method.StrippedParameters[x].Name!, out var value))
-                                        {
-                                            try
-                                            {
-                                                pars[x] = EventStreamHelper.ConvertValue(method.StrippedParameters[x].ParameterType, value);
-                                            }
-                                            catch (Exception)
-                                            {
-                                                linkedCts.Dispose();
-                                                writerCts.Dispose();
-                                                await ReturnNotFound(context);
-                                                return;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            linkedCts.Dispose();
-                                            writerCts.Dispose();
-                                            await ReturnNotFound(context);
-                                            return;
-                                        }
-                                    }
+                                    object?[] pars = new object?[method.StrippedParameters.Length];
+                                    if (!await ExtractParameters(pars, method, channel, linkedCts, writerCts, context))
+                                        return;
 
                                     context.Response.Headers.Append("Content-Type", "text/event-stream");
 
@@ -91,5 +65,38 @@ namespace VueJSMVCDotNet.Endpoints.Model
                         )
                     );
                 });
+
+        private async Task<bool> ExtractParameters(object?[] pars, InjectableMethod method, Channel<object> channel, CancellationTokenSource linkedCts, CancellationTokenSource writerCts, HttpContext context)
+        {
+            for (var x = 0; x<pars.Length; x++)
+            {
+                if (Equals(method.StrippedParameters[x].ParameterType, typeof(ChannelWriter<object>)))
+                    pars[x] = channel.Writer;
+                else if (Equals(method.StrippedParameters[x].ParameterType, typeof(CancellationToken)))
+                    pars[x] = linkedCts.Token;
+                else if (context.Request.Query.TryGetValue(method.StrippedParameters[x].Name!, out var value))
+                {
+                    try
+                    {
+                        pars[x] = EventStreamHelper.ConvertValue(method.StrippedParameters[x].ParameterType, value);
+                    }
+                    catch (Exception)
+                    {
+                        linkedCts.Dispose();
+                        writerCts.Dispose();
+                        await ReturnNotFound(context);
+                        return false;
+                    }
+                }
+                else
+                {
+                    linkedCts.Dispose();
+                    writerCts.Dispose();
+                    await ReturnNotFound(context);
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

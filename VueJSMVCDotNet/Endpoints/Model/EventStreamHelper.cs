@@ -11,40 +11,47 @@ namespace VueJSMVCDotNet.Endpoints.Model
 
         private static readonly Dictionary<Type, Func<StringValues, object?>> QueryValueConverters = new()
         {
-            [typeof(char?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : value.ToString()[0]),
+            [typeof(char?)] = (value) => CheckNullKeyword(value,(s)=>s[0]),
             [typeof(char)] = (value) => value.ToString()[0],
-            [typeof(byte?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : byte.Parse(value.ToString())),
+            [typeof(byte?)] = (value) => CheckNullKeyword(value,(s)=>byte.Parse(s)),
             [typeof(byte)] = (value) => byte.Parse(value.ToString()),
-            [typeof(bool?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : bool.Parse(value.ToString())),
+            [typeof(bool?)] = (value) => CheckNullKeyword(value, (s) => bool.Parse(s)),
             [typeof(bool)] = (value) => bool.Parse(value.ToString()),
-            [typeof(short?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : short.Parse(value.ToString())),
+            [typeof(short?)] = (value) => CheckNullKeyword(value, (s) => short.Parse(s)),
             [typeof(short)] = (value) => short.Parse(value.ToString()),
-            [typeof(ushort?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : ushort.Parse(value.ToString())),
+            [typeof(ushort?)] = (value) => CheckNullKeyword(value, (s) => ushort.Parse(s)),
             [typeof(ushort)] = (value) => ushort.Parse(value.ToString()),
-            [typeof(int?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : int.Parse(value.ToString())),
+            [typeof(int?)] = (value) => CheckNullKeyword(value, (s) => int.Parse(s)),
             [typeof(int)] = (value) => int.Parse(value.ToString()),
-            [typeof(uint?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : uint.Parse(value.ToString())),
+            [typeof(uint?)] = (value) => CheckNullKeyword(value, (s) => uint.Parse(s)),
             [typeof(uint)] = (value) => uint.Parse(value.ToString()),
-            [typeof(long?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : long.Parse(value.ToString())),
+            [typeof(long?)] = (value) => CheckNullKeyword(value, (s) => long.Parse(s)),
             [typeof(long)] = (value) => long.Parse(value.ToString()),
-            [typeof(ulong?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : ulong.Parse(value.ToString())),
+            [typeof(ulong?)] = (value) => CheckNullKeyword(value, (s) => ulong.Parse(s)),
             [typeof(ulong)] = (value) => ulong.Parse(value.ToString()),
-            [typeof(double?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : double.Parse(value.ToString())),
+            [typeof(double?)] = (value) => CheckNullKeyword(value, (s) => double.Parse(s)),
             [typeof(double)] = (value) => double.Parse(value.ToString()),
-            [typeof(float?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : float.Parse(value.ToString())),
+            [typeof(float?)] = (value) => CheckNullKeyword(value, (s) => float.Parse(s)),
             [typeof(float)] = (value) => float.Parse(value.ToString()),
-            [typeof(decimal?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : decimal.Parse(value.ToString())),
+            [typeof(decimal?)] = (value) => CheckNullKeyword(value, (s) => decimal.Parse(s)),
             [typeof(decimal)] = (value) => decimal.Parse(value.ToString()),
 #pragma warning disable S6580 // Use a format provider when parsing date and time
-            [typeof(DateTime?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : DateTime.Parse(value.ToString())),
+            [typeof(DateTime?)] = (value) => CheckNullKeyword(value, (s) => DateTime.Parse(s)),
             [typeof(DateTime)] = (value) => DateTime.Parse(value.ToString()),
 #pragma warning restore S6580 // Use a format provider when parsing date and time
-            [typeof(Guid?)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : Guid.Parse(value.ToString())),
+            [typeof(Guid?)] = (value) => CheckNullKeyword(value, (s) => Guid.Parse(s)),
             [typeof(Guid)] = (value) => Guid.Parse(value.ToString()),
             [typeof(string)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : value.ToString()),
-            [typeof(Version)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : Version.Parse(value.ToString())),
-            [typeof(IPAddress)] = (value) => (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase) ? null : IPAddress.Parse(value.ToString())),
+            [typeof(Version)] = (value) => CheckNullKeyword(value, (s) => Version.Parse(s)),
+            [typeof(IPAddress)] = (value) => CheckNullKeyword(value, (s) => IPAddress.Parse(s)),
         };
+
+        private static object? CheckNullKeyword(StringValues value, Func<string, object?> convert)
+        {
+            if (value.ToString().Equals(NullKeyword, StringComparison.InvariantCultureIgnoreCase))
+                return null;
+            return convert(value.ToString());
+        }
 
         public static bool IsUsableType(Type type)
         {

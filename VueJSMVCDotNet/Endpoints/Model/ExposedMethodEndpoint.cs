@@ -133,6 +133,9 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     });
                 });
 
+        private const string TextContentType = "text/text";
+        private const string JsonContentType = "application/json";
+
         private async ValueTask InvokeMethodAsync(InjectableMethod method, object?[] pars, HttpContext context, H instance, string slowBasePath, M? modelInstance = default)
         {
             try
@@ -142,13 +145,13 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     var slowID = Guid.NewGuid();
                     if (slowMethods.TryAdd(slowID, new(method, pars, await Helper.ExtractPartsAsync(context, Logger), instance, Logger, modelInstance)))
                     {
-                        context.Response.ContentType= "text/text";
+                        context.Response.ContentType= TextContentType;
                         context.Response.StatusCode= 200;
                         await context.Response.WriteAsync($"{slowBasePath}{slowID}");
                     }
                     else
                     {
-                        context.Response.ContentType = "text/text";
+                        context.Response.ContentType = TextContentType;
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("Unable to instantiate slow method instance");
                     }
@@ -156,7 +159,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 else if (method.ReturnType == typeof(void))
                 {
                     await method.InvokeAsync<object, M>(instance, context, Logger, pars: pars, modelInstance: modelInstance);
-                    context.Response.ContentType= "application/json";
+                    context.Response.ContentType= JsonContentType;
                     context.Response.StatusCode= 200;
                     await context.Response.WriteAsync("");
                 }
@@ -164,7 +167,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
                 {
                     (var tmp, var requestData) = await method.InvokeAsync<string, M>(instance, context, Logger, pars: pars, modelInstance: modelInstance);
                     context.Response.StatusCode= 200;
-                    context.Response.ContentType= (tmp==null ? "application/json" : "text/text");
+                    context.Response.ContentType= (tmp==null ? JsonContentType : TextContentType);
                     await context.Response.WriteAsync((tmp??Utility.JsonEncode(tmp, requestData)));
                 }
                 else
@@ -174,7 +177,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             {
                 Logger?.LogError(ex, "Error invoking exposed method {MethodName}", method.Name);
                 context.Response.StatusCode = 500;
-                context.Response.ContentType = "text/text";
+                context.Response.ContentType = TextContentType;
                 await context.Response.WriteAsync("Internal Server Error");
             }
         }

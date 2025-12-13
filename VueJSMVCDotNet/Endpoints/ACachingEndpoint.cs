@@ -49,7 +49,7 @@ namespace VueJSMVCDotNet.Endpoints
                 var cachableResponse = await ProduceCachableResponseAsync(context);
                 if (cachableResponse!=null)
                 {
-                    cachedResponse = cache?.Set<CachedResponse>(cacheURL, new(cachableResponse.Content, cachableResponse.ContentType, cachableResponse.Timestamp), new MemoryCacheEntryOptions()
+                    _ = cache?.Set<CachedResponse>(cacheURL, new(cachableResponse.Content, cachableResponse.ContentType, cachableResponse.Timestamp), new MemoryCacheEntryOptions()
                     {
                         SlidingExpiration=TimeSpan.FromHours(1),
                         AbsoluteExpiration=DateTimeOffset.UtcNow.AddHours(12)
