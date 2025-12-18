@@ -12,8 +12,8 @@ namespace VueJSMVCDotNet.JSON
     {
         private M Load(string id)
         {
-            ArgumentNullException.ThrowIfNull(requestData, nameof(requestData));
-            var task = requestData.LoadModelAsync<M>(id).AsTask();
+            RequestDataNullException.ThrowIfNull(requestData);
+            var task = requestData!.LoadModelAsync<M>(id).AsTask();
             task.Wait();
             return task.Result!;
         }

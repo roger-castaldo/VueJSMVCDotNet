@@ -111,48 +111,29 @@ namespace VueJSMVCDotNet
 
         public static (Type type, bool isArray, bool isNullable, bool isTask, bool isValueTask) ExtractUnderlyingType(Type type)
         {
-            var isArray = false;
-            var isNullable = false;
-            var isTask = false;
-            var isValueTask = false;
-            if (type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>)))
+            var isTask = type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>));
+            var isValueTask = type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>));
+            if (isTask||isValueTask)
             {
-                isTask=true;
-                if (type.IsGenericType)
-                    type=type.GetGenericArguments()[0];
-                else
-                    return (typeof(void), isArray, isNullable, isTask, isValueTask);
+                if (!type.IsGenericType)
+                    return (typeof(void), false, false, isTask, isValueTask);
+                type=type.GetGenericArguments()[0];
             }
-            else if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>)))
-            {
-                isValueTask=true;
-                if (type.IsGenericType)
-                    type=type.GetGenericArguments()[0];
-                else
-                    return (typeof(void), isArray, isNullable, isTask, isValueTask);
-            }
-            if (type.IsArray)
-            {
-                isArray=true;
-                type=type.GetElementType()!;
-            }
-            else if (type.IsGenericType &&
+            var isArray = type.IsArray||(type.IsGenericType &&
                 (
                 type.GetGenericTypeDefinition()==typeof(IEnumerable<>) ||
                 Array.Exists(type.GetGenericTypeDefinition().GetInterfaces(), (t) => t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>))
-             ))
+             ));
+            var isNullable = false;
+            if (isArray)
             {
-                isArray=true;
-                isNullable=true;
-                type=type.GetGenericArguments()[0];
+                isNullable = type.IsGenericType;
+                type = type.GetElementType()??type.GetGenericArguments()[0];
             }
             if (type.FullName!.StartsWith("System.Nullable"))
             {
                 isNullable=true;
-                if (type.IsGenericType)
-                    type=type.GetGenericArguments()[0];
-                else
-                    type=type.GetElementType()!;
+                type = type.GetElementType()??type.GetGenericArguments()[0];
             }
             return (type, isArray, isNullable, isTask, isValueTask);
         }

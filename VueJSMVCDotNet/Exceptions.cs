@@ -1,4 +1,6 @@
-﻿namespace VueJSMVCDotNet
+﻿using VueJSMVCDotNet.Interfaces.Internal;
+
+namespace VueJSMVCDotNet
 {
 
     /// <summary>
@@ -281,5 +283,29 @@
     {
         internal NullModelIdException()
             : base("Model ID null","id") { }
+    }
+
+    /// <summary>
+    /// Thrown when a call is made to load a model and the loader is not found
+    /// </summary>
+    public class UnableToLocateLoaderException : ArgumentNullException
+    {
+        internal UnableToLocateLoaderException()
+            : base("model", "Unable to locate loader") { }
+    }
+
+    /// <summary>
+    /// Thrown when the Request Data is null but required
+    /// </summary>
+    public class RequestDataNullException : ArgumentNullException
+    {
+        internal RequestDataNullException()
+            : base("requestData", "Request Data is null and required") { }
+
+        internal static void ThrowIfNull(IInternalRequestData? requestData)
+        {
+            if (requestData == null)
+                throw new RequestDataNullException();
+        }
     }
 }

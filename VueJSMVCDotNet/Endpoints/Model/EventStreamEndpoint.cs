@@ -66,7 +66,7 @@ namespace VueJSMVCDotNet.Endpoints.Model
             }
             catch (OperationCanceledException)
             {
-                writerCts.Cancel();
+                await writerCts.CancelAsync();
             }
 
             await task;

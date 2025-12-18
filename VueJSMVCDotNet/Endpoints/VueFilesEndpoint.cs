@@ -14,6 +14,7 @@ namespace VueJSMVCDotNet.Endpoints
         : AJSEngineEndpoint(engine, logger, cache)
     {
         private const string PathParameter = "path";
+        private const string MinJSExtension = ".min.js";
 
         private static readonly TimeSpan regexTimespan = TimeSpan.FromSeconds(5);
 
@@ -29,6 +30,7 @@ namespace VueJSMVCDotNet.Endpoints
         {
             public string Name { get; private init; }
             public string? PhysicalPath { get; private init; }
+
             private readonly string content;
             public DateTimeOffset LastModified { get; private init; }
 
@@ -47,7 +49,7 @@ namespace VueJSMVCDotNet.Endpoints
                     return path;
                 if (isFolder)
                 {
-                    if (baseUrl.EndsWith(".min.js"))
+                    if (baseUrl.EndsWith(MinJSExtension))
                         baseUrl = string.Concat(baseUrl[..^7], "/");
                     else if (baseUrl.EndsWith(".js"))
                         baseUrl = string.Concat(baseUrl[..^3], "/");
@@ -67,20 +69,19 @@ namespace VueJSMVCDotNet.Endpoints
 
             private static (string mergedURL, bool remove) CorrectImportURL(string import, string absolutePath, bool isFolder, bool useMin)
             {
-                var mergedURL = "";
                 if (import.EndsWith(".vue", StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (((import.StartsWith("./") && !import[2..].Contains('/'))||!import.Contains('/')) && isFolder)
                         return ("", true);
-                    mergedURL=$"{MergeUrl(absolutePath, (import.StartsWith('/') || import.StartsWith("./") || import.StartsWith("../") ? import : $"./{import}"), isFolder)[..^4]}{(useMin ? ".min" : "")}.js";
+                    return ($"{MergeUrl(absolutePath, (import.StartsWith('/') || import.StartsWith("./") || import.StartsWith("../") ? import : $"./{import}"), isFolder)[..^4]}{(useMin ? ".min" : "")}.js",false);
                 }
-                else if (import.EndsWith('/'))
-                    mergedURL=$"{MergeUrl(absolutePath, import[..^1], isFolder)}{(useMin ? ".min" : "")}.js";
-                else if (import.StartsWith('.'))
-                    mergedURL = MergeUrl(absolutePath, import, isFolder);
-                else if (import.StartsWith('/'))
-                    mergedURL = import;
-                return (mergedURL, false);
+                if (import.EndsWith('/'))
+                    return ($"{MergeUrl(absolutePath, import[..^1], isFolder)}{(useMin ? ".min" : "")}.js",false);
+                if (import.StartsWith('.'))
+                    return (MergeUrl(absolutePath, import, isFolder),false);
+                if (import.StartsWith('/'))
+                    return (import,false);
+                return ("", false);
             }
 
             public (string fixedContent, IEnumerable<string> specialImports) FormatCache(string absolutePath, bool isFolder, bool useMin)
@@ -90,9 +91,9 @@ namespace VueJSMVCDotNet.Endpoints
                     var (mergedURL, remove) = CorrectImportURL((m.Groups[3].Value=="" ? m.Groups[4].Value : m.Groups[3].Value), absolutePath, isFolder, useMin);
                     if (remove)
                         return "";
-                    else if (string.IsNullOrEmpty(mergedURL))
+                    if (string.IsNullOrEmpty(mergedURL))
                         return m.Value;
-                    else if (mergedURL.StartsWith('/'))
+                    if (mergedURL.StartsWith('/'))
                         return $"const {m.Groups[1].Value} = await import(`${{hosturl.origin}}{mergedURL}`);";
                     return $"import {m.Groups[1].Value} from '{mergedURL}';";
                 });
@@ -101,7 +102,7 @@ namespace VueJSMVCDotNet.Endpoints
                     var (mergedURL, remove) = CorrectImportURL((m.Groups[2].Value=="" ? m.Groups[3].Value : m.Groups[2].Value), absolutePath, isFolder, useMin);
                     if (remove)
                         return "";
-                    else if (mergedURL.StartsWith('/'))
+                    if (mergedURL.StartsWith('/'))
                         return m.Value.Replace(m.Groups[1].Value, $"`${{hosturl.origin}}{mergedURL}`");
                     return m.Value;
                 });
@@ -130,27 +131,10 @@ namespace VueJSMVCDotNet.Endpoints
             var spath = $"{baseURL}/{context.Request.RouteValues[PathParameter]!}";
             if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
             {
-                IEnumerable<SVueFile> files = [];
-                var absolutePath = string.Concat(spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
-                var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(".min.js", StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
-                if (fpath!=null)
-                    files = fileProvider.GetDirectoryContents(fpath)
-                        .Where(f => f.Name.ToLower().EndsWith(".vue"))
-                        .Select(f => new SVueFile(f));
-                else
-                {
-                    var name = spath[(spath.LastIndexOf('/')+1)..];
-                    absolutePath=spath[..(spath.LastIndexOf('/')+1)];
-                    fpath = Utility.TranslatePath(fileProvider, spath[..^name.Length]);
-                    name = (name.EndsWith(".min.js") ? name[..^7] : name[..^3]).ToLower()+".vue";
-                    if (fpath!=null)
-                        files = fileProvider.GetDirectoryContents(fpath)
-                            .Where(f => string.Equals(f.Name, name, StringComparison.InvariantCultureIgnoreCase))
-                            .Select(f => new SVueFile(f));
-                }
+                (var files, var absolutePath, var fpath) = ExtractVueFilesForPath(spath);
                 if (files.Any())
                 {
-                    var isMin = compressAllJS||spath.EndsWith(".min.js");
+                    var isMin = compressAllJS||spath.EndsWith(MinJSExtension);
                     var jsEngine = GetEngine(context);
                     var vueFiles = files.Select(f =>
                     {
@@ -172,51 +156,9 @@ namespace VueJSMVCDotNet.Endpoints
                     }
 
                     var resultBuilder = new StringBuilder();
-                    foreach (var pair in mergedImports.Where(p => !p.Value.IsAsync))
-                    {
-                        resultBuilder.Append("import ");
-                        if (pair.Value.Variables.Any())
-                            resultBuilder.Append($"{string.Join(',', pair.Value.Variables)}{(pair.Value.Imports.Any() ? "," : "")}");
-                        if (pair.Value.Imports.Any())
-                            resultBuilder.Append($"{{{string.Join(',', pair.Value.Imports)}}}");
-                        resultBuilder.AppendLine($" from '{pair.Key}';");
-                    }
 
-                    resultBuilder.AppendLine(Constants.HOST_URL_CONSTRUCTOR);
-
-                    foreach (var pair in mergedImports.Where(p => p.Value.IsAsync))
-                    {
-                        resultBuilder.Append("const {");
-                        if (pair.Value.Variables.Any())
-                            resultBuilder.Append($"{string.Join(',', pair.Value.Variables.Select(i => $"default: {i}"))}{(pair.Value.Imports.Any() ? "," : "")}");
-                        if (pair.Value.Imports.Any())
-                            resultBuilder.Append(string.Join(',', pair.Value.Imports));
-                        resultBuilder.AppendLine($"}} = await import({pair.Key});");
-                    }
-
-                    foreach (var cvf in compiledVueFiles)
-                    {
-                        if (!string.IsNullOrWhiteSpace(cvf.StyleCode))
-                        {
-                            resultBuilder.AppendLine($@"(function(){{
-            let styleTag = document.createElement('style');
-            styleTag.setAttribute('data-v-{cvf.ID}', '');
-            styleTag.innerHTML = `{cvf.StyleCode}`;
-            document.head.appendChild(styleTag);
-        }})();");
-                        }
-                        resultBuilder.AppendLine(cvf.ScriptContent);
-                    }
-
-                    if (compiledVueFiles.Count()>1)
-                        resultBuilder.AppendLine($"export {{{string.Join(',', compiledVueFiles.Select(cvf =>
-                        {
-                            if (!string.Equals(cvf.Name, $"{cvf.ID}.vue", StringComparison.InvariantCultureIgnoreCase))
-                                return $"{cvf.ID}, {cvf.ID} as {regInvalidNameChars.Replace(cvf.Name.Replace(".vue", ""), "_")}";
-                            return cvf.ID;
-                        }))}}};");
-                    else
-                        resultBuilder.AppendLine($"export default {compiledVueFiles.First().ID};");
+                    OutputImports(mergedImports, resultBuilder);
+                    OutputCompiledVueFiles(compiledVueFiles, resultBuilder);
 
                     return new CachableResponse(
                         (isMin ? await jsEngine.CompressCodeAsync(resultBuilder.ToString()) : resultBuilder.ToString()),
@@ -228,6 +170,79 @@ namespace VueJSMVCDotNet.Endpoints
             }
             await ReturnNotFound(context, "Unable to locate requested file.");
             return null;
+        }
+
+        private (IEnumerable<SVueFile> files,string absolutePath,string? filePath) ExtractVueFilesForPath(string spath)
+        {
+            IEnumerable<SVueFile> files = [];
+            var absolutePath = string.Concat(spath[..^(spath.EndsWith(MinJSExtension, StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
+            var fpath = Utility.TranslatePath(fileProvider, spath[..^(spath.EndsWith(MinJSExtension, StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)]);
+            if (fpath!=null)
+                files = fileProvider.GetDirectoryContents(fpath)
+                    .Where(f => f.Name.ToLower().EndsWith(".vue"))
+                    .Select(f => new SVueFile(f));
+            else
+            {
+                var name = spath[(spath.LastIndexOf('/')+1)..];
+                absolutePath=spath[..(spath.LastIndexOf('/')+1)];
+                fpath = Utility.TranslatePath(fileProvider, spath[..^name.Length]);
+                name = (name.EndsWith(MinJSExtension) ? name[..^7] : name[..^3]).ToLower()+".vue";
+                if (fpath!=null)
+                    files = fileProvider.GetDirectoryContents(fpath)
+                        .Where(f => string.Equals(f.Name, name, StringComparison.InvariantCultureIgnoreCase))
+                        .Select(f => new SVueFile(f));
+            }
+            return (files, absolutePath, fpath);
+        }
+        private static void OutputImports(Dictionary<string, ScriptImport> mergedImports, StringBuilder resultBuilder)
+        {
+            mergedImports.Where(p => !p.Value.IsAsync).ForEach(pair =>
+            {
+                resultBuilder.Append("import ");
+                if (pair.Value.Variables.Any())
+                    resultBuilder.Append($"{string.Join(',', pair.Value.Variables)}{(pair.Value.Imports.Any() ? "," : "")}");
+                if (pair.Value.Imports.Any())
+                    resultBuilder.Append($"{{{string.Join(',', pair.Value.Imports)}}}");
+                resultBuilder.AppendLine($" from '{pair.Key}';");
+            });
+
+            resultBuilder.AppendLine(Constants.HOST_URL_CONSTRUCTOR);
+
+            mergedImports.Where(p => p.Value.IsAsync).ForEach(pair =>
+            {
+                resultBuilder.Append("const {");
+                if (pair.Value.Variables.Any())
+                    resultBuilder.Append($"{string.Join(',', pair.Value.Variables.Select(i => $"default: {i}"))}{(pair.Value.Imports.Any() ? "," : "")}");
+                if (pair.Value.Imports.Any())
+                    resultBuilder.Append(string.Join(',', pair.Value.Imports));
+                resultBuilder.AppendLine($"}} = await import({pair.Key});");
+            });
+        }
+        private static void OutputCompiledVueFiles(IEnumerable<CompiledVueFile> compiledVueFiles, StringBuilder resultBuilder)
+        {
+            compiledVueFiles.ForEach(cvf =>
+            {
+                if (!string.IsNullOrWhiteSpace(cvf.StyleCode))
+                {
+                    resultBuilder.AppendLine($@"(function(){{
+            let styleTag = document.createElement('style');
+            styleTag.setAttribute('data-v-{cvf.ID}', '');
+            styleTag.innerHTML = `{cvf.StyleCode}`;
+            document.head.appendChild(styleTag);
+        }})();");
+                }
+                resultBuilder.AppendLine(cvf.ScriptContent);
+            });
+            
+            if (compiledVueFiles.Count()>1)
+                resultBuilder.AppendLine($"export {{{string.Join(',', compiledVueFiles.Select(cvf =>
+                {
+                    if (!string.Equals(cvf.Name, $"{cvf.ID}.vue", StringComparison.InvariantCultureIgnoreCase))
+                        return $"{cvf.ID}, {cvf.ID} as {regInvalidNameChars.Replace(cvf.Name.Replace(".vue", ""), "_")}";
+                    return cvf.ID;
+                }))}}};");
+            else
+                resultBuilder.AppendLine($"export default {compiledVueFiles.First().ID};");
         }
 
         private const string templateExportMark = "export function render(_ctx, _cache)";

@@ -91,40 +91,39 @@ namespace VueJSMVCDotNet.Endpoints.Model
             => modelsDataSource.GetModelHandlerType<M>(httpContext.RequestServices);
 
         ValueTask<M?> IInternalRequestData.LoadModelAsync<M>(string modelID) where M : default
-            => ((IInternalRequestData)this).GetModelHandlerType<M>()?.LoadAsync(modelID) ?? throw new ArgumentNullException("Unable to locate loader");
+            => ((IInternalRequestData)this).GetModelHandlerType<M>()?.LoadAsync(modelID) ?? throw new UnableToLocateLoaderException();
 
         private static object? ConvertObjectToType(object? obj, Type expectedType)
         {
             if (Equals(obj?.GetType(), expectedType))
                 return obj;
-            else if (obj is ICollection || expectedType.IsArray)
+            if (obj is ICollection || expectedType.IsArray)
             {
                 Type underlyingType;
                 if (expectedType.IsGenericType)
                     underlyingType = expectedType.GetGenericArguments()[0];
                 else
                     underlyingType = expectedType.GetElementType()!;
+                var result = Array.CreateInstance(underlyingType,0);
                 if (obj is ICollection list)
                 {
-                    var ret = Array.CreateInstance(underlyingType, list.Count);
+                    result = Array.CreateInstance(underlyingType, list.Count);
                     var idx = 0;
                     foreach (var item in list)
                     {
-                        ret.SetValue(ConvertObjectToType(item, underlyingType), idx);
+                        result.SetValue(ConvertObjectToType(item, underlyingType), idx);
                         idx++;
                     }
                     if (expectedType.FullName?.StartsWith("System.Collections.Generic.List")??false)
-                        return Activator.CreateInstance(expectedType, ret);
-                    return ret;
+                        return Activator.CreateInstance(expectedType, result);
                 }
-                else
+                else if (expectedType.FullName?.StartsWith("System.Collections.Generic.List")??false)
                 {
-                    var ret = Array.CreateInstance(underlyingType, 1);
-                    ret.SetValue(ConvertObjectToType(obj, underlyingType), 0);
-                    if (expectedType.FullName?.StartsWith("System.Collections.Generic.List")??false)
-                        return Activator.CreateInstance(expectedType, ret);
+                    result = Array.CreateInstance(underlyingType, 1);
+                    result.SetValue(ConvertObjectToType(obj, underlyingType), 0);
+                    return Activator.CreateInstance(expectedType, result);
                 }
-                return Array.CreateInstance(underlyingType, 0);
+                return result;
             }
             return obj;
         }

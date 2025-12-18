@@ -86,28 +86,24 @@ namespace VueJSMVCDotNet.Endpoints.Model
                     BuildEndpoint<H, M>(
                         requestDelegate: async (context) =>
                         {
-                            if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks))
+                            if (!await ValidateAccessAsync(context, Logger, null, LoadSecurityChecks)){
                                 await ReturnInsecure(context);
-                            else
-                            {
-                                var handler = await CreateLoaderAsync(context);
-                                var callback = await LocateMethodAsync(context, instanceMethods, Logger);
-                                if (callback!=null)
-                                {
-                                    if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks))
-                                        await ReturnInsecure(context);
-                                    else
-                                    {
-                                        var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, Logger)).ModelID!);
-                                        if (object.Equals(modelInstance, default(M?)))
-                                            await ReturnModelNotFound(context);
-                                        else
-                                            await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath, modelInstance: modelInstance);
-                                    }
-                                }
-                                else
-                                    await ReturnNotFound(context, NotFoundError);
+                                return;
                             }
+                            var handler = await CreateLoaderAsync(context);
+                            var callback = await LocateMethodAsync(context, instanceMethods, Logger);
+                            if (callback==null){
+                                await ReturnNotFound(context, NotFoundError);
+                                return;
+                            }else if (!await ValidateAccessAsync(context, Logger, null, callback.Value.method.SecurityChecks)){
+                                await ReturnInsecure(context);
+                                return;
+                            }
+                            var modelInstance = await handler.LoadAsync((await Helper.ExtractPartsAsync(context, Logger)).ModelID!);
+                            if (object.Equals(modelInstance, default(M?)))
+                                await ReturnModelNotFound(context);
+                            else
+                                await InvokeMethodAsync(callback.Value.method, callback.Value.pars, context, handler, slowPath, modelInstance: modelInstance);
                         },
                         routePattern: ProduceRoute(mra.Path, true, $"/{key}"),
                         order: 0,

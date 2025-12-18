@@ -74,6 +74,13 @@ namespace VueJSMVCDotNet.Endpoints.Model
             return (ReturnType==typeof(void) ? default(T?) : (T?)result);
         }
 
+        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
+            where M : IModel
+        {
+            var requestData = await Helper.ExtractPartsAsync(httpContext, logger);
+            return (await InvokeAsync<T, M>(handler, requestData, logger, pars: pars, addItem: addItem, modelInstance: modelInstance), requestData);
+        }
+
         private async Task<object?> InvokeMethodAsync<M>(IModelHandler<M> handler, object?[] mpars) where M : IModel
         {
             Task task;
@@ -96,33 +103,25 @@ namespace VueJSMVCDotNet.Endpoints.Model
             int index = 0;
             for (int x = 0; x<mpars.Length; x++)
             {
-                if (x!=addItemIndex)
+                if (x==addItemIndex)
+                    continue;
+                if (strippedParameters[x].IsStrippable)
                 {
-                    if (strippedParameters[x].IsStrippable)
+                    ignoredIndexes.Add(x);
+                    mpars[x] = (strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelIDParameterAttribute>(), strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelInstanceParameterAttribute>()) switch
                     {
-                        ignoredIndexes.Add(x);
-                        if (strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelIDParameterAttribute>()!=null)
-                            mpars[x] = requestData.ModelID;
-                        else if (strippedParameters[x].ParameterInfo.GetCustomAttribute<ModelInstanceParameterAttribute>()!=null)
-                            mpars[x] = modelInstance ?? (requestData.ModelID!=null ? (await handler.LoadAsync(requestData.ModelID!)) : default);
-                        else
-                            mpars[x] = requestData[parameters[x].ParameterType];
-                    }
-                    else
-                    {
-                        mpars[x]=pars?[index];
-                        index++;
-                    }
+                        (not null,_)=>requestData.ModelID,
+                        (null,not null)=> modelInstance ?? (requestData.ModelID!=null ? (await handler.LoadAsync(requestData.ModelID!)) : default),
+                        (_,_)=> requestData[parameters[x].ParameterType]
+                    };
+                }
+                else
+                {
+                    mpars[x]=pars?[index];
+                    index++;
                 }
             }
             return (mpars, ignoredIndexes);
-        }
-
-        public async Task<(T? result, IInternalRequestData requestData)> InvokeAsync<T, M>(IModelHandler<M> handler, HttpContext httpContext, ILogger? logger, object?[]? pars = null, AddItem? addItem = null, M? modelInstance = default)
-            where M : IModel
-        {
-            var requestData = await Helper.ExtractPartsAsync(httpContext, logger);
-            return (await InvokeAsync<T, M>(handler, requestData, logger, pars: pars, addItem: addItem, modelInstance: modelInstance), requestData);
         }
     }
 }

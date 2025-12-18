@@ -130,7 +130,7 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
             v8Engine.Execute(invokableCode);
         }
 
-        private async Task<T> AwaitTaskWithTimeout<T>(Task<T> task, TimeSpan timeout)
+        private static async Task<T> AwaitTaskWithTimeout<T>(Task<T> task, TimeSpan timeout)
         {
             var timeoutTask = Task.Delay(timeout);
             var completedTask = await Task.WhenAny(task, timeoutTask);
@@ -172,13 +172,6 @@ async function {processFilesCall}(files,setResult,setError,loadContent,produceRe
                 disposedValue=true;
             }
         }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~Engine()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
 
         public void Dispose()
         {
