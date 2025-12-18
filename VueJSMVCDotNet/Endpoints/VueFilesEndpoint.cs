@@ -131,7 +131,7 @@ namespace VueJSMVCDotNet.Endpoints
             var spath = $"{baseURL}/{context.Request.RouteValues[PathParameter]!}";
             if (spath.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
             {
-                (var files, var absolutePath, var fpath) = ExtractVueFilesForPath(spath);
+                (var files, var absolutePath) = ExtractVueFilesForPath(spath);
                 if (files.Any())
                 {
                     var isMin = compressAllJS||spath.EndsWith(MinJSExtension);
@@ -172,7 +172,7 @@ namespace VueJSMVCDotNet.Endpoints
             return null;
         }
 
-        private (IEnumerable<SVueFile> files,string absolutePath,string? filePath) ExtractVueFilesForPath(string spath)
+        private (IEnumerable<SVueFile> files,string absolutePath) ExtractVueFilesForPath(string spath)
         {
             IEnumerable<SVueFile> files = [];
             var absolutePath = string.Concat(spath[..^(spath.EndsWith(MinJSExtension, StringComparison.InvariantCultureIgnoreCase) ? 7 : 3)], "/");
@@ -192,7 +192,7 @@ namespace VueJSMVCDotNet.Endpoints
                         .Where(f => string.Equals(f.Name, name, StringComparison.InvariantCultureIgnoreCase))
                         .Select(f => new SVueFile(f));
             }
-            return (files, absolutePath, fpath);
+            return (files, absolutePath);
         }
         private static void OutputImports(Dictionary<string, ScriptImport> mergedImports, StringBuilder resultBuilder)
         {
@@ -277,7 +277,7 @@ namespace VueJSMVCDotNet.Endpoints
             });
             regHoistedConstant.Matches(scriptSource).ForEach((match) =>
             {
-                var regex = new Regex($"\\b{match.Groups[1].Value}\\b");
+                var regex = new Regex($"\\b{match.Groups[1].Value}\\b", RegexOptions.None, regexTimespan);
                 scriptSource = regex.Replace(scriptSource, $"_{index}{match.Groups[1].Value}");
             });
             scriptSource = regResolveComponent.Replace(scriptSource, (match) =>
@@ -340,7 +340,7 @@ namespace VueJSMVCDotNet.Endpoints
                     else
                     {
                         i = $"{(i.Contains(" as ") ? i[..i.IndexOf(" as ")] : i)} as {curId}";
-                        var regex = new Regex($"\\b{checkValue}\\b");
+                        var regex = new Regex($"\\b{checkValue}\\b",RegexOptions.None, regexTimespan);
                         scriptContent = regex.Replace(scriptContent, curId);
                         curId = IncrementMapName(curId);
                     }

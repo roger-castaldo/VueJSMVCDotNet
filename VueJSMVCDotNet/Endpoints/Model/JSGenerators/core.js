@@ -1,4 +1,4 @@
-﻿const isString = (value) => typeof value === 'string' || value instanceof String;
+﻿const isString = (value) => typeof value === 'string';
 
 const isFunction = (obj) => obj !== null && typeof obj === 'function';
 
@@ -15,7 +15,7 @@ const _keys =  (obj) => {
 const _isDate = (obj) => Object.prototype.toString.call(obj) === '[object Date]';
 
 const _isObject = (obj) => obj !== null && obj !== undefined && !(obj.toString() === '[object FileList]' || obj.toString() === '[object File]')
-	&& !_isDate(obj) && (['function', 'object'].indexOf(typeof obj) >= 0 && !!obj);
+	&& !_isDate(obj) && (['function', 'object'].includes(typeof obj) >= 0 && !!obj);
 
 const cloneData = (obj) => {
 	if (obj === null) return null;
@@ -46,57 +46,49 @@ const _fixDates = (data) => {
 	return data;
 };
 
-const ajax = async(options) => {
-	if (options.isSlow !== undefined && options.isSlow) {
-		delete options.isSlow;
-		let isArray = (options.isArray == undefined ? false : options.isArray);
-		let res = await ajax(options);
-		let ret = [];
-		let url = await res.json();
-		return await new Promise((resolve, reject) => {
-			let pullCall = function () {
-				ajax({
-					url: url,
-					method: 'GET',
-					useJSON: true
-				}).then(
-					res => {
-						res = res.json();
-						if (res.Data.length > 0)
-							Array.prototype.push.apply(ret, res.Data);
-						if (res.IsFinished) {
-							resolve({
-								json: function () {
-									return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
-								}
-							});
-						} else 
-							setTimeout(pullCall, (res.HasMore?0:200));
-					},
-					err => {
-						reject(err);
+const processSlowCall = async (options, ajax) => {
+	delete options.isSlow;
+	let isArray = (options.isArray == undefined ? false : options.isArray);
+	let res = await ajax(options);
+	let ret = [];
+	let url = await res.json();
+	return await new Promise((resolve, reject) => {
+		let pullCall = function () {
+			ajax({
+				url: url,
+				method: 'GET',
+				useJSON: true
+			}).then(
+				res => {
+					if (!res.ok) {
+						reject(res.text());
+						return;
 					}
-				);
-			};
-			pullCall();
-		});
+					res = res.json();
+					if (res.Data.length > 0)
+						Array.prototype.push.apply(ret, res.Data);
+					if (res.IsFinished) {
+						resolve({
+							json: function () {
+								return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
+							}
+						});
+					} else
+						setTimeout(pullCall, (res.HasMore ? 0 : 200));
+				},
+				err => {
+					reject(err);
+				}
+			);
+		};
+		pullCall();
+	});
+};
+
+const processOptionsBody = (options) => {
+	if (options.method === 'GET') {
+		delete options.body;
 	} else {
-		if (options.url === null || options.url === undefined || options.url === '') {
-			throw new Error('Unable to call empty url');
-		}
-		options = Object.assign({
-			method: 'GET',
-			body: null,
-			credentials: 'include',
-			data: null,
-			url: null,
-			useJSON: true
-		}, options);
-		options.headers = options.headers ?? {};
-		if (options.useJSON) {
-			options.headers['Content-Type'] = 'application/json';
-		}
-		options.url += (options.url.indexOf('?') === -1 ? '?' : '&') + '_=' + parseInt((new Date().getTime() / 1000).toFixed(0)).toString();
 		let data = null;
 		if (options.data !== null) {
 			if (options.useJSON) {
@@ -106,23 +98,45 @@ const ajax = async(options) => {
 				Object.keys(options.data).forEach(prop => {
 					if (Array.isArray(options.data[prop])) {
 						if (options.data[prop].length > 0) {
-							if (_isObject(options.data[prop][0])) 
+							if (_isObject(options.data[prop][0]))
 								options.data[prop].forEach(val => data.append(`${prop}:json`, JSON.stringify(val)));
-							else 
+							else
 								options.data[prop].forEach(val => data.append(prop, val));
 						}
-					} else if (_isObject(options.data[prop])) 
+					} else if (_isObject(options.data[prop]))
 						data.append(`${prop}:json`, JSON.stringify(options.data[prop]));
-					else 
+					else
 						data.append(prop, options.data[prop]);
 				});
 			}
 		}
-		if (options.method !== 'GET') {
-			options.body = data;
-		} else {
-			delete options.body;
+		options.body = data;
+	}
+	return options;
+};
+
+const ajax = async (options) => {
+	if (options.url === null || options.url === undefined || options.url === '') {
+		throw new Error('Unable to call empty url');
+	}
+	if (options.isSlow !== undefined && options.isSlow) {
+		processSlowCall(options, ajax);
+	} else {
+		options = {
+			method: 'GET',
+			body: null,
+			credentials: 'include',
+			data: null,
+			url: null,
+			useJSON: true,
+			headers: {},
+			... options
+		};
+		if (options.useJSON) {
+			options.headers['Content-Type'] = 'application/json';
 		}
+		options.url += (options.url.includes('?') === -1 ? '?' : '&') + '_=' + Number.parseInt((Date.now() / 1000).toFixed(0)).toString();
+		options = processOptionsBody(options);
 		let url = options.url;
 		delete options.url;
 		try {
@@ -135,16 +149,16 @@ const ajax = async(options) => {
 					json: function () { return (response.headers.get('Content-Type') === 'text/text' ? content : _fixDates(JSON.parse(content))); }
 				};
 			} else {
-				return Promise.reject({
+				return {
 					ok: false,
 					text: new function () { return content; }
-				});
+				};
 			}
 		} catch (err) {
-			return Promise.reject({
+			return {
 				ok: false,
 				text: new function () { return err; }
-			});
+			};
 		}
 	}
 };
@@ -278,8 +292,8 @@ const _trueRegex = /^(t(rue)?|y(es)?|1)$/i;
 const _falseRegex = /^(f(alse)?|n(o)?|0)$/i;
 const _base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
 const _ipv4Regex = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
-const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/gi;
-const _versionRegex = /^([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$/;
+const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/g;
+const _versionRegex = /^(\d+)\.(\d+)(\.(\d+))?(\.(\d+))?$/;
 const _guidRegex = /^(?:\{{0,1}(?:[0-9a-fA-F]){8}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){12}\}{0,1})$/;
 
 const _numberValueInRange = (value, low, high) => {
@@ -775,20 +789,20 @@ const ModelMethods = {
 			if (response.ok) {
 				let data = response.json();
 				if (data == null) {
-					return Promise.reject(null);
+					throw new Error('delete failed');
 				} else {
 					return data;
 				}
 			} else {
-				return Promise.reject(response.text());
+				throw new Error(response.text());
 			}
 		}
 	},
 	update: async function (url, id, isNew, isValid, data, useJSON) {
 		if (!isValid) {
-			return Promise.reject('Invalid model.');
+			throw new Error('Invalid model.');
 		} else if (isNew) {
-			return Promise.reject('Cannot update unsaved model, please call save instead.');
+			throw new Error('Cannot update unsaved model, please call save instead.');
 		} else {
 			if (JSON.stringify(data) === JSON.stringify({})) {
 				return data;
@@ -804,19 +818,19 @@ const ModelMethods = {
 					if (data) {
 						return {};
 					} else {
-						return Promise.reject();
+						throw new Error('update failed');
 					}
 				} else {
-					return Promise.reject(response.text());
+					throw new Error(response.text());
 				}
 			}
 		}
 	},
 	save: async function (url, isNew, isValid, data, useJSON) {
 		if (!isValid) {
-			return Promise.reject('Invalid model.');
+			throw new Error('Invalid model.');
 		} else if (!isNew) {
-			return Promise.reject('Cannot save a saved model, please call update instead.');
+			throw new Error('Cannot save a saved model, please call update instead.');
 		} else {
 			let response = await ajax({
 				url: url,
@@ -825,12 +839,12 @@ const ModelMethods = {
 				data: data
 			});
 			if (response.ok) {
-				var result = response.json();
+				let result = response.json();
 				if (result === null)
-					return Promise.reject('save failed');
+					throw new Error('save failed');
 				return result;
 			} else {
-				return Promise.reject(response.text());
+				throw new Error(response.text());
 			}
 		}
 	}
@@ -841,10 +855,14 @@ const ModelMethods = {
 const _language = vue.ref(null);
 
 const ResetLanguage = function () {
-	_language.value = (window === undefined || window.navigator === undefined ? 'en' : window.navigator.userLanguage || window.navigator.language);
-	if (_language.value.indexOf('-') >= 0) {
-		_language.value = _language.value.substring(0, _language.value.indexOf('-'));
+
+	let lang = 'en';
+	if (globalThis !== undefined && globalThis.navigator !== undefined)
+		lang = globalThis.navigator.userLanguage || globalThis.navigator.language;
+	if (lang.includes('-')) {
+		lang = lang.substring(0, lang.indexOf('-'));
 	}
+	_language.value = lang;
 }
 
 ResetLanguage();

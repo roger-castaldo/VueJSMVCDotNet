@@ -196,6 +196,7 @@ namespace VueJSMVCDotNet
             string? curPath = "";
             foreach (string sub in split)
             {
+
                 if (sub=="..")
                 {
                     if (curPath.Contains(Path.DirectorySeparatorChar.ToString()))
@@ -203,21 +204,11 @@ namespace VueJSMVCDotNet
                 }
                 else if (sub!="" && sub!=".")
                 {
-                    bool changed = false;
-                    foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
-                    {
-                        if (ifi.IsDirectory && string.Equals(ifi.Name, sub.Trim(), StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            curPath=$"{curPath}{(!string.IsNullOrEmpty(curPath) ? Path.DirectorySeparatorChar.ToString() : "")}{ifi.Name}";
-                            changed=true;
-                            break;
-                        }
-                    }
-                    if (!changed)
-                    {
-                        curPath=null;
-                        break;
-                    }
+                    var subDirectory = fileProvider.GetDirectoryContents(curPath)
+                        .FirstOrDefault(ifi => ifi.IsDirectory && string.Equals(ifi.Name, sub.Trim(), StringComparison.InvariantCultureIgnoreCase));
+                    if (subDirectory==null)
+                        return null;
+                    curPath=$"{curPath}{(!string.IsNullOrEmpty(curPath) ? Path.DirectorySeparatorChar.ToString() : "")}{subDirectory.Name}";
                 }
             }
             return (curPath==null || curPath=="" ? null : curPath);
