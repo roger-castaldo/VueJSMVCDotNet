@@ -2,16 +2,6 @@
 
 const isFunction = (obj) => obj !== null && typeof obj === 'function';
 
-const _keys =  (obj) => {
-	if (!_isObject(obj)) return [];
-	if (Object.keys) return Object.keys(obj);
-	let keys = [];
-	for (let key in obj)
-		if (_has(obj, key)) keys.push(key);
-	if (hasEnumBug) collectNonEnumProps(obj, keys);
-	return keys;
-};
-
 const _isDate = (obj) => Object.prototype.toString.call(obj) === '[object Date]';
 
 const _isObject = (obj) => obj !== null && obj !== undefined && !(obj.toString() === '[object FileList]' || obj.toString() === '[object File]')
@@ -69,7 +59,7 @@ const processSlowCall = async (options, ajax) => {
 						Array.prototype.push.apply(ret, res.Data);
 					if (res.IsFinished) {
 						resolve({
-							json: function () {
+							json() {
 								return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
 							}
 						});
@@ -145,134 +135,80 @@ const ajax = async (options) => {
 			if (response.ok) {
 				return {
 					ok: true,
-					text: function () { return content; },
-					json: function () { return (response.headers.get('Content-Type') === 'text/text' ? content : _fixDates(JSON.parse(content))); }
+					text() { return content; },
+					json() { return (response.headers.get('Content-Type') === 'text/text' ? content : _fixDates(JSON.parse(content))); }
 				};
 			} else {
 				return {
 					ok: false,
-					text: new function () { return content; }
+					text() { return content; }
 				};
 			}
 		} catch (err) {
 			return {
 				ok: false,
-				text: new function () { return err; }
+				text() { return err; }
 			};
 		}
 	}
 };
 
-/*borrowed from undescore source*/
-const _has = (obj, path) => obj !== null && Object.hasOwn(obj, path);
+// Perform a deep comparison to check if two objects are equal.
+const isEqual = (a, b, visited = new WeakMap()) => {
+	// Same reference or primitive equality
+	if (a === b) return true;
 
-let _eq, _deepEq;
+	// NaN handling
+	if (Number.isNaN(a) && Number.isNaN(b)) return true;
 
-_eq = (a, b, aStack, bStack) => {
-	// Identical objects are equal. `0 === -0`, but they aren't identical.
-	// See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
-	if (a === b) return a !== 0 || 1 / a === 1 / b;
-	// `null` or `undefined` only equal to itself (strict comparison).
-	if (a == null || b == null) return false;
-	// `NaN`s are equivalent, but non-reflexive.
-	if (a !== a) return b !== b;
-	// Exhaust primitive checks
-	let type = typeof a;
-	if (type !== 'function' && type !== 'object' && typeof b !== 'object') return false;
-	return _deepEq(a, b, aStack, bStack);
-};
-
-// Internal recursive comparison function for `isEqual`.
-_deepEq = (a, b, aStack, bStack) => {
-	// Compare `[[Class]]` names.
-	let className = toString.call(a);
-	if (className !== toString.call(b)) return false;
-	switch (className) {
-		// Strings, numbers, regular expressions, dates, and booleans are compared by value.
-		case '[object RegExp]':
-		// RegExps are coerced to strings for comparison (Note: '' + /a/i === '/a/i')
-		case '[object String]':
-			// Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
-			// equivalent to `new String("5")`.
-			return '' + a === '' + b;
-		case '[object Number]':
-			// `NaN`s are equivalent, but non-reflexive.
-			// Object(NaN) is equivalent to NaN.
-			if (+a !== +a) return +b !== +b;
-			// An `egal` comparison is performed for other numeric values.
-			return +a === 0 ? 1 / +a === 1 / b : +a === +b;
-		case '[object Date]':
-		case '[object Boolean]':
-			// Coerce dates and booleans to numeric primitive values. Dates are compared by their
-			// millisecond representations. Note that invalid dates with millisecond representations
-			// of `NaN` are not equivalent.
-			return +a === +b;
-		case '[object Symbol]':
-			return SymbolProto.valueOf.call(a) === SymbolProto.valueOf.call(b);
+	// If either is null or not an object, they must be strictly equal
+	if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
+		return false;
 	}
 
-	let areArrays = className === '[object Array]';
-	if (!areArrays) {
-		if (typeof a !== 'object' || typeof b !== 'object') return false;
+	// Circular reference handling
+	if (visited.has(a)) {
+		return visited.get(a) === b;
+	}
+	visited.set(a, b);
 
-		// Objects with different constructors are not equivalent, but `Object`s or `Array`s
-		// from different frames are.
-		let aCtor = a.constructor,
-			bCtor = b.constructor;
-		if (aCtor !== bCtor && !(isFunction(aCtor) && aCtor instanceof aCtor &&
-			isFunction(bCtor) && bCtor instanceof bCtor) &&
-			('constructor' in a && 'constructor' in b)) {
-			return false;
+	// Date comparison
+	if (a instanceof Date && b instanceof Date) {
+		return a.getTime() === b.getTime();
+	}
+
+	// Array comparison (undefined vs missing index is NOT equal)
+	if (Array.isArray(a)) {
+		if (!Array.isArray(b) || a.length !== b.length) return false;
+
+		for (let i = 0; i < a.length; i++) {
+			if (!isEqual(a[i], b[i], visited)) return false;
 		}
-	}
-	// Assume equality for cyclic structures. The algorithm for detecting cyclic
-	// structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-
-	// Initializing stack of traversed objects.
-	// It's done here since we only need them for objects and arrays comparison.
-	aStack = aStack || [];
-	bStack = bStack || [];
-	let length = aStack.length;
-	while (length--) {
-		// Linear search. Performance is inversely proportional to the number of
-		// unique nested structures.
-		if (aStack[length] === a) return bStack[length] === b;
+		return true;
 	}
 
-	// Add the first object to the stack of traversed objects.
-	aStack.push(a);
-	bStack.push(b);
+	// Object comparison
+	const keys = new Set([
+		...Object.keys(a),
+		...Object.keys(b)
+	]);
 
-	// Recursively compare objects and arrays.
-	if (areArrays) {
-		// Compare array lengths to determine if a deep comparison is necessary.
-		length = a.length;
-		if (length !== b.length) return false;
-		// Deep compare the contents, ignoring non-numeric properties.
-		while (length--) {
-			if (!_eq(a[length], b[length], aStack, bStack)) return false;
-		}
-	} else {
-		// Deep compare objects.
-		let keys = _keys(a),
-			key;
-		length = keys.length;
-		// Ensure that both objects contain the same number of properties before comparing deep equality.
-		if (_keys(b).length !== length) return false;
-		while (length--) {
-			// Deep compare each member
-			key = keys[length];
-			if (!(_has(b, key) && _eq(a[key], b[key], aStack, bStack))) return false;
-		}
+	for (const key of keys) {
+		const valA = a[key];
+		const valB = b[key];
+
+		// Treat missing and undefined as equal
+		const hasA = Object.prototype.hasOwnProperty.call(a, key);
+		const hasB = Object.prototype.hasOwnProperty.call(b, key);
+
+		if (!hasA && valB === undefined) continue;
+		if (!hasB && valA === undefined) continue;
+
+		if (!isEqual(valA, valB, visited)) return false;
 	}
-	// Remove the first object from the stack of traversed objects.
-	aStack.pop();
-	bStack.pop();
+
 	return true;
 };
-
-// Perform a deep comparison to check if two objects are equal.
-const isEqual = (a, b) => (Array.isArray(a) || Array.isArray(b) ? _deepEq(a, b) : _eq(a, b));
 
 const _numberRanges = {
 	'Int16': { low: -32768, high: 32767, hasDecimal: false },
@@ -291,10 +227,25 @@ const _numberRanges = {
 const _trueRegex = /^(t(rue)?|y(es)?|1)$/i;
 const _falseRegex = /^(f(alse)?|n(o)?|0)$/i;
 const _base64Regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
-const _ipv4Regex = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
-const _ipv6Regex = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/g;
 const _versionRegex = /^(\d+)\.(\d+)(\.(\d+))?(\.(\d+))?$/;
-const _guidRegex = /^(?:\{{0,1}(?:[0-9a-fA-F]){8}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){4}-(?:[0-9a-fA-F]){12}\}{0,1})$/;
+const _ipv4Regex = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
+const h = '[0-9a-f]';
+const _ipv6Regex = new RegExp(
+	`^((?:${h}{1,4}:){7}${h}{1,4}|` +
+	`(?:${h}{1,4}:){1,7}:|` +
+	`(?:${h}{1,4}:){1,6}:${h}{1,4}|` +
+	`(?:${h}{1,4}:){1,5}(?::${h}{1,4}){1,2}|` +
+	`(?:${h}{1,4}:){1,4}(?::${h}{1,4}){1,3}|` +
+	`(?:${h}{1,4}:){1,3}(?::${h}{1,4}){1,4}|` +
+	`(?:${h}{1,4}:){1,2}(?::${h}{1,4}){1,5}|` +
+	`${h}{1,4}:(?::${h}{1,4}){1,6}|` +
+	`:(?::${h}{1,4}){1,7}|::)$`,
+	'i'
+);
+const _guidRegex = new RegExp(
+	`^(${h}{8})-(${h}{4})-([1-5]${h}{3})-([89ab]${h}{3})-(${h}{12})$`,
+	'i'
+);
 
 const _numberValueInRange = (value, low, high) => {
 	if (typeof value === 'bigint' && typeof low !== 'bigint') {
