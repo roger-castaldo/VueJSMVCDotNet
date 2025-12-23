@@ -43,33 +43,36 @@ const processSlowCall = async (options, ajax) => {
 	let ret = [];
 	let url = await res.json();
 	return await new Promise((resolve, reject) => {
-		let pullCall = function () {
-			ajax({
-				url: url,
-				method: 'GET',
-				useJSON: true
-			}).then(
-				res => {
-					if (!res.ok) {
-						reject(res.text());
-						return;
-					}
-					res = res.json();
-					if (res.Data.length > 0)
-						Array.prototype.push.apply(ret, res.Data);
-					if (res.IsFinished) {
-						resolve({
-							json() {
-								return (isArray ? ret : (ret.length == 0 ? null : ret[0]));
-							}
-						});
-					} else
-						setTimeout(pullCall, (res.HasMore ? 0 : 200));
-				},
-				err => {
-					reject(err);
+		const pullCall = async () => {
+			let res = null;
+			try {
+				res = await ajax({
+					url: url,
+					method: 'GET',
+					useJSON: true
+				});
+			} catch (err) {
+				ret = null;
+				reject(err);
+				return;
+			}
+			if (!res.ok) {
+				reject(res.text());
+				return;
+			}
+			res = res.json();
+			if (res.Data.length > 0)
+				Array.prototype.push.apply(ret, res.Data);
+			if (res.IsFinished) {
+				if (!isArray) {
+					ret = (ret.length == 0 ? null : ret[0]);
 				}
-			);
+				resolve({
+					json() { return ret; }
+				});
+			} else {
+				setTimeout(pullCall, (res.HasMore ? 0 : 200));
+			}
 		};
 		pullCall();
 	});
@@ -166,6 +169,10 @@ const isEqual = (a, b, visited = new WeakMap()) => {
 		return false;
 	}
 
+	if (typeof a !== typeof b) {
+		return false;
+	}
+
 	// Circular reference handling
 	if (visited.has(a)) {
 		return visited.get(a) === b;
@@ -173,40 +180,36 @@ const isEqual = (a, b, visited = new WeakMap()) => {
 	visited.set(a, b);
 
 	// Date comparison
-	if (a instanceof Date && b instanceof Date) {
+	if (a instanceof Date) {
 		return a.getTime() === b.getTime();
-	}
-
-	// Array comparison (undefined vs missing index is NOT equal)
-	if (Array.isArray(a)) {
+	} else if (Array.isArray(a)) {
 		if (!Array.isArray(b) || a.length !== b.length) return false;
 
 		for (let i = 0; i < a.length; i++) {
 			if (!isEqual(a[i], b[i], visited)) return false;
 		}
 		return true;
+	} else {
+		// Object comparison
+		const keys = new Set([
+			...Object.keys(a),
+			...Object.keys(b)
+		]);
+
+		for (const key of keys) {
+			const valA = a[key];
+			const valB = b[key];
+
+			// Treat missing and undefined as equal
+			const hasA = Object.hasOwn(a, key);
+			const hasB = Object.hasOwn(b, key);
+
+			if (!hasA && valB === undefined) continue;
+			if (!hasB && valA === undefined) continue;
+
+			if (!isEqual(valA, valB, visited)) return false;
+		}
 	}
-
-	// Object comparison
-	const keys = new Set([
-		...Object.keys(a),
-		...Object.keys(b)
-	]);
-
-	for (const key of keys) {
-		const valA = a[key];
-		const valB = b[key];
-
-		// Treat missing and undefined as equal
-		const hasA = Object.prototype.hasOwnProperty.call(a, key);
-		const hasB = Object.prototype.hasOwnProperty.call(b, key);
-
-		if (!hasA && valB === undefined) continue;
-		if (!hasB && valA === undefined) continue;
-
-		if (!isEqual(valA, valB, visited)) return false;
-	}
-
 	return true;
 };
 
@@ -258,12 +261,158 @@ const _numberValueInRange = (value, low, high) => {
 	return value >= low && value <= high;
 };
 
+const _checkNumber = (type, value) => {
+	if (typeof value !== 'number' && typeof value !== 'bigint') {
+		if (typeof value !== 'string' && value.toString === undefined)
+			value = value.toString();
+		if (typeof value === 'string') {
+			try {
+				value = Number(value);
+			} catch{
+			}
+		}
+	}
+	if (typeof value !== 'bigint' && Number.isNaN(value))
+		throw new Error('invalid type: Value not a number and cannot be converted');
+	if (!_numberValueInRange(value, _numberRanges[type].low, _numberRanges[type].high))
+		throw new Error(`invalid type: Value is a number, but exceeds the range for a ${type}`);
+	if (!_numberRanges[type].hasDecimal && value.toString().includes('.'))
+		throw new Error(`invalid type: Value is a number, but cannot has a decimal for ${type}`);
+	return value;
+}
+
+const _checkIP = (value) => {
+	if (typeof value !== 'string' && value.toString === undefined)
+		value = value.toString();
+	if (!_ipv4Regex.test(value)) {
+		if (!_ipv6Regex.test(value)) {
+			throw new Error('invalid type: Value is not an IPAddress');
+		}
+	}
+	return value;
+};
+
+const dataCheckCallbacks = {
+	'String': (value) => {
+		if (typeof value !== 'string' && value.toString === undefined)
+			throw new Error('invalid type: Value not a string and cannot be converted');
+		else if (typeof value !== 'string' && value.toString !== undefined) {
+			if (value.toString() === '[object Object]')
+				throw new Error('invalid type: Value not a string and cannot be converted');
+			value = value.toString();
+		}
+		return value;
+	},
+	'Char': (value) => {
+		if (typeof value !== 'string' && value.toString === undefined)
+			throw new Error('invalid type: Value not a char and cannot be converted');
+		else if (typeof value !== 'string' && value.toString !== undefined)
+			value = value.toString();
+		if (value.length > 1 || value.length == 0)
+			throw new Error('invalid type: Value not a char');
+		return value;
+	},
+	'UInt64': (value) => _checkNumber('UInt64', value),
+	'Int64': (value) => _checkNumber('Int64', value),
+	'Int16': (value) => _checkNumber('Int16', value),
+	'Int32': (value) => _checkNumber('Int32', value),
+	'SByte': (value) => _checkNumber('SByte', value),
+	'Single': (value) => _checkNumber('Single', value),
+	'Decimal': (value) => _checkNumber('Decimal', value),
+	'Double': (value) => _checkNumber('Double', value),
+	'UInt16': (value) => _checkNumber('UInt16', value),
+	'UInt32': (value) => _checkNumber('UInt32', value),
+	'Byte': (value) => _checkNumber('Byte', value),
+	'Boolean': (value) => {
+		if (value == null || value == undefined)
+			value = false;
+		else if (typeof value !== 'boolean') {
+			if (typeof value !== 'string' && value.toString === undefined)
+				value = value.toString();
+			if (_trueRegex.test(value))
+				value = true;
+			else if (_falseRegex.test(value))
+				value = false;
+			else
+				throw new Error('invalid type: Value not boolean and cannot be converted');
+		}
+		return value;
+	},
+	'Enum': (value, enumlist) => {
+		if (typeof value !== 'string' && value.toString === undefined)
+			value = value.toString();
+		if (enumlist !== undefined && enumlist !== null) {
+			if (!enumlist.includes(value))
+				throw new Error('invalid type: Value is not in the list of enumarators');
+		}
+		return value;
+	},
+	'DateTime': (value) => {
+		if (Object.prototype.toString.call(value) !== '[object Date]') {
+			try {
+				value = new Date(value);
+				if (value.toString() ==='Invalid Date')
+					throw new Error('invalid type: Value is not a Date and cannot be converted to one');
+			} catch {
+				throw new Error('invalid type: Value is not a Date and cannot be converted to one');
+			}
+		}
+		return value;
+	},
+	'Byte[]': (value) => {
+		if (value.byteLenth === undefined) {
+			if (typeof value !== 'string' && value.toString === undefined)
+				value = value.toString();
+			if (!_base64Regex.test(value))
+				throw new Error('invalid type: Value is not a Byte[] and cannot be converted to one');
+			value = atob(value); //invert this is btoa
+		}
+		return value;
+	},
+	'Net.IPAddress': (value) => _checkIP(value),
+	'IPAddress': (value) => _checkIP(value),
+	'Version': (value) => {
+		if (typeof value !== 'string' && value.toString === undefined)
+			value = value.toString();
+		if (!_versionRegex.test(value))
+			throw new Error('invalid type: Value is not a Version');
+		return value;
+	},
+	'Guid': (value) => {
+		if (typeof value !== 'string' && value.toString === undefined)
+			value = value.toString();
+		if (!_guidRegex.test(value))
+			throw new Error('invalid type: Value is not a Guid');
+		return value;
+	},
+	'Exception': (value) => {
+		if (typeof value === 'string') {
+			try {
+				value = JSON.parse(value);
+			} catch { }
+		}
+		if (Object.prototype.toString.call(value) !== '[object String]') {
+			if (typeof value === 'object' && !Array.isArray(value)) {
+				try {
+					_checkDataType('String', value.Message);
+					_checkDataType('String', value.StackTrace);
+					_checkDataType('String', value.Source);
+				} catch {
+					throw new Error('invalid type: Value is not an Exception');
+				}
+			} else
+				throw new Error('invalid type: Value is not an Exception');
+		}
+		return value;
+	}
+};
+
 const _checkDataType = (type, value, enumlist) => {
 	if (type.indexOf('System.') === 0)
 		type = type.substring(7);
 	if (type.substring(type.length - 1) !== '?') {
 		if (type !== 'Boolean' && (value === null || value === undefined)) 
-			throw 'invalid type: Value is not allowed to be null';
+			throw new Error('invalid type: Value is not allowed to be null');
 	} else {
 		if (value === null || value === undefined)
 			return value;
@@ -273,151 +422,22 @@ const _checkDataType = (type, value, enumlist) => {
 		throw new Error('invalid type: Value not a FileList and cannot be converted');
 	else if (type === 'IFormFile' && value.toString() !== '[object File]') 
 		throw new Error('invalid type: Value not a File and cannot be converted');
-	else if (type.indexOf('[]') >= 0 && type !== 'Byte[]') {
+	else if (type.includes('[]') && type !== 'Byte[]') {
 		if (!Array.isArray(value))
 			throw new Error('invalid type: Value not an array');
 		type = type.substring(0, type.length - 2);
-		if (type.indexOf('[]') < 0) {
+		if (!type.includes('[]')) {
 			type = type + '?';
 		}
 		for (let x = 0; x < value.length; x++) {
 			try {
 				value[x] = _checkDataType(type, value[x]);
-			} catch (err) {
+			} catch {
 				throw new Error(`invalid type: Value[${x}] is not of the type ${type}`);
 			}
 		}
 	} else {
-		switch (type) {
-			case 'String':
-				if (typeof value !== 'string' && value.toString === undefined)
-					throw new Error('invalid type: Value not a string and cannot be converted');
-				else if (typeof value !== 'string' && value.toString !== undefined) {
-					if (value.toString() === '[object Object]')
-						throw new Error('invalid type: Value not a string and cannot be converted');
-					value = value.toString();
-				}
-				break;
-			case 'Char':
-				if (typeof value !== 'string' && value.toString === undefined)
-					throw new Error('invalid type: Value not a char and cannot be converted');
-				else if (typeof value !== 'string' && value.toString !== undefined)
-					value = value.toString();
-				if (value.length > 1 || value.length == 0)
-					throw new Error('invalid type: Value not a char');
-				break;
-			case 'UInt64':
-			case 'Int64':
-			case 'Int16':
-			case 'Int32':
-			case 'SByte':
-			case 'Single':
-			case 'Decimal':
-			case 'Double':
-			case 'UInt16':
-			case 'UInt32':
-			case 'Byte':
-				if (typeof value !== 'number' && typeof value !== 'bigint') {
-					if (typeof value !== 'string' && value.toString === undefined)
-						value = value.toString();
-					if (typeof value === 'string') {
-						try {
-							value = Number(value);
-						} catch (err) {
-						}
-					}
-				}
-				if (typeof value !== 'bigint' && isNaN(value))
-					throw new Error('invalid type: Value not a number and cannot be converted');
-				if (!_numberValueInRange(value, _numberRanges[type].low, _numberRanges[type].high))
-					throw new Error(`invalid type: Value is a number, but exceeds the range for a ${type}`);
-				if (!_numberRanges[type].hasDecimal && value.toString().indexOf('.') >= 0)
-					throw new Error(`invalid type: Value is a number, but cannot has a decimal for ${type}`);
-				break;
-			case 'Boolean':
-				if (value == null || value == undefined)
-					value = false;
-				else if (typeof value !== 'boolean') {
-					if (typeof value !== 'string' && value.toString === undefined)
-						value = value.toString();
-					if (_trueRegex.test(value))
-						value = true;
-					else if (_falseRegex.test(value))
-						value = false;
-					else
-						throw new Error('invalid type: Value not boolean and cannot be converted');
-				}
-				break;
-			case 'Enum':
-				if (typeof value !== 'string' && value.toString === undefined)
-					value = value.toString();
-				if (enumlist !== undefined && enumlist !== null) {
-					if (!enumlist.includes(value))
-						throw new Error('invalid type: Value is not in the list of enumarators');
-				}
-				break;
-			case 'DateTime':
-				if (Object.prototype.toString.call(value) !== '[object Date]') {
-					try {
-						value = new Date(value);
-						if (isNaN(value))
-							throw '';
-					} catch (err) {
-						throw new Error('invalid type: Value is not a Date and cannot be converted to one');
-					}
-				}
-				break;
-			case 'Byte[]':
-				if (value.byteLenth === undefined) {
-					if (typeof value !== 'string' && value.toString === undefined)
-						value = value.toString();
-					if (!_base64Regex.test(value))
-						throw new Error('invalid type: Value is not a Byte[] and cannot be converted to one');
-					value = atob(value); //invert this is btoa
-				}
-				break;
-			case 'Net.IPAddress':
-			case 'IPAddress':
-				if (typeof value !== 'string' && value.toString === undefined)
-					value = value.toString();
-				if (!_ipv4Regex.test(value)) {
-					if (!_ipv6Regex.test(value)) {
-						throw new Error('invalid type: Value is not an IPAddress');
-					}
-				}
-				break;
-			case 'Version':
-				if (typeof value !== 'string' && value.toString === undefined)
-					value = value.toString();
-				if (!_versionRegex.test(value))
-					throw new Error('invalid type: Value is not a Version');
-				break;
-			case 'Guid':
-				if (typeof value !== 'string' && value.toString === undefined)
-					value = value.toString();
-				if (!_guidRegex.test(value))
-					throw new Error('invalid type: Value is not a Guid');
-				break;
-			case 'Exception':
-				if (typeof value === 'string') {
-					try {
-						value = JSON.parse(value);
-					} catch (err) { }
-				}
-				if (Object.prototype.toString.call(value) !== '[object String]') {
-					if (typeof value === 'object' && !Array.isArray(value)) {
-						try {
-							_checkDataType('String', value.Message);
-							_checkDataType('String', value.StackTrace);
-							_checkDataType('String', value.Source);
-						} catch (err) {
-							throw new Error('invalid type: Value is not an Exception');
-						}
-					} else
-						throw new Error('invalid type: Value is not an Exception');
-				}
-				break;
-		}
+		value = dataCheckCallbacks[type](value, enumlist);
 	}
 	return value;
 };
@@ -480,7 +500,7 @@ class ModelList {
 	#currentIndex = vue.ref(null);
 	#currentPageSize = vue.ref(null);
 	#pageVariableNames = undefined;
-	#currentPage = vue.computed(() => (!this.#isPaged ? undefined : Math.floor(this.#currentIndex.value / this.#currentPageSize.value)));
+	#currentPage = vue.computed(() => (this.#isPaged ? Math.floor(this.#currentIndex.value / this.#currentPageSize.value) : undefined ));
 
 
 	#moveToPage(pageNumber) {
@@ -547,8 +567,7 @@ class ModelList {
 					case 'sort':
 					case 'splice':
 					case 'unshift':
-						throw new Error('Arrray is readonly');
-						break;
+						throw new Error('Array is readonly');
 					case 'length':
 						ret = me.#data.length;
 						break;
@@ -573,9 +592,6 @@ class ModelList {
 					case 'changePageSize':
 						ret = function (size) { return me.#changePageSize(size); };
 						break;
-					case '__proto__':
-						ret = Array.__proto__;
-						break;
 					case 'reload':
 						ret = function () { return me.#reload(); };
 						break;
@@ -599,7 +615,7 @@ class ModelList {
 					case '$on': ret = function (event, callback) { me.#events.on(event, callback); }; break;
 					case '$off': ret = function (callback) { me.#events.off(callback); }; break;
 					default:
-						if (!isNaN(prop))
+						if (!Number.isNaN(prop))
 							ret = me.#data[prop];
 						else if (me.#data[prop] != undefined)
 							ret = function () { return me.#data[prop].apply(me.#data, arguments); };
@@ -610,7 +626,7 @@ class ModelList {
 			set(target, prop, value) {
 				throw new Error('Arrray is readonly');
 			},
-			ownKeys(target) { return ['length', '$on', '$off', 'reload', 'toVueComposition'].concat((me.#isPaged ? ['totalPages', 'currentPageSize', 'currentPage', 'moveToPage', 'moveToNextPage', 'moveToPreviousPage', 'changePageSize'] : []).concat((me.#setParameters !== undefined ? ['currentParameters', 'changeParameters'] : []))); }
+			ownKeys(target) { return ['length', '$on', '$off', 'reload', 'toVueComposition'].concat((me.#isPaged ? ['totalPages', 'currentPageSize', 'currentPage', 'moveToPage', 'moveToNextPage', 'moveToPreviousPage', 'changePageSize'] : []).concat((me.#setParameters === undefined ? [] : ['currentParameters', 'changeParameters']))); }
 		});
 	};
 
@@ -643,7 +659,7 @@ class ModelList {
 				if (data.totalPages !== undefined) {
 					tmp.#totalPages.value = data.totalPages;
 				}
-				data = (data.totalPages !== undefined ? data.data : data).map(value => {
+				data = (data.totalPages === undefined ? data : data.data).map(value => {
 					let mtmp = tmp.#constructModel();
 					mtmp._parse(value);
 					mtmp.$on('destroyed', (model) => {
@@ -670,7 +686,7 @@ class ModelList {
 			tmp.#events.trigger('loaded', proxy);
 			return proxy;
 		} else {
-			return Promise.reject(response.text());
+			throw new Error(response.text());
 		}
 	};
 
@@ -720,12 +736,12 @@ const ModelMethods = {
 			if (response.ok) {
 				let data = response.json();
 				if (data == null) {
-					return Promise.reject(null);
+					throw new Error('reload failed');
 				} else {
 					return data;
 				}
 			} else {
-				return Promise.reject(response.text());
+				throw new Error(response.text());
 			}
 		}
 	},
@@ -754,26 +770,24 @@ const ModelMethods = {
 			throw new Error('Invalid model.');
 		} else if (isNew) {
 			throw new Error('Cannot update unsaved model, please call save instead.');
+		} else if (JSON.stringify(data) === JSON.stringify({})) {
+			return data;
 		} else {
-			if (JSON.stringify(data) === JSON.stringify({})) {
-				return data;
-			} else {
-				let response = await ajax({
-					url: url + '/' + id,
-					method: 'PATCH',
-					useJSON: useJSON,
-					data: data
-				});
-				if (response.ok) {
-					let data = response.json();
-					if (data) {
-						return {};
-					} else {
-						throw new Error('update failed');
-					}
+			let response = await ajax({
+				url: url + '/' + id,
+				method: 'PATCH',
+				useJSON: useJSON,
+				data: data
+			});
+			if (response.ok) {
+				let data = response.json();
+				if (data) {
+					return {};
 				} else {
-					throw new Error(response.text());
+					throw new Error('update failed');
 				}
+			} else {
+				throw new Error(response.text());
 			}
 		}
 	},
