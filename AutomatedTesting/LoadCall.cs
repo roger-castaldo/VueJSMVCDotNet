@@ -1,58 +1,65 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
-using System;
 using System.Collections;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
-    public  class LoadCall
+    public class LoadCall
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestLoadPerson()
+        public async Task TestLoadPerson()
         {
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET",String.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"/models/mPerson/{mPersonHandler.Persons[0].id}", webApplicationFactory);
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.AreEqual(mPerson.Persons[0].id, ((Hashtable)result)["id"]);
+            Assert.AreEqual(mPersonHandler.Persons[0].id, ((Hashtable)result)["id"]);
         }
 
         [TestMethod]
-        public void TestInvalidIDLoadPerson()
+        public async Task TestInvalidIDLoadPerson()
         {
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson/0", _middleware, out status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/models/mPerson/0", webApplicationFactory);
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(404, responseStatus);
             Assert.IsNull(result);
         }
 
         [TestMethod]
-        public void TestLoadAllPerson()
+        public async Task TestLoadAllPerson()
         {
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("GET","/models/mPerson", _middleware, out status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/models/mPerson", webApplicationFactory);
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
-            Assert.AreEqual(mPerson.Persons.Length, ((ArrayList)result).Count);
-            for(int x = 0; x < mPerson.Persons.Length; x++)
+            Assert.AreEqual(mPersonHandler.Persons.Length, ((ArrayList)result).Count);
+            for (int x = 0; x < mPersonHandler.Persons.Length; x++)
             {
                 Assert.IsInstanceOfType(((ArrayList)result)[x], typeof(Hashtable));
-                Assert.AreEqual(mPerson.Persons[x].id, ((Hashtable)((ArrayList)result)[x])["id"]);
+                Assert.AreEqual(mPersonHandler.Persons[x].id, ((Hashtable)((ArrayList)result)[x])["id"]);
             }
         }
 
@@ -61,7 +68,7 @@ NOTE:  Disabling this test because the Promise resolves/await async functionalit
         [TestMethod]
         public void TestLoadJavascript()
         {
-            string content = new StreamReader(Utility.ExecuteGet("/resources/scripts/mPerson.js", _handler)).ReadToEnd();
+            string content = new StreamReader(Utility.ExecuteGet($"{Constants.PersonModelRoute}.js", _handler)).ReadToEnd();
             Assert.IsTrue(content.Length > 0);
             content = Constants.JAVASCRIPT_BASE + content + string.Format(@"
 var mdl = Promise.resolve(new Promise((resolve)=>{{
@@ -75,7 +82,7 @@ if (mdl===null){{
     throw 'unable to load model';
 }}else{{
     throw mdl;
-}}", new object[] { mPerson.Persons[0].id });
+}}", new object[] { mPersonHandler.Persons[0].id });
             Engine eng = new Engine();
             try
             {

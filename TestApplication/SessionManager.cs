@@ -1,8 +1,10 @@
-using System;
 using Microsoft.AspNetCore.Http;
+using System;
+using System.Threading.Tasks;
 using VueJSMVCDotNet.Interfaces;
 
-namespace TestApplication{
+namespace TestApplication
+{
     internal class SessionManager : ISessionManager
     {
         [ThreadStatic()]
@@ -14,18 +16,21 @@ namespace TestApplication{
 
         public SessionManager() { }
 
-        public DateTime Start{
-            get{
-                if (_current.Session.GetString("Start")==null){
-                    _current.Session.SetString("Start",DateTime.Now.ToString());
+        public DateTime Start
+        {
+            get
+            {
+                if (_current.Session.GetString("Start")==null)
+                {
+                    _current.Session.SetString("Start", DateTime.UtcNow.ToString());
                 }
                 return DateTime.Parse(_current.Session.GetString("Start"));
             }
         }
 
-        public ISecureSession ProduceFromContext(HttpContext context)
+        public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
         {
-            return new SessionManager(context);
+            return Task.FromResult<ISecureSession>(new SessionManager(context));
         }
     }
 }

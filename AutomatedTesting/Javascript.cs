@@ -1,53 +1,74 @@
 ﻿using Jint;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Net.Http.Headers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class Javascript
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
-        private delegate object _delCreateWeakMap();
-
         [TestMethod]
-        public void CoreJavascriptValidation()
+        public async Task CoreJavascriptValidation()
         {
-            int status;
-            string content = Utility.ReadResponse(Utility.ExecuteRequest("GET", "/VueJSMVCDotNet_core.min.js", _middleware, out status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(content.Length>0);
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"/{Constants.CORE_IMPORT_PATH}.min.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
 
-            Engine eng = Utility.CreateEngine();
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("core", content);
-                eng.AddModule("custom", @"import {isEqual} from 'core';
+                eng.Modules.Add("core", content);
+                eng.Modules.Add("custom", @"import {isEqual} from 'core';
 export const testResult = isEqual('test','test');");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.IsTrue(ns.Get("testResult").AsBoolean());
             }
-            catch (Esprima.ParserException e)
+            catch (Exception e)
             {
                 Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public async Task JavascriptGenerationValidation()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
+            try
+            {
+                eng.Modules.Add("mPerson", content);
+                eng.Modules.Add("custom", @"import { mPerson } from 'mPerson';
+export const name = 'John';");
+                var ns = eng.Modules.Import("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Exception e)
             {
@@ -57,61 +78,29 @@ export const testResult = isEqual('test','test');");
         }
 
         [TestMethod]
-        public void JavascriptGenerationValidation()
+        public async Task JavascriptCompressedGenerationValidation()
         {
-            int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
-            try
-            {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
-export const name = 'John';");
-                var ns = eng.ImportModule("custom");
-                Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch(Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }catch(Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
-            Assert.IsTrue(true);
-        }
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
 
-        [TestMethod]
-        public void JavascriptGenerationWithSecurityHeadersValidation()
-        {
-            _middleware = Utility.CreateMiddleware(true,securityHeaders:new string[] {"sechead1","sec_head_2"});
-            int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine(middleware:_middleware);
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.min.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
+                eng.Modules.Add("mPerson", content);
+                eng.Modules.Add("custom", @"import { mPerson } from 'mPerson';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -121,68 +110,61 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        public void JavascriptCompressedGenerationValidation()
+        public async Task JavascriptCompressionPerformance()
         {
-            int status;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status));
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
-            try
-            {
-                eng.AddModule("mPerson", content);
-                eng.AddModule("custom", @"import { mPerson } from 'mPerson';
-export const name = 'John';");
-                var ns = eng.ImportModule("custom");
-                Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(e.Message);
-            }
-            Assert.IsTrue(true);
-        }
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
-        [TestMethod]
-        public void JavascriptCompressionPerformance()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET","/resources/scripts/mPerson.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(minContent.Length > 0);
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.min.js", webApplicationFactory);
+            var minContent = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+
+            //Assert
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(minContent));
             Assert.IsTrue(minContent.Length < content.Length);
         }
 
         [TestMethod]
-        public void JavascriptGenerationWithLinkedTypesValidation()
+        public async Task JavascriptGenerationWithLinkedTypesValidation()
         {
-            int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
-            Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
-            Engine eng = Utility.CreateEngine();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.LocationModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            content=content.Replace("'/models/mperson.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace("'/models/mgroup.js'", "'mgroup'", StringComparison.InvariantCultureIgnoreCase);
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
+            var personContent = await new StreamReader(responseStream).ReadToEndAsync();
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.GroupModelRoute}.js", webApplicationFactory);
+            var groupContent = await new StreamReader(responseStream).ReadToEndAsync();
+            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.js'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
-                eng.AddModule("mLocation", content);
-                eng.AddModule("custom", @"import { mLocation } from 'mLocation';
+                eng.Modules.Add("mperson", personContent);
+                eng.Modules.Add("mgroup", groupContent);
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -192,31 +174,41 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        public void JavascriptCompressedGenerationWithLinkedTypesValidation()
+        public async Task JavascriptGenerationWithLinkedTypesValidationAsModule()
         {
-            int status;
-            DateTime now = DateTime.Now;
-            string content = Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mLocation.min.js", _middleware, out status));
-            System.Diagnostics.Debug.WriteLine("Total time to generate: {0}ms of size {1}b", new object[]
-            {
-                DateTime.Now.Subtract(now).TotalMilliseconds,
-                System.Text.ASCIIEncoding.ASCII.GetBytes(content).Length
-            });
-            Assert.IsTrue(content.Length > 0);
-            content=content.Replace("'/resources/scripts/mperson.js'", "'mperson'",StringComparison.InvariantCultureIgnoreCase);
-            Engine eng = Utility.CreateEngine();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.LocationModelRoute}.mjs", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            content=content.Replace("'/models/mperson.mjs'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace("'/models/mgroup.mjs'", "'mgroup'", StringComparison.InvariantCultureIgnoreCase);
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.mjs", webApplicationFactory);
+            var personContent = await new StreamReader(responseStream).ReadToEndAsync();
+
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.GroupModelRoute}.mjs", webApplicationFactory);
+            var groupContent = await new StreamReader(responseStream).ReadToEndAsync();
+            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.mjs'", "'mperson'", StringComparison.InvariantCultureIgnoreCase);
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("mperson", Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status)));
-                eng.AddModule("mLocation", content);
-                eng.AddModule("custom", @"import { mLocation } from 'mLocation';
+                eng.Modules.Add("mperson", personContent);
+                eng.Modules.Add("mgroup", groupContent);
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -226,60 +218,107 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        public void JavascriptCacheControlHeaders()
+        public async Task JavascriptCompressedGenerationWithLinkedTypesValidation()
         {
-            int status;
-            IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/scripts/mPerson.js", _middleware, out status, out headers);
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(stream.Length>0);
-            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
-            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
 
-            string lastModified = headers["Last-Modified"].ToString();
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.LocationModelRoute}.min.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
 
-            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status, headers: new Dictionary<string, string>()
-            {
-                { "If-Modified-Since",lastModified}
-            });
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
 
-            Assert.AreEqual(304, status);
-            Assert.AreEqual(0,stream.Length);
-        }
+            content=content.Replace($"\"{Constants.PersonModelRoute}.min.js\"", "\"mperson\"", StringComparison.InvariantCultureIgnoreCase);
+            content=content.Replace($"\"{Constants.GroupModelRoute}.min.js\"", "\"mgroup\"", StringComparison.InvariantCultureIgnoreCase);
 
-        [TestMethod]
-        public void JavascriptInternalCache()
-        {
-            int status;
-            var stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(stream.Length>0);
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
+            var personContent = await new StreamReader(responseStream).ReadToEndAsync();
 
-            var length = stream.Length;
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.GroupModelRoute}.js", webApplicationFactory);
+            var groupContent = await new StreamReader(responseStream).ReadToEndAsync();
+            groupContent=groupContent.Replace($"'{Constants.PersonModelRoute}.js'", "\"mperson\"", StringComparison.InvariantCultureIgnoreCase);
 
-            stream = Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status);
-            Assert.AreEqual(200, status);
-            Assert.AreEqual(length, stream.Length);
-        }
-
-        [TestMethod]
-        public void MessageScriptGenerationValidation()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import {Translate} from 'Translate';
+                eng.Modules.Add("mperson", personContent);
+                eng.Modules.Add("mgroup", groupContent);
+                eng.Modules.Add("mLocation", content);
+                eng.Modules.Add("custom", @"import { mLocation } from 'mLocation';
+export const name = 'John';");
+                var ns = eng.Modules.Import("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public async Task JavascriptCacheControlHeaders()
+        {
+            //Arrange
+            using var cache = new MemoryCache(new MemoryCacheOptions()
+            {
+                TrackStatistics = true
+            });
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
+
+            //Act
+            var (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(headers.CacheControl?.ToString()));
+            Assert.IsTrue(headers.GetValues(HeaderNames.LastModified).Any());
+
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
+            string lastModified = string.Join(';', headers.GetValues(HeaderNames.LastModified));
+
+            (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.PersonModelRoute}.js", webApplicationFactory,
+            headers: new Dictionary<string, string>()
+            {
+                { HeaderNames.IfModifiedSince,lastModified}
+            });
+
+            Assert.AreEqual(304, responseStatus);
+            Assert.AreEqual(0, responseStream.Length);
+        }
+
+        [TestMethod]
+        public async Task MessageScriptGenerationValidation()
+        {
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
+            try
+            {
+                eng.Modules.Add("Translate", content);
+                eng.Modules.Add("custom", @"import {Translate} from 'Translate';
 export const name = Translate('Name',null);");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -289,23 +328,29 @@ export const name = Translate('Name',null);");
         }
 
         [TestMethod]
-        public void MessageScriptCompressedGenerationValidation()
+        public async Task MessageScriptCompressedGenerationValidation()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.min.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("Translate", content);
-                eng.AddModule("custom", @"import {Translate} from 'Translate';
+                eng.Modules.Add("Translate", content);
+                eng.Modules.Add("custom", @"import {Translate} from 'Translate';
 export const name = Translate('Name',null,'en');");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("Name", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -315,60 +360,84 @@ export const name = Translate('Name',null,'en');");
         }
 
         [TestMethod]
-        public void MessageScriptCompressionPerformance()
+        public async Task MessageScriptCompressionPerformance()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/messages/test.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(minContent.Length > 0);
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.min.js", webApplicationFactory);
+            var minContent = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+
+            //Assert
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(minContent));
             Assert.IsTrue(minContent.Length < content.Length);
         }
 
 
         [TestMethod]
-        public void MessageScriptCacheControlHeaders()
+        public async Task MessageScriptCacheControlHeaders()
         {
-            int status;
-            IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status, out headers);
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(stream.Length>0);
-            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
-            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
-
-            string lastModified = headers["Last-Modified"].ToString();
-
-            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/messages/test.js", _middleware, out status,out headers, headers: new Dictionary<string, string>()
+            //Arrange
+            using var cache = new MemoryCache(new MemoryCacheOptions()
             {
-                { "If-Modified-Since",lastModified}
+                TrackStatistics = true
+            });
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
+
+            //Act
+            var (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(headers.CacheControl?.ToString()));
+            Assert.IsTrue(headers.GetValues(HeaderNames.LastModified).Any());
+
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
+            string lastModified = string.Join(';', headers.GetValues(HeaderNames.LastModified));
+
+            (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/messages/test.js", webApplicationFactory,
+            headers: new Dictionary<string, string>()
+            {
+                { HeaderNames.IfModifiedSince,lastModified}
             });
 
-            Assert.AreEqual(304, status);
-            Assert.AreEqual(0, stream.Length);
-            Assert.IsTrue(headers.ContainsKey("accept-ranges"));
-            Assert.IsTrue(headers.ContainsKey("date"));
-            Assert.IsTrue(headers.ContainsKey("etag"));
+            Assert.AreEqual(304, responseStatus);
+            Assert.AreEqual(0, responseStream.Length);
         }
 
         [TestMethod]
-        public void VueFileScriptGenerationValidation()
+        public async Task VueFileScriptGenerationValidation()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("notification", content);
-                eng.AddModule("custom", @"import notification from 'notification';
-export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
-                var ns = eng.ImportModule("custom");
+                eng.Modules.Add("notification", content);
+                eng.Modules.Add("custom", @"import notification from 'notification';
+export const check = notification!==undefined && notification!==null && notification.__name!==undefined;");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -380,23 +449,29 @@ export const check = notification!==undefined && notification!==null && notifica
         }
 
         [TestMethod]
-        public void VueFileScriptCompressedGenerationValidation()
+        public async Task VueFileScriptCompressedGenerationValidation()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            Engine eng = Utility.CreateEngine();
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var start = Stopwatch.GetTimestamp();
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.min.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            System.Diagnostics.Trace.WriteLine($"Total time to generate: {Stopwatch.GetElapsedTime(start).TotalMilliseconds}ms of size {content.Length}b");
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
-                eng.AddModule("notification", content);
-                eng.AddModule("custom", @"import notification from 'notification';
-export const check = notification!==undefined && notification!==null && notification.name!==undefined;");
-                var ns = eng.ImportModule("custom");
+                eng.Modules.Add("notification", content);
+                eng.Modules.Add("custom", @"import notification from 'notification';
+export const check = notification!==undefined && notification!==null && notification.__name!==undefined;");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual(true, ns.Get("check").AsBoolean());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -406,39 +481,57 @@ export const check = notification!==undefined && notification!==null && notifica
         }
 
         [TestMethod]
-        public void VueFileScriptCompressionPerformance()
+        public async Task VueFileScriptCompressionPerformance()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(content.Length > 0);
-            string minContent = new StreamReader(Utility.ExecuteRequest("GET", "/resources/vueFiles/notification.min.js", _middleware, out status)).ReadToEnd();
-            Assert.IsTrue(minContent.Length > 0);
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+            (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.min.js", webApplicationFactory);
+            var minContent = await new StreamReader(responseStream).ReadToEndAsync();
+            Assert.AreEqual(200, responseStatus);
+
+            //Assert
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(minContent));
             Assert.IsTrue(minContent.Length < content.Length);
         }
 
         [TestMethod]
-        public void VueFileScriptCacheControlHeaders()
+        public async Task VueFileScriptCacheControlHeaders()
         {
-            int status;
-            IHeaderDictionary headers;
-            var stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers);
-            Assert.AreEqual(200, status);
-            Assert.IsTrue(stream.Length>0);
-            Assert.IsTrue(headers.ContainsKey("Cache-Control"));
-            Assert.IsTrue(headers.ContainsKey("Last-Modified"));
-
-            string lastModified = headers["Last-Modified"].ToString();
-
-            stream = Utility.ExecuteRequestExportingHeaders("GET", "/resources/vueFiles/notification.js", _middleware, out status, out headers, headers: new Dictionary<string, string>()
+            //Arrange
+            using var cache = new MemoryCache(new MemoryCacheOptions()
             {
-                { "If-Modified-Since",lastModified}
+                TrackStatistics = true
+            });
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true, cache: cache);
+
+            //Act
+            var (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(headers.CacheControl?.ToString()));
+            Assert.IsTrue(headers.GetValues(HeaderNames.LastModified).Any());
+
+            Assert.AreEqual(1, cache.GetCurrentStatistics().CurrentEntryCount);
+
+            string lastModified = string.Join(';', headers.GetValues(HeaderNames.LastModified));
+
+            (responseStream, responseStatus, headers)= await Utility.ExecuteRequestAsync(HttpMethod.Get, "/resources/vueFiles/notification.js", webApplicationFactory,
+            headers: new Dictionary<string, string>()
+            {
+                { HeaderNames.IfModifiedSince,lastModified}
             });
 
-            Assert.AreEqual(304, status);
-            Assert.AreEqual(0, stream.Length);
-            Assert.IsTrue(headers.ContainsKey("accept-ranges"));
-            Assert.IsTrue(headers.ContainsKey("date"));
-            Assert.IsTrue(headers.ContainsKey("etag"));
+            Assert.AreEqual(304, responseStatus);
+            Assert.AreEqual(0, responseStream.Length);
         }
     }
 }

@@ -21,10 +21,10 @@
                 <td>{{person.LastName}}</td>
                 <asynccomp v-bind:promise="person.GetFullName()">
                     <template #resolved="props">
-                        {{props.result}}
+                        {{props}}
                     </template>
                     <template #rejected="props">
-                        <span style="color:red">{{props.result}}</span>
+                        <span style="color:red">{{props}}</span>
                     </template>
                 </asynccomp>
             </tr>
@@ -33,12 +33,15 @@
 </template>
 
 <script setup>
-    import { mPerson } from "/testing/resources/scripts/mPerson.js";
-    import { watch, ref, expose } from "vue";
+    import { mPerson } from '../../../models/mPerson.js';
+    import { watch, ref } from "vue";
     import asynccomp from "../asynccomp.vue";
 
-    const { Items, changeParameters } = mPerson.Search(null).toVueComposition();
+    const { Items, changeParameters, $on } = mPerson.Search(null).toVueComposition();
+    $on('loaded', () => console.log('Filtered Items loaded'));
     let current_filter = ref('');
+
+    console.log(Items);
 
     watch(
         current_filter,
@@ -47,7 +50,7 @@
         }
     );
 
-    expose({
+    defineExpose({
         Items,
         current_filter
     });

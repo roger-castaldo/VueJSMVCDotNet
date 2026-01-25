@@ -1,9 +1,10 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
-using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
@@ -12,180 +13,121 @@ namespace AutomatedTesting
     {
         public const string _NOT_ALLOWED_MESSAGE = "Not Authorized";
         public const int _NOT_ALLOWED_STATUS = 403;
-        private VueMiddleware _middleware;
 
-        [TestInitialize]
-        public void Init()
+        private async Task ExecuteTest(HttpMethod method, string url, string[] security, bool shouldSucceeed = false, Hashtable parameters = null)
         {
-            _middleware = Utility.CreateMiddleware(true);
-        }
+            //Act
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, new SecureSession(security));
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(method, url, webApplicationFactory,
+                parameters: parameters);
+            var result = Utility.ReadResponse(responseStream);
 
-        [TestMethod]
-        public void TestModelLevelSecurity()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status,session:new Security.SecureSession(new string[] {""}))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE,content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/resources/scripts/mPerson.js", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
-        }
-
-        [TestMethod]
-        public void TestLoadSecurity()
-        {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson/0", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            //Assert
+            if (!shouldSucceeed)
+            {
+                Assert.AreEqual(_NOT_ALLOWED_MESSAGE, result);
+                Assert.AreEqual(_NOT_ALLOWED_STATUS, responseStatus);
+            }
+            else
+            {
+                Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, result);
+                Assert.AreNotEqual(_NOT_ALLOWED_STATUS, responseStatus);
+            }
+            await webApplicationFactory.DisposeAsync();
         }
 
         [TestMethod]
-        public void TestLoadAllSecurity()
+        public async Task TestLoadSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("GET", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD_ALL }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Get, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { "" });
+            await ExecuteTest(HttpMethod.Get, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Get, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }, shouldSucceeed: true);
         }
 
         [TestMethod]
-        public void TestDeleteSecurity()
+        public async Task TestLoadAllSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}",new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("DELETE", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.DELETE }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson", new string[] { "" });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD_ALL }, shouldSucceeed: true);
         }
 
         [TestMethod]
-        public void TestUpdateSecurity()
+        public async Task TestDeleteSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PATCH", string.Format("/models/mPerson/{0}", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.UPDATE }),parameters:new Hashtable() { { "FirstName", "Testing123" } })).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Delete, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { "" });
+            await ExecuteTest(HttpMethod.Delete, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Delete, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
+            await ExecuteTest(HttpMethod.Delete, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.DELETE }, shouldSucceeed: true);
         }
 
         [TestMethod]
-        public void TestSaveSecurity()
+        public async Task TestUpdateSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SAVE }), parameters: new Hashtable() { { "FirstName", "Testing123" }, { "LastName", "Testing1234" }, { "BirthDay", DateTime.Now } })).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Patch, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { "" });
+            await ExecuteTest(HttpMethod.Patch, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Patch, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
+            await ExecuteTest(HttpMethod.Patch, $"/models/mPerson/{mPersonHandler.Persons[0].id}", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.UPDATE }, shouldSucceeed: true, parameters: new Hashtable() { { "FirstName", "Testing123" } });
         }
 
         [TestMethod]
-        public void TestListMethodSecurity()
+        public async Task TestSaveSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { "" });
+            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
+            await ExecuteTest(HttpMethod.Put, $"/models/mPerson", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SAVE }, shouldSucceeed: true, parameters: new Hashtable() { { "FirstName", "Testing123" }, { "LastName", "Testing1234" }, { "BirthDay", DateTime.UtcNow } });
+        }
+
+        [TestMethod]
+        public async Task TestListMethodSecurity()
+        {
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/Search", new string[] { "" }, parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            });
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/Search", new string[] { Constants.Rights.CAN_ACCESS }, parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("LIST", "/models/mPerson/Search", _middleware, out status, parameters: new Hashtable()
+            });
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/Search", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SEARCH }, parameters: new Hashtable()
             {
                 {"q",null },
                 {"PageStartIndex",0 },
                 {"PageSize",10}
-            }, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.SEARCH }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            }, shouldSucceeed: true);
         }
 
         [TestMethod]
-        public void TestInstanceMethodSecurity()
+        public async Task TestInstanceMethodSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }))).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.METHOD }))).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { "" });
+            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD });
+            await ExecuteTest(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD, Constants.Rights.METHOD }, shouldSucceeed: true);
         }
 
         [TestMethod]
-        public void TestStaticMethodSecurity()
+        public async Task TestStaticMethodSecurity()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { "" }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } })).ReadToEnd();
-            Assert.AreEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(_NOT_ALLOWED_STATUS, status);
-            content = new StreamReader(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/FormatName", _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }), parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" }})).ReadToEnd();
-            Assert.AreNotEqual(_NOT_ALLOWED_MESSAGE, content);
-            Assert.AreNotEqual(_NOT_ALLOWED_STATUS, status);
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { "" }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } });
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } });
+            await ExecuteTest(HttpMethod.Post, "/models/mPerson/FormatName", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STATIC_METHOD }, parameters: new Hashtable() { { "firstName", "Testing123" }, { "lastName", "Testing1234" } }, shouldSucceeed: true);
+        }
+
+        [TestMethod]
+        public async Task TestStreamMethodSecurity()
+        {
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { "" });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { Constants.Rights.CAN_ACCESS });
+            await ExecuteTest(HttpMethod.Get, "/models/mPerson/StreamUsers", new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.STREAM_METHOD }, shouldSucceeed: true);
         }
     }
 }

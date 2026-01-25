@@ -1,5 +1,5 @@
-﻿using VueJSMVCDotNet.Interfaces;
-using System;
+﻿using System;
+using VueJSMVCDotNet.Interfaces;
 
 namespace TestApplication
 {

@@ -1,6 +1,8 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Runtime.Loader;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting
 {
@@ -10,12 +12,14 @@ namespace AutomatedTesting
         [TestMethod]
         public void AssemblyAdded()
         {
-            var middleware = Utility.CreateMiddleware(true);
-            Exception error=null;
+            var (webApplicationFactory, _, _)= Utility.CreateApplication(true);
+            var dataSource = webApplicationFactory.Services.GetRequiredService<IModelDataSource>();
+            Exception error = null;
             try
             {
-                middleware.Options.AssemblyAdded();
-            }catch(Exception ex)
+                dataSource.AssemblyAdded();
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }
@@ -23,21 +27,43 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void ReloadingAssemblyContext(){
-            var middleware = Utility.CreateMiddleware(true);
-            Exception error=null;
+        public void ReloadingAssemblyContext()
+        {
+            var (webApplicationFactory, _, _)= Utility.CreateApplication(true);
+            Exception error = null;
+            var dataSource = webApplicationFactory.Services.GetRequiredService<IModelDataSource>();
             try
             {
-                middleware.Options.UnloadAssemblyContext(AssemblyLoadContext.Default);
-            }catch(Exception ex)
+                dataSource.UnloadAssemblyContext(AssemblyLoadContext.Default);
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }
             Assert.IsNull(error);
             try
             {
-                middleware.Options.AsssemblyLoadContextAdded(AssemblyLoadContext.Default);
-            }catch(Exception ex)
+                dataSource.AsssemblyLoadContextAdded(AssemblyLoadContext.Default);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            Assert.IsNull(error);
+            try
+            {
+                dataSource.UnloadAssemblyContext(AssemblyLoadContext.Default);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            Assert.IsNull(error);
+            try
+            {
+                dataSource.AsssemblyLoadContextAdded(AssemblyLoadContext.Default.Name);
+            }
+            catch (Exception ex)
             {
                 error = ex;
             }

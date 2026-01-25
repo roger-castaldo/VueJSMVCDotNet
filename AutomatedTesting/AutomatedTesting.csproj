@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<IsPackable>false</IsPackable>
 		<AnalysisLevel>none</AnalysisLevel>
 		<RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
 		<RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+		<Nullable>enable</Nullable>
+		<SonarQubeExclude>true</SonarQubeExclude>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -36,25 +38,39 @@
 	  <EmbeddedResource Include="resources\vueFiles\buttons\button-cancel.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\buttons\button.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\icon.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\imports.vue" />
+	  <EmbeddedResource Include="resources\vueFiles\person.vue" />
 	  <EmbeddedResource Include="resources\vueFiles\notification.vue" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="coverlet.msbuild" Version="6.0.0">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="coverlet.msbuild" Version="6.0.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="ILogger.Moq" Version="1.1.10" />
-		<PackageReference Include="Jint" Version="3.0.0-beta-2044" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
-		<PackageReference Include="Moq" Version="4.18.4" />
-		<PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
-		<PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
-		<PackageReference Include="coverlet.collector" Version="6.0.0">
+		<PackageReference Include="ILogger.Moq" Version="2.0.0" />
+		<PackageReference Include="Jint" Version="4.3.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.17" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.9.3" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.9.3" />
+		<PackageReference Include="coverlet.collector" Version="6.0.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.linux-arm" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.linux-arm64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.win-arm64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.5.0" />
+		<PackageReference Include="Microsoft.ClearScript.V8.Native.win-x86" Version="7.5.0" />
 	</ItemGroup>
 
 	<ItemGroup>

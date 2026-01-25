@@ -5,11 +5,9 @@
         public const string INITIAL_DATA_KEY = "#initialData";
         public const string TO_JSON_VARIABLE = "#toJSON";
         public const string PARSE_FUNCTION_NAME = "_parse";
-        public static readonly BindingFlags STORE_DATA_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-        public static readonly BindingFlags LOAD_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
-        public static readonly BindingFlags INSTANCE_METHOD_FLAGS = BindingFlags.Public|BindingFlags.Instance;
-        public static readonly BindingFlags STATIC_INSTANCE_METHOD_FLAGS = BindingFlags.Public | BindingFlags.Static;
+        public static readonly BindingFlags METHOD_FLAGS = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
         public const string VUE_IMPORT_NAME = "vue";
+        public const string HOST_URL_CONSTRUCTOR = "const hosturl = new URL((document===undefined ? (import.meta===undefined ? '' : import.meta.url) : (document.currentScript===null||document.currentScript===undefined ? import.meta.url : document.currentScript.src)));";
         public static class Events
         {
             public const string MODEL_LOADED = "loaded";

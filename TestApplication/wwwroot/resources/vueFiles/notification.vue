@@ -19,5 +19,5 @@
 </script>
 
 <template>
-    <button @click="log">{{ msg }},{{foo}}</button>
+    <button @click="log">{{ msg }},{{props.foo}}</button>
 </template>

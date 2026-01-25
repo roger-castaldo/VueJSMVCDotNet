@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
-using VueJSMVCDotNet.Interfaces;
 using System;
 using System.Collections;
 using System.Linq;
+using System.Threading.Tasks;
+using VueJSMVCDotNet.Interfaces;
 
 namespace AutomatedTesting.Security
 {
-    internal class SecureSession : ISecureSession,ISecureSessionFactory
+    internal class SecureSession : ISecureSession, ISecureSessionFactory
     {
-        private string[] _rights = null;
+        private readonly string[] _rights = null;
 
         public SecureSession()
         {
@@ -24,7 +25,7 @@ namespace AutomatedTesting.Security
             if (arrayList!=null)
             {
                 _rights = new string[arrayList.Count];
-                for(int x = 0; x<arrayList.Count; x++)
+                for (int x = 0; x<arrayList.Count; x++)
                 {
                     _rights[x] = (string)arrayList[x];
                 }
@@ -38,17 +39,7 @@ namespace AutomatedTesting.Security
             return _rights.Contains(right);
         }
 
-        public void LinkToRequest(HttpContext context)
-        {
-            context.Request.Headers.Add("RIGHTS", System.Text.UTF8Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(_rights, typeof(string[]))));
-        }
-
-        public ISecureSession ProduceFromContext(HttpContext context)
-        {
-            if (context.Request.Headers.ContainsKey("RIGHTS"))
-                return new SecureSession((string[])System.Text.Json.JsonSerializer.Deserialize(context.Request.Headers["RIGHTS"].ToString(), typeof(string[])));
-            else
-                return new SecureSession();
-        }
+        public Task<ISecureSession> ProduceFromContextAsync(HttpContext context)
+            => Task.FromResult<ISecureSession>(this);
     }
 }

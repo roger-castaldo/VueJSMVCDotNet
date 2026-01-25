@@ -1,63 +1,48 @@
-﻿namespace VueJSMVCDotNet
+﻿using VueJSMVCDotNet.Interfaces.Internal;
+
+namespace VueJSMVCDotNet
 {
-    internal class CallNotFoundException : Exception {
-        public CallNotFoundException(string message) :
-            base(message)
-        { }
-    }
 
     /// <summary>
     /// Base for Thrown Validation Exceptions with a specific type
     /// </summary>
-    public class ModelTypeException : Exception{
+    public class HandlerTypeException : Exception
+    {
         /// <summary>
         /// The type of the model generating the exception
         /// </summary>
-        public Type ModelType { get; private init; }
+        public Type HandlerType { get; private init; }
 
-        internal ModelTypeException(Type t,string message)
+        internal HandlerTypeException(Type t, string message)
             : base(message)
         {
-            ModelType=t;
+            HandlerType=t;
         }
     }
 
     /// <summary>
     /// Base for Thrown Validation Exceptions with a specific type
     /// </summary>
-    public class ModelTypeMethodException : ModelTypeException
+    public class HandlerTypeMethodException : HandlerTypeException
     {
         /// <summary>
         /// The name of the method causing the error
         /// </summary>
         public string MethodName { get; private init; }
-        internal ModelTypeMethodException(Type t,string methodName, string message)
-            : base(t,message)
+        internal HandlerTypeMethodException(Type t, MethodInfo method, string message)
+            : base(t, message)
         {
-            MethodName=methodName;
+            MethodName=method.Name;
         }
-    }
-
-    /// <summary>
-    /// Thrown when a call made fails the security check
-    /// </summary>
-    public class InsecureAccessException : Exception
-    {
-        internal InsecureAccessException()
-            : this("Not Authorized") { }
-
-        internal InsecureAccessException(string message)
-            : base(message) { }
-
     }
 
     /// <summary>
     /// thrown when no routes to a given model were specified by attributes
     /// </summary>    
-    public class NoRouteException : ModelTypeException
+    public class NoRouteException : HandlerTypeException
     {
         internal NoRouteException(Type t)
-            : base(t,$"The IModel type {t.FullName} is not valid as no Model Route has been specified.") { }
+            : base(t, $"The IModel type {t.FullName} is not valid as no Model Route has been specified.") { }
     }
 
     /// <summary>
@@ -83,80 +68,42 @@
         public Type SecondModel { get; private init; }
 
         internal DuplicateRouteException(string path1, Type type1, string path2, Type type2)
-            : base($"The IModel type {type2.FullName} is not valid as its route {path2} is a duplicate for the route {path1} contained within the Model {type1.FullName}") { 
-            FirstPath= path1; 
+            : base($"The IModel type {type2.FullName} is not valid as its route {path2} is a duplicate for the route {path1} contained within the Model {type1.FullName}")
+        {
+            FirstPath= path1;
             FirstModel= type1;
             SecondPath= path2;
             SecondModel= type2;
         }
     }
 
-    ///<summary>
-    ///thrown when more than one Load method exists in a given model
-    ///</summary>
-    public class DuplicateLoadMethodException : ModelTypeMethodException
-    {
-        internal DuplicateLoadMethodException(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} is tagged as a load method when a valid load method already exists.") { }
-    }
-
     /// <summary>
     /// thrown when more than one Load all method exists in a given model
     /// </summary>
-    public class DuplicateLoadAllMethodException : ModelTypeMethodException
+    public class DuplicateLoadAllMethodException : HandlerTypeMethodException
     {
-        internal DuplicateLoadAllMethodException(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} is tagged as a load all method when a valid load all method already exists.") {        }
+        internal DuplicateLoadAllMethodException(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} is tagged as a load all method when a valid load all method already exists.") { }
     }
-
-    /// <summary>
-    /// thrown when the return type of a load method is not of the model or of the models inheritance
-    /// </summary>
-    public class InvalidLoadMethodReturnType : ModelTypeMethodException
-    {
-        internal InvalidLoadMethodReturnType(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for loading.")
-        {}
-    }
-
-    /// <summary>
-    /// thrown when the paremeters of a load method are not valid (ie either string, or ISecureSession and a string
-    /// </summary>
-    public class InvalidLoadMethodArguements : ModelTypeMethodException
-    {
-        internal InvalidLoadMethodArguements(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for load all.")
-        {}
-    }
-
 
     /// <summary>
     /// thrown when the return type of a load all method is not an array or List&lt;&gt; of the model type
     /// </summary>
-    public class InvalidLoadAllMethodReturnType : ModelTypeMethodException
+    public class InvalidLoadAllMethodReturnTypeException : HandlerTypeMethodException
     {
-        internal InvalidLoadAllMethodReturnType(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} does not return a valid type for load all.")
+        internal InvalidLoadAllMethodReturnTypeException(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not return a valid type for load all.")
         { }
     }
 
     /// <summary>
     /// thrown when the return type of a load all method is not either parameterless or only contains one parameter and thats ISecureSession
     /// </summary>
-    public class InvalidLoadAllArguements : ModelTypeMethodException
+    public class InvalidLoadAllArguementsException : HandlerTypeMethodException
     {
-        internal InvalidLoadAllArguements(Type t, string methodName)
-            : base(t,methodName,$"The IModel type {t.FullName} is not valid because the method {methodName} does not have a valid signature for a LoadAll call.")
+        internal InvalidLoadAllArguementsException(Type t, MethodInfo method)
+            : base(t, method, $"The IModel type {t.FullName} is not valid because the method {method.Name} does not have a valid signature for a LoadAll call.")
         { }
-    }
-
-    /// <summary>
-    /// thrown when no Load method is specified
-    /// </summary>
-    public class NoLoadMethodException : ModelTypeException
-    {
-        internal NoLoadMethodException(Type t)
-            : base(t,$"The IModel type {t.FullName} is not valid because there is no valid load method found.  A Load method must have the attribute ModelLoadMethod() as well as be similar to public static IModel Load(string id).") { }
     }
 
     /// <summary>
@@ -167,9 +114,9 @@
         /// <summary>
         /// All the exceptions found when validating the model definitions
         /// </summary>
-        public List<Exception> InnerExceptions { get; private init; }
+        public IEnumerable<Exception> InnerExceptions { get; private init; }
 
-        internal ModelValidationException(List<Exception> exceptions)
+        internal ModelValidationException(IEnumerable<Exception> exceptions)
             : base("Model Definition Validations have failed.")
         {
             InnerExceptions = exceptions;
@@ -179,198 +126,186 @@
     /// <summary>
     /// thrown when the id property of the model is tagged as block
     /// </summary>
-    public class ModelIDBlockedException : ModelTypeException
+    public class ModelIDBlockedException : HandlerTypeException
     {
         internal ModelIDBlockedException(Type t)
-            : base(t,$"The IModel type {t.FullName} is not valid because the ID property has been tagged with ModelIgnoreProperty.") { }
-    }
-
-    /// <summary>
-    /// thrown when no empty constructor is specifed but adding the model has not been blocked
-    /// </summary>
-    public class NoEmptyConstructorException : ModelTypeException
-    {
-        internal NoEmptyConstructorException(Type t)
-            : base(t,$"The IModel type {t.FullName} is not valid because it does not block adding and has no empty constructor.")
-        {
-        }
+            : base(t, $"The IModel type {t.FullName} is not valid because the ID property has been tagged with ModelIgnoreProperty.") { }
     }
 
     /// <summary>
     /// thrown when the return type for the ModelListMethod function is not valid
     /// </summary>
-    public class InvalidModelListMethodReturnException : ModelTypeMethodException
+    public class InvalidModelListMethodReturnException : HandlerTypeMethodException
     {
         internal InvalidModelListMethodReturnException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the return type for the model list method {mi.Name} is not either List<{t.FullName}> or {t.FullName}[].")
         { }
-    }
-
-    /// <summary>
-    /// thrown when the path specified does not contain the proper number of method parameters
-    /// </summary>
-    public class InvalidModelListParameterCountException : ModelTypeMethodException
-    {
-
-        internal InvalidModelListParameterCountException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the number of parameters for the method {mi.Name} does not match the number of variables")
-        {
-        }
-    }
-
-    /// <summary>
-    /// thrown when a parameter used for paging a model list is not a valid type of parameter
-    /// </summary>
-    public class InvalidModelListPageParameterTypeException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListPageParameterTypeException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not a usable as a paging parameter for a ModelListMethod.")
-        {
-            Parameter=pi;
-        }
-    }
-
-    /// <summary>
-    /// thrown when the parameter to indicate the total pages in a paged model list is not an out parameter
-    /// </summary>
-    public class InvalidModelListPageTotalPagesNotOutException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListPageTotalPagesNotOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is not an out parameter which is needed to indicate the total number of pages.")
-        {
-            Parameter=pi;
-        }
-    }
-
-    /// <summary>
-    /// thrown when the parameter of a ModelListMethod is an out parameter and it is not a paged call
-    /// </summary>
-    public class InvalidModelListParameterOutException : ModelTypeMethodException
-    {
-        /// <summary>
-        /// The parameter causing the error
-        /// </summary>
-        public ParameterInfo Parameter { get; private init; }
-        internal InvalidModelListParameterOutException(Type t, MethodInfo mi, ParameterInfo pi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the parameter {pi.Name} in the method {mi.Name} is an out parameter.")
-        {
-            Parameter=pi;
-        }
     }
 
     /// <summary>
     /// thrown when the ModelSaveMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class DuplicateModelSaveMethodException : ModelTypeMethodException
+    public class DuplicateModelSaveMethodException : HandlerTypeMethodException
     {
         internal DuplicateModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelSaveMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
     /// <summary>
     /// thrown when the ModelDeleteMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class DuplicateModelDeleteMethodException : ModelTypeMethodException
+    public class DuplicateModelDeleteMethodException : HandlerTypeMethodException
     {
         internal DuplicateModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelDeleteMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
     /// <summary>
     /// thrown when the ModelUpdateMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class DuplicateModelUpdateMethodException : ModelTypeMethodException
+    public class DuplicateModelUpdateMethodException : HandlerTypeMethodException
     {
         internal DuplicateModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the ModelUpdateMethod is specified on the method {mi.Name} as well as another method.")
         { }
     }
 
     /// <summary>
     /// thrown when the ModelSaveMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class InvalidModelSaveMethodException : ModelTypeMethodException
+    public class InvalidModelSaveMethodException : HandlerTypeMethodException
     {
         internal InvalidModelSaveMethodException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Save() for ModelSaveMethod.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public string Save() for ModelSaveMethod.")
         { }
     }
 
     /// <summary>
     /// thrown when the ModelDeleteMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class InvalidModelDeleteMethodException : ModelTypeMethodException
+    public class InvalidModelDeleteMethodException : HandlerTypeMethodException
     {
         internal InvalidModelDeleteMethodException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Delete() for ModelDeleteMethod.")
         { }
     }
 
     /// <summary>
     /// thrown when the ModelUpdateMethod Attribute is specified more than once in the Model
     /// </summary>
-    public class InvalidModelUpdateMethodException : ModelTypeMethodException
+    public class InvalidModelUpdateMethodException : HandlerTypeMethodException
     {
         internal InvalidModelUpdateMethodException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} is not of the pattern public bool Update() for ModelUpdateMethod.")
+        { }
+    }
+
+    /// <summary>
+    /// thrown when an ExposedMethod uses the AddItem delegate but is not marked as slow
+    /// </summary>
+    public class MethodNotMarkedAsSlowException : HandlerTypeMethodException
+    {
+        internal MethodNotMarkedAsSlowException(Type t, MethodInfo mi)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
+        { }
+    }
+
+    /// <summary>
+    /// thrown when an ExposedMethod uses the AddItem delegate but is not marked as slow
+    /// </summary>
+    public class MethodWithAddItemNotVoidException : HandlerTypeMethodException
+    {
+        internal MethodWithAddItemNotVoidException(Type t, MethodInfo mi)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
         { }
     }
 
     /// <summary>
     /// thrown when an ExposedMethod will have the same javascript signature as another for a model
     /// </summary>
-    public class DuplicateMethodSignatureException : ModelTypeMethodException
+    public class DuplicateMethodSignatureException : HandlerTypeMethodException
     {
         internal DuplicateMethodSignatureException(Type t, MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same same.")
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} has a javascript signature identical to a previously detected method of the same signature.")
         { }
     }
 
     /// <summary>
-    /// thrown when an ExposedMethod uses the AddItem delegate but is not marked as slow
+    /// thrown when an EventStream has an invalid parameter type
     /// </summary>
-    public class MethodNotMarkedAsSlow : ModelTypeMethodException
+    public class InvalidParameterTypeForExposedMethodException : HandlerTypeMethodException
     {
-        internal MethodNotMarkedAsSlow(Type t,MethodInfo mi)
-            : base(t,mi.Name,$"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not marked slow.")
+        internal InvalidParameterTypeForExposedMethodException(Type t, MethodInfo mi, ParameterInfo par)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the parameter {par.Name} for the method {mi.Name} is an out which is not supported")
+        {
+            this.Parameter = par;
+        }
+
+        /// <summary>
+        /// The parameter that caused the issue in the method
+        /// </summary>
+        public ParameterInfo Parameter { get; private init; }
+    }
+
+    /// <summary>
+    /// thrown when an EventStream has the same call path
+    /// </summary>
+    public class DuplicateEventStreamException : HandlerTypeMethodException
+    {
+        internal DuplicateEventStreamException(Type t, MethodInfo mi)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the method {mi.Name} will have the same call path as another.")
         { }
     }
 
     /// <summary>
-    /// thrown when an ExposedMethod uses the AddItem delegate but is not marked as slow
+    /// thrown when an EventStream has an invalid parameter type
     /// </summary>
-    public class MethodWithAddItemNotVoid : ModelTypeMethodException
+    public class InvalidParameterTypeForEventStreamException : HandlerTypeMethodException
     {
-        internal MethodWithAddItemNotVoid(Type t, MethodInfo mi)
-            : base(t, mi.Name, $"The IModel type {t.FullName} is not valid is not valid because the method {mi.Name} is using the AddItem delegate but is not void.")
-        { }
+        internal InvalidParameterTypeForEventStreamException(Type t, MethodInfo mi, ParameterInfo par)
+            : base(t, mi, $"The IModelHandler type {t.FullName} is not valid because the parameter {par.Name} for the method {mi.Name} is an unsupprted type of {par.ParameterType.FullName}")
+        {
+            this.Parameter = par;
+        }
+
+        /// <summary>
+        /// The parameter that caused the issue in the method
+        /// </summary>
+        public ParameterInfo Parameter { get; private init; }
     }
 
     /// <summary>
-    /// thrown when an a slow method fails to register properly
+    /// Thrown when a call is made that requires a model id and there is not one supplied in the path
     /// </summary>
-    public class SlowMethodRegistrationFailed : Exception
+    public class NullModelIdException : ArgumentException
     {
-        internal SlowMethodRegistrationFailed()
-            : base("An error occured attempting to register the slow method invocation") { }
+        internal NullModelIdException()
+            : base("Model ID null","id") { }
     }
 
     /// <summary>
-    /// thrown when a save model call fails
+    /// Thrown when a call is made to load a model and the loader is not found
     /// </summary>
-    public class SaveFailedException : ModelTypeMethodException
+    public class UnableToLocateLoaderException : ArgumentNullException
     {
-        internal SaveFailedException(Type t, InjectableMethod mi)
-            : base(t, mi.Name, $"The save call for the model type {t.FullName} failed."){ }
+        internal UnableToLocateLoaderException()
+            : base("model", "Unable to locate loader") { }
+    }
+
+    /// <summary>
+    /// Thrown when the Request Data is null but required
+    /// </summary>
+    public class RequestDataNullException : ArgumentNullException
+    {
+        internal RequestDataNullException()
+            : base("requestData", "Request Data is null and required") { }
+
+        internal static void ThrowIfNull(IInternalRequestData? requestData)
+        {
+            if (requestData == null)
+                throw new RequestDataNullException();
+        }
     }
 }

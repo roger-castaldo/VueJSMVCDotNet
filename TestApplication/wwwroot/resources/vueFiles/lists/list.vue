@@ -85,8 +85,9 @@
 </template>
 
 <script setup>
-    import { mPerson } from "/testing/resources/scripts/mPerson.js";
-    import { watch, expose,ref } from 'vue';
+    import { mPerson } from '../../../models/mPerson.js';
+    import { watch, ref } from 'vue';
+    import asynccomp from '../asynccomp.vue';
 
     console.log('loading list vue');
 
@@ -148,4 +149,6 @@
         mPerson.ReadFile(file.value)
             .then(result => { alert(result); });
     };
+
+    defineExpose({ Items });
 </script>

@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace AutomatedTesting
@@ -10,32 +10,28 @@ namespace AutomatedTesting
     [TestClass]
     public class SlowMethodCall
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestSlowMethod()
+        public async Task TestSlowMethod()
         {
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/GetSlowTimespan", _middleware, out status));
-            Assert.IsInstanceOfType(url, typeof(string));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/GetSlowTimespan", webApplicationFactory);
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             bool done = false;
             string result = null;
             int cnt = 0;
-            while(!done && cnt < 5)
+            //Act2
+            while (!done && cnt < 5)
             {
-                object content = Utility.ReadJSONResponse(Utility.ExecuteRequest("PULL", (string)url, _middleware, out status));
+                (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, (string)url, webApplicationFactory);
+                var content = Utility.ReadJSONResponse(responseStream);
+
+                Assert.AreEqual(200, responseStatus);
                 Assert.IsInstanceOfType(content, typeof(Hashtable));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
@@ -59,17 +55,28 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestSlowMethodWithAddItem()
+        public async Task TestSlowMethodWithAddItem()
         {
-            ArrayList data = new ArrayList();
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/SlowAddCall", _middleware, out status));
-            Assert.IsInstanceOfType(url, typeof(string));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/SlowAddCall", webApplicationFactory);
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             bool done = false;
+            string result = null;
             int cnt = 0;
+            //Act2
+            ArrayList data = new ArrayList();
             while (!done && cnt < 10)
             {
-                object content = Utility.ReadJSONResponse(Utility.ExecuteRequest("PULL", (string)url, _middleware, out status));
+                (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, (string)url, webApplicationFactory);
+                var content = Utility.ReadJSONResponse(responseStream);
+
+                Assert.AreEqual(200, responseStatus);
                 Assert.IsInstanceOfType(content, typeof(Hashtable));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
@@ -89,20 +96,27 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestSlowMethodWithError()
+        public async Task TestSlowMethodWithError()
         {
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/GetSlowException", _middleware, out status));
-            Assert.IsInstanceOfType(url, typeof(string));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/GetSlowException", webApplicationFactory);
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             bool done = false;
             string result = null;
             int cnt = 0;
+            //Act2
             while (!done && cnt < 5)
             {
-                var memoryStream = Utility.ExecuteRequest("PULL", (string)url, _middleware, out status);
-                if (status==200)
+                (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, (string)url, webApplicationFactory);
+                if (responseStatus==200)
                 {
-                    object content = Utility.ReadJSONResponse(memoryStream);
+                    object content = Utility.ReadJSONResponse(responseStream);
                     Assert.IsInstanceOfType(content, typeof(Hashtable));
                     Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
                     Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
@@ -123,27 +137,35 @@ namespace AutomatedTesting
                 }
                 else
                 {
-                    result = new StreamReader(memoryStream).ReadToEnd();
+                    result = new StreamReader(responseStream).ReadToEnd();
                     done=true;
                 }
             }
             Assert.IsTrue(done);
-            Assert.AreEqual(500, status);
+            Assert.AreEqual(500, responseStatus);
             Assert.IsNotNull(result);
             Assert.AreEqual("Error", result);
         }
 
         [TestMethod]
-        public void TestSlowMethodWithTimeout()
+        public async Task TestSlowMethodWithTimeout()
         {
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("SMETHOD", "/models/mPerson/GetSlowTimeout", _middleware, out status));
-            Assert.IsInstanceOfType(url, typeof(string));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"{Constants.PersonModelRoute}/GetSlowTimeout", webApplicationFactory);
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+
             Task.Delay(TimeSpan.FromSeconds(61)).Wait();
 
-            var result = Utility.ExecuteRequest("PULL", (string)url, _middleware, out status);
+            //Act2
+            (_, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, (string)url, webApplicationFactory);
 
-            Assert.AreEqual(404, status);
+            Assert.AreEqual(404, responseStatus);
         }
     }
 }

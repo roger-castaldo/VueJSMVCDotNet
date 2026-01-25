@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Net;
-using VueJSMVCDotNet.Attributes;
+using VueJSMVCDotNet.Attributes.Models;
 
 namespace AutomatedTesting
 {
@@ -735,7 +735,7 @@ namespace AutomatedTesting
                     bool first = true;
                     foreach (PropertyInfo pi in value.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance))
                     {
-                        if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0)
+                        if (pi.GetCustomAttributes(typeof(ModelIgnorePropertyAttribute), false).Length == 0)
                         {
                             if (!foundProperties.Contains(pi.Name))
                             {
@@ -760,7 +760,7 @@ namespace AutomatedTesting
                         {
                             foreach (PropertyInfo pi in t.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
                             {
-                                if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0)
+                                if (pi.GetCustomAttributes(typeof(ModelIgnorePropertyAttribute), false).Length == 0)
                                 {
                                     if (!foundProperties.Contains(pi.Name))
                                     {
@@ -783,7 +783,7 @@ namespace AutomatedTesting
                                 break;
                             foreach (PropertyInfo pi in tmp.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance))
                             {
-                                if (pi.GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length == 0)
+                                if (pi.GetCustomAttributes(typeof(ModelIgnorePropertyAttribute), false).Length == 0)
                                 {
                                     if (!foundProperties.Contains(pi.Name))
                                     {

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+	<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <RootNamespace>VueJSMVCDotNet</RootNamespace>
     <Description>A DotNet to VueJS interface library.  This is used to generate model(mvc) style Vues designed to allow an integrated interface between the javascript and backend for data manipulation and obtainment.  It does require that you include vuejs in your project as the code uses it.</Description>
     <PackageProjectUrl>https://github.com/roger-castaldo/VueJSMVCDotNet</PackageProjectUrl>
@@ -9,7 +9,7 @@
     <RepositoryType>github</RepositoryType>
     <PackageTags>vuejs javascript rest mvc</PackageTags>
     <PackageId>VueJSMVCDotNet</PackageId>
-	  <AssemblyVersion>3.2.3</AssemblyVersion>
+	  <AssemblyVersion>4.0.0</AssemblyVersion>
     <PackageReleaseNotes>adjusted importing behaviour to use mjs for module loading</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <FileVersion>$(AssemblyVersion)</FileVersion>
@@ -20,12 +20,16 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Handlers\Model\JSGenerators\core.js" />
+    <None Remove="Javascript\compiler-sfc.esm-browser.js" />
+    <None Remove="Javascript\compressor.min.js" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Handlers\Model\JSGenerators\core.js" />
+    <EmbeddedResource Include="Endpoints\Model\JSGenerators\core.js" />
+    <EmbeddedResource Include="Javascript\compiler-sfc.esm-browser.js" />
+    <EmbeddedResource Include="Javascript\compressor.min.js" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">
@@ -37,28 +41,8 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-  </ItemGroup>
-    <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
-	    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="6.0.0" />
-	    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="6.0.0" />
-    </ItemGroup>
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
-		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="7.0.0" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="[4.1.0,5.0.0)" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="[8.0.0,11.0.0)" PrivateAssets="All" />
+	  <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
 	</ItemGroup>
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0'">
-		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="8.0.0" />
-	</ItemGroup>
-	<ItemGroup>
-    <Folder Include="Handlers\Model\JSGenerators\Interfaces\" />
-  </ItemGroup>
 </Project>

@@ -3,130 +3,51 @@
     <script type="importmap">
         {
           "imports": {
-            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
-            "vue-loader":"https://unpkg.com/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.esm.js"
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
           }
         }
     </script>
     <script type="module">
-        import translator from './resources/messages/test.js';
+        import { Translate } from './resources/messages/test.js';
 
-        console.log(translator('Filtering'));
-        console.log(translator('Formatted', ['a single input from the array']));
-        console.log(translator('Name'));
-        console.log(translator('Name', null, 'fr'));
+        console.log(Translate('Filtering'));
+        console.log(Translate('Formatted', ['a single input from the array']));
+        console.log(Translate('Name'));
+        console.log(Translate('Name', null, 'fr'));
     </script>
     
 </head>
 <body>
     <section id="dvList">
         <Suspense>
-            <component is="List"/>
+            <List />
         </Suspense>
     </section>
-    <section id="dvListFiltered" />
-    <section id="list_items_module" />
-    <section id="notification_container" />
-    <section id="dvedit" />
-
+    <section id="dvListFiltered">
+        <Suspense>
+            <FilteredList/>
+        </Suspense>
+    </section>
+    
     <script type="module">
-        import { mPerson } from "/testing/resources/scripts/mPerson.js";
-        import { User } from "/testing/resources/scripts/models/User.js";
+        import { mPerson } from "/models/mPerson.min.js";
+        import { User } from "/models/User.js";
         import { createApp, watch, ref, defineComponent, toRef, h } from "vue";
         import hiddenArray from "/resources/scripts/hiddenArray.js";
-        import notification from "/resources/scripts/testLoader.js";
         import { List, FilteredList } from "/resources/vueFiles/lists.js";
 
         window.lst = createApp({
             components: { List }
         }).mount('#dvList');
 
-        createApp(notification).mount('#notification_container');
-        window.lstFiltered = createApp(FilteredList).mount('#dvListFiltered');
+        window.lstFiltered = createApp({
+            components: { filteredlist:FilteredList }
+        }).mount('#dvListFiltered');
 
         var person = mPerson.createInstance();
         console.log(person);
-        const asynccomp = {
-            template: '<slot v-if="resolve!=null" name="resolved" v-bind="resolve"></slot><slot v-if="reject!=null" name="rejected" v-bind="reject"></slot>',
-            props: ['promise', 'resultname'],
-            data: function () {
-                return { resolve: null, reject: null };
-            },
-            watch: {
-                promise: function (val) {
-                    if (val != null && val instanceof Promise) {
-                        this.handlePromise();
-                    } else {
-                        this.resolve = null;
-                        this.reject = null;
-                    }
-                }
-            },
-            methods: {
-                handlePromise() {
-                    var view = this;
-                    this.promise.then(
-                        result => {
-                            if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
-                                tmp[view.resultname] = result;
-                                view.resolve = tmp;
-                            } else {
-                                view.resolve = result;
-                            }
-                            view.reject = null;
-                        },
-                        result => {
-                            if (view.resultname != undefined && view.resultname != null) {
-                                var tmp = {};
-                                tmp[view.resultname] = result;
-                                view.reject = tmp;
-                            } else {
-                                view.reject = result;
-                            }
-                            view.resolve = null;
-                        }
-                    );
-                }
-            },
-            mounted: function () {
-                if (this.promise != null && this.promise instanceof Promise) {
-                    this.handlePromise();
-                } else {
-                    this.resolve = null;
-                    this.reject = null;
-                }
-            }
-        };
 
         mPerson.TestNull().then(result => { alert(result == null); });
-        let hiddenApp = createApp({
-            template:`<ul>
-        <li><icon :iconType="'test'" /></li>
-        <li v-for="item,index in Items" v-on:click="Items.splice(index)">{{item}}</li>
-        <li v-on:click="append('NewItem')">Add New</li>
-    </ul>`,
-            components: {
-                icon: defineComponent({
-                    setup(props, context) {
-                        const icontype = toRef(context.attrs, 'icontype');
-                        return { icontype };
-                    },
-                    render() {
-                        return h(
-                            'i',
-                            {
-                                'class': 'icon ' + this.icontype
-                            }
-                        );
-                    }
-                })
-            },
-            setup(props, { attrs, slots, emit, expose }) {
-                const { Items, append } = hiddenArray(props, { attrs, slots, emit, expose });
-                return { Items, append };
-            }
-        }).mount('#list_items_module');
 
         mPerson.Search('b', 0, 1).reload().then(paged => {
             console.log(paged.currentPage);
@@ -139,6 +60,11 @@
                 console.log(paged[0].FirstName);
             });
         });
+
+        const stream = mPerson.EventCounter(7);
+        stream.onMessageReceived((msg) => console.log(msg));
+        stream.onOpen(() => console.log('stream opened'));
+        stream.onClose(() => console.log('stream closed'));
     </script>
 </body>
 </html>

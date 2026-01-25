@@ -4,3 +4,5 @@ VueJSMVCDotNet/bin/
 VueJSMVCDotNet/obj/
 /AutomatedTesting/bin/Debug
 /AutomatedTesting/obj
+/.vs/
+/TestResults

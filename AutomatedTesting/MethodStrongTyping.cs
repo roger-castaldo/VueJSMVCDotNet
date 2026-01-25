@@ -1,31 +1,17 @@
 ﻿using Jint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
+using System.IO;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class MethodStrongTyping
     {
-        private string _content;
-
-        [TestInitialize]
-        public void Init()
-        {
-            VueMiddleware middleware = Utility.CreateMiddleware(true);
-            int status;
-            _content =  Utility.ReadJavascriptResponse(Utility.ExecuteRequest("GET", "/resources/scripts/mDataTypes.js", middleware, out status));
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _content = null;
-        }
-
-        private static string _GenerateCalls(string call,bool ignoreBytes)
+        private static string GenerateCalls(string call, bool ignoreBytes)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(@"
@@ -74,6 +60,8 @@ testArgs.push({name:'VersionArg',values:['AB',null,'1.0.0']});
 testArgs.push({name:'nullVersionArg',values:['AB',null]});
 testArgs.push({name:'ExceptionArg',values:[{},null,'error']});
 testArgs.push({name:'nullExceptionArg',values:[{},null]});
+testArgs.push({name:'guidArg',values:['AB',null,'4a091b48-b77d-41fe-9e41-55e9ffdc4695']});
+testArgs.push({name:'nullGuidArg',values:['AB',null]});
 
 for(var x=0;x<testArgs.length;x++){
     for(var y=0;y<testArgs[x].values;y++){
@@ -94,20 +82,24 @@ export const name = 'John';");
             return sb.ToString();
         }
 
-        private void _ExecuteTest(string call,bool ignoreBytes)
+        [TestMethod]
+        [DataRow("mdl.TestInputs", false)]
+        [DataRow("mDataType.StaticTestInputs", false)]
+        [DataRow("mDataType.TestListInputs", true)]
+        public async Task ExecuteTestAsync(string call, bool ignoreBytes)
         {
-            Engine eng = Utility.CreateEngine();
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.AddModule("mDataTypes", _content);
-                eng.AddModule("custom", _GenerateCalls(call, ignoreBytes));
-                var ns = eng.ImportModule("custom");
+                eng.Modules.Add("mDataTypes", content);
+                eng.Modules.Add("custom", GenerateCalls(call, ignoreBytes));
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
-            }
-            catch (Esprima.ParserException e)
-            {
-                Assert.Fail(e.Message);
             }
             catch (Exception e)
             {
@@ -116,32 +108,18 @@ export const name = 'John';");
         }
 
         [TestMethod]
-        public void TestInstanceMethod()
+        public async Task TestSingleNotNullArgument()
         {
-            _ExecuteTest("mdl.TestInputs", false);
-        }
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
 
-        [TestMethod]
-        public void TestStaticMethod()
-        {
-            _ExecuteTest("mDataType.StaticTestInputs", false);
-        }
-
-        [TestMethod]
-        public void TestListMethod()
-        {
-            _ExecuteTest("mDataType.TestListInputs", true);
-        }
-
-        [TestMethod]
-        public void TestSingleNotNullArgument()
-        {
-            Engine eng = Utility.CreateEngine();
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
             try
             {
                 eng.Execute(Constants.JAVASCRIPT_BASE);
-                eng.AddModule("mDataTypes", _content);
-                eng.AddModule("custom", @"
+                eng.Modules.Add("mDataTypes", content);
+                eng.Modules.Add("custom", @"
         import { mDataTypes } from 'mDataTypes';
         try{
             mDataTypes.TestSingleNotNullInput(' ',null);
@@ -159,12 +137,63 @@ export const name = 'John';");
             }
         }
 export const name = 'John';");
-                var ns = eng.ImportModule("custom");
+                var ns = eng.Modules.Import("custom");
                 Assert.AreEqual("John", ns.Get("name").AsString());
             }
-            catch (Esprima.ParserException e)
+            catch (Exception e)
             {
                 Assert.Fail(e.Message);
+            }
+        }
+
+        [TestMethod]
+        public async Task TesModelInputs()
+        {
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, $"{Constants.DataTypesModelRoute}.js", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            Engine eng = await Utility.CreateEngineAsync(webApplicationFactory);
+            try
+            {
+                eng.Execute(Constants.JAVASCRIPT_BASE);
+                eng.Modules.Add("mDataTypes", content);
+                eng.Modules.Add("custom", @"
+        import { mDataTypes } from 'mDataTypes';
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],{id:'test2'});
+        }catch(err){
+            if (err.message.toString()!='fetch is not defined'){
+                throw err.message;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],{id:null});
+        }catch(err){
+            if (err.indexOf('Cannot set person')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on person: '+err;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs([{id:'test'}],null);
+        }catch(err){
+            if (err.indexOf('Cannot set person')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on person: '+err;
+            }
+        }
+        try{
+            mDataTypes.TestModelInputs(null,{id:'test2'});
+        }catch(err){
+            if (err.indexOf('people is not allowed to be null')<0
+                || err.indexOf('invalid type:')<0){
+                throw 'failed on people: '+err;
+            }
+        }
+export const name = 'John';");
+                var ns = eng.Modules.Import("custom");
+                Assert.AreEqual("John", ns.Get("name").AsString());
             }
             catch (Exception e)
             {

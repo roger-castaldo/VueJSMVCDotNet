@@ -1,238 +1,329 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
 using AutomatedTesting.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System.Collections;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class InstanceMethodCall
     {
-        private VueMiddleware _middleware;
-
-        [TestInitialize]
-        public void Init()
+        [TestMethod]
+        public async Task TestInstanceMethod()
         {
-            _middleware = Utility.CreateMiddleware(true);
-        }
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.AreEqual(mPersonHandler.Persons[0].GetFullName(), content);
         }
 
         [TestMethod]
-        public void TestInstanceMethod()
+        public async Task TestModelListReturnInstanceMethod()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status)).ReadToEnd();
-            Assert.AreEqual(status, 200);
-            Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(mPerson.Persons[0].GetFullName(new SecureSession()), content);
-        }
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
 
-        [TestMethod]
-        public void TestModelListReturnInstanceMethod()
-        {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/Search", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mGroup/{mGroupHandler.Groups[0].id}/Search", webApplicationFactory,
+            parameters: new Hashtable()
             {
-                {"name",mGroup.Groups[0].People[0].FirstName }
-            }));
-            Assert.AreEqual(200, status);
+                {"name",mGroupHandler.Groups[0].People[0].FirstName }
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(ArrayList));
             Assert.AreEqual(1, ((ArrayList)result).Count);
         }
 
         [TestMethod]
-        public void TestModelReturnInstanceMethod()
+        public async Task TestModelReturnInstanceMethod()
         {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/FindFirst", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mGroup/{mGroupHandler.Groups[0].id}/FindFirst", webApplicationFactory,
+            parameters: new Hashtable()
             {
-                {"name",mGroup.Groups[0].People[0].FirstName }
-            }));
-            Assert.AreEqual(200, status);
+                {"name",mGroupHandler.Groups[0].People[0].FirstName }
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.AreEqual(mGroup.Groups[0].People[0].id, ((Hashtable)result)["id"]);
+            Assert.AreEqual(mGroupHandler.Groups[0].People[0].id, ((Hashtable)result)["id"]);
         }
 
         [TestMethod]
-        public void TestInstanceMethodWithModelParameter()
+        public async Task TestInstanceMethodWithModelParameter()
         {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/ContainsPerson", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mGroup/{mGroupHandler.Groups[0].id}/ContainsPerson", webApplicationFactory,
+            parameters: new Hashtable()
             {
                 {
                     "person",new Hashtable(){
-                        { "id",mGroup.Groups[0].People[0].id }
+                        { "id",mGroupHandler.Groups[0].People[0].id }
                     }
                 }
-            }));
-            Assert.AreEqual(200, status);
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);
         }
 
         [TestMethod]
-        public void TestInstanceMethodWithModelListParameter()
+        public async Task TestInstanceMethodWithModelListParameter()
         {
-            int status;
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mGroup/{0}/ContainsPeople", new object[] { mGroup.Groups[0].id }), _middleware, out status, parameters: new Hashtable()
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mGroup/{mGroupHandler.Groups[0].id}/ContainsPeople", webApplicationFactory,
+            parameters: new Hashtable()
             {
                 {
                     "persons",new ArrayList(){
                         new Hashtable(){
-                            { "id",mGroup.Groups[0].People[0].id }
+                            { "id",mGroupHandler.Groups[0].People[0].id }
                         }
                     }
                 }
-            }));
-            Assert.AreEqual(200, status);
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.IsTrue((bool)result);
         }
 
         [TestMethod]
-        public void TestLoadSecurityBlocked()
+        public async Task TestLoadSecurityBlocked()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { "" }))).ReadToEnd();
+            //Arrange
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, new SecureSession(new string[] { "" }));
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
             Assert.AreEqual(SecurityTests._NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(SecurityTests._NOT_ALLOWED_STATUS, status);
+            Assert.AreEqual(SecurityTests._NOT_ALLOWED_STATUS, responseStatus);
         }
 
         [TestMethod]
-        public void ModelNotFound()
+        public async Task ModelNotFound()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", "/models/mPerson/0/GetFullName", _middleware, out status)).ReadToEnd();
-            Assert.AreEqual(status, 404);
-            Assert.IsTrue(content.Length>0);
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, "/models/mPerson/0/GetFullName", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(404, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
             Assert.AreEqual("Model Not Found", content);
         }
 
         [TestMethod]
-        public void TestInstanceMethodWithSameNameButParameter()
+        public async Task TestInstanceMethodWithSameNameButParameter()
         {
+            //Arrange
             var store = new DataStore();
-            store[mPerson.KEY] = mPerson.Persons.ToArray();
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
-                parameters:new Hashtable()
+            store[mPersonHandler.KEY] = mPersonHandler.Persons.ToArray();
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, store);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{((mPerson[])store[mPersonHandler.KEY])[0].id}/GetFullName", webApplicationFactory,
+                parameters: new Hashtable()
                 {
                     {"middleName","John" }
-                },store:store)).ReadToEnd();
-            Assert.AreEqual(status, 200);
-            Assert.IsTrue(content.Length>0);
-            Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName("John"), content);
+                });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.AreEqual(((mPerson[])store[mPersonHandler.KEY])[0].GetFullName("John"), content);
         }
 
         [TestMethod]
-        public void MethodSecurityBlocked()
+        public async Task MethodSecurityBlocked()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status, session: new Security.SecureSession(new string[] { Constants.Rights.CAN_ACCESS,Constants.Rights.LOAD }))).ReadToEnd();
+            //Arrange
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, new SecureSession(new string[] { Constants.Rights.CAN_ACCESS, Constants.Rights.LOAD }));
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
             Assert.AreEqual(SecurityTests._NOT_ALLOWED_MESSAGE, content);
-            Assert.AreEqual(SecurityTests._NOT_ALLOWED_STATUS, status);
+            Assert.AreEqual(SecurityTests._NOT_ALLOWED_STATUS, responseStatus);
         }
 
         [TestMethod]
-        public void TestInvalidMethod()
+        public async Task TestInvalidMethod()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetFullName", new object[] { mPerson.Persons[0].id }), _middleware, out status,
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _) = await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetFullName", webApplicationFactory,
                 parameters: new Hashtable()
                 {
                     {"Name","John" }
-                })).ReadToEnd();
-            Assert.AreEqual(404, status);
-            Assert.IsTrue(content.Length>0);
+                }
+            );
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(404, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
             Assert.AreEqual("Unable to locate method with matching parameters", content);
         }
 
         [TestMethod]
-        public void TestVoidInstanceMethod()
+        public async Task TestVoidInstanceMethod()
         {
             var store = new DataStore();
-            store[mPerson.KEY] = mPerson.Persons.ToArray();
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/SetFullName", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
+            store[mPersonHandler.KEY] = mPersonHandler.Persons.ToArray();
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, store);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{((mPerson[])store[mPersonHandler.KEY])[0].id}/SetFullName", webApplicationFactory,
                 parameters: new Hashtable()
                 {
                     {"fullName","Bob, Loblaw" }
-                },store: store)).ReadToEnd();
-            Assert.AreEqual(status, 200);
-            Assert.IsTrue(content.Length==0);
-            Assert.AreEqual(((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession()), "Bob, Loblaw");
+                });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.AreEqual(0, content.Length);
+            Assert.AreEqual(((mPerson[])store[mPersonHandler.KEY])[0].GetFullName(), "Bob, Loblaw");
         }
 
         [TestMethod]
-        public void TestObjectInstanceMethod()
+        public async Task TestObjectInstanceMethod()
         {
             var store = new DataStore();
-            store[mPerson.KEY] = mPerson.Persons.ToArray();
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsFullName", new object[] {((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out status,
+            store[mPersonHandler.KEY] = mPersonHandler.Persons.ToArray();
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, store);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{((mPerson[])store[mPersonHandler.KEY])[0].id}/IsFullName", webApplicationFactory,
                 parameters: new Hashtable()
                 {
-                    {"fullName", ((mPerson[])store[mPerson.KEY])[0].GetFullName(new SecureSession())}
-                },store:store)).ReadToEnd();
-            Assert.AreEqual(status, 200);
-            Assert.IsTrue(content.Length>0);
-            Assert.AreEqual("true",content);
+                    {"fullName", ((mPerson[])store[mPersonHandler.KEY])[0].GetFullName()}
+                });
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.AreEqual("true", content);
         }
 
         [TestMethod]
-        public void TestObjectInstanceMethodWithOpImplicitParameter()
+        public async Task TestObjectInstanceMethodWithOpImplicitParameter()
         {
+            //Arrange
             var store = new DataStore();
-            store[mPerson.KEY] = mPerson.Persons.ToArray();
-            var result = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/IsNameMatch", new object[] { ((mPerson[])store[mPerson.KEY])[0].id }), _middleware, out int status,
+            store[mPersonHandler.KEY] = mPersonHandler.Persons.ToArray();
+            (var webApplicationFactory, _) = Utility.CreateApplication(true, store);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{((mPerson[])store[mPersonHandler.KEY])[0].id}/IsNameMatch", webApplicationFactory,
                 parameters: new Hashtable()
                 {
                     {"name",
                         new Hashtable(){
-                        {"FirstName", ((mPerson[])store[mPerson.KEY])[0].FirstName},
-                        {"LastName", ((mPerson[])store[mPerson.KEY])[0].LastName}
+                        {"FirstName", ((mPerson[])store[mPersonHandler.KEY])[0].FirstName},
+                        {"LastName", ((mPerson[])store[mPersonHandler.KEY])[0].LastName}
                         }
                     }
-                }, store: store));
-            Assert.AreEqual(200, status);
+                });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsInstanceOfType(result, typeof(bool));
             Assert.AreEqual(true, result);
         }
 
         [TestMethod]
-        public void TestException()
+        public async Task TestException()
         {
-            int status;
-            string content = new StreamReader(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/ThrowInstanceException", new object[] { mPerson.Persons[0].id }), _middleware, out status)).ReadToEnd();
-            Assert.AreEqual(status, 500);
-            Assert.IsTrue(content.Length>0);
-            Assert.AreEqual("Error", content);
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/ThrowInstanceException", webApplicationFactory);
+            var content = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
+            Assert.AreEqual(500, responseStatus);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(content));
+            Assert.AreEqual("Internal Server Error", content);
         }
 
         [TestMethod]
-        public void TestSlowMethod()
+        public async Task TestSlowMethod()
         {
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/GetInstanceSlowTimespan", new object[] { mPerson.Persons[0].id }), _middleware, out status));
+            //Arrange
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/GetInstanceSlowTimespan", webApplicationFactory);
+            var url = await new StreamReader(responseStream).ReadToEndAsync();
+
+            //Assert
             Assert.IsInstanceOfType(url, typeof(string));
+
+            //Act/Assert
             bool done = false;
             string result = null;
             int cnt = 0;
             while (!done && cnt < 5)
             {
-                object content = Utility.ReadJSONResponse(Utility.ExecuteRequest("PULL", (string)url, _middleware, out status));
+                (responseStream, var responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, url, webApplicationFactory);
+                if (responseStatus == 500)
+                {
+                    System.Diagnostics.Trace.WriteLine(await new StreamReader(responseStream).ReadToEndAsync());
+                }
+                var content = Utility.ReadJSONResponse(responseStream);
+
+                Assert.AreEqual(200, responseStatus);
                 Assert.IsInstanceOfType(content, typeof(Hashtable));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
@@ -247,7 +338,7 @@ namespace AutomatedTesting
                 }
                 else
                 {
-                    System.Threading.Thread.Sleep(1000);
+                    await Task.Delay(1000);
                     cnt++;
                 }
             }
@@ -256,17 +347,27 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestSlowMethodWithAddItem()
+        public async Task TestSlowMethodWithAddItem()
         {
+            //Arrange
             ArrayList data = new ArrayList();
-            int status;
-            object url = Utility.ReadJSONResponse(Utility.ExecuteRequest("METHOD", string.Format("/models/mPerson/{0}/InstanceSlowAddCall", new object[] { mPerson.Persons[0].id }), _middleware, out status));
+            (var webApplicationFactory, _, _) = Utility.CreateApplication(true);
+
+            //Act
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Post, $"/models/mPerson/{mPersonHandler.Persons[0].id}/InstanceSlowAddCall", webApplicationFactory);
+            var url = Utility.ReadJavascriptResponse(responseStream);
+
+            //Assert
             Assert.IsInstanceOfType(url, typeof(string));
+
+            //Act/Assert
             bool done = false;
             int cnt = 0;
             while (!done && cnt < 10)
             {
-                object content = Utility.ReadJSONResponse(Utility.ExecuteRequest("PULL", (string)url, _middleware, out status));
+                (responseStream, var responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Get, url, webApplicationFactory);
+                var content = Utility.ReadJSONResponse(responseStream);
+                Assert.AreEqual(200, responseStatus);
                 Assert.IsInstanceOfType(content, typeof(Hashtable));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("IsFinished"));
                 Assert.IsTrue(((Hashtable)content).ContainsKey("HasMore"));
@@ -276,7 +377,7 @@ namespace AutomatedTesting
                     done = true;
                 else
                 {
-                    System.Threading.Thread.Sleep(1000);
+                    await Task.Delay(1000);
                     cnt++;
                 }
             }

@@ -1,51 +1,44 @@
-﻿using AutomatedTesting.Models;
+﻿using AutomatedTesting.Handlers;
+using AutomatedTesting.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VueJSMVCDotNet;
 using System;
 using System.Collections;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace AutomatedTesting
 {
     [TestClass]
     public class SaveCall
     {
-        private VueMiddleware _middleware;
-        private IDataStore _store;
-
-        [TestInitialize]
-        public void Init()
-        {
-            _middleware = Utility.CreateMiddleware(true);
-            _store=new DataStore();
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _middleware.Dispose();
-        }
-
         [TestMethod]
-        public void TestSaveMethod()
+        public async Task TestSaveMethod()
         {
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
             string firstName = "Testing123";
             string lastName = "Testing321";
-            DateTime birthDay = DateTime.Now;
-            int currentCount = mPerson.Persons.Length;
-            int status;
-            object result = Utility.ReadJSONResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() { 
+            DateTime birthDay = DateTime.UtcNow;
+            int currentCount = mPersonHandler.Persons.Length;
+
+            //Act
+            var (responseStream, responseStatus, _)= await Utility.ExecuteRequestAsync(HttpMethod.Put, Constants.PersonModelRoute, webApplicationFactory,
+                parameters: new Hashtable() {
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            },store:_store));
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.AreEqual(200, responseStatus);
             Assert.IsNotNull(result);
-            Assert.IsInstanceOfType(result, typeof(Hashtable));
-            Assert.IsTrue(((Hashtable)result).ContainsKey("id"));
-            Assert.AreNotEqual(currentCount, ((mPerson[])_store[mPerson.KEY]).Length);
+            Assert.IsInstanceOfType(result, typeof(string));
+            Assert.AreNotEqual(currentCount, ((mPerson[])store[mPersonHandler.KEY]).Length);
             mPerson newPer = null;
-            foreach (mPerson p in ((mPerson[])_store[mPerson.KEY]))
+            foreach (mPerson p in ((mPerson[])store[mPersonHandler.KEY]))
             {
-                if (p.id == (string)((Hashtable)result)["id"])
+                if (p.id == (string)result)
                 {
                     newPer = p;
                     break;
@@ -58,21 +51,27 @@ namespace AutomatedTesting
         }
 
         [TestMethod]
-        public void TestSaveMethodFailure ()
+        public async Task TestSaveMethodFailure()
         {
+            //Arrange
+            (var webApplicationFactory, var store, _) = Utility.CreateApplication(true);
             string firstName = "DoNotSave";
             string lastName = "Testing321";
-            DateTime birthDay = DateTime.Now;
-            int currentCount = mPerson.Persons.Length;
-            int status;
-            var result = Utility.ReadResponse(Utility.ExecuteRequest("PUT", "/models/mPerson", _middleware, out status, parameters: new Hashtable() {
+            DateTime birthDay = DateTime.UtcNow;
+            int currentCount = mPersonHandler.Persons.Length;
+
+            //Act
+            var (responseStream, _, _)= await Utility.ExecuteRequestAsync(HttpMethod.Put, Constants.PersonModelRoute, webApplicationFactory,
+                parameters: new Hashtable() {
                 { "FirstName", firstName },
                 {"LastName",lastName },
                 {"BirthDay",birthDay }
-            },store: _store));
-            Assert.IsNotNull(result);
-            Assert.AreEqual(500, status);
-            Assert.AreEqual(currentCount, mPerson.Persons.Length);
+            });
+            var result = Utility.ReadJSONResponse(responseStream);
+
+            //Assert
+            Assert.IsNull(result);
+            Assert.AreEqual(currentCount, mPersonHandler.Persons.Length);
         }
     }
 }

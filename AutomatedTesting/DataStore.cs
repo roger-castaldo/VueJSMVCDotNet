@@ -4,19 +4,21 @@ namespace AutomatedTesting
 {
     internal class DataStore : IDataStore
     {
-        private Dictionary<string,object> _data;
+        private Dictionary<string, object> data = new();
 
-        public DataStore()
+        public object? this[string key]
         {
-            _data=new Dictionary<string, object>();
-        }
-        public object this[string key] { get => (_data.ContainsKey(key) ? _data[key] : null);
+            get
+            {
+                if (data.TryGetValue(key, out var value))
+                    return value;
+                return null;
+            }
             set
             {
-                if (_data.ContainsKey(key))
-                    _data.Remove(key);
+                data.Remove(key);
                 if (value!=null)
-                    _data.Add(key, value);
+                    data.Add(key, value);
             }
         }
     }

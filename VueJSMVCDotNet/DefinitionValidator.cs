@@ -1,325 +1,219 @@
-﻿using VueJSMVCDotNet.Attributes;
+﻿using System.Threading;
+using System.Threading.Channels;
+using VueJSMVCDotNet.Attributes.ModelHandlers;
+using VueJSMVCDotNet.Attributes.Models;
+using VueJSMVCDotNet.Endpoints.Model;
+using VueJSMVCDotNet.Extensions;
 using VueJSMVCDotNet.Interfaces;
 
 namespace VueJSMVCDotNet
 {
     internal static class DefinitionValidator
     {
-        private readonly struct SPathTypePair
+        private static bool IsValidDataActionMethod(MethodInfo method, Type returnType, bool requiresInstance)
         {
-            public string Path { get; private init; }
-            public Type ModelType { get; private init; }
-
-            public SPathTypePair(string path, Type modelType)
-            {
-                Path = path;
-                ModelType = modelType;
-            }
+            var iMethod = new InjectableMethod(method, []);
+            return Equals(returnType, iMethod.ReturnType)
+                && iMethod.StrippedParameters.Length==0
+                && iMethod.RequiresModel
+                && (!requiresInstance || iMethod.UsesModel);
         }
 
-        private static bool IsValidDataActionMethod(MethodInfo method, ILogger log)
+        private static void AppendError(List<Exception> exceptions, ILogger? log, Exception error, string logMessage, params object?[] args)
         {
-            return (method.ReturnType == typeof(bool)) && new InjectableMethod(method,log).StrippedParameters.Length==0;
+            log?.LogTrace(logMessage, args);
+            exceptions.Add(error);
         }
 
         /*
          * Called to validate all model definitions through the following checks:
-         * 1.  Check to make sure that there is at least 1 route specified for the model.
-         * 2.  Check for an empty constructor, and if no empty constructor is specified, ensure that the create method is blocked
-         * 3.  Check the all paths specified for the model are unique
-         * 4.  Check to make sure only 1 load method exists for a model
-         * 5.  Check to make sure that the select model method has the right return type
-         * 6.  Check to make sure a Load method exists
-         * 7.  Check to make sure that the id property is not blocked.
-         * 8.  Check to make sure all paged select lists have proper parameters
-         * 9.  Check to make sure all exposed methods are valid (if have same name, have different parameter count)
-         * 10.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void)
+         * 1.  Check to make sure that there is at least 1 route specified for the handler.
+         * 2.  Check to make sure that the id property is not blocked.
+         * 3.  Check to make sure all exposed slow methods are valid (ensure they have a parameter for the AddItem delegate and their response is void or Task)
+         * 4.  Check to make sure all exposed methods have a unique signature
+         * 5.  Check to make sure all exposed methods do not have an out (unsupported) parameter
+         * 6.  Check to make sure all event stream methods have the required input parameters as well as any additional inputs are of the allowed types
+         * 7.  Check to make sure that the select model method has the right return type
+         * 8.  Check to make sure the save, update and delete methods are valid, if defined
          */
-        internal static List<Exception> Validate(AssemblyLoadContext alc,ILogger log,out List<Type> invalidModels,out List<Type> models)
+        internal static IEnumerable<Exception> Validate(AssemblyLoadContext alc, ILogger? log, out IEnumerable<(Type HandlerType, Type ModelType)> invalidModels, out IEnumerable<(Type HandlerType, Type ModelType)> models)
         {
-            log?.LogDebug("Attempting to load and validate the models found in the Assembly Load Context {Name}",alc.Name);
-            models = Utility.LocateTypeInstances(typeof(IModel),alc,log);
-            log?.LogDebug("Located {Count} models in Assembly Load Context {Name}", models.Count, alc.Name);
-            List<Exception> errors = new();
-            invalidModels = new();
-            List<SPathTypePair> paths = new();
-            foreach (Type t in models)
-            {
-                log?.LogDebug("Validating Model {FullName}",  t.FullName);
-                if (t.GetCustomAttributes(typeof(ModelRoute), false).Length == 0)
+            log?.LogDebug("Attempting to load and validate the models found in the Assembly Load Context {Name}", alc.Name);
+            var handlers = Utility.LocateModelHandlers(alc, log);
+            log?.LogDebug("Located {Count} models in Assembly Load Context {Name}", handlers.Count(), alc.Name);
+            var errors = handlers
+                .SelectMany(handler =>
                 {
-                    log?.LogTrace("Model {FullName} has no route", t.FullName);
-                    invalidModels.Add(t);
-                    errors.Add(new NoRouteException(t));
-                }
-                bool hasAdd = false;
-                bool hasUpdate = false;
-                bool hasDelete = false;
-                foreach (MethodInfo mi in t.GetMethods(Constants.STORE_DATA_METHOD_FLAGS))
-                {
-                    if (mi.GetCustomAttributes(typeof(ModelSaveMethod), false).Length > 0)
+                    log?.LogDebug("Validating Handler {FullName}", handler.HandlerType.FullName);
+                    var exceptions = new List<Exception>();
+                    if (handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)==null)
+                        AppendError(exceptions, log, new NoRouteException(handler.HandlerType), "Model {FullName} has no route", handler.HandlerType.FullName);
+                    else
                     {
-                        if (hasAdd)
+                        foreach (var altHandler in handlers.Where(h =>
+                            !Equals(handler.HandlerType, h.HandlerType)
+                            && string.Equals(handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path, h.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)?.Path??string.Empty, StringComparison.OrdinalIgnoreCase))
+                            .Select(h => h.HandlerType)
+                        )
+                            AppendError(exceptions, log, new DuplicateRouteException(
+                                handler.HandlerType.GetCustomAttribute<ModelRouteAttribute>(false)!.Path,
+                                handler.HandlerType,
+                                altHandler.GetCustomAttribute<ModelRouteAttribute>(false)!.Path,
+                                altHandler
+                                ), "Model {FullName} has a model route that is a duplicate of another model", handler.HandlerType.FullName);
+                    }
+                    if (handler.ModelType.GetProperty(nameof(IModel.id))!.GetCustomAttribute<ModelIgnorePropertyAttribute>()!=null)
+                        AppendError(exceptions, log, new ModelIDBlockedException(handler.ModelType), "Model {TypeName} is not valid because the id property is blocked by ModelIgnoreProperty", handler.ModelType.FullName);
+
+                    var methods = handler.HandlerType.GetMethods(Constants.METHOD_FLAGS);
+
+                    CheckExposedMethods(methods, handler, exceptions, log);
+                    CheckEventStreamMethods(methods, handler, exceptions, log);
+                    CheckLoadAllMethod(methods, handler, exceptions, log);
+                    CheckListMethods(methods, handler, exceptions, log);
+                    CheckModelMethod<ModelSaveMethodAttribute>(methods, handler, exceptions, log, "save", typeof(string), true,
+                        (type, method) => new DuplicateModelSaveMethodException(type, method),
+                        (type, method) => new InvalidModelSaveMethodException(type, method)
+                    );
+                    CheckModelMethod<ModelUpdateMethodAttribute>(methods, handler, exceptions, log, "update", typeof(bool), true,
+                        (type, method) => new DuplicateModelUpdateMethodException(type, method),
+                        (type, method) => new InvalidModelUpdateMethodException(type, method)
+                    );
+                    CheckModelMethod<ModelDeleteMethodAttribute>(methods, handler, exceptions, log, "delete", typeof(bool), false,
+                        (type, method) => new DuplicateModelDeleteMethodException(type, method),
+                        (type, method) => new InvalidModelDeleteMethodException(type, method)
+                    );
+
+                    return exceptions;
+                });
+            invalidModels = errors.OfType<HandlerTypeException>()
+                .Select(e => handlers.First(h => Equals(h.HandlerType, e.HandlerType) || Equals(h.ModelType, e.HandlerType)))
+                .Distinct();
+            models = handlers;
+            return errors;
+        }
+
+        private static void CheckModelMethod<MA>(MethodInfo[] methods,
+            (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log,
+            string methodType, Type returnType, bool requiresInstance,
+            Func<Type, MethodInfo, HandlerTypeMethodException> constructDuplicateException,
+            Func<Type, MethodInfo, HandlerTypeMethodException> constructInvalidException)
+            where MA : Attribute
+        {
+            var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<MA>(false)!=null);
+            if (filteredMethods.Count()>1)
+                filteredMethods.ForEach(mi => AppendError(exceptions, log, constructDuplicateException(handler.HandlerType, mi),
+                    $"Handler {{FullName}} has more than 1 {methodType} method", handler.HandlerType.FullName));
+            else if (filteredMethods.Count()==1 && !IsValidDataActionMethod(filteredMethods.First(), returnType, requiresInstance))
+                AppendError(exceptions, log, constructInvalidException(handler.HandlerType, filteredMethods.First()),
+                    $"Handler {{FullName}} has and invalid {methodType} method", handler.HandlerType.FullName);
+        }
+
+        private static void CheckExposedMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
+            => methods.Select(mi => new { Method = mi, ExposedAttribute = mi.GetCustomAttribute<ExposedMethodAttribute>(false) })
+                        .Where(ms => ms.ExposedAttribute!=null)
+                        .Select(ms => new { Method = new InjectableMethod(ms.Method, []), ExposedAttribute = ms.ExposedAttribute })
+                        .GroupBy(ms => $"{(ms.Method.RequiresModel ? "instance" : "static")}:{ms.Method.Name}({string.Join(',', ms.Method.StrippedParameters.Select(p => p.Name))})")
+                        .ForEach(grp =>
                         {
-                            log?.LogTrace("Model {FullName} has more than 1 save method", t.FullName);
-                            invalidModels.Add(t);
-                            errors.Add(new DuplicateModelSaveMethodException(t, mi));
-                        }
-                        else
-                        {
-                            hasAdd = true;
-                            if (!IsValidDataActionMethod(mi, log))
+                            if (grp.Count()>1)
                             {
-                                log?.LogTrace("Model {FullNane} has and invalid save method", t.FullName);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelSaveMethodException(t, mi));
-                            }
-                        }
-                    }
-                    else if (mi.GetCustomAttributes(typeof(ModelDeleteMethod), false).Length > 0)
-                    {
-                        if (hasDelete)
-                        {
-                            log?.LogTrace("Model {FullName} has more than 1 delete method", t.FullName );
-                            invalidModels.Add(t);
-                            errors.Add(new DuplicateModelDeleteMethodException(t, mi));
-                        }
-                        else
-                        {
-                            hasDelete = true;
-                            if (!IsValidDataActionMethod(mi, log))
-                            {
-                                log?.LogTrace("Model {FullName} has and invalid delete method", t.FullName);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelDeleteMethodException(t, mi));
-                            }
-                        }
-                    }
-                    else if (mi.GetCustomAttributes(typeof(ModelUpdateMethod), false).Length > 0)
-                    {
-                        if (hasUpdate)
-                        {
-                            log?.LogTrace("Model {FullName} has more than 1 update method", t.FullName );
-                            invalidModels.Add(t);
-                            errors.Add(new DuplicateModelUpdateMethodException(t, mi));
-                        }
-                        else
-                        {
-                            hasUpdate = true;
-                            if (!IsValidDataActionMethod(mi, log)) { 
-                                log?.LogTrace("Model {FullName} has and invalid update method", t.FullName);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelUpdateMethodException(t, mi));
-                            }
-                        }
-                    }
-                }
-                if (hasAdd)
-                {
-                    if (t.GetConstructor(Type.EmptyTypes) == null)
-                    {
-                        log?.LogTrace("Model {FullName} has a save method without an empty constructor", t.FullName);
-                        invalidModels.Add(t);
-                        errors.Add(new NoEmptyConstructorException(t));
-                    }
-                }
-                foreach (ModelRoute mr in t.GetCustomAttributes<ModelRoute>(false))
-                {
-                    Regex reg = new("^(" + (mr.Host == "*" ? ".+" : mr.Host) + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path) + ")$", RegexOptions.ECMAScript | RegexOptions.Compiled);
-                    foreach (SPathTypePair p in paths)
-                    {
-                        if (reg.IsMatch(p.Path) && (p.ModelType.FullName != t.FullName))
-                        {
-                            log?.LogTrace("Model {FullName} has a model route that is a duplicate of another model", t.FullName);
-                            invalidModels.Add(t);
-                            errors.Add(new DuplicateRouteException(p.Path, p.ModelType, mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
-                        }
-                    }
-                    paths.Add(new SPathTypePair(mr.Host + (mr.Path.StartsWith("/") ? mr.Path : "/" + mr.Path), t));
-                }
-                bool found = false;
-                bool foundLoadAll=false;
-                foreach (MethodInfo mi in t.GetMethods(Constants.LOAD_METHOD_FLAGS))
-                {
-                    if (mi.GetCustomAttributes(typeof(ModelLoadMethod), false).Length > 0)
-                    {
-                        if (mi.ReturnType != t)
-                        {
-                            if (!mi.ReturnType.IsAssignableFrom(t))
-                            {
-                                log?.LogTrace("Model {FullName} does not return a valid type for its Load method", t.FullName );
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidLoadMethodReturnType(t, mi.Name));
-                            }
-                        }
-                        if (mi.ReturnType == t)
-                        {
-                            ParameterInfo[] pars = new InjectableMethod(mi,log).StrippedParameters;
-                            if (pars.Length==1 && pars[0].ParameterType==typeof(string))
-                            {
-                                if (found)
+                                grp.ForEach(ms =>
                                 {
-                                    log?.LogTrace("Model {FullName} has a duplicated load method", t.FullName);
-                                    invalidModels.Add(t);
-                                    errors.Add(new DuplicateLoadMethodException(t, mi.Name));
-                                }
-                                found = true;
-                            }else{
-                                log?.LogTrace("Model {FullName} has an invalid load method", t.FullName);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidLoadMethodArguements(t, mi.Name));
+                                    AppendError(exceptions, log, new DuplicateMethodSignatureException(handler.HandlerType, ms.Method.Method),
+                                        "Handler {FullName} has a duplicate method signature for the method {MethodName}", handler.HandlerType.FullName, ms.Method.Name);
+                                });
                             }
-                        }
-                    }
-                    if (mi.GetCustomAttributes(typeof(ModelLoadAllMethod),false).Length>0){
-                        Type rtype = mi.ReturnType;
-                        if (rtype.IsArray){
-                            rtype=rtype.GetElementType();
-                        }else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition() == typeof(List<>)){
-                            rtype = rtype.GetGenericArguments()[0];
-                        }else{
-                            rtype=null;
-                            log?.LogTrace("Model {FullName} has an invalid return type for ModelLoadAllMethod", t.FullName);
-                            invalidModels.Add(t);
-                            errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
-                        }
-                        if (rtype!=null){
-                            if (rtype!=t){
-                                log?.LogTrace("Model {FullName} has an invalid return type for ModelLoadAllMethod", t.FullName);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidLoadAllMethodReturnType(t, mi.Name));
-                            }else{
-                                ParameterInfo[] pars = new InjectableMethod(mi, log).StrippedParameters;
-                                if (pars.Length!=0){
-                                    invalidModels.Add(t);
-                                    errors.Add(new InvalidLoadAllArguements(t, mi.Name));
-                                }else{
-                                    if (foundLoadAll){
-                                        log?.LogTrace("Model {FullName} has more than 1 ModelLoadAllMethod", t.FullName);
-                                        invalidModels.Add(t);
-                                        errors.Add(new DuplicateLoadAllMethodException(t, mi.Name));
-                                    }
-                                    foundLoadAll=true;
-                                }
-                            }
-                        }
-                    }
-                    if (mi.GetCustomAttributes(typeof(ModelListMethod), false).Length > 0)
-                    {
-                        ModelListMethod mlm = (ModelListMethod)mi.GetCustomAttributes(typeof(ModelListMethod), false)[0];
-                        Type rtype = mi.ReturnType;
-                        if (rtype.FullName.StartsWith("System.Nullable"))
-                            rtype = rtype.GetGenericArguments()[0];
-                        if (rtype.IsArray)
-                            rtype = rtype.GetElementType();
-                        else if (rtype.IsGenericType && rtype.GetGenericTypeDefinition().GetInterfaces().Any(t=>t==typeof(System.Collections.IEnumerable)))
-                                rtype = rtype.GetGenericArguments()[0];
-                        if (rtype != t)
-                        {
-                            log?.LogTrace("Model {FullName} has an invalid return type for the model list method {Name}", t.FullName,mi.Name);
-                            invalidModels.Add(t);
-                            errors.Add(new InvalidModelListMethodReturnException(t, mi));
-                        }
-                        ParameterInfo[] pars = new InjectableMethod(mi, log).StrippedParameters;
-                        if (mlm.Paged && pars.Length<3)
-                        {
-                            log?.LogTrace("Model {FullName} has an invalid signature for paged model list method {Name}, required parameters are missing",  t.FullName, mi.Name);
-                            invalidModels.Add(t);
-                            errors.Add(new InvalidModelListParameterCountException(t, mi));
-                        }
-                        for (int x = 0; x < pars.Length; x++)
-                        {
-                            ParameterInfo pi = pars[x];
-                            if (pi.IsOut && (!mlm.Paged || x != pars.Length - 1))
+                            grp.ForEach(ms =>
                             {
-                                log?.LogTrace("Model {} list method {} with the parameter {}",  t.FullName, mi.Name, pi.Name);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelListParameterOutException(t, mi, pi));
-                            }
-                            if (mlm.Paged && x >= pars.Length - 3)
-                            {
-                                Type ptype = pi.ParameterType;
-                                if (pi.IsOut)
-                                    ptype = ptype.GetElementType();
-                                if (ptype != typeof(int)
-                                    && ptype != typeof(long)
-                                    && ptype != typeof(short)
-                                    && ptype != typeof(uint)
-                                    && ptype != typeof(ulong)
-                                    && ptype != typeof(ushort))
+                                if (ms.Method.HasAddItem)
                                 {
-                                    log?.LogTrace("Model {} has an invalid parameter {} list method {}",  t.FullName,pi.Name, mi.Name);
-                                    invalidModels.Add(t);
-                                    errors.Add(new InvalidModelListPageParameterTypeException(t, mi, pi));
+                                    if (!ms.ExposedAttribute!.IsSlow)
+                                        AppendError(exceptions, log, new MethodNotMarkedAsSlowException(handler.HandlerType, ms.Method.Method),
+                                            "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate but is not marked slow", handler.HandlerType.FullName, ms.Method.Name);
+                                    else if (ms.Method.ReturnType!=typeof(void))
+                                        AppendError(exceptions, log, new MethodWithAddItemNotVoidException(handler.HandlerType, ms.Method.Method),
+                                            "Model {TypeName} is not valid because the method {MethodName} is using the AddItem delegate requires a void response", handler.HandlerType.FullName, ms.Method.Name);
                                 }
-                            }
-                            if (mlm.Paged && x == pars.Length - 1 && !pi.IsOut)
-                            {
-                                log?.LogTrace("Model {} is not a valid page total parameter {} list method {}", t.FullName,pi.Name, mi.Name);
-                                invalidModels.Add(t);
-                                errors.Add(new InvalidModelListPageTotalPagesNotOutException(t, mi, pi));
-                            }
-                        }
-                    }
-                }
-                if (t.GetProperty("id").GetCustomAttributes(typeof(ModelIgnoreProperty), false).Length > 0)
-                {
-                    log?.LogTrace("Model {} is not valid because the id property is blocked by ModelIgnoreProperty", t.FullName);
-                    invalidModels.Add(t);
-                    errors.Add(new ModelIDBlockedException(t));
-                }
-                if (!found)
-                {
-                    log?.LogTrace("Model {} is not valid because no load method was found", t.FullName );
-                    invalidModels.Add(t);
-                    errors.Add(new NoLoadMethodException(t));
-                }
-                foreach (BindingFlags bf in new BindingFlags[] { Constants.STATIC_INSTANCE_METHOD_FLAGS,Constants.INSTANCE_METHOD_FLAGS })
-                {
-                    List<string> methods = new();
-                    MethodInfo[] methodInfos = t.GetMethods(bf);
-                    foreach (MethodInfo mi in methodInfos)
-                    {
-                        if (mi.GetCustomAttributes(typeof(ExposedMethod), false).Length > 0)
+                                ms.Method.StrippedParameters
+                                    .Where(par => par.IsOut)
+                                    .ForEach(par =>
+                                        AppendError(exceptions, log, new InvalidParameterTypeForExposedMethodException(handler.HandlerType, ms.Method.Method, par),
+                                            "Model {TypeName} is not valid because the parameter {ParameterName} in method {MethodName} is an out parameter which is not supported", handler.HandlerType.FullName, par.Name, ms.Method.Name)
+                                    );
+                            });
+                        });
+
+        private static void CheckEventStreamMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
+            => methods.Where(m => m.GetCustomAttribute<EventStreamMethodAttribute>()!=null)
+                        .Select(m => new InjectableMethod(m, []))
+                        .GroupBy(m => $"{(m.UsesModel ? "instance" : "static")}:{m.Name}")
+                        .ForEach(grp =>
                         {
-                            var im = new InjectableMethod(mi, log);
-                            bool hasAddItem = im.HasAddItem;
-                            int parCount = im.StrippedParameters.Length;
-                            if (methods.Contains(mi.Name + "." + parCount.ToString()))
+                            if (grp.Count()>1)
                             {
-                                log?.LogTrace("Model {} is not valid because the method {} has a duplicate method signature", t.FullName, mi.Name);
-                                invalidModels.Add(t);
-                                errors.Add(new DuplicateMethodSignatureException(t, mi));
+                                grp.ForEach(m =>
+                                {
+                                    AppendError(exceptions, log, new DuplicateEventStreamException(handler.HandlerType, m.Method),
+                                        "Handler {FullName} has a duplicate Event Stream method {MethodName}", handler.HandlerType.FullName, m.Name);
+                                });
                             }
                             else
                             {
-                                bool isValidCall = true;
-                                ExposedMethod em = (ExposedMethod)mi.GetCustomAttributes(typeof(ExposedMethod), false)[0];
-                                if (hasAddItem)
-                                {
-                                    if (!em.IsSlow)
+                                var method = grp.First();
+                                method
+                                    .StrippedParameters
+                                    .Where(par => !Equals(par.ParameterType, typeof(ChannelWriter<object>)) && !Equals(par.ParameterType, typeof(CancellationToken))
+                                    && !EventStreamHelper.IsUsableType(par.ParameterType))
+                                    .ForEach(par =>
                                     {
-                                        log?.LogTrace("Model {} is not valid because the method {} is using the AddItem delegate but is not marked slow", t.FullName, mi.Name);
-                                        invalidModels.Add(t);
-                                        errors.Add(new MethodNotMarkedAsSlow(t, mi));
-                                        isValidCall = false;
-                                    }else if (mi.ReturnType!=typeof(void))
-                                    {
-                                        log?.LogTrace("Model {} is not valid because the method {} is using the AddItem delegate requires a void response",  t.FullName, mi.Name);
-                                        invalidModels.Add(t);
-                                        errors.Add(new MethodWithAddItemNotVoid(t, mi));
-                                        isValidCall = false;
-                                    }
-                                }
-                                if (isValidCall)
-                                    methods.Add(mi.Name + "." + parCount.ToString());
+                                        AppendError(exceptions, log, new InvalidParameterTypeForEventStreamException(handler.HandlerType, method.Method, par),
+                                        "Handler {FullName} has an Event Stream method {MethodName} with the invalid parameter type for {}", handler.HandlerType.FullName, method.Name, par.Name);
+                                    });
                             }
-                        }
-                    }
-                }
-            }
-            invalidModels = invalidModels.Distinct().ToList();
-            return errors;
+                        });
+
+        private static void CheckLoadAllMethod(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
+        {
+            var filteredMethods = methods.Where(mi => mi.GetCustomAttribute<ModelLoadAllMethodAttribute>(false)!=null);
+            if (filteredMethods.Count()>1)
+                filteredMethods.ForEach(mi => AppendError(exceptions, log, new DuplicateLoadAllMethodException(handler.HandlerType, mi),
+                    "Handler {FullName} has more than 1 ModelLoadAllMethod", handler.HandlerType.FullName));
+            filteredMethods.ForEach(loadAllMethod =>
+            {
+                (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(loadAllMethod.ReturnType);
+                if (!isArray)
+                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnTypeException(handler.HandlerType, loadAllMethod),
+                        "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
+                else if (!Equals(rtype, handler.ModelType))
+                    AppendError(exceptions, log, new InvalidLoadAllMethodReturnTypeException(handler.HandlerType, loadAllMethod),
+                        "Handler {FullName} has an invalid return type for ModelLoadAllMethod", handler.HandlerType.FullName);
+                else if (InjectableMethod.StripMethodParameters(loadAllMethod.GetParameters()).Any(pair => !pair.IsStrippable))
+                    exceptions.Add(new InvalidLoadAllArguementsException(handler.HandlerType, loadAllMethod));
+            });
         }
+
+        private static void CheckListMethods(MethodInfo[] methods, (Type HandlerType, Type ModelType) handler, List<Exception> exceptions, ILogger? log)
+            => methods.Where(mi => mi.GetCustomAttribute<ModelListMethodAttribute>(false)!=null)
+            .ForEach(method =>
+            {
+                var paged = method.GetCustomAttribute<ModelListMethodAttribute>(false)!.Paged;
+                (var rtype, var isArray, _, _, _) = Utility.ExtractUnderlyingType(method.ReturnType);
+                if (paged)
+                {
+                    if (!Array.Exists(method.GetParameters(), (par => par.GetCustomAttribute<PageStartIndexParameterAttribute>(false)!=null)))
+                        AppendError(exceptions, log, new Exception("Missing Start Index Parameter"),
+                            "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageStartIndex parameter", handler.HandlerType.FullName, method.Name);
+                    if (!Array.Exists(method.GetParameters(), (par => par.GetCustomAttribute<PageSizeParameterAttribute>(false)!=null)))
+                        AppendError(exceptions, log, new Exception("Missing Page Size Parameter"),
+                            "Handler {FullName} has an invalid signature for paged model list method {Name}, missing PageSize parameter", handler.HandlerType.FullName, method.Name);
+                    if (!Equals(rtype, typeof(PagedResult<>).MakeGenericType(handler.ModelType)))
+                        AppendError(exceptions, log, new Exception("Invalid Page return type"),
+                            "Handler {FullName} has an invalid signature for paged model list method {Name}, Return Type expected to be PagedResult<M>", handler.HandlerType.FullName, method.Name);
+                }
+                else if (!Equals(rtype, handler.ModelType) || !isArray)
+                    AppendError(exceptions, log, new InvalidModelListMethodReturnException(handler.HandlerType, method),
+                        "Handler {FullName} has an invalid return type for the model list method {Name}", handler.HandlerType.FullName, method.Name);
+            });
     }
 }

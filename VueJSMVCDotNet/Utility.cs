@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using VueJSMVCDotNet.Attributes;
-using VueJSMVCDotNet.Handlers.Model;
-using VueJSMVCDotNet.Interfaces;
-using VueJSMVCDotNet.JSON;
-using System.Collections;
 using System.Data;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using VueJSMVCDotNet.Extensions;
+using VueJSMVCDotNet.Interfaces;
+using VueJSMVCDotNet.Interfaces.Internal;
+using VueJSMVCDotNet.JSON;
 
 namespace VueJSMVCDotNet
 {
@@ -18,193 +18,139 @@ namespace VueJSMVCDotNet
      */
     internal static class Utility
     {
-        //houses a cache of Types found through locate type, this is used to increase performance
-        private static readonly Dictionary<string, Type> _TYPE_CACHE = new();
-        //houses a cache of Type instances through locate type instances, this is used to increate preformance
-        private static readonly Dictionary<string, List<Type>> _INSTANCES_CACHE = new();
         //houses the assembly load contexts for types
-        private static readonly Dictionary<string, List<Type>> _LOAD_CONTEXT_TYPE_SOURCES = new();
+        private static readonly Dictionary<string, IEnumerable<Type>> _LOAD_CONTEXT_TYPE_SOURCES = [];
 
-        internal static void SetModelValues(ModelRequestData data, ref IModel model, bool isNew,ILogger log)
+        public static IEnumerable<(Type HandlerType, Type ModelType)> LocateModelHandlers(AssemblyLoadContext alc, ILogger? log)
         {
-            foreach (string str in data.Keys)
-            {
-                if (str != "id")
-                {
-                    PropertyInfo pi = model.GetType().GetProperty(str);
-                    if (pi != null)
-                    {
-                        if (pi.CanWrite)
-                        {
-                            if (pi.GetCustomAttributes(typeof(ReadOnlyModelProperty), true).Length==0 || isNew)
-                            {
-                                log?.LogTrace("Attempting to convert the value supplied for property {}.{} to {}", model.GetType().FullName, pi.Name, pi.PropertyType);
-                                pi.SetValue(model,data.GetValue(pi.PropertyType,str));
-                            }
-                        }
-                    }
-                }
-            }
+            log?.LogTrace("Locating Instance types of {FullName} in the Load Context {Name}", typeof(IModelHandler<>).FullName, alc.Name);
+            return LocateTypeInstances(typeof(IModelHandler<>), alc.Assemblies, log)
+                .ForEach(t => MarkTypeSource(alc.Name!, t, log))
+                .Select(handlerType => (handlerType, handlerType.GetInterfaces().First(t => t.IsGenericType && Equals(t.GetGenericTypeDefinition(), typeof(IModelHandler<>))).GetGenericArguments()[0]));
         }
 
-        public static List<Type> LocateTypeInstances(Type parent, AssemblyLoadContext alc, ILogger log) {
-            log?.LogTrace("Locating Instance types of {} in the Load Context {}",  parent.FullName, alc.Name);
-            List<Type> ret = LocateTypeInstances(parent, alc.Assemblies,log);
-            foreach (Type t in ret) {
-                MarkTypeSource(alc.Name, t,log);
-            }
-            return ret;
-        }
+        public static IEnumerable<Type> LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies, ILogger? log)
+            => assemblies
+            .Where(ass => !Equals(ass.GetName().Name, "mscorlib")
+                && !ass.GetName().Name!.StartsWith("System.")
+                && !Equals(ass.GetName().Name, "System")
+                && !ass.GetName().Name!.StartsWith("Microsoft.")
+            )
+            .SelectMany(ass =>
+                GetLoadableTypes(ass, log)
+                .Where(t =>
+                    t.IsSubclassOf(parent) ||
+                    (
+                        parent.IsInterface
+                        && Array.Exists(t.GetInterfaces(), (t) =>
+                            Equals(t, parent) ||
+                            (
+                                parent.IsGenericType &&
+                                t.IsGenericType &&
+                                Equals(t.GetGenericTypeDefinition(), parent)
+                            )
+                        )
+                    )
+                )
+            );
 
-        private static List<Type> LocateTypeInstances(Type parent, IEnumerable<Assembly> assemblies, ILogger log)
+        private static IEnumerable<Type> GetLoadableTypes(Assembly ass, ILogger? log)
         {
-            List<Type> ret = new();
-            foreach (Assembly ass in assemblies)
-            {
-                if (ass.GetName().Name != "mscorlib" && !ass.GetName().Name.StartsWith("System.") && ass.GetName().Name != "System" && !ass.GetName().Name.StartsWith("Microsoft"))
-                {
-                    foreach (Type t in GetLoadableTypes(ass, log))
-                    {
-                        if (t.IsSubclassOf(parent) || (parent.IsInterface && new List<Type>(t.GetInterfaces()).Contains(parent))) {
-                            ret.Add(t);
-                        }
-                    }
-                }
-            }
-            log?.LogTrace("Located {} instances of type {} from the given assemblies", ret.Count, parent.FullName);
-            return ret;
-        }
-
-        private static Type[] GetLoadableTypes(Assembly ass, ILogger log)
-        {
-            log?.LogTrace("Extracting Loadable types from assembly: {}", ass.FullName);
-            Type[] ret;
+            log?.LogTrace("Extracting Loadable types from assembly: {FullName}", ass.FullName);
+            IEnumerable<Type> ret;
             try
             {
                 ret = ass.GetTypes();
             }
             catch (ReflectionTypeLoadException rtle)
             {
-                log?.LogError("Reflection Load Exception from getting loadable types: {}",rtle.Message);
-                ret = rtle.Types;
+                log?.LogError(rtle, "Reflection Load Exception from getting loadable types: {Message}", rtle.Message);
+                ret = rtle.Types!;
             }
-            catch (Exception e)
-            {
-                log?.LogError("General Error attempting to load types from assembly: {}",e.Message);
-                if (e.Message != "The invoked member is not supported in a dynamic assembly."
-                            && !e.Message.StartsWith("Unable to load one or more of the requested types."))
-                    throw;
-                else
-                    ret = Array.Empty<Type>();
-            }
-            return ret;
+            return ret.Where(t => t!=null);
         }
 
-        private static void MarkTypeSource(string contextName, Type type, ILogger log) {
-            log?.LogTrace("Marking the Assembly Load Context of {} for the type {}", contextName, type.FullName);
+        private static void MarkTypeSource(string contextName, Type type, ILogger? log)
+        {
+            log?.LogTrace("Marking the Assembly Load Context of {ContextName} for the type {FullName}", contextName, type.FullName);
             lock (_LOAD_CONTEXT_TYPE_SOURCES)
             {
-                List<Type> types = new();
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
-                    types = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
+                IEnumerable<Type> types = [];
+                if (_LOAD_CONTEXT_TYPE_SOURCES.TryGetValue(contextName, out var value))
+                {
+                    types = value;
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
-                if (!types.Contains(type)) {
-                    types.Add(type);
-                }
+                if (!types.Contains(type))
+                    types=types.Append(type);
                 _LOAD_CONTEXT_TYPE_SOURCES.Add(contextName, types);
             }
         }
 
-        internal static List<Type> UnloadAssemblyContext(string contextName) {
-            List<Type> ret = null;
-            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
-                if (_LOAD_CONTEXT_TYPE_SOURCES.ContainsKey(contextName)) {
-                    ret = _LOAD_CONTEXT_TYPE_SOURCES[contextName];
+        internal static IEnumerable<Type> UnloadAssemblyContext(string? contextName)
+        {
+            if (contextName == null)
+                return [];
+            IEnumerable<Type> ret = [];
+            lock (_LOAD_CONTEXT_TYPE_SOURCES)
+            {
+                if (_LOAD_CONTEXT_TYPE_SOURCES.TryGetValue(contextName, out var value))
+                {
+                    ret = value;
                     _LOAD_CONTEXT_TYPE_SOURCES.Remove(contextName);
                 }
             }
             return ret;
         }
-        internal static void ClearCaches(ILogger log)
-        {
-            log?.LogTrace("Clearing cached types from loaded contexts");
-            lock (_INSTANCES_CACHE)
-            {
-                _INSTANCES_CACHE.Clear();
-            }
-            lock (_TYPE_CACHE)
-            {
-                _TYPE_CACHE.Clear();
-            }
-            lock (_LOAD_CONTEXT_TYPE_SOURCES) {
-                _LOAD_CONTEXT_TYPE_SOURCES.Clear();
-            }
-        }
-
-        internal static string GetModelUrlRoot(Type modelType)
-        {
-            return GetModelUrlRoot(modelType, null);
-        }
-
-        internal static string GetModelUrlRoot(Type modelType, string urlBase)
-        {
-            string urlRoot = (urlBase??"");
-            foreach (ModelRoute mr in modelType.GetCustomAttributes(typeof(ModelRoute), false).Cast<ModelRoute>())
-            {
-                urlRoot += mr.Path;
-                break;
-            }
-            return urlRoot.Replace("//", "/");
-        }
-
-        private static readonly Regex _regNoCache = new("[?&]_=(\\d+)$", RegexOptions.Compiled | RegexOptions.ECMAScript,TimeSpan.FromMilliseconds(500));
-
-        public static string CleanURL(Uri url)
-        {
-            return _regNoCache.Replace(url.PathAndQuery, "");
-        }
-
-        public static Uri BuildURL(HttpContext context, string urlBase)
-        {
-            UriBuilder builder = new(
-                context.Request.Scheme,
-                context.Request.Host.Host,
-                (context.Request.Host.Port??(context.Request.IsHttps ? 443 : 80)),
-                (urlBase==null ? context.Request.Path.ToString() : context.Request.Path.ToString().Replace(urlBase, "/"))
-            );
-            if (context.Request.QueryString.HasValue)
-                builder.Query = context.Request.QueryString.Value[1..];
-            return builder.Uri;
-        }
 
         public static bool IsArrayType(Type type)
         {
-            return type.IsArray ||
-                (type.IsGenericType && new List<Type>(type.GetGenericTypeDefinition().GetInterfaces()).Contains(typeof(IEnumerable)));
+            (_, var isArray, _, _, _) = ExtractUnderlyingType(type);
+            return isArray;
+        }
+
+        public static (Type type, bool isArray, bool isNullable, bool isTask, bool isValueTask) ExtractUnderlyingType(Type type)
+        {
+            var isTask = type == typeof(Task) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(Task<>));
+            var isValueTask = type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition()==typeof(ValueTask<>));
+            if (isTask||isValueTask)
+            {
+                if (!type.IsGenericType)
+                    return (typeof(void), false, false, isTask, isValueTask);
+                type=type.GetGenericArguments()[0];
+            }
+            var isArray = type.IsArray||(type.IsGenericType &&
+                (
+                type.GetGenericTypeDefinition()==typeof(IEnumerable<>) ||
+                Array.Exists(type.GetGenericTypeDefinition().GetInterfaces(), (t) => t.IsGenericType && t.GetGenericTypeDefinition()==typeof(IEnumerable<>))
+             ));
+            var isNullable = false;
+            if (isArray)
+            {
+                isNullable = type.IsGenericType;
+                type = type.GetElementType()??type.GetGenericArguments()[0];
+            }
+            if (type.FullName!.StartsWith("System.Nullable"))
+            {
+                isNullable=true;
+                type = type.GetElementType()??type.GetGenericArguments()[0];
+            }
+            return (type, isArray, isNullable, isTask, isValueTask);
         }
 
         internal static string GetTypeString(Type propertyType, bool notNullTagged)
         {
-            if (propertyType.IsArray)
-                return GetTypeString(propertyType.GetElementType(), false) + "[]"+(propertyType.GetElementType() == typeof(Byte) && !notNullTagged ? "?" : "");
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                return GetTypeString(propertyType.GetGenericArguments()[0], false) + "[]";
-            else if (propertyType.FullName.StartsWith("System.Nullable"))
-            {
-                if (propertyType.IsGenericType)
-                    return GetTypeString(propertyType.GetGenericArguments()[0], true)+"?";
-                else
-                    return GetTypeString(propertyType.GetElementType(), true)+"?";
-            }
-            else if (propertyType.IsEnum)
+            (var ptype, var isArray, var isNullable, _, _) = ExtractUnderlyingType(propertyType);
+            if (isArray)
+                return $"{GetTypeString(ptype, false)}[]{(ptype==typeof(byte) && !notNullTagged ? "?" : "")}";
+            else if (isNullable)
+                return $"{GetTypeString(ptype, true)}?";
+            else if (ptype.IsEnum)
                 return "Enum";
-            else if (propertyType.IsSubclassOf(typeof(Exception)))
+            else if (ptype.IsSubclassOf(typeof(Exception)))
                 return "System.Exception";
-            else if (propertyType==typeof(IFormFile))
+            else if (ptype==typeof(IFormFile))
                 return "IFormFile"+(!notNullTagged ? "?" : "");
-            else if (propertyType==typeof(IReadOnlyList<IFormFile>))
-                return "IFormFile[]";
             else
             {
                 switch (propertyType.FullName)
@@ -237,111 +183,75 @@ namespace VueJSMVCDotNet
 
         internal static string GetEnumList(Type propertyType)
         {
-            if (propertyType.IsArray)
-                return GetEnumList(propertyType.GetElementType());
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                return GetEnumList(propertyType.GetGenericArguments()[0]);
-            else if (propertyType.FullName.StartsWith("System.Nullable"))
-            {
-                if (propertyType.IsGenericType)
-                    return GetEnumList(propertyType.GetGenericArguments()[0]);
-                else
-                    return GetEnumList(propertyType.GetElementType());
-            }
-            if (propertyType.IsEnum)
-            {
-                StringBuilder sb = new();
-                sb.Append('[');
-                bool isFirst = true;
-                foreach (string str in Enum.GetNames(propertyType))
-                {
-                    sb.Append($"{(isFirst ? "" : ",")}'{str}'");
-                    isFirst = false;
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
+            (var type, _, _, _, _) = ExtractUnderlyingType(propertyType);
+            if (type.IsEnum)
+                return $"[{string.Join(',', Enum.GetNames(type).Select(s => $"'{s}'"))}]";
             else
                 return "undefined";
         }
 
-        internal static string TranslatePath(IFileProvider fileProvider, string baseURL, string path)
+        internal static string? TranslatePath(IFileProvider fileProvider, string path)
         {
             string[] split = path.TrimStart('/').Split('/');
-            string curPath = "";
+            string? curPath = "";
             foreach (string sub in split)
             {
+
                 if (sub=="..")
                 {
                     if (curPath.Contains(Path.DirectorySeparatorChar.ToString()))
                         curPath=curPath[..curPath.LastIndexOf(Path.DirectorySeparatorChar)];
-                } else if (sub!="" && sub!=".")
+                }
+                else if (sub!="" && sub!=".")
                 {
-                    bool changed = false;
-                    foreach (IFileInfo ifi in fileProvider.GetDirectoryContents(curPath))
-                    {
-                        if (ifi.IsDirectory && string.Equals(ifi.Name,sub.Trim(),StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            curPath+=(curPath=="" ? "" : Path.DirectorySeparatorChar.ToString())+ifi.Name;
-                            changed=true;
-                            break;
-                        }
-                    }
-                    if (!changed)
-                    {
-                        curPath=null;
-                        break;
-                    }
+                    var subDirectory = fileProvider.GetDirectoryContents(curPath)
+                        .FirstOrDefault(ifi => ifi.IsDirectory && string.Equals(ifi.Name, sub.Trim(), StringComparison.InvariantCultureIgnoreCase));
+                    if (subDirectory==null)
+                        return null;
+                    curPath=$"{curPath}{(!string.IsNullOrEmpty(curPath) ? Path.DirectorySeparatorChar.ToString() : "")}{subDirectory.Name}";
                 }
             }
-            if (curPath==null && baseURL!=null)
-                return TranslatePath(fileProvider, null, path[baseURL.Length..]);
             return (curPath==null || curPath=="" ? null : curPath);
         }
 
         #region JSON
 
-        private static JsonSerializerOptions ProduceJsonOptions(ILogger log,IRequestData requestData = null)
+        private static JsonSerializerOptions ProduceJsonOptions(IInternalRequestData? requestData = null)
         {
             var result = new JsonSerializerOptions
             {
                 WriteIndented=false
             };
-            result.Converters.Add(new DateTimeConverter());
+            result.Converters.Add(new JsonStringEnumConverter());
             result.Converters.Add(new GuidConverter());
             result.Converters.Add(new IPAddressConverter());
-            result.Converters.Add(new DecimalConverter());
-            result.Converters.Add(new ModelConverterFactory(requestData,log));
-            result.Converters.Add(new EnumConverterFactory());
+            result.Converters.Add(new ModelConverterFactory(requestData));
             return result;
         }
 
-        public static string JsonEncode(object value, ILogger log)
+        public static string JsonEncode(object? value, IInternalRequestData? requestData)
         {
             if (value==null)
                 return "null";
-            return JsonSerializer.Serialize(value, value.GetType(), options: ProduceJsonOptions(log));
+            return JsonSerializer.Serialize(value, value.GetType(), options: ProduceJsonOptions(requestData));
         }
 
-        public static T JsonDecode<T>(JsonDocument document, IRequestData requestData, ILogger log)
+        public static async ValueTask JsonEncode<T>(HttpContext context, Task<(T? result, IInternalRequestData requestData)> task)
         {
-            return (T)JsonSerializer.Deserialize(document, typeof(T), options: ProduceJsonOptions(log,requestData));
+            var data = await task;
+            context.Response.ContentType= "application/json";
+            context.Response.StatusCode= 200;
+            await context.Response.WriteAsync(JsonEncode(data.result, data.requestData));
         }
 
-        public static T JsonDecode<T>(JsonNode node, IRequestData requestData, ILogger log)
-        {
-            return (T)JsonSerializer.Deserialize(node, typeof(T), options: ProduceJsonOptions(log, requestData));
-        }
+        public static T? JsonDecode<T>(JsonDocument document, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(document, options: ProduceJsonOptions(requestData));
 
-        public static T JsonDecode<T>(JsonElement element, IRequestData requestData, ILogger log)
-        {
-            return (T)JsonSerializer.Deserialize(element, typeof(T), options: ProduceJsonOptions(log, requestData));
-        }
+        public static T? JsonDecode<T>(JsonNode node, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(node, options: ProduceJsonOptions(requestData));
+
+        public static T? JsonDecode<T>(JsonElement element, IInternalRequestData requestData)
+            => JsonSerializer.Deserialize<T>(element, options: ProduceJsonOptions(requestData));
         #endregion
-
-        public static string? SantizeLogValue(string? value)
-        {
-            return value?.Replace('\r', '_').Replace('\n', '_');
-        }
     }
 }

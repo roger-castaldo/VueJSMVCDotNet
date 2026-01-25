@@ -24,23 +24,23 @@ namespace AutomatedTesting.FileProvider
             _path=path;
             _isFile  = _assembly.GetManifestResourceNames()
                 .Where(name => name.ToLower()==_path.ToLower())
-                .Where(name=>(_erfp==null ? true : !_erfp.HiddenPaths.Contains(name)))
+                .Where(name => (_erfp==null ? true : !_erfp.HiddenPaths.Contains(name)))
                 .Count()==1;
         }
 
-        public bool Exists =>_isFile||_assembly.GetManifestResourceNames()
+        public bool Exists => _isFile||_assembly.GetManifestResourceNames()
                     .Where(name => name.ToLower().StartsWith(_path.ToLower()))
                     .Where(name => (_erfp==null ? true : !_erfp.HiddenPaths.Contains(name)))
                     .Count()>0;
 
-        public long Length => (_isFile ? 
+        public long Length => (_isFile ?
             (
-                _assembly.GetManifestResourceStream(_path)==null ? 
-                throw new FileNotFoundException() : 
+                _assembly.GetManifestResourceStream(_path)==null ?
+                throw new FileNotFoundException() :
                 _assembly.GetManifestResourceStream(_path).Length
-            ) 
+            )
             : 0);
-       
+
         public string PhysicalPath
         {
             get { return _path.Replace('.', Path.DirectorySeparatorChar); }
