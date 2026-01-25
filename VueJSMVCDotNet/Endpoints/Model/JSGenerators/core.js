@@ -156,15 +156,41 @@ const ajax = async (options) => {
 	}
 };
 
-// Perform a deep comparison to check if two objects are equal.
+const _areArraysEqual = (isEqual, a, b) => {
+	if (!Array.isArray(b) || a.length !== b.length) return false;
+
+	for (let i = 0; i < a.length; i++) {
+		if (!isEqual(a[i], b[i], visited)) return false;
+	}
+	return true;
+}
+
+const _areObjectsEqual = (isEqual, a, b, visited) => {
+	// Object comparison
+	const keys = new Set([
+		...Object.keys(a),
+		...Object.keys(b)
+	]);
+
+	for (const key of keys) {
+		const valA = a[key];
+		const valB = b[key];
+
+		// Treat missing and undefined as equal
+		const hasA = Object.hasOwn(a, key);
+		const hasB = Object.hasOwn(b, key);
+
+		if (!hasA && valB === undefined) continue;
+		if (!hasB && valA === undefined) continue;
+
+		if (!isEqual(valA, valB, visited)) return false;
+	}
+    return true;
+}
+
 const isEqual = (a, b, visited = new WeakMap()) => {
-	// Same reference or primitive equality
 	if (a === b) return true;
-
-	// NaN handling
 	if (Number.isNaN(a) && Number.isNaN(b)) return true;
-
-	// If either is null or not an object, they must be strictly equal
 	if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
 		return false;
 	}
@@ -183,34 +209,9 @@ const isEqual = (a, b, visited = new WeakMap()) => {
 	if (a instanceof Date) {
 		return a.getTime() === b.getTime();
 	} else if (Array.isArray(a)) {
-		if (!Array.isArray(b) || a.length !== b.length) return false;
-
-		for (let i = 0; i < a.length; i++) {
-			if (!isEqual(a[i], b[i], visited)) return false;
-		}
-		return true;
-	} else {
-		// Object comparison
-		const keys = new Set([
-			...Object.keys(a),
-			...Object.keys(b)
-		]);
-
-		for (const key of keys) {
-			const valA = a[key];
-			const valB = b[key];
-
-			// Treat missing and undefined as equal
-			const hasA = Object.hasOwn(a, key);
-			const hasB = Object.hasOwn(b, key);
-
-			if (!hasA && valB === undefined) continue;
-			if (!hasB && valA === undefined) continue;
-
-			if (!isEqual(valA, valB, visited)) return false;
-		}
+        return _areArraysEqual(isEqual, a, b);
 	}
-	return true;
+	return _areObjectsEqual(isEqual, a, b, visited);
 };
 
 const _numberRanges = {
@@ -410,13 +411,13 @@ const dataCheckCallbacks = {
 const _checkDataType = (type, value, enumlist) => {
 	if (type.indexOf('System.') === 0)
 		type = type.substring(7);
-	if (type.substring(type.length - 1) !== '?') {
-		if (type !== 'Boolean' && (value === null || value === undefined)) 
-			throw new Error('invalid type: Value is not allowed to be null');
-	} else {
+	if (type.substring(type.length - 1) === '?') {
 		if (value === null || value === undefined)
 			return value;
 		type = type.substring(0, type.length - 1);
+	} else {
+		if (type !== 'Boolean' && (value === null || value === undefined))
+			throw new Error('invalid type: Value is not allowed to be null');
 	}
 	if (type === 'IFormFile[]' && value.toString() !== '[object FileList]') 
 		throw new Error('invalid type: Value not a FileList and cannot be converted');
